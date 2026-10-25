@@ -19,6 +19,7 @@ Eso levanta tres piezas, en orden:
 | `db` | PostgreSQL 18; los datos quedan en el volumen `pgdata` |
 | `migrate` | dbmate aplica las migraciones pendientes de `db/migrations/` y termina |
 | `api` | FastAPI en <http://localhost:8000>; se recarga sola al editar `app/` |
+| `mailpit` | atrapa los correos que envía la API (por ejemplo, recuperar contraseña): <http://localhost:8025> |
 
 Comprueba que todo está vivo en <http://localhost:8000/health>. La documentación interactiva de la API está en <http://localhost:8000/docs>.
 
@@ -27,12 +28,25 @@ Para empezar de cero (borra los datos): `docker compose down -v`.
 ## Estructura
 
 ```
-db/migrations/   0001_base, 0002_catalogos, 0003_usuarios, 0004_cuentas…: se aplican en orden y nunca se editan una vez en main
+db/migrations/   0001_base … 0005_acceso: se aplican en orden y nunca se editan una vez en main
 app/             la API: rutas, lógica (dataclasses + Decimal) y adaptadores
 tests/           pytest contra un PostgreSQL de verdad
 ```
 
 Cada migración tiene su parte `-- migrate:up` y su `-- migrate:down` (para deshacerla).
+
+## Acceso
+
+| Ruta | Qué hace |
+|---|---|
+| `POST /auth/signup` | crear cuenta (nombre, correo, contraseña de 8 o más) y dejar la sesión abierta |
+| `POST /auth/login` | iniciar sesión |
+| `POST /auth/logout` · `/auth/logout-all` | cerrar esta sesión · cerrar todas |
+| `POST /auth/password` | cambiar contraseña (cierra las demás sesiones) |
+| `POST /auth/password-reset` · `/confirm` | pedir el enlace por correo · poner la contraseña nueva |
+| `GET /me` · `POST /me/setup` · `GET /catalog` | quién eres · configuración inicial · países, monedas e idiomas |
+
+La sesión es una cookie `ppm_session` (httpOnly, SameSite=Lax) con un número al azar; la base guarda solo su huella en `res_users_session` y la sesión vence a los 30 días. Las contraseñas se guardan con Argon2id. La API no toca las tablas de sesiones ni de enlaces: pasa por las funciones `auth_*` de `0005_acceso.sql`.
 
 ## Aislamiento entre usuarios
 

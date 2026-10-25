@@ -1,9 +1,12 @@
 """Puerto de base de datos: un pool de conexiones a PostgreSQL con psycopg 3.
 
-La lógica nunca abre conexiones por su cuenta; las pide aquí. Para tocar datos de una
-persona se usa `user_transaction(user_id)`: dentro de esa transacción la base trabaja
-como `ppm_app` y con `app.user_id` fijado, así que la seguridad por fila solo deja ver
-y escribir las filas de esa persona. Al terminar la transacción, ambas cosas se deshacen.
+La lógica nunca abre conexiones por su cuenta; las pide aquí:
+
+- `user_transaction(user_id)`: para tocar datos de una persona. La base trabaja como
+  `ppm_app` y con `app.user_id` fijado, así que la seguridad por fila solo deja ver y
+  escribir sus filas. Al terminar la transacción, ambas cosas se deshacen.
+- `anon_transaction()`: antes de saber quién es (crear cuenta, iniciar sesión, leer la
+  cookie). Trabaja como `ppm_app` sin usuario: solo puede llamar a las funciones auth_*.
 """
 
 from collections.abc import Iterator
@@ -42,4 +45,12 @@ def user_transaction(user_id: int) -> Iterator[psycopg.Connection]:
     """Una transacción que solo ve los datos de `user_id`. Confirma al salir sin errores."""
     with get_pool().connection() as conn, conn.transaction():
         act_as_user(conn, user_id)
+        yield conn
+
+
+@contextmanager
+def anon_transaction() -> Iterator[psycopg.Connection]:
+    """Una transacción sin persona: como ppm_app, solo para las funciones auth_*."""
+    with get_pool().connection() as conn, conn.transaction():
+        conn.execute("SET LOCAL ROLE ppm_app")
         yield conn
