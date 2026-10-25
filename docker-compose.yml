@@ -2,6 +2,7 @@
 #   db       PostgreSQL 18 (los datos quedan en el volumen pgdata)
 #   migrate  dbmate aplica las migraciones pendientes y termina
 #   api      FastAPI en http://localhost:8000 (se recarga sola al editar app/)
+# Pruebas, sin instalar nada:  docker compose run --rm pruebas
 services:
   db:
     image: postgres:18
@@ -41,6 +42,19 @@ services:
     volumes:
       - ./app:/srv/app
     command: ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  pruebas:
+    profiles: ["pruebas"]
+    build: .
+    environment:
+      DATABASE_URL: postgresql://ppm:ppm@db:5432/ppm
+      UV_PROJECT_ENVIRONMENT: /tmp/venv
+    volumes:
+      - .:/src:ro
+    command: ["sh", "-c", "cp -r /src /w && cd /w && rm -rf .venv && uv sync --locked -q && uv run pytest -W error"]
     depends_on:
       migrate:
         condition: service_completed_successfully
