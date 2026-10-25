@@ -3,9 +3,9 @@ name: Web
 on:
   push:
     branches: [main]
-    paths: ["web/**", "api/app/**", ".github/workflows/web.yml"]
+    paths: ["web/**", "api/**", "docker-compose.yml", ".github/workflows/web.yml"]
   pull_request:
-    paths: ["web/**", "api/app/**", ".github/workflows/web.yml"]
+    paths: ["web/**", "api/**", "docker-compose.yml", ".github/workflows/web.yml"]
 
 jobs:
   web:
@@ -58,3 +58,26 @@ jobs:
       - name: Build
         working-directory: web
         run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Recorridos en el navegador (Playwright contra la API y la base de verdad)
+        run: |
+          export PPM_UID=$(id -u) PPM_GID=$(id -g)
+          docker compose run --rm e2e
+
+      - name: Registro de los servicios
+        if: failure()
+        run: docker compose logs --no-color api web
+
+      - name: Informe de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            web/playwright-report
+            web/test-results

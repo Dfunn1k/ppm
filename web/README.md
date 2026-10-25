@@ -2,6 +2,17 @@
 
 React + TypeScript con Vite. Se levanta desde la raíz del repositorio con `docker compose up` y queda en <http://localhost:5173>. Node no hace falta en tu máquina: corre en el contenedor `web`.
 
+## Pantallas
+
+| Ruta | Pantalla |
+|---|---|
+| `/entrar` · `/crear-cuenta` | la portada con el refrán: iniciar sesión y crear cuenta |
+| `/recuperar` · `/restablecer?token=…` | pedir el enlace por correo · poner la contraseña nueva (el enlace del correo) |
+| `/bienvenida/1` · `2` · `3` | la configuración inicial; lo elegido se manda a la API una sola vez, en el paso 3 |
+| `/inicio` | provisional, hasta que lleguen cuentas y movimientos |
+
+Cada ruta sabe quién puede estar ahí (`Guard` en `src/App.tsx`): sin sesión vas a `/entrar`, sin configurar a `/bienvenida/1`, y ya configurado a `/inicio`.
+
 ## Cómo habla con la API
 
 La web y la API parecen «la misma casa»: el navegador pide `/api/…` y Vite lo reenvía a la API sin el prefijo (`/api/me` → `/me`). Así la cookie de sesión viaja sola, sin CORS. En producción, el servidor web hará el mismo reenvío.
@@ -26,5 +37,11 @@ GitHub Actions lo vuelve a generar en cada pull request y falla si quedó desact
 | `typecheck` | revisa los tipos con TypeScript |
 | `build` | arma la versión de producción en `dist/` |
 | `gen:api` | regenera los tipos de la API |
+
+Los recorridos completos (crear cuenta y configurarla, entrar y salir, recuperar la contraseña con el correo de Mailpit) corren con Playwright en su propio contenedor, contra la API y la base de verdad:
+
+```bash
+docker compose run --rm e2e
+```
 
 Si la página no se recarga sola al editar, pon `WATCH_POLLING: "true"` en el servicio `web` de `docker-compose.yml`.
