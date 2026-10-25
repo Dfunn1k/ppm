@@ -1,0 +1,51 @@
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: ppm
+          POSTGRES_PASSWORD: ppm
+          POSTGRES_DB: ppm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ppm -d ppm"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DATABASE_URL: postgresql://ppm:ppm@localhost:5432/ppm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.0"
+
+      - name: Instalar dbmate
+        run: npm install --global dbmate@2.36.0
+
+      - name: Aplicar migraciones (y probar que se pueden deshacer)
+        env:
+          DATABASE_URL: postgres://ppm:ppm@localhost:5432/ppm?sslmode=disable
+          DBMATE_MIGRATIONS_DIR: db/migrations
+          DBMATE_NO_DUMP_SCHEMA: "true"
+        run: |
+          dbmate up
+          dbmate rollback
+          dbmate up
+
+      - name: Dependencias
+        run: uv sync --locked
+
+      - name: Pruebas
+        run: uv run pytest -W error
