@@ -42,10 +42,17 @@ class OptionOut(BaseModel):
     name: str
 
 
+class BankOut(BaseModel):
+    id: int
+    name: str
+    cci_code: str | None
+
+
 class CatalogOut(BaseModel):
     countries: list[OptionOut]
     currencies: list[OptionOut]
     langs: list[OptionOut]
+    banks: list[BankOut]
 
 
 @router.get("/me", summary="Quién está conectado")
@@ -62,6 +69,6 @@ def setup(body: SetupIn, session: CurrentSession = Depends(current_session)) -> 
     return MeOut.of(me)
 
 
-@router.get("/catalog", summary="Países, monedas e idiomas para la configuración")
+@router.get("/catalog", summary="Países, monedas, idiomas y bancos")
 def catalog(session: CurrentSession = Depends(current_session)) -> CatalogOut:
     return CatalogOut.model_validate(asdict(users.get_catalog(session.user_id)))

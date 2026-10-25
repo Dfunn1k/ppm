@@ -59,10 +59,18 @@ class Option:
 
 
 @dataclass(frozen=True)
+class Bank:
+    id: int
+    name: str
+    cci_code: str | None     # con qué empieza su CCI: '002'
+
+
+@dataclass(frozen=True)
 class Catalog:
     countries: list[Option]
     currencies: list[Option]
     langs: list[Option]
+    banks: list[Bank]        # los del país de la persona
 
 
 def get_catalog(user_id: int) -> Catalog:
@@ -72,4 +80,8 @@ def get_catalog(user_id: int) -> Catalog:
             countries=q("SELECT code, name FROM res_country ORDER BY name"),
             currencies=q("SELECT trim(name), full_name FROM res_currency ORDER BY name"),
             langs=q("SELECT code, name FROM res_lang ORDER BY name"),
+            banks=[Bank(*r) for r in conn.execute(
+                "SELECT b.id, b.name, b.cci_code FROM res_bank b"
+                " WHERE b.country_id = coalesce((SELECT country_id FROM res_users), b.country_id)"
+                " ORDER BY b.name")],
         )
