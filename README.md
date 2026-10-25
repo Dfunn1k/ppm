@@ -1,6 +1,13 @@
-# ppm-api
+# PPM
 
-Servidor de **PPM (pan para mayo)**, una app de finanzas personales con contabilidad de partida doble y nombres al estilo Odoo. Aquí viven la base de datos (PostgreSQL 18), sus migraciones y la API (FastAPI). La app web está en [`ppm-web`](https://github.com/Dfunn1k/ppm-web).
+**PPM (pan para mayo)** es una app de finanzas personales con contabilidad de partida doble y nombres al estilo Odoo. Todo vive en este repositorio:
+
+| Carpeta | Qué hay |
+|---|---|
+| [`api/`](api/README.md) | la base de datos (PostgreSQL 18), sus migraciones y la API (FastAPI) |
+| `web/` | la app web (React + TypeScript), en camino |
+
+Están juntas mientras PPM es pequeño: un cambio en la API y su pantalla van en el mismo pull request. Si un día crece, cada carpeta puede salir a su propio repositorio sin perder su historia.
 
 La fuente de verdad del diseño es el documento «PPM — Modelo contable y base de datos». Si algo aquí lo contradice, manda el documento.
 
@@ -17,54 +24,21 @@ Eso levanta tres piezas, en orden:
 | Servicio | Qué hace |
 |---|---|
 | `db` | PostgreSQL 18; los datos quedan en el volumen `pgdata` |
-| `migrate` | dbmate aplica las migraciones pendientes de `db/migrations/` y termina |
-| `api` | FastAPI en <http://localhost:8000>; se recarga sola al editar `app/` |
+| `migrate` | dbmate aplica las migraciones pendientes de `api/db/migrations/` y termina |
+| `api` | FastAPI en <http://localhost:8000>; se recarga sola al editar `api/app/` |
 | `mailpit` | atrapa los correos que envía la API (por ejemplo, recuperar contraseña): <http://localhost:8025> |
 
 Comprueba que todo está vivo en <http://localhost:8000/health>. La documentación interactiva de la API está en <http://localhost:8000/docs>.
 
 Para empezar de cero (borra los datos): `docker compose down -v`.
 
-## Estructura
-
-```
-db/migrations/   0001_base … 0005_acceso: se aplican en orden y nunca se editan una vez en main
-app/             la API: rutas, lógica (dataclasses + Decimal) y adaptadores
-tests/           pytest contra un PostgreSQL de verdad
-```
-
-Cada migración tiene su parte `-- migrate:up` y su `-- migrate:down` (para deshacerla).
-
-## Acceso
-
-| Ruta | Qué hace |
-|---|---|
-| `POST /auth/signup` | crear cuenta (nombre, correo, contraseña de 8 o más) y dejar la sesión abierta |
-| `POST /auth/login` | iniciar sesión |
-| `POST /auth/logout` · `/auth/logout-all` | cerrar esta sesión · cerrar todas |
-| `POST /auth/password` | cambiar contraseña (cierra las demás sesiones) |
-| `POST /auth/password-reset` · `/confirm` | pedir el enlace por correo · poner la contraseña nueva |
-| `GET /me` · `POST /me/setup` · `GET /catalog` | quién eres · configuración inicial · países, monedas e idiomas |
-
-La sesión es una cookie `ppm_session` (httpOnly, SameSite=Lax) con un número al azar; la base guarda solo su huella en `res_users_session` y la sesión vence a los 30 días. Las contraseñas se guardan con Argon2id. La API no toca las tablas de sesiones ni de enlaces: pasa por las funciones `auth_*` de `0005_acceso.sql`.
-
-## Aislamiento entre usuarios
-
-Todos comparten una base, pero cada persona solo ve sus filas. Cada tabla de usuario tiene `user_id` y seguridad por fila (`ppm_enable_rls`). La API trabaja dentro de `user_transaction(user_id)`, que pasa a `ppm_app` y fija `app.user_id` solo para esa transacción. Sin usuario en la sesión, la base da error en vez de mostrar todo. Una prueba guardiana falla si alguna tabla con `user_id` queda sin esa regla.
-
 ## Pruebas
-
-Las pruebas corren contra un PostgreSQL real, nunca contra una base simulada: las reglas importantes (cuadre de asientos, aislamiento entre usuarios, cuentas de sistema) viven en la base.
-
-Con Docker, sin instalar nada más:
 
 ```bash
 docker compose run --rm pruebas
 ```
 
-O, si tienes uv instalado y `docker compose up` corriendo: `uv run pytest`.
-
-GitHub Actions corre lo mismo en cada pull request, con PostgreSQL 18, y además prueba que cada migración se puede deshacer.
+Más detalles en [`api/README.md`](api/README.md).
 
 ## Cómo se trabaja
 

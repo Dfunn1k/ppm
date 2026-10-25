@@ -1,9 +1,11 @@
-# Todo PPM servidor con un comando:  docker compose up
+# Todo PPM con un comando:  docker compose up
 #   db       PostgreSQL 18 (los datos quedan en el volumen pgdata)
 #   migrate  dbmate aplica las migraciones pendientes y termina
-#   api      FastAPI en http://localhost:8000 (se recarga sola al editar app/)
+#   api      FastAPI en http://localhost:8000 (se recarga sola al editar api/app/)
 #   mailpit  atrapa los correos que envía la API; se ven en http://localhost:8025
 # Pruebas, sin instalar nada:  docker compose run --rm pruebas
+name: ppm   # nombre fijo: no depende de cómo se llame la carpeta
+
 services:
   db:
     image: postgres:18
@@ -28,14 +30,14 @@ services:
       DBMATE_MIGRATIONS_DIR: /db/migrations
       DBMATE_NO_DUMP_SCHEMA: "true"
     volumes:
-      - ./db:/db:ro
+      - ./api/db:/db:ro
     command: ["--wait", "up"]
     depends_on:
       db:
         condition: service_healthy
 
   api:
-    build: .
+    build: ./api
     environment:
       DATABASE_URL: postgresql://ppm:ppm@db:5432/ppm
       APP_URL: http://localhost:5173
@@ -44,7 +46,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./app:/srv/app
+      - ./api/app:/srv/app
     command: ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
       migrate:
@@ -59,12 +61,12 @@ services:
 
   pruebas:
     profiles: ["pruebas"]
-    build: .
+    build: ./api
     environment:
       DATABASE_URL: postgresql://ppm:ppm@db:5432/ppm
       UV_PROJECT_ENVIRONMENT: /tmp/venv
     volumes:
-      - .:/src:ro
+      - ./api:/src:ro
     command: ["sh", "-c", "cp -r /src /w && cd /w && rm -rf .venv && uv sync --locked -q && uv run pytest -W error"]
     depends_on:
       migrate:

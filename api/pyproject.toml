@@ -1,5 +1,5 @@
 [project]
-name = "ppm-api"
+name = "ppm-api"  # el paquete de la API dentro del repositorio ppm
 version = "0.1.0"
 description = "PPM (pan para mayo): servidor de finanzas personales con partida doble"
 readme = "README.md"

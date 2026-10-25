@@ -3,4 +3,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .env
-db/schema.sql
+api/db/schema.sql
+node_modules/
+web/dist/
