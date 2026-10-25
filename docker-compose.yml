@@ -96,6 +96,18 @@ services:
     depends_on:
       web:
         condition: service_healthy
+      e2e-limpieza:
+        condition: service_completed_successfully
+
+  # Antes de cada corrida de e2e: borra las cuentas de prueba que dejó la anterior
+  e2e-limpieza:
+    profiles: ["e2e"]
+    image: postgres:18
+    command: ["psql", "postgresql://ppm:ppm@db:5432/ppm", "-qc",
+              "DELETE FROM res_users WHERE login LIKE 'e2e-%@prueba.ppm'"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   mailpit:
     image: axllent/mailpit:v1.27.0

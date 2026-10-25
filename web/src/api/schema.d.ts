@@ -164,10 +164,148 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Países, monedas e idiomas para la configuración */
+        /** Países, monedas, idiomas y bancos */
         get: operations["catalog_catalog_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mis cuentas con sus totales */
+        get: operations["overview_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle de una cuenta con sus movimientos */
+        get: operations["detail_accounts__account_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Renombrar o editar los datos del banco */
+        patch: operations["update_accounts__account_id__patch"];
+        trace?: never;
+    };
+    "/accounts/cash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Nueva cuenta de efectivo */
+        post: operations["create_cash_accounts_cash_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/bank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Nueva cuenta de banco */
+        post: operations["create_bank_accounts_bank_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{account_id}/opening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Poner o corregir el saldo inicial */
+        put: operations["set_opening_accounts__account_id__opening_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{account_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archivar una cuenta (solo con saldo cero) */
+        post: operations["archive_accounts__account_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/custody": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Plata que guardo de otros: lo que alguien te dio para guardar */
+        post: operations["add_custody_custody_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Personas */
+        get: operations["partners_partners_get"];
+        put?: never;
+        /** Nueva persona (solo el nombre) */
+        post: operations["create_partner_partners_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -198,6 +336,90 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountDetailOut */
+        AccountDetailOut: {
+            account: components["schemas"]["AccountRowOut"];
+            /** System Role */
+            system_role: string | null;
+            bank: components["schemas"]["app__routes__accounts__BankOut"] | null;
+            opening: components["schemas"]["OpeningOut"] | null;
+            /** Lines */
+            lines: components["schemas"]["LineOut"][];
+        };
+        /** AccountPatch */
+        AccountPatch: {
+            /** Name */
+            name?: string | null;
+            /** Bank Id */
+            bank_id?: number | null;
+            /** Acc Kind */
+            acc_kind?: ("savings" | "checking") | null;
+            /** Acc Number */
+            acc_number?: string | null;
+            /** Cci */
+            cci?: string | null;
+            /**
+             * Clear
+             * @default []
+             */
+            clear: ("acc_number" | "cci")[];
+        };
+        /** AccountRowOut */
+        AccountRowOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cash" | "bank" | "receivable" | "payable" | "suspense" | "other";
+            /** Currency */
+            currency: string | null;
+            /** Icon */
+            icon: string | null;
+            /** Subtitle */
+            subtitle: string | null;
+            /** Balances */
+            balances: components["schemas"]["MoneyOut"][];
+            /** Base Total */
+            base_total: string;
+        };
+        /** BankIn */
+        BankIn: {
+            /** Name */
+            name: string;
+            /** Currency */
+            currency: string;
+            /** @default {
+             *       "amount": "0.00"
+             *     } */
+            opening: components["schemas"]["OpeningIn"];
+            /** Bank Id */
+            bank_id: number;
+            /**
+             * Acc Kind
+             * @default savings
+             * @enum {string}
+             */
+            acc_kind: "savings" | "checking";
+            /** Acc Number */
+            acc_number?: string | null;
+            /** Cci */
+            cci?: string | null;
+        };
+        /** CashIn */
+        CashIn: {
+            /** Name */
+            name: string;
+            /** Currency */
+            currency: string;
+            /** @default {
+             *       "amount": "0.00"
+             *     } */
+            opening: components["schemas"]["OpeningIn"];
+        };
         /** CatalogOut */
         CatalogOut: {
             /** Countries */
@@ -206,6 +428,32 @@ export interface components {
             currencies: components["schemas"]["OptionOut"][];
             /** Langs */
             langs: components["schemas"]["OptionOut"][];
+            /** Banks */
+            banks: components["schemas"]["app__routes__me__BankOut"][];
+        };
+        /** CustodyIn */
+        CustodyIn: {
+            /** Partner Id */
+            partner_id: number;
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: number | string;
+            /** Date */
+            date?: string | null;
+            /** Rate */
+            rate?: number | string | null;
+        };
+        /** CustodyRowOut */
+        CustodyRowOut: {
+            /** Partner Id */
+            partner_id: number;
+            /** Partner Name */
+            partner_name: string;
+            /** Balances */
+            balances: components["schemas"]["MoneyOut"][];
+            /** Base Total */
+            base_total: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -218,6 +466,36 @@ export interface components {
             status: string;
             /** Postgres */
             postgres: string;
+        };
+        /** LineOut */
+        LineOut: {
+            /** Id */
+            id: number;
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Posted */
+            posted: boolean;
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Running */
+            running: string | null;
+            /** Counterpart */
+            counterpart: string | null;
+            /** Counterpart Icon */
+            counterpart_icon: string | null;
+            /** Counterpart Color */
+            counterpart_color: number | null;
+            /** Counterpart Role */
+            counterpart_role: string | null;
         };
         /** LoginIn */
         LoginIn: {
@@ -254,10 +532,74 @@ export interface components {
             /** Currencies */
             currencies: string[];
         };
+        /** MoneyOut */
+        MoneyOut: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Base */
+            base: string;
+        };
+        /** OpeningIn */
+        OpeningIn: {
+            /**
+             * Amount
+             * @default 0.00
+             */
+            amount: number | string;
+            /** Date */
+            date?: string | null;
+            /** Rate */
+            rate?: number | string | null;
+        };
+        /** OpeningOut */
+        OpeningOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Amount */
+            amount: string;
+            /** Rate */
+            rate: string | null;
+        };
         /** OptionOut */
         OptionOut: {
             /** Code */
             code: string;
+            /** Name */
+            name: string;
+        };
+        /** OverviewOut */
+        OverviewOut: {
+            /** Currency */
+            currency: string;
+            /** Real Total */
+            real_total: string;
+            /** Have Total */
+            have_total: string;
+            /** Custody Total */
+            custody_total: string;
+            /** Owe Total */
+            owe_total: string;
+            /** Have */
+            have: components["schemas"]["AccountRowOut"][];
+            /** Custody */
+            custody: components["schemas"]["CustodyRowOut"][];
+            /** Owe */
+            owe: components["schemas"]["AccountRowOut"][];
+        };
+        /** PartnerIn */
+        PartnerIn: {
+            /** Name */
+            name: string;
+        };
+        /** PartnerOut */
+        PartnerOut: {
+            /** Id */
+            id: number;
             /** Name */
             name: string;
         };
@@ -321,6 +663,31 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** BankOut */
+        app__routes__accounts__BankOut: {
+            /** Bank Id */
+            bank_id: number;
+            /** Bank Name */
+            bank_name: string;
+            /**
+             * Acc Kind
+             * @enum {string}
+             */
+            acc_kind: "savings" | "checking";
+            /** Acc Number */
+            acc_number: string | null;
+            /** Cci */
+            cci: string | null;
+        };
+        /** BankOut */
+        app__routes__me__BankOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Cci Code */
+            cci_code: string | null;
         };
     };
     responses: never;
@@ -642,6 +1009,344 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_accounts__account_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_accounts__account_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_cash_accounts_cash_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_bank_accounts_bank_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_opening_accounts__account_id__opening_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_accounts__account_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_custody_custody_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustodyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    partners_partners_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_partner_partners_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartnerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerOut"];
                 };
             };
             /** @description Validation Error */

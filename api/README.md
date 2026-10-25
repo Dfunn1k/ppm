@@ -18,6 +18,19 @@ Cada movimiento de dinero es un asiento (`account_move`) con sus apuntes (`accou
 
 Los saldos no se guardan: se calculan (`account_balance`, y `account_move_line_running` con el saldo después de cada apunte). El saldo inicial es un asiento contra «Saldos iniciales» (`post_opening_balance`), y las altas lo hacen en un solo paso: `create_cash_account`, `create_bank_account` (con su CCI validado contra el banco) y `post_custody_opening`.
 
+## Cuentas
+
+| Ruta | Qué hace |
+|---|---|
+| `GET /accounts` | lo que realmente tengo (= tengo − guardo de otros − debo) y las cuentas de cada grupo |
+| `GET /accounts/{id}` | detalle: saldos, datos del banco, saldo inicial y movimientos con el saldo después de cada uno |
+| `POST /accounts/cash` · `/accounts/bank` | nueva cuenta con su saldo inicial, en un paso |
+| `PUT /accounts/{id}/opening` | poner o corregir el saldo inicial (el paso 3 lo usa con el Efectivo) |
+| `PATCH /accounts/{id}` · `POST /accounts/{id}/archive` | renombrar o editar banco, número y CCI · archivar (solo con saldo cero) |
+| `POST /custody` · `GET`/`POST /partners` | plata que guardo de otros · personas (por ahora, solo el nombre) |
+
+Los montos viajan como texto decimal exacto (`"1284.90"`), entran y salen así. Una moneda que no es la base pide su tipo de cambio (`rate`); sin él, la base rechaza el saldo.
+
 ## Acceso
 
 | Ruta | Qué hace |
