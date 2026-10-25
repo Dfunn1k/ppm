@@ -9,3 +9,5 @@ web/dist/
 web/.vite/
 web/.pnpm-store/
 *.tsbuildinfo
+web/test-results/
+web/playwright-report/

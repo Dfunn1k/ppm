@@ -16,6 +16,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    allowedHosts: ["web"], // el nombre del servicio en Docker Compose, para las pruebas de Playwright
     // En Docker sobre WSL los cambios a veces no avisan: WATCH_POLLING=true los revisa cada tanto
     watch: process.env.WATCH_POLLING === "true" ? { usePolling: true, interval: 300 } : undefined,
     proxy: {
@@ -29,5 +30,6 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
   },
 });
