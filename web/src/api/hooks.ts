@@ -25,7 +25,9 @@ function fail(response: Response, error: unknown): never {
   const detail =
     typeof error === "object" && error !== null && "detail" in error && typeof error.detail === "string"
       ? error.detail
-      : "Algo salió mal. Intenta otra vez en un momento.";
+      : response.status === 422
+        ? "Revisa los datos: alguno no tiene el formato esperado."
+        : "Algo salió mal. Intenta otra vez en un momento.";
   throw new ApiError(response.status, detail);
 }
 
@@ -95,15 +97,36 @@ export function useLogout() {
   });
 }
 
-export function useSetup() {
+/** «Guardar y empezar»: configura la cuenta, pone el saldo del efectivo y crea los bancos del paso 3.
+ *  Devuelve los problemas que hubo después de configurar (la cuenta ya quedó lista igual). */
+export function useFinishSetup() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: SetupIn) => {
-      const { data, error, response } = await api.POST("/me/setup", { body });
-      if (!data) fail(response, error);
-      return data;
+    mutationFn: async ({ setup, cash, banks }: { setup: SetupIn; cash: string | null; banks: components["schemas"]["BankIn"][] }) => {
+      const done = await api.POST("/me/setup", { body: setup });
+      if (!done.data) fail(done.response, done.error);
+      const problems: string[] = [];
+      if (cash) {
+        const list = await api.GET("/accounts");
+        const efectivo = list.data?.have.find((a) => a.kind === "cash");
+        const r = efectivo
+          ? await api.PUT("/accounts/{account_id}/opening", { params: { path: { account_id: efectivo.id } }, body: { amount: cash } })
+          : null;
+        if (!r?.data) problems.push("No pudimos guardar el saldo de tu efectivo.");
+      }
+      for (const bank of banks) {
+        const r = await api.POST("/accounts/bank", { body: bank });
+        if (!r.data) {
+          const detail = r.error && typeof r.error.detail === "string" ? r.error.detail : "revisa sus datos";
+          problems.push(`No pudimos crear «${bank.name}»: ${detail}.`);
+        }
+      }
+      return { me: done.data, problems };
     },
-    onSuccess: (me) => qc.setQueryData(ME, me),
+    onSuccess: ({ me }) => {
+      qc.setQueryData(ME, me);
+      return qc.invalidateQueries({ queryKey: ["accounts"] });
+    },
   });
 }
 
@@ -122,5 +145,151 @@ export function useConfirmReset() {
       const { error, response } = await api.POST("/auth/password-reset/confirm", { body });
       if (!response.ok) fail(response, error);
     },
+  });
+}
+
+// --- Cuentas ------------------------------------------------------------------------------------
+
+export type Overview = components["schemas"]["OverviewOut"];
+export type AccountRow = components["schemas"]["AccountRowOut"];
+export type AccountDetail = components["schemas"]["AccountDetailOut"];
+export type Partner = components["schemas"]["PartnerOut"];
+export type CashIn = components["schemas"]["CashIn"];
+export type BankIn = components["schemas"]["BankIn"];
+type OpeningIn = components["schemas"]["OpeningIn"];
+type AccountPatch = components["schemas"]["AccountPatch"];
+type CustodyIn = components["schemas"]["CustodyIn"];
+
+const ACCOUNTS = ["accounts"] as const;
+
+export function useAccounts() {
+  return useQuery({
+    queryKey: ACCOUNTS,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/accounts");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useAccount(id: number) {
+  return useQuery({
+    queryKey: [...ACCOUNTS, id],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/accounts/{account_id}", { params: { path: { account_id: id } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Después de cambiar una cuenta, la lista y su detalle se vuelven a pedir. */
+function useAccountsChanged() {
+  const qc = useQueryClient();
+  return (detail?: AccountDetail) => {
+    if (detail) qc.setQueryData([...ACCOUNTS, detail.account.id], detail);
+    return qc.invalidateQueries({ queryKey: ACCOUNTS });
+  };
+}
+
+export function useCreateCash() {
+  const changed = useAccountsChanged();
+  return useMutation({
+    mutationFn: async (body: CashIn) => {
+      const { data, error, response } = await api.POST("/accounts/cash", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useCreateBank() {
+  const changed = useAccountsChanged();
+  return useMutation({
+    mutationFn: async (body: BankIn) => {
+      const { data, error, response } = await api.POST("/accounts/bank", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useSetOpening(id: number) {
+  const changed = useAccountsChanged();
+  return useMutation({
+    mutationFn: async (body: OpeningIn) => {
+      const { data, error, response } = await api.PUT("/accounts/{account_id}/opening", {
+        params: { path: { account_id: id } },
+        body,
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useUpdateAccount(id: number) {
+  const changed = useAccountsChanged();
+  return useMutation({
+    mutationFn: async (body: AccountPatch) => {
+      const { data, error, response } = await api.PATCH("/accounts/{account_id}", {
+        params: { path: { account_id: id } },
+        body,
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useArchiveAccount(id: number) {
+  const changed = useAccountsChanged();
+  return useMutation({
+    mutationFn: async () => {
+      const { error, response } = await api.POST("/accounts/{account_id}/archive", {
+        params: { path: { account_id: id } },
+      });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function usePartners() {
+  return useQuery({
+    queryKey: ["partners"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/partners");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useCreatePartner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const { data, error, response } = await api.POST("/partners", { body: { name } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["partners"] }),
+  });
+}
+
+export function useAddCustody() {
+  const changed = useAccountsChanged();
+  return useMutation({
+    mutationFn: async (body: CustodyIn) => {
+      const { error, response } = await api.POST("/custody", { body });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
   });
 }

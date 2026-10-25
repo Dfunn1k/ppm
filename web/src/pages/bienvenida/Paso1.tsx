@@ -1,13 +1,11 @@
 import { useNavigate } from "react-router";
 
 import { useCatalog, useMe } from "@/api/hooks";
+import { SheetSelect } from "@/components/Sheet";
 import { Icon, PrimaryButton, Screen } from "@/components/ui";
 import { formatAmount } from "@/lib/money";
 
 import { BASE_CURRENCY, StepHeader, useWizard } from "./wizard";
-
-const select =
-  "h-11 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] leading-6 text-foreground";
 
 /** Zonas que tiene sentido ofrecer: la del país y la del dispositivo, si es otra. */
 function zones() {
@@ -49,37 +47,38 @@ export function Paso1() {
           navigate("/bienvenida/2");
         }}
       >
-        <label className="flex flex-col gap-1.5 text-caption font-semibold">
-          País
-          <select className={select} value={choices.country} onChange={(e) => update({ country: e.target.value })}>
-            {catalog?.countries.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5 text-caption font-semibold">
-          Idioma y formato
-          <select className={select} value={choices.lang} onChange={(e) => update({ lang: e.target.value })}>
-            {catalog?.langs.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <SheetSelect
+          label="País"
+          sheetTitle="Elige tu país"
+          value={choices.country}
+          onChange={(country) => update({ country })}
+          options={(catalog?.countries ?? []).map((c) => ({
+            value: c.code,
+            label: c.name,
+            hint: BASE_CURRENCY[c.code] ? `Moneda: ${BASE_CURRENCY[c.code]!.name} (${BASE_CURRENCY[c.code]!.symbol})` : undefined,
+          }))}
+        />
+        <SheetSelect
+          label="Idioma y formato"
+          value={choices.lang}
+          onChange={(lang) => update({ lang })}
+          options={(catalog?.langs ?? []).map((l) => ({
+            value: l.code,
+            label: l.name,
+            hint: `${formatAmount(1284.9, base.symbol, l.code)} · ${today}`,
+          }))}
+        />
         <div className="flex flex-col gap-1.5">
-          <label className="flex flex-col gap-1.5 text-caption font-semibold">
-            Zona horaria
-            <select className={select} value={choices.tz} onChange={(e) => update({ tz: e.target.value })}>
-              {zones().map((z) => (
-                <option key={z} value={z}>
-                  {ZONE_NAME[z] ?? z.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-          </label>
+          <SheetSelect
+            label="Zona horaria"
+            value={choices.tz}
+            onChange={(tz) => update({ tz })}
+            options={zones().map((z) => ({
+              value: z,
+              label: ZONE_NAME[z] ?? z.replace("_", " "),
+              hint: z === "America/Lima" ? "La de tu país" : "La de este dispositivo",
+            }))}
+          />
           <span className="flex items-center gap-1 text-caption text-muted-foreground">
             <Icon name="schedule" className="text-[18px]" />
             Define qué es «hoy» para tus movimientos y recordatorios.

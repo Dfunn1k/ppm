@@ -8,10 +8,14 @@ React + TypeScript con Vite. Se levanta desde la raíz del repositorio con `dock
 |---|---|
 | `/entrar` · `/crear-cuenta` | la portada con el refrán: iniciar sesión y crear cuenta |
 | `/recuperar` · `/restablecer?token=…` | pedir el enlace por correo · poner la contraseña nueva (el enlace del correo) |
-| `/bienvenida/1` · `2` · `3` | la configuración inicial; lo elegido se manda a la API una sola vez, en el paso 3 |
-| `/inicio` | provisional, hasta que lleguen cuentas y movimientos |
+| `/bienvenida/1` · `2` · `3` | la configuración inicial; lo elegido (y los saldos del paso 3) se manda a la API una sola vez, al final |
+| `/cuentas` · `/cuentas/:id` | C1 y C2: lo que realmente tengo, y el detalle con número, CCI y movimientos |
+| `/cuentas/nueva` · `/banco` · `/efectivo` · `/guardo` | C5: el tipo, y luego solo sus datos |
+| `/inicio` | provisional, hasta la rebanada 4; ahí está «Cerrar sesión» |
 
-Cada ruta sabe quién puede estar ahí (`Guard` en `src/App.tsx`): sin sesión vas a `/entrar`, sin configurar a `/bienvenida/1`, y ya configurado a `/inicio`.
+Cada ruta sabe quién puede estar ahí (`Guard` en `src/App.tsx`): sin sesión vas a `/entrar`, sin configurar a `/bienvenida/1`, y ya configurado a `/cuentas`.
+
+Elegir de una lista usa siempre la hoja que sube desde abajo (`SheetSelect` en `src/components/Sheet.tsx`), nunca el selector del navegador. Los montos llegan de la API como texto exacto y se formatean con `src/lib/money.ts`, sin pasar por números de coma flotante.
 
 ## Cómo habla con la API
 
