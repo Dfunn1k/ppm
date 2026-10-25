@@ -73,13 +73,15 @@ def test_globales_solo_se_leen(ana_y_beto, as_user):
 
 
 def test_toda_tabla_con_user_id_tiene_seguridad_por_fila(conn):
-    """Guardián: si una migración futura olvida ppm_enable_rls, esta prueba falla."""
+    """Guardián: si una migración futura olvida ppm_enable_rls, esta prueba falla.
+    Se exceptúan las tablas que la API no puede tocar en absoluto (sesiones, enlaces)."""
     sin_regla = conn.execute("""
         SELECT c.relname
           FROM pg_class c
           JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
           JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'user_id' AND NOT a.attisdropped
          WHERE c.relkind = 'r'
+           AND has_table_privilege('ppm_app', c.oid, 'SELECT, INSERT, UPDATE, DELETE')
            AND NOT (c.relrowsecurity AND c.relforcerowsecurity
                     AND EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid AND p.polname = 'own_rows'))
     """).fetchall()
