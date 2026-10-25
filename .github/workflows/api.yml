@@ -1,9 +1,11 @@
-name: Pruebas
+name: API
 
 on:
   push:
     branches: [main]
+    paths: ["api/**", ".github/workflows/api.yml"]
   pull_request:
+    paths: ["api/**", ".github/workflows/api.yml"]
 
 jobs:
   pruebas:
@@ -24,12 +26,16 @@ jobs:
           --health-retries 30
     env:
       DATABASE_URL: postgresql://ppm:ppm@localhost:5432/ppm
+    defaults:
+      run:
+        working-directory: api
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.13.0"
+          working-directory: api
 
       - name: Instalar dbmate
         run: npm install --global dbmate@2.36.0
@@ -47,5 +53,5 @@ jobs:
       - name: Dependencias
         run: uv sync --locked
 
-      - name: Pruebas
+      - name: API
         run: uv run pytest -W error
