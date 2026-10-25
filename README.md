@@ -5,7 +5,7 @@
 | Carpeta | Qué hay |
 |---|---|
 | [`api/`](api/README.md) | la base de datos (PostgreSQL 18), sus migraciones y la API (FastAPI) |
-| `web/` | la app web (React + TypeScript), en camino |
+| [`web/`](web/README.md) | la app web (React + TypeScript, Vite, Tailwind) |
 
 Están juntas mientras PPM es pequeño: un cambio en la API y su pantalla van en el mismo pull request. Si un día crece, cada carpeta puede salir a su propio repositorio sin perder su historia.
 
@@ -26,6 +26,7 @@ Eso levanta tres piezas, en orden:
 | `db` | PostgreSQL 18; los datos quedan en el volumen `pgdata` |
 | `migrate` | dbmate aplica las migraciones pendientes de `api/db/migrations/` y termina |
 | `api` | FastAPI en <http://localhost:8000>; se recarga sola al editar `api/app/` |
+| `web` | la app web en <http://localhost:5173>; lo que pide a `/api/…` lo reenvía a la API |
 | `mailpit` | atrapa los correos que envía la API (por ejemplo, recuperar contraseña): <http://localhost:8025> |
 
 Comprueba que todo está vivo en <http://localhost:8000/health>. La documentación interactiva de la API está en <http://localhost:8000/docs>.
@@ -35,10 +36,11 @@ Para empezar de cero (borra los datos): `docker compose down -v`.
 ## Pruebas
 
 ```bash
-docker compose run --rm pruebas
+docker compose run --rm pruebas          # la API, contra PostgreSQL
+docker compose exec web corepack pnpm test   # la web (con docker compose up corriendo)
 ```
 
-Más detalles en [`api/README.md`](api/README.md).
+Más detalles en [`api/README.md`](api/README.md) y [`web/README.md`](web/README.md).
 
 ## Cómo se trabaja
 

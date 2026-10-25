@@ -3,6 +3,7 @@
 #   migrate  dbmate aplica las migraciones pendientes y termina
 #   api      FastAPI en http://localhost:8000 (se recarga sola al editar api/app/)
 #   mailpit  atrapa los correos que envía la API; se ven en http://localhost:8025
+#   web      la app web (Vite + React) en http://localhost:5173; /api/… va a la API
 # Pruebas, sin instalar nada:  docker compose run --rm pruebas
 name: ppm   # nombre fijo: no depende de cómo se llame la carpeta
 
@@ -52,6 +53,23 @@ services:
       migrate:
         condition: service_completed_successfully
       mailpit:
+        condition: service_started
+
+  web:
+    image: node:22.18.0-bookworm-slim
+    user: node                       # el mismo usuario (1000) que dueño de la carpeta
+    working_dir: /web
+    environment:
+      API_TARGET: http://api:8000
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      WATCH_POLLING: "false"         # "true" si en WSL la página no se recarga sola
+    volumes:
+      - ./web:/web
+    command: ["sh", "-c", "corepack pnpm install --frozen-lockfile && corepack pnpm dev"]
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
         condition: service_started
 
   mailpit:

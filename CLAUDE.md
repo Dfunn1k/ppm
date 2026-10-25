@@ -9,4 +9,5 @@ Repositorio único: `api/` (PostgreSQL, dbmate, FastAPI) y `web/` (React + TypeS
 - Migraciones: archivos `api/db/migrations/NNNN_nombre.sql` para dbmate, con `-- migrate:up` y `-- migrate:down`. Nunca edites una migración que ya está en main: crea otra.
 - Lógica en Python con dataclasses y `Decimal`; Pydantic solo en el borde de la API; SQL directo con psycopg 3, sin ORM.
 - Pruebas con pytest contra PostgreSQL real.
+- Web: React + TypeScript con Vite, Tailwind con los tokens del sistema de diseño «PPM» (claude.ai) en `web/src/styles.css`, componentes de shadcn/ui, TanStack Query, React Hook Form + Zod. La API se llama solo con `web/src/api/client.ts`, con tipos generados (`pnpm gen:api`); nunca se escriben a mano. Node no está instalado en la máquina: todo corre en Docker.
 - Cada paso va en una rama con su pull request; Dany aprueba con merge.

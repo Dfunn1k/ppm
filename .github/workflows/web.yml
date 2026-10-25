@@ -1,0 +1,60 @@
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", "api/app/**", ".github/workflows/web.yml"]
+  pull_request:
+    paths: ["web/**", "api/app/**", ".github/workflows/web.yml"]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.0"
+          working-directory: api
+
+      - name: Contrato de la API (OpenAPI)
+        working-directory: api
+        run: |
+          uv sync --locked
+          uv run python -m scripts.openapi > "$RUNNER_TEMP/openapi.json"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.15.1"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Dependencias
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Los tipos de la API están al día
+        working-directory: web
+        run: |
+          OPENAPI="$RUNNER_TEMP/openapi.json" pnpm gen:api
+          git diff --exit-code -- src/api/schema.d.ts || {
+            echo "::error::La API cambió y web/src/api/schema.d.ts no. Corre: docker compose exec web corepack pnpm gen:api"
+            exit 1
+          }
+
+      - name: Tipos
+        working-directory: web
+        run: pnpm typecheck
+
+      - name: Pruebas
+        working-directory: web
+        run: pnpm test
+
+      - name: Build
+        working-directory: web
+        run: pnpm build

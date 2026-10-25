@@ -6,3 +6,6 @@ __pycache__/
 api/db/schema.sql
 node_modules/
 web/dist/
+web/.vite/
+web/.pnpm-store/
+*.tsbuildinfo

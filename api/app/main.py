@@ -3,6 +3,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 from app.db import close_pool, get_pool
 from app.routes import auth, me
@@ -19,9 +20,14 @@ app.include_router(auth.router)
 app.include_router(me.router)
 
 
+class HealthOut(BaseModel):
+    status: str
+    postgres: str
+
+
 @app.get("/health")
-def health() -> dict:
+def health() -> HealthOut:
     """Responde si la API está viva y llega a la base de datos."""
     with get_pool().connection() as conn:
         version = conn.execute("SHOW server_version").fetchone()[0]
-    return {"status": "ok", "postgres": version}
+    return HealthOut(status="ok", postgres=version)
