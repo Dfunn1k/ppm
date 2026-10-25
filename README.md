@@ -27,23 +27,28 @@ Para empezar de cero (borra los datos): `docker compose down -v`.
 ## Estructura
 
 ```
-db/migrations/   0001_base.sql, 0002_….sql: se aplican en orden y nunca se editan una vez en main
+db/migrations/   0001_base, 0002_catalogos, 0003_usuarios, 0004_cuentas…: se aplican en orden y nunca se editan una vez en main
 app/             la API: rutas, lógica (dataclasses + Decimal) y adaptadores
 tests/           pytest contra un PostgreSQL de verdad
 ```
 
 Cada migración tiene su parte `-- migrate:up` y su `-- migrate:down` (para deshacerla).
 
+## Aislamiento entre usuarios
+
+Todos comparten una base, pero cada persona solo ve sus filas. Cada tabla de usuario tiene `user_id` y seguridad por fila (`ppm_enable_rls`). La API trabaja dentro de `user_transaction(user_id)`, que pasa a `ppm_app` y fija `app.user_id` solo para esa transacción. Sin usuario en la sesión, la base da error en vez de mostrar todo. Una prueba guardiana falla si alguna tabla con `user_id` queda sin esa regla.
+
 ## Pruebas
 
 Las pruebas corren contra un PostgreSQL real, nunca contra una base simulada: las reglas importantes (cuadre de asientos, aislamiento entre usuarios, cuentas de sistema) viven en la base.
 
-Con `docker compose up` corriendo, en otra terminal:
+Con Docker, sin instalar nada más:
 
 ```bash
-uv sync
-uv run pytest
+docker compose run --rm pruebas
 ```
+
+O, si tienes uv instalado y `docker compose up` corriendo: `uv run pytest`.
 
 GitHub Actions corre lo mismo en cada pull request, con PostgreSQL 18, y además prueba que cada migración se puede deshacer.
 
