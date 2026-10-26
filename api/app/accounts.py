@@ -3,7 +3,7 @@ saldo inicial y las correcciones. No sabe nada de HTTP: recibe datos simples, de
 con Decimal y lanza AccountError con un mensaje ya escrito para la persona."""
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -49,6 +49,7 @@ class AccountRow:
     subtitle: str | None         # 'Ahorros en soles'
     balances: list[Money]
     base_total: Decimal          # suma de sus saldos en moneda base
+    partners: int | None = None  # Por cobrar y Por pagar: con cuántas personas hay algo pendiente
 
 
 @dataclass(frozen=True)
@@ -196,6 +197,11 @@ def overview(user_id: int) -> Overview:
         accounts = [_row(r, balances.get(r[0], [])) for r in rows]
         # Las de sistema (Por cobrar, Por pagar, Por clasificar) solo aparecen si tienen algo
         accounts = [a for a in accounts if a.kind in ("cash", "bank", "other") or any(m.amount for m in a.balances)]
+        counts = dict(conn.execute(
+            "SELECT account_id, count(DISTINCT partner_id) FROM res_partner_balance"
+            " WHERE amount_currency <> 0 GROUP BY account_id").fetchall())
+        accounts = [replace(a, partners=counts.get(a.id, 0)) if a.kind in ("receivable", "payable") else a
+                    for a in accounts]
 
         custody: dict[int, list[Money]] = defaultdict(list)
         names: dict[int, str] = {}
@@ -421,7 +427,7 @@ def archive(user_id: int, account_id: int) -> None:
             raise _translate(e) from None
 
 
-# --- Personas (lo mínimo para «Plata que guardo de otros») ------------------------------------
+# --- Personas para elegir (la lista completa, con lo que se deben, está en app/partners.py) ------
 
 @dataclass(frozen=True)
 class Partner:
@@ -432,11 +438,3 @@ class Partner:
 def partners(user_id: int) -> list[Partner]:
     with user_transaction(user_id) as conn:
         return [Partner(*r) for r in conn.execute("SELECT id, name FROM res_partner WHERE active ORDER BY name")]
-
-
-def create_partner(user_id: int, name: str) -> Partner:
-    name = " ".join(name.split())
-    if not name:
-        raise AccountError(400, "Escribe cómo se llama")
-    with user_transaction(user_id) as conn:
-        return Partner(*conn.execute("INSERT INTO res_partner (name) VALUES (%s) RETURNING id, name", (name,)).fetchone())

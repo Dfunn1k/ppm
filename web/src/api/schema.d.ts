@@ -305,7 +305,7 @@ export interface paths {
         /** Personas */
         get: operations["partners_partners_get"];
         put?: never;
-        /** Nueva persona (solo el nombre) */
+        /** Nueva persona */
         post: operations["create_partner_partners_post"];
         delete?: never;
         options?: never;
@@ -330,6 +330,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/manual-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cuentas para un asiento manual */
+        get: operations["manual_accounts_manual_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/moves": {
         parameters: {
             query?: never;
@@ -340,7 +357,7 @@ export interface paths {
         /** Movimientos de un mes, con búsqueda y filtros */
         get: operations["month_moves_get"];
         put?: never;
-        /** Registrar gasto, ingreso o transferencia */
+        /** Registrar un movimiento */
         post: operations["create_moves_post"];
         delete?: never;
         options?: never;
@@ -378,6 +395,75 @@ export interface paths {
         put?: never;
         /** Confirmar o pasar a por confirmar */
         post: operations["set_state_moves__move_id__state_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/partners/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Personas con lo que te deben, les debes y guardas */
+        get: operations["overview_partners_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/partners/{partner_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Una persona y sus deudas abiertas */
+        get: operations["detail_partners__partner_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Editar una persona */
+        patch: operations["update_partners__partner_id__patch"];
+        trace?: never;
+    };
+    "/partners/{partner_id}/offset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compensar lo que se deben */
+        post: operations["offset_partners__partner_id__offset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/partners/{partner_id}/write-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dar por perdido lo que te debe */
+        post: operations["write_off_partners__partner_id__write_off_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -485,7 +571,7 @@ export interface components {
             bank: components["schemas"]["app__routes__accounts__BankOut"] | null;
             opening: components["schemas"]["OpeningOut"] | null;
             /** Lines */
-            lines: components["schemas"]["LineOut"][];
+            lines: components["schemas"]["app__routes__accounts__LineOut"][];
         };
         /** AccountPatch */
         AccountPatch: {
@@ -526,6 +612,8 @@ export interface components {
             balances: components["schemas"]["MoneyOut"][];
             /** Base Total */
             base_total: string;
+            /** Partners */
+            partners?: number | null;
         };
         /** AdminRatesOut */
         AdminRatesOut: {
@@ -717,36 +805,6 @@ export interface components {
             /** Foreign */
             foreign: components["schemas"]["ForeignOut"][];
         };
-        /** LineOut */
-        LineOut: {
-            /** Id */
-            id: number;
-            /** Move Id */
-            move_id: number;
-            /**
-             * Date
-             * Format: date
-             */
-            date: string;
-            /** Ref */
-            ref: string;
-            /** Posted */
-            posted: boolean;
-            /** Currency */
-            currency: string;
-            /** Amount */
-            amount: string;
-            /** Running */
-            running: string | null;
-            /** Counterpart */
-            counterpart: string | null;
-            /** Counterpart Icon */
-            counterpart_icon: string | null;
-            /** Counterpart Color */
-            counterpart_color: number | null;
-            /** Counterpart Role */
-            counterpart_role: string | null;
-        };
         /** LoginIn */
         LoginIn: {
             /**
@@ -756,6 +814,43 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** ManualAccountOut */
+        ManualAccountOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "asset" | "liability" | "equity" | "income" | "expense";
+            /** Role */
+            role: string | null;
+            /** Partner Required */
+            partner_required: boolean;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+        };
+        /** ManualLineIn */
+        ManualLineIn: {
+            /** Account Id */
+            account_id: number;
+            /**
+             * Debit
+             * @default 0.00
+             */
+            debit: number | string;
+            /**
+             * Credit
+             * @default 0.00
+             */
+            credit: number | string;
+            /** Partner Id */
+            partner_id?: number | null;
         };
         /** MeOut */
         MeOut: {
@@ -834,6 +929,20 @@ export interface components {
             cost?: string | null;
             /** Cost Rate */
             cost_rate?: string | null;
+            /** Partner Id */
+            partner_id?: number | null;
+            /** Paid By Partner Id */
+            paid_by_partner_id?: number | null;
+            /**
+             * Settled
+             * @default []
+             */
+            settled: components["schemas"]["SettledOut"][];
+            /**
+             * Lines
+             * @default []
+             */
+            lines: components["schemas"]["app__routes__moves__LineOut"][];
         };
         /** MoveIn */
         MoveIn: {
@@ -841,11 +950,11 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "expense" | "income" | "transfer";
+            kind: "expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "manual";
             /** Account Id */
-            account_id: number;
+            account_id?: number | null;
             /** Amount */
-            amount: number | string;
+            amount?: number | string | null;
             /** Date */
             date?: string | null;
             /** Ref */
@@ -866,6 +975,17 @@ export interface components {
             to_account_id?: number | null;
             /** To Amount */
             to_amount?: number | string | null;
+            /** Partner Id */
+            partner_id?: number | null;
+            /** Debt Line Id */
+            debt_line_id?: number | null;
+            /** Paid By Partner Id */
+            paid_by_partner_id?: number | null;
+            /**
+             * Lines
+             * @default []
+             */
+            lines: components["schemas"]["ManualLineIn"][];
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
@@ -884,7 +1004,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "expense" | "income" | "transfer" | "other";
+            kind: "expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "other";
             /** Currency */
             currency: string;
             /** Amount */
@@ -901,6 +1021,37 @@ export interface components {
             to_amount: string | null;
             /** Fx */
             fx: string | null;
+            /** Partner Id */
+            partner_id: number | null;
+            /** Partner */
+            partner: string | null;
+        };
+        /** MovedOut */
+        MovedOut: {
+            /** Move Id */
+            move_id: number;
+        };
+        /** OpenItemOut */
+        OpenItemOut: {
+            /** Line Id */
+            line_id: number;
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Open */
+            open: string;
+            /** Days */
+            days: number;
         };
         /** OpeningIn */
         OpeningIn: {
@@ -954,10 +1105,24 @@ export interface components {
             /** Rates */
             rates: components["schemas"]["TodayRateOut"][];
         };
+        /** PartnerDetailOut */
+        PartnerDetailOut: {
+            partner: components["schemas"]["PartnerRowOut"];
+            /** Owes Me */
+            owes_me: components["schemas"]["OpenItemOut"][];
+            /** I Owe */
+            i_owe: components["schemas"]["OpenItemOut"][];
+            /** Keep Since */
+            keep_since: string | null;
+        };
         /** PartnerIn */
         PartnerIn: {
             /** Name */
             name: string;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
         };
         /** PartnerOut */
         PartnerOut: {
@@ -965,6 +1130,49 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /** PartnerPatch */
+        PartnerPatch: {
+            /** Name */
+            name: string;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+        };
+        /** PartnerRowOut */
+        PartnerRowOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string | null;
+            /** Email */
+            email: string | null;
+            /** Owes Me */
+            owes_me: components["schemas"]["MoneyOut"][];
+            /** I Owe */
+            i_owe: components["schemas"]["MoneyOut"][];
+            /** Keep */
+            keep: components["schemas"]["MoneyOut"][];
+            /** Net */
+            net: string;
+            /** Last Date */
+            last_date: string | null;
+        };
+        /** PartnersOverviewOut */
+        PartnersOverviewOut: {
+            /** Currency */
+            currency: string;
+            /** Owes Me Total */
+            owes_me_total: string;
+            /** I Owe Total */
+            i_owe_total: string;
+            /** Keep Total */
+            keep_total: string;
+            /** People */
+            people: components["schemas"]["PartnerRowOut"][];
         };
         /** PasswordChangeIn */
         PasswordChangeIn: {
@@ -1026,6 +1234,22 @@ export interface components {
              */
             email: string;
         };
+        /** SettledOut */
+        SettledOut: {
+            /** Line Id */
+            line_id: number;
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Amount */
+            amount: string;
+        };
         /** SetupIn */
         SetupIn: {
             /** Country */
@@ -1055,15 +1279,21 @@ export interface components {
         /** SplitIn */
         SplitIn: {
             /** Category Id */
-            category_id: number;
+            category_id?: number | null;
+            /** Partner Id */
+            partner_id?: number | null;
             /** Amount */
             amount: number | string;
         };
         /** SplitOut */
         SplitOut: {
-            category: components["schemas"]["CategoryOut"];
+            category: components["schemas"]["CategoryOut"] | null;
             /** Amount */
             amount: string;
+            /** Partner Id */
+            partner_id: number | null;
+            /** Partner */
+            partner: string | null;
         };
         /** TodayRateOut */
         TodayRateOut: {
@@ -1141,6 +1371,36 @@ export interface components {
             /** Cci */
             cci: string | null;
         };
+        /** LineOut */
+        app__routes__accounts__LineOut: {
+            /** Id */
+            id: number;
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Posted */
+            posted: boolean;
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Running */
+            running: string | null;
+            /** Counterpart */
+            counterpart: string | null;
+            /** Counterpart Icon */
+            counterpart_icon: string | null;
+            /** Counterpart Color */
+            counterpart_color: number | null;
+            /** Counterpart Role */
+            counterpart_role: string | null;
+        };
         /** BankOut */
         app__routes__me__BankOut: {
             /** Id */
@@ -1149,6 +1409,25 @@ export interface components {
             name: string;
             /** Cci Code */
             cci_code: string | null;
+        };
+        /** LineOut */
+        app__routes__moves__LineOut: {
+            /** Account Id */
+            account_id: number;
+            /** Account */
+            account: string;
+            /** Debit */
+            debit: string;
+            /** Credit */
+            credit: string;
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Partner Id */
+            partner_id: number | null;
+            /** Partner */
+            partner: string | null;
         };
     };
     responses: never;
@@ -1889,13 +2168,44 @@ export interface operations {
             };
         };
     };
+    manual_accounts_manual_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualAccountOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     month_moves_get: {
         parameters: {
             query: {
                 month: string;
                 account_id?: number | null;
                 category_id?: number | null;
-                kind?: ("expense" | "income" | "transfer") | null;
+                kind?: ("expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "other") | null;
                 q?: string | null;
                 pending?: boolean;
             };
@@ -2087,6 +2397,171 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MoveDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_partners_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnersOverviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_partners__partner_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                partner_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnerDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_partners__partner_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                partner_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartnerPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    offset_partners__partner_id__offset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                partner_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_off_partners__partner_id__write_off_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                partner_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovedOut"];
                 };
             };
             /** @description Validation Error */

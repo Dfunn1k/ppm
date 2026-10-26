@@ -24,15 +24,30 @@ def _http(e: AccountError) -> HTTPException:
 
 # --- Entrada ----------------------------------------------------------------------------------
 
+InputKind = Literal["expense", "income", "transfer", "lend", "borrow", "collect", "repay",
+                    "custody_in", "custody_out", "refund", "manual"]
+Kind = Literal["expense", "income", "transfer", "lend", "borrow", "collect", "repay", "custody_in",
+               "custody_out", "refund", "offset", "write_off", "other"]
+Amount = Annotated[Decimal, Field(ge=0, max_digits=14, decimal_places=2)]
+
+
 class SplitIn(BaseModel):
-    category_id: int
+    category_id: int | None = None       # una categoría…
+    partner_id: int | None = None        # …o la parte de otra persona (gasto dividido)
     amount: Positive
 
 
+class ManualLineIn(BaseModel):
+    account_id: int
+    debit: Amount = Decimal("0.00")      # «Entra a», en moneda base
+    credit: Amount = Decimal("0.00")     # «Sale de»
+    partner_id: int | None = None
+
+
 class MoveIn(BaseModel):
-    kind: Literal["expense", "income", "transfer"]
-    account_id: int                      # de dónde sale, o adónde entra en un ingreso
-    amount: Positive                     # en la moneda de esa cuenta
+    kind: InputKind
+    account_id: int | None = None        # de dónde sale o adónde entra (no en un asiento manual ni si pagó otro)
+    amount: Positive | None = None       # en la moneda de esa cuenta (no en un asiento manual)
     date: dt.date | None = None          # None = hoy
     ref: Annotated[str, Field(max_length=120)] | None = None   # la nota
     pending: bool = False                # por confirmar (con fecha futura lo es siempre)
@@ -40,11 +55,17 @@ class MoveIn(BaseModel):
     splits: list[SplitIn] = []           # gasto o ingreso: una o varias categorías (dividir)
     to_account_id: int | None = None     # transferencia
     to_amount: Positive | None = None    # transferencia entre monedas: lo que entró
+    partner_id: int | None = None        # con otra persona: con quién
+    debt_line_id: int | None = None      # cobrar o pagar: qué deuda cancela primero («Elegir otra deuda»)
+    paid_by_partner_id: int | None = None   # un gasto que pagó otra persona
+    lines: list[ManualLineIn] = []       # asiento manual
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
-            self.kind, self.account_id, self.amount, self.date, self.ref, self.pending, self.rate,
-            [moves.Split(s.category_id, s.amount) for s in self.splits], self.to_account_id, self.to_amount)
+            self.kind, self.account_id, self.amount or Decimal("0.00"), self.date, self.ref, self.pending,
+            self.rate, [moves.Split(s.category_id, s.amount, s.partner_id) for s in self.splits],
+            self.to_account_id, self.to_amount, self.partner_id, self.debt_line_id, self.paid_by_partner_id,
+            [moves.ManualLine(x.account_id, x.debit, x.credit, x.partner_id) for x in self.lines])
 
 
 class PendingIn(BaseModel):
@@ -65,7 +86,7 @@ class MoveSummaryOut(BaseModel):
     date: dt.date
     ref: str
     posted: bool
-    kind: Literal["expense", "income", "transfer", "other"]
+    kind: Kind
     currency: str
     amount: Decimal
     base: Decimal
@@ -74,6 +95,8 @@ class MoveSummaryOut(BaseModel):
     to_currency: str | None
     to_amount: Decimal | None
     fx: Decimal | None               # cambio de moneda: + ganancia, − costo del cambio
+    partner_id: int | None
+    partner: str | None
 
 
 class DayOut(BaseModel):
@@ -92,7 +115,28 @@ class MonthOut(BaseModel):
 
 
 class SplitOut(BaseModel):
-    category: CategoryOut
+    category: CategoryOut | None     # una categoría, o la parte de otra persona
+    amount: Decimal
+    partner_id: int | None
+    partner: str | None
+
+
+class LineOut(BaseModel):
+    account_id: int
+    account: str
+    debit: Decimal                   # «Entra a»
+    credit: Decimal                  # «Sale de»
+    currency: str
+    amount: Decimal
+    partner_id: int | None
+    partner: str | None
+
+
+class SettledOut(BaseModel):
+    line_id: int
+    move_id: int
+    date: dt.date
+    ref: str
     amount: Decimal
 
 
@@ -104,6 +148,20 @@ class MoveDetailOut(BaseModel):
     splits: list[SplitOut]
     cost: Decimal | None = None
     cost_rate: Decimal | None = None
+    partner_id: int | None = None
+    paid_by_partner_id: int | None = None
+    settled: list[SettledOut] = []   # las deudas que cancela (o los pagos que la cancelan)
+    lines: list[LineOut] = []        # todos los apuntes, para el asiento manual
+
+
+class ManualAccountOut(BaseModel):
+    id: int
+    name: str
+    type: Literal["asset", "liability", "equity", "income", "expense"]
+    role: str | None
+    partner_required: bool
+    icon: str | None
+    color: int | None
 
 
 class CategoryGroupOut(BaseModel):
@@ -133,10 +191,15 @@ def categories(kind: Literal["expense", "income"],
     return CategoriesOut.model_validate(asdict(moves.categories(session.user_id, kind)))
 
 
+@router.get("/manual-accounts", summary="Cuentas para un asiento manual")
+def manual_accounts(session: CurrentSession = Depends(current_session)) -> list[ManualAccountOut]:
+    return [ManualAccountOut.model_validate(asdict(a)) for a in moves.manual_accounts(session.user_id)]
+
+
 @router.get("/moves", summary="Movimientos de un mes, con búsqueda y filtros")
 def month(month: Annotated[str, Query(pattern=r"^\d{4}-\d{2}$")],
           account_id: int | None = None, category_id: int | None = None,
-          kind: Literal["expense", "income", "transfer"] | None = None,
+          kind: Kind | None = None,
           q: Annotated[str | None, Query(max_length=80)] = None, pending: bool = False,
           session: CurrentSession = Depends(current_session)) -> MonthOut:
     try:
@@ -151,7 +214,7 @@ def detail(move_id: int, session: CurrentSession = Depends(current_session)) -> 
     return _detail(session.user_id, move_id)
 
 
-@router.post("/moves", status_code=status.HTTP_201_CREATED, summary="Registrar gasto, ingreso o transferencia")
+@router.post("/moves", status_code=status.HTTP_201_CREATED, summary="Registrar un movimiento")
 def create(body: MoveIn, session: CurrentSession = Depends(current_session)) -> MoveDetailOut:
     try:
         move_id = moves.create(session.user_id, body.logic())
