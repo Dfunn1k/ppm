@@ -1,0 +1,179 @@
+# Desplegar PPM en una VPS
+
+Esta guía lleva PPM a producción en un servidor propio con Docker. Está escrita para seguirse paso a paso, por una persona o por un agente. Todo lo de producción está en estos archivos:
+
+| Archivo | Qué es |
+|---|---|
+| `docker-compose.prod.yml` | las cuatro piezas de producción: `db`, `migrate`, `api` y `web` |
+| `web/Dockerfile` · `web/Caddyfile` | la web ya construida, servida por Caddy, que además saca el certificado HTTPS y reenvía `/api/…` a la API |
+| `api/Dockerfile` | la API (FastAPI) |
+| `deploy/.env.example` | la configuración que cambia entre servidores; se copia como `.env` |
+| `deploy/respaldo.sh` | el respaldo diario de la base |
+
+`docker-compose.yml` (sin `.prod`) es solo para desarrollo: tiene Mailpit, recarga en caliente y contraseñas de prueba. **Nunca se usa en el servidor.**
+
+## Cómo queda
+
+```
+Internet ──443/80──▶ web (Caddy)
+                      ├─ /          la web (archivos de Vite)
+                      └─ /api/…  ──▶ api:8000 (FastAPI + importador diario de SUNAT)
+                                       └──▶ db:5432 (PostgreSQL 18, volumen pgdata)
+```
+
+Solo Caddy publica puertos (80 y 443). La API y la base quedan dentro de la red de Docker. El proyecto se llama `ppm-prod` (`name:` en el compose), así nunca se mezcla con uno de desarrollo.
+
+## 1. Lo que hace falta antes
+
+- **Una VPS** con Ubuntu 24.04 LTS (o Debian 12), 2 GB de RAM y 20 GB de disco como mínimo. Construir la web necesita la memoria; con 1 GB, agrega swap (paso 2).
+- **Un dominio o subdominio** (por ejemplo `ppm.ejemplo.com`) con un registro **A** que apunte a la IP de la VPS. Debe resolver **antes** de levantar: Caddy pide el certificado a Let's Encrypt al arrancar.
+- **Un proveedor de correo SMTP** con STARTTLS en el puerto 587 (por ejemplo Brevo, Resend, Amazon SES o el SMTP de Google Workspace). Lo usa «Olvidé mi contraseña». La API no soporta SSL directo en el 465.
+- **El correo del administrador**: quien verá Z1 (tipo de cambio).
+
+## 2. Preparar el servidor (una sola vez)
+
+Como root:
+
+```bash
+apt update && apt upgrade -y
+apt install -y git ufw
+
+# Docker y su plugin compose, desde el repositorio oficial
+curl -fsSL https://get.docker.com | sh
+
+# Cortafuegos: solo SSH y web
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow 443/udp
+ufw --force enable
+
+# Solo si la VPS tiene 1 GB de RAM: 2 GB de swap
+fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+Comprueba con `docker compose version` (debe ser 2.24 o más nuevo).
+
+## 3. Traer el código y configurarlo
+
+```bash
+git clone https://github.com/Dfunn1k/ppm.git /opt/ppm
+cd /opt/ppm
+cp deploy/.env.example .env
+chmod 600 .env
+openssl rand -hex 24      # úsalo como POSTGRES_PASSWORD
+nano .env                 # llena todo
+```
+
+| Variable | Qué poner |
+|---|---|
+| `PPM_DOMAIN` | el dominio, sin `https://` |
+| `POSTGRES_PASSWORD` | la salida de `openssl rand -hex 24`. **Solo letras y números**: va dentro de una URL |
+| `SMTP_HOST` · `SMTP_PORT` · `SMTP_USER` · `SMTP_PASSWORD` | los datos del proveedor de correo (puerto 587) |
+| `SMTP_STARTTLS` | `true` |
+| `MAIL_FROM` | el remitente, de un dominio verificado en el proveedor: `PPM <no-responder@ejemplo.com>` |
+| `ADMIN_EMAILS` | el o los correos de administrador, separados por coma |
+
+`.env` tiene secretos: no se sube a git (ya está en `.gitignore`) ni se copia a ningún otro lado.
+
+## 4. Levantar
+
+```bash
+cd /opt/ppm
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+En orden: arranca `db`; `migrate` aplica todas las migraciones y termina; arranca `api`; `web` construye la app y pide el certificado.
+
+Para no escribir `-f docker-compose.prod.yml` cada vez, en esa sesión:
+
+```bash
+export COMPOSE_FILE=docker-compose.prod.yml
+```
+
+El resto de la guía lo asume.
+
+## 5. Comprobar que funciona
+
+```bash
+docker compose ps                         # db (healthy), api y web «Up»; migrate «Exited (0)»
+docker compose logs migrate               # «Applied: 0001_base.sql» … hasta la última
+curl -s https://ppm.ejemplo.com/api/health   # tu dominio: {"status":"ok","postgres":"18.x"}
+```
+
+Luego, en el navegador:
+
+1. Abre `https://ppm.ejemplo.com`: sale «Iniciar sesión» con el refrán.
+2. Crea una cuenta con el correo de `ADMIN_EMAILS` y pasa los 3 pasos.
+3. En **Más** debe aparecer **Tipo de cambio**, con el dólar de SUNAT de hoy. El importador trae el tipo al arrancar y luego todos los días a las 09:00 de Lima.
+4. Cierra sesión y prueba «¿Olvidaste tu contraseña?»: el correo debe llegar. Si no llega, mira `docker compose logs api`.
+
+## 6. Respaldos (obligatorio)
+
+`deploy/respaldo.sh` hace un `pg_dump` comprimido en `/var/backups/ppm` y guarda los últimos 14 días. Prográmalo con cron (como root):
+
+```bash
+crontab -e
+# cada día a las 04:15 (hora del servidor)
+15 4 * * * /opt/ppm/deploy/respaldo.sh >> /var/log/ppm-respaldo.log 2>&1
+```
+
+Pruébalo una vez a mano: `/opt/ppm/deploy/respaldo.sh`.
+
+**Copia los respaldos fuera de la VPS.** Si el servidor se pierde, se pierden con él. Cualquier destino sirve: `rclone` a un bucket o `rsync` a otra máquina.
+
+### Restaurar
+
+```bash
+cd /opt/ppm
+docker compose stop api web
+docker compose exec -T db pg_restore -U ppm -d ppm --clean --if-exists < /var/backups/ppm/ppm-AAAA-MM-DD_HHMM.dump
+docker compose start api web
+```
+
+En un servidor nuevo, primero levanta todo (paso 4) para que existan la base y sus roles. Después restaura.
+
+## 7. Actualizar a una versión nueva
+
+Cada vez que se haga merge a `main`:
+
+```bash
+cd /opt/ppm
+/opt/ppm/deploy/respaldo.sh                     # primero, un respaldo
+git pull --ff-only
+docker compose up -d --build                    # migrate aplica solo las migraciones nuevas
+docker compose ps && curl -s https://ppm.ejemplo.com/api/health   # tu dominio
+```
+
+Las migraciones solo avanzan. Nunca se edita una que ya está en `main`, así que actualizar es seguro. Si una actualización falla:
+
+1. Vuelve al commit anterior: `git checkout <commit>` y luego `docker compose up -d --build`.
+2. Si la migración nueva ya cambió datos, restaura el respaldo del paso 1.
+
+## 8. Operar
+
+| Para | Comando |
+|---|---|
+| Ver qué corre | `docker compose ps` |
+| Logs | `docker compose logs -f api` (o `web`, `db`) |
+| Reiniciar la API | `docker compose restart api` |
+| Cambiar algo de `.env` | editar `.env` y `docker compose up -d` (recrea lo que cambió) |
+| Entrar a la base | `docker compose exec db psql -U ppm -d ppm` |
+| Espacio de Docker | `docker system df`; limpiar imágenes viejas con `docker image prune` |
+
+El importador de SUNAT escribe en los logs de `api` solo cuando falla («Importador de SUNAT, intento N de 6…»). Si SUNAT no responde, reintenta 5 veces cada 30 minutos. Si falla todo, se sigue usando el último tipo. El administrador puede cargarlo a mano o usar «Traer de SUNAT ahora» en Z1.
+
+## Lo que nunca se hace
+
+- **`docker compose down -v`**: el `-v` borra el volumen `pgdata`, es decir, **todos los datos**. Para detener, `docker compose down` (sin `-v`) o `stop`.
+- Publicar el puerto 5432 de la base o el 8000 de la API.
+- Usar `docker-compose.yml` (el de desarrollo) en el servidor.
+- Editar una migración que ya está en `main` o tocar la base a mano para «arreglar» datos sin respaldo.
+- Levantar la API con más de un proceso (`--workers`): el importador de SUNAT corre dentro de ella.
+- Poner `COOKIE_SECURE=false`: sin HTTPS, la cookie de sesión no debe viajar.
+
+## Pendiente (no bloquea el primer despliegue)
+
+- La API se conecta a PostgreSQL con el dueño de la base. Cada pedido trabaja como `ppm_app` (con seguridad por fila) o `ppm_admin`. Más adelante conviene un usuario de conexión propio, que no sea dueño y que solo pueda asumir esos dos roles.
+- Monitoreo: un chequeo externo a `https://ppm.ejemplo.com/api/health` (UptimeRobot, Healthchecks) avisa si se cae.

@@ -1,0 +1,82 @@
+# PPM en producción (una VPS con Docker). Guía completa: DESPLIEGUE.md
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+#   db       PostgreSQL 18; los datos quedan en el volumen pgdata (nunca se publica su puerto)
+#   migrate  dbmate aplica las migraciones pendientes y termina
+#   api      FastAPI (un proceso; incluye el importador diario de SUNAT)
+#   web      Caddy: la web ya construida, /api/… hacia la API y HTTPS automático (puertos 80 y 443)
+#
+# Todo lo que cambia entre servidores va en .env (copia deploy/.env.example).
+name: ppm-prod   # distinto del de desarrollo (ppm): nunca se pisan
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ppm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ppm
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ppm -d ppm"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    image: ghcr.io/amacneil/dbmate:2.36.0
+    environment:
+      DATABASE_URL: postgres://ppm:${POSTGRES_PASSWORD}@db:5432/ppm?sslmode=disable
+      DBMATE_MIGRATIONS_DIR: /db/migrations
+      DBMATE_NO_DUMP_SCHEMA: "true"
+    volumes:
+      - ./api/db:/db:ro
+    command: ["--wait", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ppm:${POSTGRES_PASSWORD}@db:5432/ppm
+      APP_URL: https://${PPM_DOMAIN:?Falta PPM_DOMAIN en .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      SMTP_HOST: ${SMTP_HOST:?Falta SMTP_HOST en .env}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      MAIL_FROM: ${MAIL_FROM:?Falta MAIL_FROM en .env}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      RATES_IMPORT: "true"
+    # Un solo proceso: el importador de SUNAT corre dentro de él (con más, correría varias veces)
+    command: ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
+              "--proxy-headers", "--forwarded-allow-ips", "*"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    environment:
+      PPM_DOMAIN: ${PPM_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data        # los certificados: no se borran
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
