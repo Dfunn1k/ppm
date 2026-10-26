@@ -1,6 +1,7 @@
 """El Inicio (I1) en una sola llamada."""
 
 from dataclasses import asdict
+import datetime as dt
 from decimal import Decimal
 from typing import Annotated
 
@@ -23,6 +24,14 @@ class TopCategoryOut(BaseModel):
     share: int
 
 
+class ForeignOut(BaseModel):
+    currency: str
+    amount: Decimal
+    rate: Decimal
+    rate_date: dt.date
+    stale: bool
+
+
 class HomeOut(BaseModel):
     currency: str
     real_total: Decimal
@@ -37,6 +46,7 @@ class HomeOut(BaseModel):
     saved_percent: int | None
     top: list[TopCategoryOut]
     recent: list[MoveSummaryOut]
+    foreign: list[ForeignOut]
 
 
 @router.get("/home", summary="El Inicio: hoy y el mes elegido")

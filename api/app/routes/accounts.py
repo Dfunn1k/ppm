@@ -38,7 +38,16 @@ AccNumber = Annotated[str, Field(min_length=6, max_length=30, pattern=r"^[0-9 -]
 class MoneyOut(BaseModel):
     currency: str
     amount: Decimal
-    base: Decimal
+    base: Decimal        # su valor hoy en moneda base
+    book: Decimal        # su valor en libros
+
+
+class TodayRateOut(BaseModel):
+    currency: str
+    date: dt.date
+    buy: Decimal
+    sell: Decimal
+    stale: bool
 
 
 class AccountRowOut(BaseModel):
@@ -68,6 +77,7 @@ class OverviewOut(BaseModel):
     have: list[AccountRowOut]
     custody: list[CustodyRowOut]
     owe: list[AccountRowOut]
+    rates: list[TodayRateOut]
 
 
 class BankOut(BaseModel):

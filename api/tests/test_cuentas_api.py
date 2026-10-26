@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.config import get_settings
 from app.main import app
+from tests.conftest import usd_value_today
 
 
 @pytest.fixture(autouse=True)
@@ -70,7 +71,7 @@ def test_cuenta_de_banco_en_soles():
     d = r.json()
     assert d["account"]["kind"] == "bank"
     assert d["account"]["subtitle"] == "Ahorros en soles · BCP"
-    assert d["account"]["balances"] == [{"currency": "PEN", "amount": "8240.30", "base": "8240.30"}]
+    assert d["account"]["balances"] == [{"currency": "PEN", "amount": "8240.30", "base": "8240.30", "book": "8240.30"}]
     assert d["bank"] == {"bank_id": bank_id(c, "BCP"), "bank_name": "BCP", "acc_kind": "savings",
                          "acc_number": "191-12345678-0-12", "cci": "00219100123456789012"}
     [line] = d["lines"]
@@ -84,9 +85,10 @@ def test_cuenta_en_dolares_con_su_tipo_de_cambio():
         "name": "Ahorros BBVA", "currency": "USD", "bank_id": bank_id(c, "BBVA"),
         "opening": {"amount": "1520.00", "date": "2026-10-01", "rate": "3.75"}})
     assert r.status_code == 201, r.text
-    assert r.json()["account"]["balances"] == [{"currency": "USD", "amount": "1520.00", "base": "5700.00"}]
+    hoy = usd_value_today("1520.00", "5700.00")   # en libros a 3.75; hoy, al tipo de compra del día
+    assert r.json()["account"]["balances"] == [{"currency": "USD", "amount": "1520.00", "base": hoy, "book": "5700.00"}]
     assert r.json()["opening"]["rate"] == "3.750000"
-    assert c.get("/accounts").json()["have_total"] == "5700.00"
+    assert c.get("/accounts").json()["have_total"] == hoy
 
 
 def test_en_dolares_sin_tipo_de_cambio_no_se_puede():
@@ -144,7 +146,7 @@ def test_plata_que_guardo_de_otros():
     assert r.status_code == 204, r.text
     o = c.get("/accounts").json()
     assert o["custody"] == [{"partner_id": sandra["id"], "partner_name": "Sandra Machado",
-                             "balances": [{"currency": "PEN", "amount": "200.00", "base": "200.00"}],
+                             "balances": [{"currency": "PEN", "amount": "200.00", "base": "200.00", "book": "200.00"}],
                              "base_total": "200.00"}]
     assert (o["have_total"], o["custody_total"], o["real_total"]) == ("500.00", "200.00", "300.00")
 

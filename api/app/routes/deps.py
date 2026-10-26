@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 
-from fastapi import Cookie, HTTPException, Response, status
+from fastapi import Cookie, Depends, HTTPException, Response, status
 
-from app import auth
+from app import auth, users
 from app.config import get_settings
 
 COOKIE = "ppm_session"
@@ -21,6 +21,13 @@ def current_session(ppm_session: str | None = Cookie(default=None)) -> CurrentSe
     if user_id is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Inicia sesión para continuar")
     return CurrentSession(user_id, ppm_session)
+
+
+def current_admin(session: CurrentSession = Depends(current_session)) -> CurrentSession:
+    """Solo quien está en ADMIN_EMAILS: el tipo de cambio es de todos."""
+    if not users.get_me(session.user_id).is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esto lo ve solo el administrador de PPM")
+    return session
 
 
 def set_session_cookie(response: Response, token: str) -> None:

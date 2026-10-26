@@ -36,7 +36,7 @@ class MoveIn(BaseModel):
     date: dt.date | None = None          # None = hoy
     ref: Annotated[str, Field(max_length=120)] | None = None   # la nota
     pending: bool = False                # por confirmar (con fecha futura lo es siempre)
-    rate: Rate | None = None             # si la cuenta no es en moneda base
+    rate: Rate | None = None             # si la cuenta no es en moneda base; None = el del día
     splits: list[SplitIn] = []           # gasto o ingreso: una o varias categorías (dividir)
     to_account_id: int | None = None     # transferencia
     to_amount: Positive | None = None    # transferencia entre monedas: lo que entró
@@ -73,6 +73,7 @@ class MoveSummaryOut(BaseModel):
     categories: list[CategoryOut]
     to_currency: str | None
     to_amount: Decimal | None
+    fx: Decimal | None               # cambio de moneda: + ganancia, − costo del cambio
 
 
 class DayOut(BaseModel):
@@ -101,6 +102,8 @@ class MoveDetailOut(BaseModel):
     to_account_id: int | None
     rate: Decimal | None
     splits: list[SplitOut]
+    cost: Decimal | None = None
+    cost_rate: Decimal | None = None
 
 
 class CategoryGroupOut(BaseModel):

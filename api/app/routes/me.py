@@ -24,6 +24,7 @@ class MeOut(BaseModel):
     ui_theme: str
     ui_accent: str
     currencies: list[str]
+    is_admin: bool
 
     @classmethod
     def of(cls, me: users.Me) -> "MeOut":

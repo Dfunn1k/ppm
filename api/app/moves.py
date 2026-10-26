@@ -38,7 +38,7 @@ class MoveInput:
     date: dt.date | None = None     # None = hoy, en la zona de la persona
     ref: str | None = None       # la nota; sin nota, el nombre de la categoría
     pending: bool = False        # por confirmar
-    rate: Decimal | None = None  # soles por unidad, si la cuenta no es en moneda base
+    rate: Decimal | None = None  # soles por unidad, si la cuenta no es en moneda base; None = el del día
     splits: list[Split] = field(default_factory=list)   # gasto o ingreso: una o varias categorías
     to_account_id: int | None = None                     # transferencia: adónde entra
     to_amount: Decimal | None = None                     # transferencia entre monedas: lo que entró
@@ -74,18 +74,48 @@ def _money_account(accs: dict[int, _Acc], acc_id: int, what: str) -> _Acc:
     return a
 
 
-def _base_value(amount: Decimal, acc: _Acc, base_id: int, rate: Decimal | None) -> Decimal:
+def _day_rate(conn: psycopg.Connection, acc: _Acc, on: dt.date) -> Decimal:
+    """El tipo global de ese día (o el último anterior): compra para lo que tienes, venta para lo que debes."""
+    try:
+        with conn.transaction():
+            return conn.execute("SELECT get_rate(%s, %s, rate_side(%s))", (acc.currency_id, on, acc.type)).fetchone()[0]
+    except psycopg.errors.NoDataFound:
+        raise AccountError(400, f"Falta el tipo de cambio de {acc.currency}: escríbelo") from None
+
+
+def _rate(conn: psycopg.Connection, acc: _Acc, base_id: int, on: dt.date, rate: Decimal | None) -> Decimal:
+    """El tipo que escribió la persona o, si no escribió ninguno, el del día."""
     if acc.currency_id == base_id:
-        return amount
-    if rate is None or rate <= 0:
-        raise AccountError(400, f"Falta el tipo de cambio de {acc.currency}")
-    return _round(amount * rate)
+        return Decimal(1)
+    if rate is None:
+        return _day_rate(conn, acc, on)
+    if rate <= 0:
+        raise AccountError(400, f"El tipo de cambio de {acc.currency} tiene que ser mayor que cero")
+    return rate
+
+
+def _cost(conn: psycopg.Connection, acc: _Acc, amount: Decimal, on: dt.date, move_id: int | None,
+          rate: Decimal | None) -> Decimal:
+    """Cuánto costó lo que sale de una cuenta en otra moneda: a su costo promedio, con lo confirmado
+    hasta ese día (sin contar el movimiento que se está editando). Si se va todo, sale su valor exacto.
+    Sin saldo para promediar, al tipo que se escribió o al del día."""
+    qty, book = conn.execute("""
+        SELECT coalesce(sum(l.amount_currency), 0), coalesce(sum(l.balance), 0)
+          FROM account_move_line l JOIN account_move mv ON mv.id = l.move_id
+         WHERE l.account_id = %s AND mv.state = 'posted' AND mv.date <= %s AND mv.id <> coalesce(%s, 0)""",
+        (acc.id, on, move_id)).fetchone()
+    if qty == 0 or (qty > 0) != (book > 0):
+        return _round(amount * (rate if rate and rate > 0 else _day_rate(conn, acc, on)))
+    if amount == abs(qty):
+        return abs(book)
+    return _round(amount * book / qty)
 
 
 Line = tuple[int, Decimal, Decimal, int, Decimal]   # cuenta, debe, haber, moneda, monto con signo
 
 
-def _build(conn: psycopg.Connection, m: MoveInput) -> tuple[str, list[Line]]:
+def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
+           move_id: int | None = None) -> tuple[str, list[Line]]:
     """Los apuntes del movimiento y su glosa por defecto. Lanza AccountError si algo no cuadra."""
     if m.kind not in KINDS:
         raise AccountError(400, "Elige gasto, ingreso o transferencia")
@@ -106,14 +136,17 @@ def _build(conn: psycopg.Connection, m: MoveInput) -> tuple[str, list[Line]]:
         to_amount = m.amount if same else m.to_amount
         if to_amount is None or to_amount <= 0:
             raise AccountError(400, f"Escribe cuánto entró en {dst.currency}")
-        if src.currency_id == base_id:
-            base = m.amount
-        elif dst.currency_id == base_id:
-            base = to_amount
-        else:
-            base = _base_value(m.amount, src, base_id, m.rate)
-        lines = [(src.id, Decimal(0), base, src.currency_id, -m.amount),
-                 (dst.id, base, Decimal(0), dst.currency_id, to_amount)]
+        # Lo que sale en otra moneda sale a su costo promedio; si entra en la base y no es igual a ese
+        # costo, la diferencia es la realizada: «Ganancia por tipo de cambio» o «Costo del cambio».
+        cost = m.amount if src.currency_id == base_id else _cost(conn, src, m.amount, on, move_id, m.rate)
+        received = to_amount if dst.currency_id == base_id else cost
+        lines = [(src.id, Decimal(0), cost, src.currency_id, -m.amount),
+                 (dst.id, received, Decimal(0), dst.currency_id, to_amount)]
+        diff = received - cost
+        if diff:
+            role = "fx_gain" if diff > 0 else "fx_loss"
+            fx = conn.execute("SELECT system_account(%s)", (role,)).fetchone()[0]
+            lines.append((fx, Decimal(0), diff, base_id, -diff) if diff > 0 else (fx, -diff, Decimal(0), base_id, -diff))
         return f"Transferencia a {dst.name}", lines
 
     money = _money_account(accs, m.account_id, "de donde sale" if m.kind == "expense" else "adonde entra")
@@ -133,10 +166,11 @@ def _build(conn: psycopg.Connection, m: MoveInput) -> tuple[str, list[Line]]:
     if sum((s.amount for s in m.splits), Decimal(0)) != m.amount:
         raise AccountError(400, "Las partes no suman el total")
 
-    total_base = _base_value(m.amount, money, base_id, m.rate)
+    rate = _rate(conn, money, base_id, on, m.rate)
+    total_base = _round(m.amount * rate)
     parts: list[Decimal] = []
     for s in m.splits[:-1]:
-        parts.append(s.amount if money.currency_id == base_id else _round(s.amount * m.rate))  # type: ignore[operator]
+        parts.append(_round(s.amount * rate))
     parts.append(total_base - sum(parts, Decimal(0)))   # lo que falta, para que el total sea exacto
     if parts[-1] <= 0:
         raise AccountError(400, "Revisa las partes: con ese tipo de cambio no cuadran")
@@ -167,8 +201,8 @@ def create(user_id: int, m: MoveInput) -> int:
     with user_transaction(user_id) as conn:
         try:
             with conn.transaction():
-                default_ref, lines = _build(conn, m)
                 on, state = _state(conn, m)
+                default_ref, lines = _build(conn, m, on)
                 move_id = conn.execute(
                     "INSERT INTO account_move (date, ref, state) VALUES (%s, %s, %s) RETURNING id",
                     (on, (m.ref or "").strip() or default_ref, state)).fetchone()[0]
@@ -187,8 +221,8 @@ def update(user_id: int, move_id: int, m: MoveInput) -> None:
             raise AccountError(400, "Este movimiento no se edita aquí: un saldo inicial se corrige desde su cuenta")
         try:
             with conn.transaction():
-                default_ref, lines = _build(conn, m)
                 on, state = _state(conn, m)
+                default_ref, lines = _build(conn, m, on, move_id)
                 conn.execute("DELETE FROM account_move_line WHERE move_id = %s", (move_id,))
                 conn.execute("UPDATE account_move SET date = %s, ref = %s, state = %s WHERE id = %s",
                              (on, (m.ref or "").strip() or default_ref, state, move_id))
@@ -242,6 +276,7 @@ class MoveSummary:
     categories: list[Category]
     to_currency: str | None = None
     to_amount: Decimal | None = None
+    fx: Decimal | None = None    # cambio de moneda: + ganancia, − costo del cambio (en moneda base)
 
 
 @dataclass(frozen=True)
@@ -274,6 +309,8 @@ class MoveDetail:
     to_account_id: int | None
     rate: Decimal | None         # el de la cuenta de dinero, si no es la base
     splits: list[SplitOut]
+    cost: Decimal | None = None       # cambio de moneda con diferencia: lo que costó lo que salió…
+    cost_rate: Decimal | None = None  # …y a qué costo promedio
 
 
 _LINES_SQL = """
@@ -292,6 +329,9 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
     move_id, on, ref, state = head
     money = [x for x in lines if x[3] in ("asset", "liability")]
     cats = [x for x in lines if x[3] in ("income", "expense")]
+    # Entre dos cuentas de dinero, la ganancia o el costo del cambio no la vuelven gasto ni ingreso
+    fx = [x for x in cats if x[4] in ("fx_gain", "fx_loss")] if len(money) == 2 else []
+    cats = [x for x in cats if x not in fx]
     opening = any(x[4] == "opening" for x in lines)
     categories = [Category(x[1], x[2], x[5], x[6]) for x in cats]
     if opening:
@@ -309,7 +349,8 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
         src = next(x for x in money if x[8] < 0)
         dst = next(x for x in money if x[8] > 0)
         s = MoveSummary(move_id, on, ref, state == "posted", kind, src[7], -src[8], dst[9],
-                        f"{src[2]} → {dst[2]}", [], dst[7], dst[8])
+                        f"{src[2]} → {dst[2]}", [], dst[7], dst[8],
+                        -sum((x[9] for x in fx), Decimal(0)) if fx else None)
     elif money:
         m = money[0]
         s = MoveSummary(move_id, on, ref, state == "posted", kind, m[7], abs(m[8]), abs(m[9]), m[2], categories)
@@ -366,15 +407,19 @@ def month(user_id: int, ym: str, account_id: int | None = None, category_id: int
             [s.ref, s.account, f"{s.amount:.2f}", *(c.name for c in s.categories)]).lower()]
 
     def signed(s: MoveSummary) -> Decimal:
-        return s.base if s.kind == "income" else -s.base if s.kind == "expense" else Decimal(0)
+        return s.base if s.kind == "income" else -s.base if s.kind == "expense" else s.fx or Decimal(0)
+
+    # La ganancia o el costo de un cambio de moneda también entra o sale en el mes
+    gains = sum((s.fx for s in found if s.posted and s.fx and s.fx > 0), Decimal("0.00"))
+    losses = -sum((s.fx for s in found if s.posted and s.fx and s.fx < 0), Decimal("0.00"))
 
     days: dict[dt.date, list[MoveSummary]] = defaultdict(list)
     for s in found:
         days[s.date].append(s)
     return Month(
         ym, base,
-        sum((s.base for s in found if s.posted and s.kind == "income"), Decimal("0.00")),
-        sum((s.base for s in found if s.posted and s.kind == "expense"), Decimal("0.00")),
+        sum((s.base for s in found if s.posted and s.kind == "income"), Decimal("0.00")) + gains,
+        sum((s.base for s in found if s.posted and s.kind == "expense"), Decimal("0.00")) + losses,
         sum(1 for s in found if not s.posted),
         [Day(d, sum((signed(s) for s in ms if s.posted), Decimal("0.00")), ms) for d, ms in days.items()],
     )
@@ -392,7 +437,9 @@ def detail(user_id: int, move_id: int) -> MoveDetail:
         src = next(x for x in money if x[8] < 0)
         dst = next(x for x in money if x[8] > 0)
         rate = None if base in (src[7], dst[7]) else _round6(abs(src[9] / src[8]))
-        return MoveDetail(summary, src[1], dst[1], rate, [])
+        if summary.fx is None:
+            return MoveDetail(summary, src[1], dst[1], rate, [])
+        return MoveDetail(summary, src[1], dst[1], rate, [], abs(src[9]), _round6(abs(src[9] / src[8])))
     m = money[0] if money else None
     rate = None
     if m is not None and m[7] != base and m[8]:
