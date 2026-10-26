@@ -197,3 +197,37 @@ def test_nadie_ve_las_conciliaciones_de_otro(ana, new_user, as_user):
     luis = as_user(new_user("luis@correo.com", "Luis"))
     assert luis.execute("SELECT count(*) FROM account_partial_reconcile").fetchone()[0] == 0
     assert luis.execute("SELECT count(*) FROM account_move_line_residual").fetchone()[0] == 0
+
+
+# --- Saldo inicial con una persona ------------------------------------------------------------
+
+def opening(c, role, who, amount, date="2026-06-10", currency="PEN", ref=None):
+    return c.execute("SELECT post_partner_opening(%s, %s, %s, %s, %s, 1, %s)",
+                     (role, who, cur(c, currency), amount, date, ref)).fetchone()[0]
+
+
+def test_ya_me_debia_no_mueve_tus_cuentas(ana):
+    cash, luis = bcp(ana), person(ana, "Luis")
+    m = opening(ana, "receivable", luis, Decimal("300.00"), ref="Lo del celular")
+    assert ana.execute("SELECT ref, date::text, state FROM account_move WHERE id = %s", (m,)).fetchone() \
+        == ("Lo del celular", "2026-06-10", "posted")
+    deuda = line_of(ana, m, role(ana, "receivable"))
+    assert residual(ana, deuda) == Decimal("300.00")
+    assert ana.execute("SELECT count(*) FROM account_move_line WHERE account_id = %s", (cash,)).fetchone()[0] == 0
+    collect(ana, cash, luis, Decimal("100.00"), "2026-10-15")
+    reconcile(ana, luis)
+    assert residual(ana, deuda) == Decimal("200.00")      # el cobro cancela la deuda vieja
+    commit_check(ana)                                     # y todo cuadra
+
+
+def test_ya_le_debia_va_en_por_pagar(ana):
+    maria = person(ana, "María")
+    m = opening(ana, "payable", maria, Decimal("80.00"))
+    commit_check(ana)
+    assert ana.execute("SELECT ref FROM account_move WHERE id = %s", (m,)).fetchone()[0] == "Saldo inicial"
+    assert residual(ana, line_of(ana, m, role(ana, "payable"))) == Decimal("-80.00")
+
+
+def test_saldo_inicial_con_persona_solo_por_cobrar_o_por_pagar(ana):
+    with pytest.raises(psycopg.errors.CheckViolation, match="te debía o lo que le debías"):
+        opening(ana, "custody", person(ana, "Sandra"), Decimal("10.00"))
