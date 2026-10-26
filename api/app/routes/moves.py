@@ -27,7 +27,7 @@ def _http(e: AccountError) -> HTTPException:
 InputKind = Literal["expense", "income", "transfer", "lend", "borrow", "collect", "repay",
                     "custody_in", "custody_out", "refund", "manual"]
 Kind = Literal["expense", "income", "transfer", "lend", "borrow", "collect", "repay", "custody_in",
-               "custody_out", "refund", "offset", "write_off", "other"]
+               "custody_out", "refund", "offset", "write_off", "opening", "other"]
 Amount = Annotated[Decimal, Field(ge=0, max_digits=14, decimal_places=2)]
 
 

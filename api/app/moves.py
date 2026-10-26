@@ -427,7 +427,7 @@ def create(user_id: int, m: MoveInput) -> int:
             raise _translate(e) from None
 
 
-NOT_EDITABLE = {"opening": "Un saldo inicial se corrige desde su cuenta",
+NOT_EDITABLE = {"opening": "Un saldo inicial no se edita aquí: corrígelo desde su cuenta o, si es con una persona, bórralo y vuelve a anotarlo",
                 "offset": "Una compensación no se edita: bórrala y vuelve a compensar",
                 "write_off": "Una deuda dada por perdida no se edita: bórrala si te equivocaste"}
 
@@ -488,7 +488,7 @@ def _check_limit_on_post(conn: psycopg.Connection, move_id: int) -> None:
 def delete(user_id: int, move_id: int) -> None:
     with user_transaction(user_id) as conn:
         kind = _kind_of(conn, move_id)
-        if kind == "opening":
+        if kind == "opening" and not _pairs(conn, move_id):
             raise AccountError(400, "Un saldo inicial se corrige desde su cuenta")
         pairs = _pairs(conn, move_id)
         conn.execute("DELETE FROM account_move WHERE id = %s", (move_id,))
@@ -670,6 +670,9 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
     elif kind in PERSON_KINDS:
         m = cash[0]
         s = MoveSummary(move_id, on, ref, posted, kind, m[7], abs(m[8]), abs(m[9]), m[2], [],
+                        partner_id=pid, partner=pname)
+    elif kind == "opening" and persons:   # saldo inicial con una persona: ya te debía o ya le debías
+        s = MoveSummary(move_id, on, ref, posted, kind, who[7], abs(who[8]), abs(who[9]), pname or "", [],  # type: ignore[index]
                         partner_id=pid, partner=pname)
     elif kind == "offset":
         r = next(x for x in persons if x[4] == "receivable")

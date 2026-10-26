@@ -19,6 +19,7 @@ export const KIND_NAME: Record<Kind, string> = {
   refund: "Reembolso",
   offset: "Compensación",
   write_off: "Deuda perdida",
+  opening: "Saldo inicial",
   other: "Asiento manual",
 };
 

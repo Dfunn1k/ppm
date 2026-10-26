@@ -5,7 +5,7 @@ en las rutas de cuentas (/partners)."""
 from dataclasses import asdict
 import datetime as dt
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
@@ -66,6 +66,15 @@ class PartnerPatch(BaseModel):
     email: Annotated[str, Field(max_length=120)] | None = None
 
 
+class PartnerOpeningIn(BaseModel):
+    side: Literal["owes_me", "i_owe"]    # ya me debía / ya le debía
+    currency: Annotated[str, Field(min_length=3, max_length=3)]
+    amount: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)]
+    date: dt.date | None = None          # desde cuándo; None = hoy
+    rate: Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=6)] | None = None
+    ref: Annotated[str, Field(max_length=120)] | None = None   # la nota: «Lo del celular»
+
+
 class MovedOut(BaseModel):
     move_id: int
 
@@ -106,5 +115,15 @@ def offset(partner_id: int, session: CurrentSession = Depends(current_session)) 
 def write_off(partner_id: int, session: CurrentSession = Depends(current_session)) -> MovedOut:
     try:
         return MovedOut(move_id=partners.write_off(session.user_id, partner_id))
+    except AccountError as e:
+        raise _http(e) from None
+
+
+@router.post("/partners/{partner_id}/opening", status_code=status.HTTP_201_CREATED,
+             summary="Saldo inicial: lo que ya te debía o ya le debías")
+def add_opening(partner_id: int, body: PartnerOpeningIn, session: CurrentSession = Depends(current_session)) -> MovedOut:
+    try:
+        return MovedOut(move_id=partners.add_opening(session.user_id, partner_id, body.side, body.currency,
+                                                     body.amount, body.date, body.rate, body.ref))
     except AccountError as e:
         raise _http(e) from None
