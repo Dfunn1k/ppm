@@ -146,9 +146,14 @@ export function Persona() {
             <Icon name="money_off" />Dar por perdido lo que te debe
           </button>
         )}
-        <Link to={to("lend")} className="flex h-11 items-center justify-center gap-1.5 text-caption font-semibold text-primary-strong">
-          <Icon name="volunteer_activism" className="text-[20px]" />Prestarle
-        </Link>
+        <div className="flex items-center justify-center gap-6">
+          <Link to={to("lend")} className="flex h-11 items-center gap-1.5 text-caption font-semibold text-primary-strong">
+            <Icon name="volunteer_activism" className="text-[20px]" />Prestarle
+          </Link>
+          <Link to={`/personas/${p.id}/ya-debia`} className="flex h-11 items-center gap-1.5 text-caption font-semibold text-primary-strong">
+            <Icon name="history" className="text-[20px]" />De antes de PPM
+          </Link>
+        </div>
       </div>
 
       <Sheet title="¿Qué pasó?" open={hoja === "pago"} onClose={() => setHoja(null)}>

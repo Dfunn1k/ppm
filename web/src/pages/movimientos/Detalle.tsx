@@ -46,9 +46,13 @@ export function DetalleMovimiento() {
   const f = flow(s.kind);
   const sign = f === "in" ? "+ " : f === "out" ? "− " : "";
   const tone = f === "none" ? "" : toneOf(s.kind);
-  const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || d.paid_by_partner_id;
+  const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || s.kind === "opening" || d.paid_by_partner_id;
   const partnerId = d.partner_id ?? d.paid_by_partner_id ?? s.partner_id;
-  const editable = s.kind !== "offset" && s.kind !== "write_off";
+  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening";
+  // Saldo inicial con una persona: lo que ya había antes de PPM (te debía, o le debías)
+  const opening = s.kind === "opening" && s.partner
+    ? d.lines.some((l) => l.partner_id && Number(l.debit) > 0) ? `${s.partner} ya te debía esto cuando empezaste a usar PPM.` : `Ya le debías esto a ${s.partner} cuando empezaste a usar PPM.`
+    : null;
   const [from, to] = transfer ? s.account.split(" → ") : [s.account, null];
   const exchange = transfer && s.to_currency !== s.currency && s.to_amount;
   // En un cambio que toca la moneda base, el tipo sale de los dos montos
@@ -72,6 +76,7 @@ export function DetalleMovimiento() {
         </div>
       )}
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
+      {opening && <p className="mt-2 text-caption text-muted-foreground">{opening} Para corregirlo, bórralo y vuelve a anotarlo desde la persona.</p>}
       <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-[32px] leading-10 font-semibold tracking-[-0.02em] tabular-nums whitespace-nowrap" : "text-amount-hero"} ${tone}`}>
         {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} className="text-[30px]" />}
         {sign}{formatAmount(s.amount, symbolOf(s.currency), lang)}
