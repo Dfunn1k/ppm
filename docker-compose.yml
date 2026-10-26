@@ -102,12 +102,13 @@ services:
       e2e-limpieza:
         condition: service_completed_successfully
 
-  # Antes de cada corrida de e2e: borra las cuentas de prueba que dejó la anterior
+  # Antes de cada corrida de e2e: borra las cuentas de prueba que dejó la anterior y los tipos de
+  # cambio de prueba (las pruebas solo cargan días anteriores a 2001)
   e2e-limpieza:
     profiles: ["e2e"]
     image: postgres:18
     command: ["psql", "postgresql://ppm:ppm@db:5432/ppm", "-qc",
-              "DELETE FROM res_users WHERE login LIKE 'e2e-%@prueba.ppm'"]
+              "DELETE FROM res_users WHERE login LIKE 'e2e-%@prueba.ppm'; DELETE FROM res_currency_rate WHERE name < '2001-01-01'"]
     depends_on:
       migrate:
         condition: service_completed_successfully

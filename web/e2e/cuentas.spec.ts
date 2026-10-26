@@ -66,14 +66,18 @@ test("una cuenta en dólares pide el tipo de cambio y se ve en soles", async ({ 
   await pickBank(page, "BBVA");
   await page.getByRole("radio", { name: /Dólares/ }).click();
   await page.getByLabel("¿Cuánto tiene hoy?").fill("1520");
-  await expect(page.getByLabel("Tipo de cambio")).toHaveValue("3.750");
+  await page.getByLabel("Tipo de cambio").fill("3.75");   // el saldo inicial queda en libros a 3.75
   await page.getByRole("button", { name: "Crear cuenta" }).click();
 
   await expect(page.getByRole("heading", { name: "Ahorros BBVA" })).toBeVisible();
   await expect(page.getByText("US$ 1,520.00")).toBeVisible();
+  // En soles cuenta al tipo de hoy; sin ningún tipo cargado, a lo que costó
+  const rates = (await (await page.request.get("/api/rates")).json()) as { currency: string; buy: string }[];
+  const buy = rates.find((r) => r.currency === "USD")?.buy;
+  const soles = buy ? (Math.round(1520 * Number(buy) * 100) / 100).toLocaleString("en-US", { minimumFractionDigits: 2 }) : "5,700.00";
   await page.getByRole("link", { name: "Volver a cuentas" }).click();
-  await expect(page.getByText("son S/ 5,700.00", { exact: false })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("S/ 5,700.00");
+  await expect(page.getByText(`son S/ ${soles}`, { exact: false })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(`S/ ${soles}`);
 });
 
 test("un CCI de otro banco se avisa antes de enviar", async ({ page }) => {

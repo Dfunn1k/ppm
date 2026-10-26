@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router";
 
-import { useCatalog } from "@/api/hooks";
+import { useCatalog, useRates } from "@/api/hooks";
 import { Icon, PrimaryButton, Screen } from "@/components/ui";
-import { CURRENCY_SYMBOL } from "@/lib/money";
+import { CURRENCY_SYMBOL, rateText } from "@/lib/money";
 
 import { BASE_CURRENCY, Done, StepHeader, useWizard } from "./wizard";
 
@@ -11,6 +11,7 @@ const CAPTION: Record<string, string> = { USD: "La más usada en Perú" };
 export function Paso2() {
   const navigate = useNavigate();
   const catalog = useCatalog().data;
+  const rates = useRates().data ?? [];
   const { choices, update } = useWizard();
   const base = BASE_CURRENCY[choices.country] ?? BASE_CURRENCY.PE!;
   const country = catalog?.countries.find((c) => c.code === choices.country)?.name ?? choices.country;
@@ -49,6 +50,11 @@ export function Paso2() {
             {base.name}, al cambio del día.
           </span>
         )}
+        {rates.filter((r) => choices.currencies.includes(r.currency)).map((r) => (
+          <span key={r.currency} className="font-semibold tabular-nums">
+            {CURRENCY_SYMBOL[r.currency] ?? r.currency} 1 = {base.symbol} {rateText(r.buy)} compra · {rateText(r.sell)} venta
+          </span>
+        ))}
         <span className="text-caption text-muted-foreground">PPM lo trae cada día de SUNAT; no tienes que anotarlo.</span>
       </section>
 

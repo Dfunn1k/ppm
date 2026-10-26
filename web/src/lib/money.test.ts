@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { formatAmount, formatNumber, parseAmount } from "./money";
+import { divide, formatAmount, formatNumber, multiply, parseAmount, proportion, rateText, subtract } from "./money";
 
 test("es-PE: punto decimal y coma de miles, símbolo antes", () => {
   expect(formatAmount(1284.9, "S/")).toBe("S/ 1,284.90");
@@ -27,4 +27,17 @@ test("lo que escribe la persona se vuelve texto exacto", () => {
   expect(parseAmount("-150")).toBe("-150.00");
   expect(parseAmount("1.005")).toBeNull();
   expect(parseAmount("diez")).toBeNull();
+});
+
+test("las cuentas con el tipo de cambio son exactas", () => {
+  expect(multiply("20.00", "3.443")).toBe("68.86");
+  expect(multiply("100.00", "3.4430")).toBe("344.30");
+  expect(multiply("0.05", "3.5")).toBe("0.18");          // 0.175: la mitad sube
+  expect(multiply("-0.05", "3.5")).toBe("-0.18");
+  expect(divide("740.00", "200.00")).toBe("3.700");
+  expect(divide("1085.10", "300.00")).toBe("3.617");
+  expect(subtract("343.00", "370.00")).toBe("-27.00");
+  expect(proportion("100.00", "1085.10", "300.00")).toBe("361.70");
+  expect(rateText("3.4430")).toBe("3.443");
+  expect(rateText("3.75")).toBe("3.750");
 });

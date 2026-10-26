@@ -1,21 +1,22 @@
 // R1 · Registrar (y editar): gasto, ingreso o transferencia; dividir en varias categorías;
-// en otra moneda con su tipo de cambio; entre monedas con los dos montos; por confirmar.
+// en otra moneda con el tipo del día (editable); entre monedas con los dos montos y, al vender, el
+// costo del cambio o la ganancia; por confirmar.
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 
 import { type AccountRow, type Category, type MoveDetail, type MoveIn, useAccounts, useMe, useMove, useSaveMove } from "@/api/hooks";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
+import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
-import { longDate, todayISO } from "@/lib/dates";
-import { formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
+import { longDate, shortDate, todayISO } from "@/lib/dates";
+import { divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 
 type Kind = MoveIn["kind"];
 type Part = { category: Category | null; amount: string };
 
 const KIND_LABEL: Record<Kind, string> = { expense: "Gasto", income: "Ingreso", transfer: "Transferir" };
 const SUBMIT: Record<Kind, string> = { expense: "Registrar gasto", income: "Registrar ingreso", transfer: "Registrar transferencia" };
-const SUGGESTED_RATE = "3.750";
 
 /** Pantalla de edición: espera el movimiento y abre el formulario con sus datos. */
 export function EditarMovimiento() {
@@ -40,7 +41,6 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const [toAccountId, setToAccountId] = useState<string>(editing?.to_account_id ? String(editing.to_account_id) : "");
   const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : "");
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
-  const [rate, setRate] = useState(editing?.rate ? Number(editing.rate).toFixed(3) : SUGGESTED_RATE);
   const [parts, setParts] = useState<Part[]>(
     editing?.splits.length ? editing.splits.map((s) => ({ category: s.category, amount: fmt(s.amount) })) : [{ category: null, amount: "" }],
   );
@@ -52,12 +52,18 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const [sheetFor, setSheetFor] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
-  if (!me?.currency || !overview) return <Spinner />;
-  const base = me.currency;
-  const accounts: AccountRow[] = [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "other"].includes(a.kind));
+  const base = me?.currency ?? "PEN";
+  const accounts: AccountRow[] = overview
+    ? [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "other"].includes(a.kind)) : [];
   const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
   const toAccount = accounts.find((a) => String(a.id) === toAccountId);
   const currency = account?.currency ?? base;
+  const side = account?.kind === "other" ? "sell" : "buy";   // compra para lo que tienes, venta para lo que debes
+  const rate = useRateInput(currency, base, date, side, editing?.rate ? Number(editing.rate).toFixed(3) : null);
+  const foreignSide = toAccount && toAccount.currency !== base ? toAccount.currency ?? base : currency;
+  const sunat = useSuggestedRate(foreignSide, base, date, "buy");
+  const sunatSell = useSuggestedRate(foreignSide, base, date, "sell");
+  if (!me?.currency || !overview) return <Spinner />;
   const foreign = currency !== base;
   const crossCurrency = kind === "transfer" && toAccount && toAccount.currency !== currency;
   const future = date > todayISO();
@@ -79,8 +85,8 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
     setProblem(null);
     if (!account) return setProblem("Elige la cuenta");
     if (total === null || Number(total) <= 0) return setProblem("Escribe un monto mayor que cero");
-    if (needRate && !(Number(rate) > 0))
-      return setProblem("Escribe el tipo de cambio, como 3.750");
+    if (needRate && !(Number(rate.value) > 0))
+      return setProblem("Escribe el tipo de cambio, como 3.443");
     const body: MoveIn = {
       kind,
       account_id: account.id,
@@ -88,7 +94,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
       date,
       ref: note.trim() || null,
       pending,
-      rate: needRate ? rate.trim() : null,
+      rate: needRate ? rate.value.trim() : null,
       splits: [],
       to_account_id: null,
       to_amount: null,
@@ -157,9 +163,14 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
             value={account ? String(account.id) : ""} onChange={setAccountId} options={options()} />
 
           {needRate && (
-            <div className="mt-3">
-              <LineField label="Tipo de cambio" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)}
-                hint={`Soles por cada ${symbolOf(currency)} 1. El de SUNAT llegará solo; por ahora, escríbelo.`} />
+            <div className="mt-3 border-b border-border pb-3">
+              <RateField input={rate} currency={currency} side={side}
+                aside={total && Number(rate.value) > 0 && kind !== "transfer" && (
+                  <>
+                    <span className="text-caption text-muted-foreground">Son</span>
+                    <span className="font-semibold">{formatAmount(multiply(total, rate.value), symbolOf(base), lang)}</span>
+                  </>
+                )} />
             </div>
           )}
 
@@ -180,8 +191,14 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
                   </label>
                   <span className="pb-1.5 text-caption text-muted-foreground tabular-nums">
                     {impliedRate(amount, toAmount, currency, toAccount.currency ?? base, base, lang)}
+                    {sunat.value && sunatSell.value &&
+                      ` SUNAT ${sunat.date === todayISO() ? "hoy" : `del ${shortDate(sunat.date!)}`}: ${sunat.value} · ${sunatSell.value}`}
                   </span>
                 </div>
+              )}
+              {crossCurrency && toAccount.currency === base && (
+                <FxPreview account={account} out={parseAmount(amount || "", lang)} into={parseAmount(toAmount || "", lang)}
+                  base={base} lang={lang} />
               )}
             </>
           )}
@@ -292,6 +309,36 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
           selected={sheetFor !== null ? parts[sheetFor]?.category?.id : null} />
       )}
     </main>
+  );
+}
+
+/** Al vender: cuánto costaron esos dólares (su costo promedio en la cuenta) y la diferencia con lo recibido.
+ *  La API hace la misma cuenta; aquí solo se adelanta lo que va a quedar. */
+function FxPreview({ account, out, into, base, lang }: {
+  account: AccountRow | undefined; out: string | null; into: string | null; base: string; lang: string;
+}) {
+  const held = account?.balances[0];
+  if (!held || !out || !into || Number(out) <= 0 || Number(into) <= 0 || Number(held.amount) <= 0 || Number(held.book) <= 0) return null;
+  const avg = divide(held.book, held.amount);
+  const cost = out === held.amount ? held.book : proportion(out, held.book, held.amount);
+  const diff = subtract(into, cost);
+  if (isZero(diff)) return null;
+  const gain = !diff.startsWith("-");
+  const money = (v: string) => formatAmount(v, symbolOf(base), lang);
+  return (
+    <section aria-label={gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}
+      className="mt-3 flex flex-col gap-1.5 rounded-[12px] border border-border bg-card px-3.5 py-3">
+      <span className="flex items-center gap-2.5">
+        <CategoryChip category={{ icon: "currency_exchange", color: gain ? 10 : 1 }} size={32} />
+        <span className="flex-1 font-semibold">{gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}</span>
+        <span className={`font-semibold tabular-nums ${gain ? "text-income" : "text-expense"}`}>
+          {gain ? "+ " : "− "}{money(diff.replace("-", ""))}
+        </span>
+      </span>
+      <span className="text-caption text-muted-foreground tabular-nums">
+        Esos {formatAmount(out, symbolOf(account!.currency), lang)} te costaron {money(cost)} (a {avg} en promedio) y recibes {money(into)}.
+      </span>
+    </section>
   );
 }
 

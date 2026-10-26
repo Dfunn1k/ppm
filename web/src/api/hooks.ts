@@ -462,3 +462,63 @@ export function useLogoutAll() {
     },
   });
 }
+
+// --- Tipo de cambio -----------------------------------------------------------------------------
+
+export type UserRate = components["schemas"]["UserRateOut"];
+export type AdminRates = components["schemas"]["AdminRatesOut"];
+type RateIn = components["schemas"]["RateIn"];
+
+/** El tipo de tus monedas para un día (hoy si no se dice): el de ese día o el último anterior. */
+export function useRates(date?: string) {
+  return useQuery({
+    queryKey: ["rates", date ?? "hoy"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/rates", { params: { query: date ? { date } : {} } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useAdminRates() {
+  return useQuery({
+    queryKey: ["admin-rates"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/admin/rates");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Un tipo nuevo cambia la sugerencia, los saldos y el Inicio de todos. */
+function useRatesChanged() {
+  const qc = useQueryClient();
+  return () => Promise.all(["admin-rates", "rates", "accounts", "home"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+}
+
+export function useSetRate() {
+  const changed = useRatesChanged();
+  return useMutation({
+    mutationFn: async (body: RateIn) => {
+      const { data, error, response } = await api.POST("/admin/rates", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useImportSunat() {
+  const changed = useRatesChanged();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.POST("/admin/rates/sunat");
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}

@@ -1,5 +1,5 @@
-// I1 · Inicio: lo que realmente tengo hoy, «para mayo» del mes (en trigo, el sello de PPM),
-// en qué se va la plata, mis cuentas y los últimos movimientos.
+// I1 · Inicio: lo que realmente tengo hoy (los dólares al tipo de hoy), «para mayo» del mes (en trigo,
+// el sello de PPM), en qué se va la plata, mis cuentas y los últimos movimientos.
 import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
@@ -8,8 +8,10 @@ import { CategoryChip } from "@/components/CategorySheet";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
-import { formatAmount, formatNumber, isNegative, isZero, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, formatAmount, formatNumber, isNegative, isZero, rateText, symbolOf } from "@/lib/money";
 import { monthName, monthOnly, monthOptions } from "@/lib/months";
+
+const ONE: Record<string, string> = { USD: "dólar", EUR: "euro" };
 
 function Heading({ label, to, link }: { label: string; to: string; link: string }) {
   return (
@@ -59,6 +61,21 @@ export function Inicio() {
       <span className="mt-5 text-caption text-muted-foreground">Lo que realmente tengo · hoy</span>
       <h1 className="font-display text-[48px] leading-[50px] font-extrabold tracking-[-0.03em] tabular-nums">{money(h.real_total)}</h1>
       <span className="mt-1 text-caption text-muted-foreground tabular-nums">{today}</span>
+      {h.foreign.map((f) => (
+        <span key={f.currency} className="text-caption text-muted-foreground tabular-nums">
+          Tus {formatAmount(f.amount, symbolOf(f.currency), lang)} cuentan a {rateText(f.rate)}
+          {f.rate_date === todayISO() ? ", el tipo de compra de hoy." : `, el último que hay (${shortDate(f.rate_date)}).`}
+        </span>
+      ))}
+      {h.foreign.filter((f) => f.stale).map((f) => (
+        <div key={f.currency} role="status" className="mt-4 flex items-start gap-2.5 rounded-md bg-attention-soft p-3 text-caption text-attention">
+          <Icon name="currency_exchange" />
+          <span>
+            <b>El tipo de cambio del {ONE[f.currency] ?? f.currency} es del {shortDate(f.rate_date)}.</b>{" "}
+            SUNAT no publica uno nuevo desde hace {daysSince(f.rate_date)} días; tus {CURRENCY_NAME[f.currency] ?? f.currency} se cuentan con ese mientras tanto.
+          </span>
+        </div>
+      ))}
 
       {h.overdue_pending > 0 && (
         <Link to="/movimientos?pendientes=1" className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
@@ -127,7 +144,12 @@ export function Inicio() {
               <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-[150px] flex-none flex-col gap-2 rounded-lg border border-border bg-card p-3">
                 <span className="grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name={a.icon ?? "payments"} className="text-[18px]" /></span>
                 <span className="truncate text-caption text-muted-foreground">{a.name}</span>
-                <span className="font-semibold tabular-nums">{formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? h.currency), lang)}</span>
+                <span className="flex flex-col">
+                  <span className="font-semibold tabular-nums">{formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? h.currency), lang)}</span>
+                  {a.currency && a.currency !== h.currency && a.balances[0] && (
+                    <span className="text-caption text-muted-foreground tabular-nums">{money(a.balances[0].base)} hoy</span>
+                  )}
+                </span>
               </Link>
             ))}
           </div>
@@ -170,4 +192,11 @@ export function Inicio() {
       </Sheet>
     </main>
   );
+}
+
+/** Cuántos días pasaron desde esa fecha hasta hoy. */
+function daysSince(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const [ty, tm, td] = todayISO().split("-").map(Number);
+  return Math.round((Date.UTC(ty!, tm! - 1, td!) - Date.UTC(y!, m! - 1, d!)) / 86_400_000);
 }

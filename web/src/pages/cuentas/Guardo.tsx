@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { ApiError, useAddCustody, useCreatePartner, useMe, usePartners } from "@/api/hooks";
+import { RateField, useRateInput } from "@/components/RateField";
 import { Segmented } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
@@ -22,9 +23,9 @@ export function NuevaGuardo() {
   const [newName, setNewName] = useState("");
   const [currency, setCurrency] = useState(me?.currency ?? "PEN");
   const [amount, setAmount] = useState("");
-  const [rate, setRate] = useState("3.750");
   const [dateOpen, setDateOpen] = useState(false);
   const [date, setDate] = useState(todayISO());
+  const rate = useRateInput(currency, me?.currency ?? "PEN", dateOpen ? date : todayISO());
   const [problem, setProblem] = useState<string | null>(null);
 
   if (!me?.currency) return null;
@@ -39,7 +40,7 @@ export function NuevaGuardo() {
     const value = parseAmount(amount, me.lang ?? "es-PE");
     if (chosen === "new" && !newName.trim()) return setProblem("Escribe cómo se llama");
     if (!value || Number(value) <= 0) return setProblem("Escribe cuánto te dio para guardar");
-    if (foreign && !(Number(rate) > 0)) return setProblem("Escribe el tipo de cambio, como 3.750");
+    if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
     try {
       const partnerId = chosen === "new" ? (await createPartner.mutateAsync(newName)).id : chosen;
       await addCustody.mutateAsync({
@@ -47,7 +48,7 @@ export function NuevaGuardo() {
         currency,
         amount: value,
         date: dateOpen ? date : null,
-        rate: foreign ? rate.trim() : null,
+        rate: foreign ? rate.value.trim() : null,
       });
       navigate("/cuentas", { replace: true });
     } catch {
@@ -93,8 +94,7 @@ export function NuevaGuardo() {
           <AmountField label="¿Cuánto te dio para guardar?" symbol={symbolOf(currency)} value={amount}
             onChange={(e) => setAmount(e.target.value)} />
           {foreign && (
-            <LineField label="Tipo de cambio" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)}
-              hint={`Soles por cada ${symbolOf(currency)} 1.`} />
+            <RateField input={rate} currency={currency} />
           )}
           <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
             className="flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold">
