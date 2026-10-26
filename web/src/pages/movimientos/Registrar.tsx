@@ -1,19 +1,30 @@
-// R1 · Registrar (y editar): gasto, ingreso o transferencia; dividir en varias categorías;
+// R1 · Registrar (y editar): gasto, ingreso o transferencia; dividir en varias categorías (y una
+// parte de otra persona, que te la debe); un gasto que pagó otra persona; «Más» abre el panel;
 // en otra moneda con el tipo del día (editable); entre monedas con los dos montos y, al vender, el
 // costo del cambio o la ganancia; por confirmar.
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 
-import { type AccountRow, type Category, type MoveDetail, type MoveIn, useAccounts, useMe, useMove, useSaveMove } from "@/api/hooks";
+import { type AccountRow, type Category, type MoveDetail, type MoveIn, useAccounts, useMe, useMove, usePartners, useSaveMove } from "@/api/hooks";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
+import { MasTipos } from "@/components/MasTipos";
+import { Avatar } from "@/components/MoveBits";
+import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
-import { SheetSelect } from "@/components/Sheet";
+import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
+import { isPersonKind } from "@/lib/kinds";
 import { divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
+import { PersonaSheet } from "@/pages/personas/PersonaForm";
+
+import { AsientoManual } from "./AsientoManual";
+import { Reembolso } from "./Reembolso";
+import { RegistrarPersona } from "./RegistrarPersona";
 
 type Kind = Extract<MoveIn["kind"], "expense" | "income" | "transfer">;
-type Part = { category: Category | null; amount: string };
+type Who = { id: number; name: string };
+type Part = { category: Category | null; partner?: Who | null; amount: string };
 
 const KIND_LABEL: Record<Kind, string> = { expense: "Gasto", income: "Ingreso", transfer: "Transferir" };
 const SUBMIT: Record<Kind, string> = { expense: "Registrar gasto", income: "Registrar ingreso", transfer: "Registrar transferencia" };
@@ -24,6 +35,10 @@ export function EditarMovimiento() {
   const move = useMove(id);
   if (move.isPending) return <Spinner />;
   if (move.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{move.error.message}</ErrorAlert></main>;
+  const k = move.data.summary.kind;
+  if (isPersonKind(k)) return <RegistrarPersona editing={move.data} />;
+  if (k === "refund") return <Reembolso editing={move.data} />;
+  if (k === "other") return <AsientoManual editing={move.data} />;
   return <Registrar editing={move.data} />;
 }
 
@@ -35,14 +50,17 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const lang = me?.lang ?? "es-PE";
   const fmt = (v: string) => formatNumber(v, lang);
 
-  const initialKind = (editing?.summary.kind === "other" ? "expense" : editing?.summary.kind) ?? "expense";
+  const tipo = useSearchParams()[0].get("tipo");
+  const initialKind = editing?.summary.kind ?? (tipo === "income" || tipo === "transfer" ? tipo : "expense");
   const [kind, setKind] = useState<Kind>(initialKind as Kind);
   const [accountId, setAccountId] = useState<string>(editing?.account_id ? String(editing.account_id) : "");
   const [toAccountId, setToAccountId] = useState<string>(editing?.to_account_id ? String(editing.to_account_id) : "");
   const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : "");
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
   const [parts, setParts] = useState<Part[]>(
-    editing?.splits.length ? editing.splits.map((s) => ({ category: s.category, amount: fmt(s.amount) })) : [{ category: null, amount: "" }],
+    editing?.splits.length
+      ? editing.splits.map((s) => ({ category: s.category, partner: s.partner_id ? { id: s.partner_id, name: s.partner ?? "" } : null, amount: fmt(s.amount) }))
+      : [{ category: null, amount: "" }],
   );
   const [split, setSplit] = useState((editing?.splits.length ?? 0) > 1);
   const [date, setDate] = useState(editing?.summary.date ?? todayISO());
@@ -51,13 +69,20 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const [pending, setPending] = useState(editing ? !editing.summary.posted : false);
   const [sheetFor, setSheetFor] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [paidBy, setPaidBy] = useState<number | null>(editing?.paid_by_partner_id ?? null);
+  const [payer, setPayer] = useState<"me" | "other">(editing?.paid_by_partner_id ? "other" : "me");
+  const [mas, setMas] = useState(false);
+  const [partFor, setPartFor] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const partners = usePartners().data ?? [];
 
   const base = me?.currency ?? "PEN";
   const accounts: AccountRow[] = overview
     ? [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "other"].includes(a.kind)) : [];
   const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
   const toAccount = accounts.find((a) => String(a.id) === toAccountId);
-  const currency = account?.currency ?? base;
+  const other = kind === "expense" && payer === "other";   // lo pagó otra persona: no sale de tus cuentas
+  const currency = other ? base : account?.currency ?? base;
   const side = account?.kind === "other" ? "sell" : "buy";   // compra para lo que tienes, venta para lo que debes
   const rate = useRateInput(currency, base, date, side, editing?.rate ? Number(editing.rate).toFixed(3) : null);
   const foreignSide = toAccount && toAccount.currency !== base ? toAccount.currency ?? base : currency;
@@ -83,14 +108,15 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setProblem(null);
-    if (!account) return setProblem("Elige la cuenta");
+    if (!account && !other) return setProblem("Elige la cuenta");
+    if (other && !paidBy) return setProblem("Elige quién pagó");
     if (total === null || Number(total) <= 0) return setProblem("Escribe un monto mayor que cero");
     if (needRate && !(Number(rate.value) > 0))
       return setProblem("Escribe el tipo de cambio, como 3.443");
     const body: MoveIn = {
       lines: [],
       kind,
-      account_id: account.id,
+      account_id: other ? null : account!.id,
       amount: total,
       date,
       ref: note.trim() || null,
@@ -99,6 +125,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
       splits: [],
       to_account_id: null,
       to_amount: null,
+      paid_by_partner_id: other ? paidBy : null,
     };
     if (kind === "transfer") {
       if (!toAccount) return setProblem("Elige adónde entra");
@@ -110,9 +137,12 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
       }
     } else {
       const chosen = split ? parts : [{ ...parts[0]!, amount: total }];
-      if (chosen.some((p) => !p.category)) return setProblem(kind === "expense" ? "Elige en qué gastaste" : "Elige de qué es el ingreso");
+      if (chosen.some((p) => !p.category && !p.partner)) return setProblem(kind === "expense" ? "Elige en qué gastaste" : "Elige de qué es el ingreso");
+      if (!chosen.some((p) => p.category)) return setProblem("Al dividir, al menos una parte es tuya: elige su categoría");
       if (split && remaining !== 0) return setProblem("Las partes tienen que sumar el total");
-      body.splits = chosen.map((p) => ({ category_id: p.category!.id, amount: parseAmount(p.amount, lang) ?? p.amount }));
+      body.splits = chosen.map((p) => p.partner
+        ? { partner_id: p.partner.id, amount: parseAmount(p.amount, lang) ?? p.amount }
+        : { category_id: p.category!.id, amount: parseAmount(p.amount, lang) ?? p.amount });
     }
     save.mutate(body, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : "/movimientos", { replace: true }) });
   };
@@ -126,6 +156,12 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
     setKind(k);
     setParts([{ category: null, amount: "" }]);
     setSplit(false);
+    setPayer("me");
+  };
+  const addPartner = (w: Who) => {
+    setParts((ps) => (split ? [...ps, { category: null, partner: w, amount: "" }] : [{ ...ps[0]!, amount }, { category: null, partner: w, amount: "" }]));
+    setSplit(true);
+    setPartFor(false);
   };
 
   return (
@@ -145,8 +181,9 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
               {KIND_LABEL[k]}
             </button>
           ))}
-          <span aria-disabled="true" title="Préstamos, reembolsos y más: muy pronto"
-            className="grid h-[38px] place-items-center text-[14px] font-semibold text-muted-foreground opacity-60">Más</span>
+          {!editing && (
+            <button type="button" role="radio" aria-checked="false" onClick={() => setMas(true)} className="h-[38px] rounded-[8px] text-[14px] font-semibold">Más</button>
+          )}
         </div>
 
         <label className="mt-5 flex flex-col gap-0.5 text-caption font-semibold">
@@ -159,11 +196,30 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
           </span>
         </label>
 
-        <div className="mt-2 flex flex-col">
-          <SheetSelect label={kind === "income" ? "Entra a" : "Sale de"} sheetTitle={kind === "income" ? "¿A qué cuenta entra?" : "¿De qué cuenta sale?"}
-            value={account ? String(account.id) : ""} onChange={setAccountId} options={options()} />
+        {kind === "expense" && (
+          <div className="mt-3 flex flex-col gap-3">
+            <Segmented label="¿Quién pagó?" size="sm" value={payer} onChange={(v) => { setPayer(v as "me" | "other"); if (v === "other") setParts((ps) => ps.filter((p) => !p.partner)); }}
+              options={[{ value: "me", label: "Yo" }, { value: "other", label: "Otra persona" }]} />
+            {other && (
+              <>
+                <PersonPicker label="¿Quién pagó por ti?" value={paidBy} onChange={setPaidBy} />
+                {paidBy && total && (
+                  <span className="text-caption text-muted-foreground tabular-nums">
+                    No sale de tus cuentas: queda que le debes {formatAmount(total, symbolOf(base), lang)} a {partners.find((p) => p.id === paidBy)?.name.split(" ")[0]}.
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
-          {needRate && (
+        <div className="mt-2 flex flex-col">
+          {!other && (
+            <SheetSelect label={kind === "income" ? "Entra a" : "Sale de"} sheetTitle={kind === "income" ? "¿A qué cuenta entra?" : "¿De qué cuenta sale?"}
+              value={account ? String(account.id) : ""} onChange={setAccountId} options={options()} />
+          )}
+
+          {needRate && !other && (
             <div className="mt-3 border-b border-border pb-3">
               <RateField input={rate} currency={currency} side={side}
                 aside={total && Number(rate.value) > 0 && kind !== "transfer" && (
@@ -223,12 +279,22 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
               <span className="pt-1.5 pb-0.5 text-caption text-muted-foreground">{kind === "income" ? "De qué, dividido" : "En qué, dividido"}</span>
               {parts.map((p, i) => (
                 <div key={i} className="flex min-h-12 items-center gap-3">
-                  <button type="button" onClick={() => setSheetFor(i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                    {p.category ? <CategoryChip category={p.category} size={32} /> : (
-                      <span className="grid size-8 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="category" className="text-[18px]" /></span>
-                    )}
-                    <span className="truncate font-semibold">{p.category?.name ?? "Elige una categoría"}</span>
-                  </button>
+                  {p.partner ? (
+                    <span className="flex min-w-0 flex-1 items-center gap-3">
+                      <Avatar name={p.partner.name} size={32} />
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate font-semibold">Parte de {p.partner.name.split(" ")[0]}</span>
+                        <span className="text-caption text-muted-foreground">Te la debe</span>
+                      </span>
+                    </span>
+                  ) : (
+                    <button type="button" onClick={() => setSheetFor(i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      {p.category ? <CategoryChip category={p.category} size={32} /> : (
+                        <span className="grid size-8 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="category" className="text-[18px]" /></span>
+                      )}
+                      <span className="truncate font-semibold">{p.category?.name ?? "Elige una categoría"}</span>
+                    </button>
+                  )}
                   <label className="flex w-28 items-baseline gap-1 border-b-2 border-input-line">
                     <span aria-hidden="true" className="text-muted-foreground">{symbolOf(currency)}</span>
                     <input inputMode="decimal" placeholder="0.00" aria-label={`Monto para ${p.category?.name ?? `la parte ${i + 1}`}`}
@@ -241,11 +307,18 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
                   )}
                 </div>
               ))}
-              <div className="flex min-h-10 items-center justify-between">
-                <button type="button" onClick={() => setParts((ps) => [...ps, { category: null, amount: "" }])}
-                  className="flex items-center gap-1 font-semibold text-primary-strong">
-                  <Icon name="add" />Otra categoría
-                </button>
+              <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                <span className="flex items-center gap-4 whitespace-nowrap">
+                  <button type="button" onClick={() => setParts((ps) => [...ps, { category: null, amount: "" }])}
+                    className="flex items-center gap-1 font-semibold text-primary-strong">
+                    <Icon name="add" />Categoría
+                  </button>
+                  {kind === "expense" && !other && (
+                    <button type="button" onClick={() => setPartFor(true)} className="flex items-center gap-1 font-semibold text-primary-strong">
+                      <Icon name="person_add" />Parte de alguien
+                    </button>
+                  )}
+                </span>
                 <span className={`flex items-center gap-1 text-caption font-semibold ${remaining === 0 ? "text-income" : "text-attention"}`}>
                   <Icon name={remaining === 0 ? "check_circle" : "info"} fill={remaining === 0} className="text-[18px]" />
                   {Number.isNaN(remaining) ? "Revisa los montos" : remaining === 0
@@ -305,6 +378,19 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
         </div>
       </form>
 
+      {kind === "expense" && (
+        <Sheet title="¿De quién es esta parte?" open={partFor} onClose={() => setPartFor(false)}>
+          <OptionList value="" options={partners.map((p) => ({ value: String(p.id), label: p.name, hint: "Te la queda debiendo" }))}
+            onPick={(v) => { const p = partners.find((x) => String(x.id) === v); if (p) addPartner({ id: p.id, name: p.name }); }} />
+          <button type="button" onClick={() => { setPartFor(false); setAdding(true); }}
+            className="mx-3 mt-2 flex h-12 items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
+            <Icon name="person_add" />Nueva persona
+          </button>
+        </Sheet>
+      )}
+      <PersonaSheet key={String(adding)} open={adding} onClose={() => setAdding(false)}
+        onCreated={(id, name) => addPartner({ id, name })} />
+      <MasTipos open={mas} onClose={() => setMas(false)} />
       {kind !== "transfer" && (
         <CategorySheet kind={kind} open={sheetFor !== null} onClose={() => setSheetFor(null)} onPick={pickCategory}
           selected={sheetFor !== null ? parts[sheetFor]?.category?.id : null} />

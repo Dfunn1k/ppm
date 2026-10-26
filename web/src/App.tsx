@@ -22,7 +22,12 @@ import { MiCuenta } from "./pages/mas/MiCuenta";
 import { TipoCambio } from "./pages/mas/TipoCambio";
 import { DetalleMovimiento } from "./pages/movimientos/Detalle";
 import { Movimientos } from "./pages/movimientos/Movimientos";
+import { AsientoManual } from "./pages/movimientos/AsientoManual";
+import { Reembolso } from "./pages/movimientos/Reembolso";
 import { EditarMovimiento, Registrar } from "./pages/movimientos/Registrar";
+import { RegistrarPersona } from "./pages/movimientos/RegistrarPersona";
+import { Persona } from "./pages/personas/Persona";
+import { Personas } from "./pages/personas/Personas";
 import { Recuperar } from "./pages/Recuperar";
 import { Restablecer } from "./pages/Restablecer";
 
@@ -94,6 +99,7 @@ export function App() {
           <Route path="/inicio" element={<Inicio />} />
           <Route path="/cuentas" element={<Cuentas />} />
           <Route path="/cuentas/:id" element={<Detalle />} />
+          <Route path="/personas" element={<Personas />} />
           <Route path="/movimientos" element={<Movimientos />} />
           <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
           <Route path="/mas" element={<Mas />} />
@@ -102,6 +108,10 @@ export function App() {
         <Route path="/mas/apariencia" element={<Apariencia />} />
         <Route path="/mas/tipo-de-cambio" element={<TipoCambio />} />
         <Route path="/registrar" element={<Registrar />} />
+        <Route path="/registrar/persona/:kind" element={<RegistrarPersona />} />
+        <Route path="/registrar/reembolso" element={<Reembolso />} />
+        <Route path="/registrar/manual" element={<AsientoManual />} />
+        <Route path="/personas/:id" element={<Persona />} />
         <Route path="/movimientos/:id/editar" element={<EditarMovimiento />} />
         <Route path="/cuentas/nueva" element={<NuevaCuenta />} />
         <Route path="/cuentas/nueva/banco" element={<NuevaCuentaForm kind="bank" />} />

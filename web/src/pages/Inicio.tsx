@@ -5,10 +5,11 @@ import { Link, useLocation, useSearchParams } from "react-router";
 
 import { useAccounts, useHome, useMe } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
+import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
-import { CURRENCY_NAME, formatAmount, formatNumber, isNegative, isZero, rateText, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, formatAmount, isNegative, isZero, rateText, symbolOf } from "@/lib/money";
 import { monthName, monthOnly, monthOptions } from "@/lib/months";
 
 const ONE: Record<string, string> = { USD: "dólar", EUR: "euro" };
@@ -159,28 +160,18 @@ export function Inicio() {
       <section aria-label="Últimos movimientos" className="mt-6 flex flex-col">
         <Heading label="Últimos movimientos" to="/movimientos" link="Ver todos" />
         {h.recent.length === 0 && <span className="py-3 text-caption text-muted-foreground">Todavía no registras nada. Toca + para empezar.</span>}
-        {h.recent.map((x) => {
-          const transfer = x.kind === "transfer";
-          const cat = x.categories.length === 1 ? x.categories[0]! : null;
-          return (
-            <Link key={x.id} to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
-              {transfer
-                ? <span className="grid size-9 place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="sync_alt" /></span>
-                : <CategoryChip category={cat ?? { icon: "call_split", color: x.categories[0]?.color ?? 0 }} />}
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-semibold">{x.ref}</span>
-                <span className="truncate text-caption text-muted-foreground">
-                  {x.date === todayISO() ? "Hoy" : shortDate(x.date)} · {transfer ? x.account : cat?.name ?? `Dividido en ${x.categories.length}`}
-                </span>
+        {h.recent.map((x) => (
+          <Link key={x.id} to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+            <MoveIcon move={x} />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate font-semibold">{x.ref}</span>
+              <span className="truncate text-caption text-muted-foreground">
+                {x.date === todayISO() ? "Hoy" : shortDate(x.date)} · {moveCaption(x, lang)}
               </span>
-              <span className={`flex items-center gap-0.5 text-amount whitespace-nowrap ${transfer ? "text-muted-foreground" : x.kind === "income" ? "text-income" : "text-expense"}`}>
-                {!transfer && <Icon name={x.kind === "income" ? "south_west" : "north_east"} className="text-[16px]" />}
-                {transfer ? formatAmount(x.amount, symbolOf(x.currency), lang)
-                  : `${x.kind === "income" ? "+" : "−"} ${x.currency === h.currency ? formatNumber(x.amount, lang) : formatAmount(x.amount, symbolOf(x.currency), lang)}`}
-              </span>
-            </Link>
-          );
-        })}
+            </span>
+            <MoveAmount move={x} base={h.currency} lang={lang} />
+          </Link>
+        ))}
       </section>
 
       <Sheet title="Elige el mes" open={picking} onClose={() => setPicking(false)}>
