@@ -13,7 +13,7 @@ async function readyUser(page: Page) {
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByLabel("Lo que hay hoy en Efectivo").fill("500");
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
-  await expect(page).toHaveURL("/cuentas");
+  await expect(page).toHaveURL("/inicio");
   // Las cuentas de banco, directo por la API (con la misma sesión)
   const banks = (await (await page.request.get("/api/catalog")).json()).banks as { id: number; name: string }[];
   const bank = (name: string) => banks.find((b) => b.name === name)!.id;

@@ -338,3 +338,19 @@
 .icon-fill {
   font-variation-settings: "FILL" 1, "wght" 400, "opsz" 24;
 }
+
+/* Muestras de los acentos (Más › Apariencia): cada una con su color, en el tema que se ve */
+.swatch-tinta { background: #171717; color: #ffffff; }
+.swatch-trigo { background: #e8b04b; color: #2a1d05; }
+.swatch-morado { background: #5b2a86; color: #ffffff; }
+.swatch-azul { background: #1f4fb8; color: #ffffff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .swatch-tinta { background: #fafafa; color: #0a0a0a; }
+  :root:not([data-theme="light"]) .swatch-trigo { background: #e3a83e; color: #2a1d05; }
+  :root:not([data-theme="light"]) .swatch-morado { background: #b794e6; color: #1d1028; }
+  :root:not([data-theme="light"]) .swatch-azul { background: #8fb0ff; color: #0b1530; }
+}
+:root[data-theme="dark"] .swatch-tinta { background: #fafafa; color: #0a0a0a; }
+:root[data-theme="dark"] .swatch-trigo { background: #e3a83e; color: #2a1d05; }
+:root[data-theme="dark"] .swatch-morado { background: #b794e6; color: #1d1028; }
+:root[data-theme="dark"] .swatch-azul { background: #8fb0ff; color: #0b1530; }
