@@ -191,13 +191,15 @@ def set_manual(currency: str, on: dt.date, buy: Decimal, sell: Decimal) -> RateD
 
 def user_rates(user_id: int, on: dt.date | None = None) -> list[UserRate]:
     """El tipo que vale para `on` (hoy si no se dice) en cada moneda de la persona que no es la base:
-    el de ese día o el último anterior. Las que no tienen ninguno no aparecen."""
+    el de ese día o el último anterior. Las que no tienen ninguno no aparecen. Antes de configurar
+    (los 3 pasos), todas las que tienen tipo: todavía no se sabe cuáles va a usar."""
     with user_transaction(user_id) as conn:
         return [UserRate(*r) for r in conn.execute("""
             SELECT trim(c.name), r.name, r.rate_buy, r.rate_sell, user_today() - r.name > %s
-              FROM res_users_currency uc
-              JOIN res_users u ON true
-              JOIN res_currency c ON c.id = uc.currency_id AND c.id <> u.currency_id
+              FROM res_currency c
+              JOIN res_users u ON c.id IS DISTINCT FROM u.currency_id
+                              AND (u.currency_id IS NULL
+                                   OR c.id IN (SELECT currency_id FROM res_users_currency))
               JOIN LATERAL (SELECT name, rate_buy, rate_sell FROM res_currency_rate
                              WHERE currency_id = c.id AND name <= coalesce(%s, user_today())
                              ORDER BY name DESC LIMIT 1) r ON true

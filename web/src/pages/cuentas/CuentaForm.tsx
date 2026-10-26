@@ -1,20 +1,18 @@
 // C5 · Cuenta de banco o efectivo. El mismo formulario sirve en «Nueva cuenta» y en el paso 3
 // de la configuración: quien lo usa decide qué hacer con lo que devuelve.
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import type { BankIn, CashIn } from "@/api/hooks";
+import { rateHint, useSuggestedRate } from "@/components/RateField";
 import { Segmented, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, parseAmount, symbolOf } from "@/lib/money";
 
 export type Bank = { id: number; name: string; cci_code: string | null };
-
-/** El tipo de cambio sugerido hasta que llegue el de SUNAT (rebanada 5). */
-const SUGGESTED_RATE = "3.750";
 
 function schema(kind: "bank" | "cash", base: string, banks: Bank[]) {
   return z
@@ -35,7 +33,7 @@ function schema(kind: "bank" | "cash", base: string, banks: Bank[]) {
       if (v.currency !== base) {
         const rate = v.rate.trim();
         if (!/^\d{1,6}(\.\d{1,6})?$/.test(rate) || Number(rate) <= 0)
-          ctx.addIssue({ code: "custom", path: ["rate"], message: "Escribe el tipo de cambio, como 3.750" });
+          ctx.addIssue({ code: "custom", path: ["rate"], message: "Escribe el tipo de cambio, como 3.443" });
       }
       if (kind !== "bank") return;
       const bank = banks.find((b) => String(b.id) === v.bankId);
@@ -77,7 +75,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       bankId: "",
       accKind: "savings",
       amount: "",
-      rate: SUGGESTED_RATE,
+      rate: "",
       date: todayISO(),
       accNumber: "",
       cci: "",
@@ -86,6 +84,11 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
   const { errors } = form.formState;
   const [currency, bankId, accKind, date] = useWatch({ control: form.control, name: ["currency", "bankId", "accKind", "date"] });
   const foreign = currency !== base;
+  // El tipo de SUNAT del día del saldo, mientras la persona no escriba otro
+  const suggestion = useSuggestedRate(currency, base, dateOpen ? date : todayISO());
+  useEffect(() => {
+    if (suggestion.value && !form.getFieldState("rate").isDirty) form.setValue("rate", suggestion.value);
+  }, [suggestion.value, form]);
 
   const submit = form.handleSubmit((v) => {
     const opening = {
@@ -169,7 +172,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
           <LineField
             label="Tipo de cambio"
             inputMode="decimal"
-            hint={`Soles por cada ${symbolOf(currency)} 1. El de SUNAT llegará solo; por ahora, escríbelo.`}
+            hint={rateHint("buy", suggestion.date, currency)}
             error={errors.rate?.message}
             {...form.register("rate")}
           />

@@ -19,6 +19,7 @@ import { Inicio } from "./pages/Inicio";
 import { Apariencia } from "./pages/mas/Apariencia";
 import { Mas } from "./pages/mas/Mas";
 import { MiCuenta } from "./pages/mas/MiCuenta";
+import { TipoCambio } from "./pages/mas/TipoCambio";
 import { DetalleMovimiento } from "./pages/movimientos/Detalle";
 import { Movimientos } from "./pages/movimientos/Movimientos";
 import { EditarMovimiento, Registrar } from "./pages/movimientos/Registrar";
@@ -99,6 +100,7 @@ export function App() {
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
+        <Route path="/mas/tipo-de-cambio" element={<TipoCambio />} />
         <Route path="/registrar" element={<Registrar />} />
         <Route path="/movimientos/:id/editar" element={<EditarMovimiento />} />
         <Route path="/cuentas/nueva" element={<NuevaCuenta />} />

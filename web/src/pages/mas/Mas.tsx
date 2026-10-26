@@ -1,4 +1,5 @@
-// X0 · Más (mínimo): Mi cuenta y Apariencia; lo demás llega con su rebanada.
+// X0 · Más (mínimo): Mi cuenta, Apariencia y, para el administrador, Tipo de cambio (Z1);
+// lo demás llega con su rebanada.
 import { Link } from "react-router";
 
 import { useMe } from "@/api/hooks";
@@ -35,6 +36,16 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
+      {me?.is_admin && (
+        <Link to="/mas/tipo-de-cambio" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+          <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="currency_exchange" className="text-[22px]" /></span>
+          <span className="flex flex-1 flex-col">
+            <span className="font-semibold">Tipo de cambio</span>
+            <span className="text-caption text-muted-foreground">Solo administrador · SUNAT y a mano</span>
+          </span>
+          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        </Link>
+      )}
 
       <span className="mt-6 border-b border-border pb-1 text-label text-muted-foreground">Muy pronto</span>
       <ul>

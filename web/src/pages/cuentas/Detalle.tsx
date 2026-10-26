@@ -12,6 +12,7 @@ import {
   useSetOpening,
   useUpdateAccount,
 } from "@/api/hooks";
+import { RateField, useRateInput } from "@/components/RateField";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { copyText } from "@/lib/clipboard";
@@ -188,9 +189,10 @@ function OpeningSheet({ open, onClose, detail, base, lang }: {
   const currency = detail.account.currency ?? base;
   const [amount, setAmount] = useState(detail.opening ? formatNumber(detail.opening.amount, lang) : "");
   const [date, setDate] = useState(detail.opening?.date ?? todayISO());
-  const [rate, setRate] = useState(detail.opening?.rate ? Number(detail.opening.rate).toFixed(3) : "3.750");
   const [problem, setProblem] = useState<string | null>(null);
   const foreign = currency !== base;
+  const side = detail.account.kind === "other" ? "sell" : "buy";
+  const rate = useRateInput(currency, base, date, side, detail.opening?.rate ? Number(detail.opening.rate).toFixed(3) : null);
   return (
     <Sheet title="Corregir el saldo inicial" open={open} onClose={onClose}>
       <form className="flex flex-col gap-4 px-3"
@@ -199,7 +201,8 @@ function OpeningSheet({ open, onClose, detail, base, lang }: {
           const value = parseAmount(amount || "0", lang);
           if (value === null) return setProblem("Escribe un monto como 1,234.50");
           setProblem(null);
-          set.mutate({ amount: value, date, rate: foreign ? rate.trim() : null }, { onSuccess: onClose });
+          if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
+          set.mutate({ amount: value, date, rate: foreign ? rate.value.trim() : null }, { onSuccess: onClose });
         }}>
         <p className="text-caption text-muted-foreground">
           {detail.opening
@@ -208,7 +211,7 @@ function OpeningSheet({ open, onClose, detail, base, lang }: {
         </p>
         <AmountField label="Saldo inicial" symbol={symbolOf(currency)} value={amount} onChange={(e) => setAmount(e.target.value)} />
         <LineField label="Al día" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} />
-        {foreign && <LineField label="Tipo de cambio" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} />}
+        {foreign && <RateField input={rate} currency={currency} side={side} />}
         {(problem || set.error) && <ErrorAlert>{problem ?? set.error?.message}</ErrorAlert>}
         <PrimaryButton pending={set.isPending}>Guardar saldo</PrimaryButton>
       </form>

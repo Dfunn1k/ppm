@@ -3,14 +3,16 @@ costo promedio), el tipo del día como sugerencia, Z1 del administrador y el imp
 
 import dataclasses
 import threading
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import psycopg
 import pytest
+from fastapi.testclient import TestClient
 
 from app import rates, users
 from app.config import get_settings
+from app.main import app
 from tests.conftest import usd_today
 from tests.test_movimientos_api import MES, Ana
 
@@ -128,6 +130,15 @@ def test_el_tipo_de_mis_monedas_para_un_dia(admin: Ana):
     assert r == [{"currency": "USD", "date": "2000-12-29", "buy": "3.5120", "sell": "3.5190", "stale": True}]
 
 
+def test_antes_de_configurar_tambien_hay_sugerencia(admin: Ana):
+    admin.c.post("/admin/rates", json={"currency": "USD", "date": "2000-12-29", "buy": "3.512", "sell": "3.519"})
+    nuevo = TestClient(app)
+    nuevo.post("/auth/signup", json={"name": "Beto", "email": "beto-sin-configurar@prueba.ppm",
+                                     "password": "pan-para-mayo-2026"})
+    r = nuevo.get("/rates", params={"date": "2000-12-31"}).json()
+    assert [x["currency"] for x in r] == ["USD"]
+
+
 def test_el_inicio_dice_con_que_tipo_cuentan_mis_dolares(ana: Ana):
     foreign = ana.c.get("/home", params={"month": MES}).json()["foreign"]
     hoy = usd_today()
@@ -208,7 +219,6 @@ def test_sunat_pisa_lo_cargado_a_mano(admin: Ana):
 
 
 def test_la_proxima_corrida_es_a_las_nueve_de_lima():
-    from datetime import datetime
     antes = datetime(2026, 10, 26, 8, 0, tzinfo=rates.LIMA)
     despues = datetime(2026, 10, 26, 10, 0, tzinfo=rates.LIMA)
     assert rates._seconds_until_next_run(antes) == 3600

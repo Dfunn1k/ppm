@@ -1,4 +1,5 @@
-// M2 · Detalle de un movimiento: los datos, lo dividido, editar, confirmar o pasar a por confirmar, y borrar.
+// M2 · Detalle de un movimiento: los datos, lo dividido, el costo del cambio (o la ganancia) al cambiar
+// de moneda, editar, confirmar o pasar a por confirmar, y borrar.
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -6,9 +7,10 @@ import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
-import { formatAmount, symbolOf } from "@/lib/money";
+import { divide, formatAmount, isNegative, symbolOf } from "@/lib/money";
 
 const KIND = { expense: "Gasto", income: "Ingreso", transfer: "Transferencia", other: "Movimiento" } as const;
+const FX_GROUP = { gain: "Ingresos", loss: "Gastos financieros" } as const;
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
@@ -41,6 +43,12 @@ export function DetalleMovimiento() {
   const sign = s.kind === "income" ? "+ " : s.kind === "expense" ? "− " : "";
   const tone = s.kind === "income" ? "text-income" : s.kind === "expense" ? "text-expense" : "";
   const [from, to] = transfer ? s.account.split(" → ") : [s.account, null];
+  const exchange = transfer && s.to_currency !== s.currency && s.to_amount;
+  // En un cambio que toca la moneda base, el tipo sale de los dos montos
+  const exchangeRate = exchange
+    ? s.to_currency === me.currency ? divide(s.to_amount!, s.amount) : s.currency === me.currency ? divide(s.amount, s.to_amount!) : null
+    : null;
+  const gain = s.fx != null && !isNegative(s.fx);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
@@ -48,7 +56,7 @@ export function DetalleMovimiento() {
         <button type="button" aria-label="Volver" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
-        <span className="pr-2.5 text-label text-muted-foreground">{KIND[s.kind]}</span>
+        <span className="pr-2.5 text-label text-muted-foreground">{exchange ? "Cambio de moneda" : KIND[s.kind]}</span>
       </div>
 
       {!s.posted && (
@@ -57,9 +65,10 @@ export function DetalleMovimiento() {
         </div>
       )}
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
-      <span className={`mt-3 flex items-center gap-1 text-amount-hero ${tone}`}>
+      <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-[32px] leading-10 font-semibold tracking-[-0.02em] tabular-nums whitespace-nowrap" : "text-amount-hero"} ${tone}`}>
         {!transfer && <Icon name={s.kind === "income" ? "south_west" : "north_east"} className="text-[30px]" />}
         {sign}{formatAmount(s.amount, symbolOf(s.currency), lang)}
+        {exchange && <><Icon name="arrow_forward" aria-label="a" className="text-[26px] text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}
       </span>
       {s.currency !== me.currency && !transfer && (
         <span className="text-caption text-muted-foreground tabular-nums">
@@ -72,6 +81,13 @@ export function DetalleMovimiento() {
         {transfer && (
           <Field icon="south_west" label="Entró a"
             value={`${to}${s.to_amount && s.to_currency !== s.currency ? ` · ${formatAmount(s.to_amount, symbolOf(s.to_currency), lang)}` : ""}`} />
+        )}
+        {exchangeRate && (
+          <div className="flex min-h-[52px] items-center gap-3 border-b border-border">
+            <Icon name="currency_exchange" className="w-9 text-center text-muted-foreground" />
+            <span className="flex-1">Tipo de cambio</span>
+            <span className="font-semibold tabular-nums">{exchangeRate}</span>
+          </div>
         )}
         {d.splits.length > 0 && (
           <div className="flex flex-col border-b border-border py-2">
@@ -90,6 +106,28 @@ export function DetalleMovimiento() {
           <span>{fullDate(s.date)}</span>
         </div>
       </div>
+
+      {s.fx != null && d.cost != null && (
+        <section aria-label={gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}
+          className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-card p-3.5">
+          <span className="flex items-center gap-3">
+            <CategoryChip category={{ icon: "currency_exchange", color: gain ? 10 : 1 }} />
+            <span className="flex flex-1 flex-col">
+              <span className="font-semibold">{gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}</span>
+              <span className="text-caption text-muted-foreground">{FX_GROUP[gain ? "gain" : "loss"]}</span>
+            </span>
+            <span className={`font-semibold tabular-nums ${gain ? "text-income" : "text-expense"}`}>
+              {gain ? "+ " : "− "}{formatAmount(s.fx.replace("-", ""), symbolOf(me.currency), lang)}
+            </span>
+          </span>
+          <dl className="grid grid-cols-[1fr_auto] gap-y-0.5 border-t border-border pt-2 text-caption text-muted-foreground tabular-nums">
+            <dt>Te costaron (a {Number(d.cost_rate).toFixed(3)} en promedio)</dt>
+            <dd>{formatAmount(d.cost, symbolOf(me.currency), lang)}</dd>
+            <dt>Recibiste</dt>
+            <dd>{formatAmount(s.to_amount ?? "0", symbolOf(s.to_currency), lang)}</dd>
+          </dl>
+        </section>
+      )}
 
       <div className="min-h-6 flex-1" />
       <div className="flex flex-col gap-2">

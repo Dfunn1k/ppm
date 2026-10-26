@@ -401,6 +401,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El tipo de cambio de tus monedas para un día (el de ese día o el último anterior) */
+        get: operations["user_rates_rates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Z1: cómo está el tipo de cambio de cada moneda */
+        get: operations["admin_rates_admin_rates_get"];
+        put?: never;
+        /** Z1: cargar o corregir a mano el tipo de un día */
+        post: operations["set_rate_admin_rates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rates/sunat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Z1: traer de SUNAT ahora */
+        post: operations["import_now_admin_rates_sunat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -474,6 +526,13 @@ export interface components {
             balances: components["schemas"]["MoneyOut"][];
             /** Base Total */
             base_total: string;
+        };
+        /** AdminRatesOut */
+        AdminRatesOut: {
+            /** Currencies */
+            currencies: components["schemas"]["CurrencyStatusOut"][];
+            /** History */
+            history: components["schemas"]["RateDayOut"][];
         };
         /** BankIn */
         BankIn: {
@@ -549,6 +608,20 @@ export interface components {
             /** Color */
             color: number | null;
         };
+        /** CurrencyStatusOut */
+        CurrencyStatusOut: {
+            /** Currency */
+            currency: string;
+            /** Users */
+            users: number;
+            last: components["schemas"]["RateDayOut"] | null;
+            /** Loaded At */
+            loaded_at: string | null;
+            /** Days */
+            days: number | null;
+            /** Stale */
+            stale: boolean;
+        };
         /** CustodyIn */
         CustodyIn: {
             /** Partner Id */
@@ -584,6 +657,22 @@ export interface components {
             total: string;
             /** Moves */
             moves: components["schemas"]["MoveSummaryOut"][];
+        };
+        /** ForeignOut */
+        ForeignOut: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Rate */
+            rate: string;
+            /**
+             * Rate Date
+             * Format: date
+             */
+            rate_date: string;
+            /** Stale */
+            stale: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -625,6 +714,8 @@ export interface components {
             top: components["schemas"]["TopCategoryOut"][];
             /** Recent */
             recent: components["schemas"]["MoveSummaryOut"][];
+            /** Foreign */
+            foreign: components["schemas"]["ForeignOut"][];
         };
         /** LineOut */
         LineOut: {
@@ -690,6 +781,8 @@ export interface components {
             ui_accent: string;
             /** Currencies */
             currencies: string[];
+            /** Is Admin */
+            is_admin: boolean;
         };
         /** MePatch */
         MePatch: {
@@ -708,6 +801,8 @@ export interface components {
             amount: string;
             /** Base */
             base: string;
+            /** Book */
+            book: string;
         };
         /** MonthOut */
         MonthOut: {
@@ -735,6 +830,10 @@ export interface components {
             rate: string | null;
             /** Splits */
             splits: components["schemas"]["SplitOut"][];
+            /** Cost */
+            cost?: string | null;
+            /** Cost Rate */
+            cost_rate?: string | null;
         };
         /** MoveIn */
         MoveIn: {
@@ -800,6 +899,8 @@ export interface components {
             to_currency: string | null;
             /** To Amount */
             to_amount: string | null;
+            /** Fx */
+            fx: string | null;
         };
         /** OpeningIn */
         OpeningIn: {
@@ -850,6 +951,8 @@ export interface components {
             custody: components["schemas"]["CustodyRowOut"][];
             /** Owe */
             owe: components["schemas"]["AccountRowOut"][];
+            /** Rates */
+            rates: components["schemas"]["TodayRateOut"][];
         };
         /** PartnerIn */
         PartnerIn: {
@@ -874,6 +977,39 @@ export interface components {
         PendingIn: {
             /** Pending */
             pending: boolean;
+        };
+        /** RateDayOut */
+        RateDayOut: {
+            /** Currency */
+            currency: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Buy */
+            buy: string;
+            /** Sell */
+            sell: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "SUNAT" | "manual";
+        };
+        /** RateIn */
+        RateIn: {
+            /** Currency */
+            currency: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Buy */
+            buy: number | string;
+            /** Sell */
+            sell: number | string;
         };
         /** ResetConfirmIn */
         ResetConfirmIn: {
@@ -929,6 +1065,22 @@ export interface components {
             /** Amount */
             amount: string;
         };
+        /** TodayRateOut */
+        TodayRateOut: {
+            /** Currency */
+            currency: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Buy */
+            buy: string;
+            /** Sell */
+            sell: string;
+            /** Stale */
+            stale: boolean;
+        };
         /** TopCategoryOut */
         TopCategoryOut: {
             /** Id */
@@ -943,6 +1095,22 @@ export interface components {
             amount: string;
             /** Share */
             share: number;
+        };
+        /** UserRateOut */
+        UserRateOut: {
+            /** Currency */
+            currency: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Buy */
+            buy: string;
+            /** Sell */
+            sell: string;
+            /** Stale */
+            stale: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -1952,6 +2120,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    user_rates_rates_get: {
+        parameters: {
+            query?: {
+                date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRateOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_rates_admin_rates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRatesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_rate_admin_rates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RateDayOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_now_admin_rates_sunat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RateDayOut"];
                 };
             };
             /** @description Validation Error */
