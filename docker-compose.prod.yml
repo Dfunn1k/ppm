@@ -3,7 +3,8 @@
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
 #   db       PostgreSQL 18; los datos quedan en el volumen pgdata (nunca se publica su puerto)
-#   migrate  dbmate aplica las migraciones pendientes y termina
+#   migrate  dbmate aplica las migraciones pendientes y termina (como ppm, el dueño)
+#   usuario-api  le pone su contraseña a ppm_api, el usuario con que entra la API, y termina
 #   api      FastAPI (un proceso; incluye el importador diario de SUNAT)
 #   web      Caddy: la web ya construida, /api/… hacia la API y HTTPS automático (puertos 80 y 443)
 #
@@ -39,11 +40,23 @@ services:
       db:
         condition: service_healthy
 
+  # ppm_api no es dueño ni superusuario: sin ponerse ppm_app o ppm_admin no lee ninguna tabla.
+  # Su contraseña sale de .env y se vuelve a poner en cada arranque (cambiarla es editar .env).
+  usuario-api:
+    image: postgres:18
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PPM_API_PASSWORD: ${PPM_API_PASSWORD:?Falta PPM_API_PASSWORD en .env}
+    entrypoint: ["sh", "-c", "echo \"ALTER ROLE ppm_api LOGIN PASSWORD :'clave'\" | psql -h db -U ppm -d ppm -q -v ON_ERROR_STOP=1 -v clave=\"$$PPM_API_PASSWORD\""]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   api:
     build: ./api
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://ppm:${POSTGRES_PASSWORD}@db:5432/ppm
+      DATABASE_URL: postgresql://ppm_api:${PPM_API_PASSWORD}@db:5432/ppm
       APP_URL: https://${PPM_DOMAIN:?Falta PPM_DOMAIN en .env}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       SMTP_HOST: ${SMTP_HOST:?Falta SMTP_HOST en .env}
@@ -58,7 +71,7 @@ services:
     command: ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
               "--proxy-headers", "--forwarded-allow-ips", "*"]
     depends_on:
-      migrate:
+      usuario-api:
         condition: service_completed_successfully
 
   web:

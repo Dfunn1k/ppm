@@ -1,6 +1,7 @@
 # Todo PPM con un comando:  docker compose up
 #   db       PostgreSQL 18 (los datos quedan en el volumen pgdata)
 #   migrate  dbmate aplica las migraciones pendientes y termina
+#   usuario-api  le pone la contraseña a ppm_api, el usuario con que entra la API, y termina
 #   api      FastAPI en http://localhost:8000 (se recarga sola al editar api/app/)
 #   mailpit  atrapa los correos que envía la API; se ven en http://localhost:8025
 #   web      la app web (Vite + React) en http://localhost:5173; /api/… va a la API
@@ -38,10 +39,20 @@ services:
       db:
         condition: service_healthy
 
+  # ppm_api (migración 0011) no es dueño ni superusuario: como en producción
+  usuario-api:
+    image: postgres:18
+    environment:
+      PGPASSWORD: ppm
+    entrypoint: ["sh", "-c", "echo \"ALTER ROLE ppm_api LOGIN PASSWORD 'ppm_api'\" | psql -h db -U ppm -d ppm -q -v ON_ERROR_STOP=1"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   api:
     build: ./api
     environment:
-      DATABASE_URL: postgresql://ppm:ppm@db:5432/ppm
+      DATABASE_URL: postgresql://ppm_api:ppm_api@db:5432/ppm
       APP_URL: http://localhost:5173
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
@@ -54,7 +65,7 @@ services:
       - ./api/app:/srv/app
     command: ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
-      migrate:
+      usuario-api:
         condition: service_completed_successfully
       mailpit:
         condition: service_started

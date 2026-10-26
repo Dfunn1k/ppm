@@ -4,7 +4,7 @@ Esta guía lleva PPM a producción en un servidor propio con Docker. Está escri
 
 | Archivo | Qué es |
 |---|---|
-| `docker-compose.prod.yml` | las cuatro piezas de producción: `db`, `migrate`, `api` y `web` |
+| `docker-compose.prod.yml` | las piezas de producción: `db`, `migrate`, `usuario-api`, `api` y `web` |
 | `web/Dockerfile` · `web/Caddyfile` | la web ya construida, servida por Caddy, que además saca el certificado HTTPS y reenvía `/api/…` a la API |
 | `api/Dockerfile` | la API (FastAPI) |
 | `deploy/.env.example` | la configuración que cambia entre servidores; se copia como `.env` |
@@ -18,8 +18,10 @@ Esta guía lleva PPM a producción en un servidor propio con Docker. Está escri
 Internet ──443/80──▶ web (Caddy)
                       ├─ /          la web (archivos de Vite)
                       └─ /api/…  ──▶ api:8000 (FastAPI + importador diario de SUNAT)
-                                       └──▶ db:5432 (PostgreSQL 18, volumen pgdata)
+                                       └──▶ db:5432 (PostgreSQL 18, volumen pgdata), como ppm_api
 ```
+
+**Dos usuarios de PostgreSQL.** `ppm` es el dueño de las tablas: solo lo usan `migrate`, los respaldos y quien entra a mano. La API entra como `ppm_api`, que no es dueño ni superusuario: sin ponerse un rol no puede leer ninguna tabla, y solo puede ponerse `ppm_app` (cada persona, con seguridad por fila) o `ppm_admin` (el importador de SUNAT y Z1). Si alguien le robara la conexión a la API, no tendría la llave maestra. Cada uno tiene su contraseña en `.env`.
 
 Solo Caddy publica puertos (80 y 443). La API y la base quedan dentro de la red de Docker. El proyecto se llama `ppm-prod` (`name:` en el compose), así nunca se mezcla con uno de desarrollo.
 
@@ -63,6 +65,7 @@ cd /opt/ppm
 cp deploy/.env.example .env
 chmod 600 .env
 openssl rand -hex 24      # úsalo como POSTGRES_PASSWORD
+openssl rand -hex 24      # otra, para PPM_API_PASSWORD
 nano .env                 # llena todo
 ```
 
@@ -70,6 +73,7 @@ nano .env                 # llena todo
 |---|---|
 | `PPM_DOMAIN` | el dominio, sin `https://` |
 | `POSTGRES_PASSWORD` | la salida de `openssl rand -hex 24`. **Solo letras y números**: va dentro de una URL |
+| `PPM_API_PASSWORD` | otra salida de `openssl rand -hex 24`, distinta: la contraseña de `ppm_api`. También solo letras y números |
 | `SMTP_HOST` · `SMTP_PORT` · `SMTP_USER` · `SMTP_PASSWORD` | los datos del proveedor de correo (puerto 587) |
 | `SMTP_STARTTLS` | `true` |
 | `MAIL_FROM` | el remitente, de un dominio verificado en el proveedor: `PPM <no-responder@ejemplo.com>` |
@@ -84,7 +88,7 @@ cd /opt/ppm
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-En orden: arranca `db`; `migrate` aplica todas las migraciones y termina; arranca `api`; `web` construye la app y pide el certificado.
+En orden: arranca `db`; `migrate` aplica todas las migraciones y termina; `usuario-api` le pone a `ppm_api` la contraseña de `.env` y termina; arranca `api`; `web` construye la app y pide el certificado.
 
 Para no escribir `-f docker-compose.prod.yml` cada vez, en esa sesión:
 
@@ -97,7 +101,7 @@ El resto de la guía lo asume.
 ## 5. Comprobar que funciona
 
 ```bash
-docker compose ps                         # db (healthy), api y web «Up»; migrate «Exited (0)»
+docker compose ps -a                      # db (healthy), api y web «Up»; migrate y usuario-api «Exited (0)»
 docker compose logs migrate               # «Applied: 0001_base.sql» … hasta la última
 curl -s https://ppm.ejemplo.com/api/health   # tu dominio: {"status":"ok","postgres":"18.x"}
 ```
@@ -146,7 +150,11 @@ docker compose up -d --build                    # migrate aplica solo las migrac
 docker compose ps && curl -s https://ppm.ejemplo.com/api/health   # tu dominio
 ```
 
-Las migraciones solo avanzan. Nunca se edita una que ya está en `main`, así que actualizar es seguro. Si una actualización falla:
+Las migraciones solo avanzan. Nunca se edita una que ya está en `main`, así que actualizar es seguro.
+
+**Una sola vez, en un servidor que se desplegó antes de `ppm_api`:** antes del `docker compose up`, agrega a `.env` la línea `PPM_API_PASSWORD=` con la salida de `openssl rand -hex 24`. Sin ella, Docker Compose se detiene con «Falta PPM_API_PASSWORD en .env» y no cambia nada.
+
+Si una actualización falla:
 
 1. Vuelve al commit anterior: `git checkout <commit>` y luego `docker compose up -d --build`.
 2. Si la migración nueva ya cambió datos, restaura el respaldo del paso 1.
@@ -159,6 +167,7 @@ Las migraciones solo avanzan. Nunca se edita una que ya está en `main`, así qu
 | Logs | `docker compose logs -f api` (o `web`, `db`) |
 | Reiniciar la API | `docker compose restart api` |
 | Cambiar algo de `.env` | editar `.env` y `docker compose up -d` (recrea lo que cambió) |
+| Cambiar la contraseña de `ppm_api` | editar `PPM_API_PASSWORD` en `.env` y `docker compose up -d`: `usuario-api` la pone y la API se recrea con ella |
 | Entrar a la base | `docker compose exec db psql -U ppm -d ppm` |
 | Espacio de Docker | `docker system df`; limpiar imágenes viejas con `docker image prune` |
 
@@ -172,8 +181,16 @@ El importador de SUNAT escribe en los logs de `api` solo cuando falla («Importa
 - Editar una migración que ya está en `main` o tocar la base a mano para «arreglar» datos sin respaldo.
 - Levantar la API con más de un proceso (`--workers`): el importador de SUNAT corre dentro de ella.
 - Poner `COOKIE_SECURE=false`: sin HTTPS, la cookie de sesión no debe viajar.
+- Conectar la API como `ppm` (el dueño): perdería la protección de `ppm_api`.
 
-## Pendiente (no bloquea el primer despliegue)
+## 9. Monitoreo (UptimeRobot)
 
-- La API se conecta a PostgreSQL con el dueño de la base. Cada pedido trabaja como `ppm_app` (con seguridad por fila) o `ppm_admin`. Más adelante conviene un usuario de conexión propio, que no sea dueño y que solo pueda asumir esos dos roles.
-- Monitoreo: un chequeo externo a `https://ppm.ejemplo.com/api/health` (UptimeRobot, Healthchecks) avisa si se cae.
+Un servicio de afuera consulta `/api/health` cada 5 minutos y te avisa si deja de responder. `/api/health` responde `{"status":"ok",…}` solo si la API está viva **y** llega a la base; si la base no responde, devuelve un error 500. Tiene que ser de afuera: un monitor en la misma VPS se cae con ella.
+
+1. Crea una cuenta en [uptimerobot.com](https://uptimerobot.com) y confirma tu correo. Para uso personal alcanza el plan gratis (revisa sus condiciones en su página de precios).
+2. **New monitor** → tipo **HTTP(s)**.
+   - **URL:** `https://ppm.ejemplo.com/api/health` (tu dominio).
+   - **Intervalo:** 5 minutos.
+   - Cualquier respuesta que no sea 2xx cuenta como caída: la API apagada, la base sin responder (500) o un certificado HTTPS vencido.
+3. En los contactos de alerta, deja tu correo (y la app de UptimeRobot o Telegram, si quieres el aviso en el celular).
+4. Pruébalo: `docker compose stop api`, espera el aviso (unos 5 a 10 minutos) y vuelve con `docker compose start api`. Debe llegar un segundo aviso de que volvió.
