@@ -16,6 +16,9 @@ import { NuevaGuardo } from "./pages/cuentas/Guardo";
 import { NuevaCuenta, NuevaCuentaForm } from "./pages/cuentas/Nueva";
 import { Entrar } from "./pages/Entrar";
 import { Inicio } from "./pages/Inicio";
+import { DetalleMovimiento } from "./pages/movimientos/Detalle";
+import { Movimientos } from "./pages/movimientos/Movimientos";
+import { EditarMovimiento, Registrar } from "./pages/movimientos/Registrar";
 import { Recuperar } from "./pages/Recuperar";
 import { Restablecer } from "./pages/Restablecer";
 
@@ -87,7 +90,11 @@ export function App() {
           <Route path="/inicio" element={<Inicio />} />
           <Route path="/cuentas" element={<Cuentas />} />
           <Route path="/cuentas/:id" element={<Detalle />} />
+          <Route path="/movimientos" element={<Movimientos />} />
+          <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
         </Route>
+        <Route path="/registrar" element={<Registrar />} />
+        <Route path="/movimientos/:id/editar" element={<EditarMovimiento />} />
         <Route path="/cuentas/nueva" element={<NuevaCuenta />} />
         <Route path="/cuentas/nueva/banco" element={<NuevaCuentaForm kind="bank" />} />
         <Route path="/cuentas/nueva/efectivo" element={<NuevaCuentaForm kind="cash" />} />

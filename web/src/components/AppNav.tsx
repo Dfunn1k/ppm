@@ -1,6 +1,6 @@
-// La barra de abajo del diseño final. En esta rebanada funcionan Inicio (provisional) y Cuentas;
-// el resto llega con su rebanada y se ve, pero no se puede tocar.
-import { NavLink } from "react-router";
+// La barra de abajo del diseño final. Funcionan Inicio (provisional), Movimientos, el + y Cuentas;
+// «Más» llega con su rebanada y se ve, pero no se puede tocar.
+import { Link, NavLink } from "react-router";
 
 import { Icon } from "./ui";
 
@@ -8,7 +8,7 @@ type Item = { to?: string; label: string; icon: string };
 
 const ITEMS: Item[] = [
   { to: "/inicio", label: "Inicio", icon: "home" },
-  { label: "Movimientos", icon: "receipt_long" },
+  { to: "/movimientos", label: "Movimientos", icon: "receipt_long" },
   { label: "Cuentas", to: "/cuentas", icon: "account_balance_wallet" },
   { label: "Más", icon: "menu" },
 ];
@@ -44,14 +44,10 @@ export function AppNav() {
       <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
         <Tab item={ITEMS[1]!} />
-        <span
-          aria-disabled="true"
-          title="Registrar: muy pronto"
-          className="-mt-7 grid size-14 place-items-center justify-self-center rounded-full bg-primary text-primary-foreground opacity-40 shadow-lg"
-        >
+        <Link to="/registrar" aria-label="Registrar un movimiento"
+          className="-mt-7 grid size-14 place-items-center justify-self-center rounded-full bg-primary text-primary-foreground shadow-lg">
           <Icon name="add" className="text-[28px]" />
-          <span className="sr-only">Registrar un movimiento (muy pronto)</span>
-        </span>
+        </Link>
         <Tab item={ITEMS[2]!} />
         <Tab item={ITEMS[3]!} />
       </div>

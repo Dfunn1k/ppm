@@ -18,8 +18,9 @@ export function Sheet({ title, open, onClose, children }: {
   useEffect(() => {
     if (!open) return;
     const before = document.activeElement as HTMLElement | null;
-    const first = panel.current?.querySelector<HTMLElement>("[aria-checked='true'], button, input, a");
-    first?.focus();
+    // El foco va a la opción elegida o a la hoja: nunca a la búsqueda (en el celular abriría el teclado)
+    const selected = panel.current?.querySelector<HTMLElement>("[aria-checked='true']");
+    (selected ?? panel.current)?.focus();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close.current();
     document.addEventListener("keydown", onKey);
     return () => {
@@ -36,8 +37,9 @@ export function Sheet({ title, open, onClose, children }: {
         ref={panel}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-labelledby={titleId}
-        className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-lg bg-card px-4 pt-2 pb-6 shadow-lg"
+        className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-lg bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none"
       >
         <span aria-hidden="true" className="h-1 w-9 self-center rounded-full bg-border" />
         <h2 id={titleId} className="mx-3 mt-4 mb-2 text-title-2">

@@ -293,3 +293,113 @@ export function useAddCustody() {
     onSuccess: () => changed(),
   });
 }
+
+// --- Movimientos --------------------------------------------------------------------------------
+
+export type MoveIn = components["schemas"]["MoveIn"];
+export type MoveDetail = components["schemas"]["MoveDetailOut"];
+export type MoveSummary = components["schemas"]["MoveSummaryOut"];
+export type Month = components["schemas"]["MonthOut"];
+export type Category = components["schemas"]["CategoryOut"];
+export type Categories = components["schemas"]["CategoriesOut"];
+export type MonthFilters = {
+  month: string;
+  account_id?: number;
+  category_id?: number;
+  kind?: "expense" | "income" | "transfer";
+  q?: string;
+  pending?: boolean;
+};
+
+const MOVES = ["moves"] as const;
+
+export function useCategories(kind: "expense" | "income") {
+  return useQuery({
+    queryKey: ["categories", kind],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/categories", { params: { query: { kind } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useMonth(filters: MonthFilters) {
+  return useQuery({
+    queryKey: [...MOVES, "month", filters],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/moves", { params: { query: filters } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    placeholderData: (previous) => previous,   // al filtrar, se queda lo anterior mientras llega lo nuevo
+  });
+}
+
+export function useMove(id: number) {
+  return useQuery({
+    queryKey: [...MOVES, id],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/moves/{move_id}", { params: { path: { move_id: id } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Un movimiento cambia saldos, listas y las categorías más usadas: todo se vuelve a pedir. */
+function useMovesChanged() {
+  const qc = useQueryClient();
+  return (detail?: MoveDetail) => {
+    if (detail) qc.setQueryData([...MOVES, detail.summary.id], detail);
+    return Promise.all([
+      qc.invalidateQueries({ queryKey: MOVES }),
+      qc.invalidateQueries({ queryKey: ACCOUNTS }),
+      qc.invalidateQueries({ queryKey: ["categories"] }),
+    ]);
+  };
+}
+
+export function useSaveMove(id?: number) {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (body: MoveIn) => {
+      const { data, error, response } = id
+        ? await api.PUT("/moves/{move_id}", { params: { path: { move_id: id } }, body })
+        : await api.POST("/moves", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (d) => changed(d),
+  });
+}
+
+export function useSetMoveState(id: number) {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (pending: boolean) => {
+      const { data, error, response } = await api.POST("/moves/{move_id}/state", {
+        params: { path: { move_id: id } },
+        body: { pending },
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (d) => changed(d),
+  });
+}
+
+export function useDeleteMove(id: number) {
+  const qc = useQueryClient();
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async () => {
+      const { error, response } = await api.DELETE("/moves/{move_id}", { params: { path: { move_id: id } } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: [...MOVES, id] });
+      return changed();
+    },
+  });
+}
