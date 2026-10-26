@@ -45,6 +45,9 @@ services:
       APP_URL: http://localhost:5173
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
+      # Quienes ven Z1 (tipo de cambio): el de las pruebas e2e y los tuyos, en .env (ADMIN_EMAILS=tu@correo)
+      ADMIN_EMAILS: e2e-admin@prueba.ppm,${ADMIN_EMAILS:-}
+      RATES_IMPORT: "true"           # el importador diario de SUNAT
     ports:
       - "8000:8000"
     volumes:

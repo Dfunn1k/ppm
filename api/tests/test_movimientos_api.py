@@ -104,11 +104,9 @@ def test_dividir_en_varias_categorias(ana: Ana):
     assert r.status_code == 400 and r.json()["detail"] == "Las partes no suman el total"
 
 
-def test_un_gasto_en_dolares_pide_tipo_de_cambio_y_se_ve_en_soles(ana: Ana):
+def test_un_gasto_en_dolares_con_su_tipo_de_cambio_se_ve_en_soles(ana: Ana):
     body = {"kind": "expense", "account_id": ana.bbva, "amount": "20",
             "splits": [{"category_id": ana.cat["Software y apps"], "amount": "20"}]}
-    r = ana.c.post("/moves", json=body)
-    assert r.status_code == 400 and r.json()["detail"] == "Falta el tipo de cambio de USD"
     d = ana.register(**body, rate="3.75")
     assert (d["summary"]["currency"], d["summary"]["amount"], d["summary"]["base"]) == ("USD", "20.00", "75.00")
     assert d["rate"] == "3.750000"

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import psycopg
 
+from app.config import get_settings
 from app.db import user_transaction
 
 
@@ -24,6 +25,7 @@ class Me:
     ui_theme: str
     ui_accent: str
     currencies: list[str]     # todas las que usa, la base primero
+    is_admin: bool = False    # está en ADMIN_EMAILS: ve y corrige el tipo de cambio (Z1)
 
 
 def get_me(user_id: int) -> Me:
@@ -39,7 +41,7 @@ def get_me(user_id: int) -> Me:
               LEFT JOIN res_currency cur ON cur.id = u.currency_id
               LEFT JOIN res_lang l      ON l.id = u.lang_id
         """).fetchone()
-    return Me(*row[:10], currencies=list(row[10]))
+    return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails)
 
 
 def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None) -> Me:

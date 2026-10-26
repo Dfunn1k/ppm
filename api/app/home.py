@@ -1,7 +1,9 @@
 """Lógica del Inicio (I1): lo que realmente tengo hoy, «para mayo» del mes, en qué se va la plata,
 los avisos y los últimos movimientos. Todo se calcula; nada se guarda."""
 
+from collections import defaultdict
 from dataclasses import dataclass
+import datetime as dt
 from decimal import ROUND_HALF_UP, Decimal
 
 from app import accounts, moves
@@ -21,6 +23,16 @@ class TopCategory:
 
 
 @dataclass(frozen=True)
+class Foreign:
+    """La plata que tienes en otra moneda y el tipo con que cuenta hoy («Tus US$ 1,520.00 cuentan a 3.443»)."""
+    currency: str
+    amount: Decimal
+    rate: Decimal                # compra
+    rate_date: dt.date
+    stale: bool                  # el tipo tiene más de 3 días
+
+
+@dataclass(frozen=True)
 class Home:
     currency: str
     # Hoy, sin importar el mes elegido
@@ -37,6 +49,7 @@ class Home:
     saved_percent: int | None    # qué parte de lo que entró; None si no entró nada
     top: list[TopCategory]       # las 3 categorías principales con más gasto
     recent: list[moves.MoveSummary]
+    foreign: list[Foreign]
 
 
 def home(user_id: int, ym: str) -> Home:
@@ -65,8 +78,15 @@ def home(user_id: int, ym: str) -> Home:
     spent = m.expense_total
     top = [TopCategory(i, n, ic, col, amt, _percent(amt, spent) or 0) for i, n, ic, col, amt in rows]
     saved = m.income_total - m.expense_total
+    held: dict[str, Decimal] = defaultdict(Decimal)
+    for a in o.have:
+        if a.kind in ("cash", "bank"):
+            for b in a.balances:
+                held[b.currency] += b.amount
+    foreign = [Foreign(r.currency, held[r.currency], r.buy, r.date, r.stale) for r in o.rates if held.get(r.currency)]
     return Home(o.currency, o.real_total, o.have_total, o.custody_total, o.owe_total, overdue,
-                ym, m.income_total, m.expense_total, saved, _percent(max(saved, ZERO), m.income_total), top, recent)
+                ym, m.income_total, m.expense_total, saved, _percent(max(saved, ZERO), m.income_total), top, recent,
+                foreign)
 
 
 def _percent(part: Decimal, whole: Decimal) -> int | None:

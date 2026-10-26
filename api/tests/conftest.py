@@ -5,6 +5,7 @@ Cada prueba trabaja dentro de una transacción que se deshace al final, así no 
 
 import os
 from collections.abc import Callable
+from decimal import ROUND_HALF_UP, Decimal
 
 import psycopg
 import pytest
@@ -45,6 +46,24 @@ def as_user(conn) -> Callable[[int], psycopg.Connection]:
         return conn
 
     return switch
+
+
+def usd_today():
+    """El último tipo del dólar que hay hasta hoy (compra, venta), o None si no se cargó ninguno.
+    La API valora los dólares con él; las pruebas no lo fijan para no pisar el de la base."""
+    with psycopg.connect(get_settings().database_url) as c:
+        return c.execute(
+            "SELECT rate_buy, rate_sell FROM res_currency_rate r JOIN res_currency c ON c.id = r.currency_id"
+            " WHERE c.name = 'USD' AND r.name <= (now() AT TIME ZONE 'America/Lima')::date"
+            " ORDER BY r.name DESC LIMIT 1").fetchone()
+
+
+def usd_value_today(amount: str, book: str) -> str:
+    """Lo que vale hoy un monto en dólares que se tiene: a la compra de hoy, o en libros si no hay tipo."""
+    r = usd_today()
+    if r is None:
+        return book
+    return str((Decimal(amount) * r[0]).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def in_ci() -> bool:

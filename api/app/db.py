@@ -5,6 +5,8 @@ La lógica nunca abre conexiones por su cuenta; las pide aquí:
 - `user_transaction(user_id)`: para tocar datos de una persona. La base trabaja como
   `ppm_app` y con `app.user_id` fijado, así que la seguridad por fila solo deja ver y
   escribir sus filas. Al terminar la transacción, ambas cosas se deshacen.
+- `admin_transaction()`: el importador y el administrador (Z1). Trabaja como `ppm_admin`,
+  sin persona: solo para lo global, como el tipo de cambio.
 - `anon_transaction()`: antes de saber quién es (crear cuenta, iniciar sesión, leer la
   cookie). Trabaja como `ppm_app` sin usuario: solo puede llamar a las funciones auth_*.
 """
@@ -53,4 +55,12 @@ def anon_transaction() -> Iterator[psycopg.Connection]:
     """Una transacción sin persona: como ppm_app, solo para las funciones auth_*."""
     with get_pool().connection() as conn, conn.transaction():
         conn.execute("SET LOCAL ROLE ppm_app")
+        yield conn
+
+
+@contextmanager
+def admin_transaction() -> Iterator[psycopg.Connection]:
+    """Una transacción como ppm_admin, para lo que es de todos (el tipo de cambio)."""
+    with get_pool().connection() as conn, conn.transaction():
+        conn.execute("SET LOCAL ROLE ppm_admin")
         yield conn

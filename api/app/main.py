@@ -5,13 +5,18 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from app import rates as rates_logic
+from app.config import get_settings
 from app.db import close_pool, get_pool
-from app.routes import accounts, auth, home, me, moves
+from app.routes import accounts, auth, home, me, moves, rates
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    stop = rates_logic.start_daily() if get_settings().rates_import else None   # el importador de SUNAT
     yield
+    if stop:
+        stop.set()
     close_pool()
 
 
@@ -21,6 +26,7 @@ app.include_router(me.router)
 app.include_router(accounts.router)
 app.include_router(moves.router)
 app.include_router(home.router)
+app.include_router(rates.router)
 
 
 class HealthOut(BaseModel):

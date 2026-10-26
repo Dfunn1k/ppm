@@ -1,12 +1,14 @@
 """El Inicio y la apariencia, a través de la API."""
 
 from datetime import datetime, timedelta
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 import psycopg
 import pytest
 
 from app.config import get_settings
+from tests.conftest import usd_value_today
 from tests.test_movimientos_api import Ana
 
 HOY = datetime.now(ZoneInfo("America/Lima")).date()
@@ -41,8 +43,9 @@ def test_el_inicio_de_un_mes_normal(ana: Ana):
     ana.register(kind="transfer", account_id=ana.bcp, to_account_id=ana.efectivo, amount="100")
 
     h = ana.c.get("/home", params={"month": MES}).json()
-    # Hoy: efectivo 600, BCP 1000 + 4850 − 1902.80 − 100 = 3847.20, BBVA US$ 200 a 3.70 = 740
-    assert (h["have_total"], h["real_total"]) == ("5187.20", "5187.20")
+    # Hoy: efectivo 600, BCP 1000 + 4850 − 1902.80 − 100 = 3847.20, BBVA US$ 200 al tipo de hoy
+    total = str(Decimal("4447.20") + Decimal(usd_value_today("200", "740.00")))
+    assert (h["have_total"], h["real_total"]) == (total, total)
     assert (h["income_total"], h["expense_total"], h["saved"], h["saved_percent"]) == ("4850.00", "1902.80", "2947.20", 61)
     # Por categoría principal: la hija suma a su principal; la transferencia no es gasto
     assert [(t["name"], t["amount"], t["share"]) for t in h["top"]] == [

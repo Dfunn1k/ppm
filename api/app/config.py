@@ -22,6 +22,9 @@ class Settings:
     smtp_password: str | None
     smtp_starttls: bool
     mail_from: str
+    admin_emails: frozenset[str]  # quienes ven y corrigen el tipo de cambio (Z1)
+    rates_import: bool          # el importador diario de SUNAT corre dentro de la API
+    sunat_url: str
 
 
 @lru_cache
@@ -38,4 +41,7 @@ def get_settings() -> Settings:
         smtp_password=os.environ.get("SMTP_PASSWORD") or None,
         smtp_starttls=_bool("SMTP_STARTTLS", False),
         mail_from=os.environ.get("MAIL_FROM", "PPM <no-responder@ppm.local>"),
+        admin_emails=frozenset(e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()),
+        rates_import=_bool("RATES_IMPORT", False),
+        sunat_url=os.environ.get("SUNAT_URL", "https://www.sunat.gob.pe/a/txt/tipoCambio.txt"),
     )

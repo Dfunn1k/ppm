@@ -5,7 +5,7 @@ con Decimal y lanza AccountError con un mensaje ya escrito para la persona."""
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 import psycopg
 
@@ -26,7 +26,17 @@ class AccountError(Exception):
 class Money:
     currency: str        # 'PEN'
     amount: Decimal      # en esa moneda
-    base: Decimal        # su valor en la moneda base (en libros)
+    base: Decimal        # su valor hoy en la moneda base: al tipo de hoy (compra si lo tienes, venta si lo debes)
+    book: Decimal        # su valor en libros: a los tipos con que se registró
+
+
+@dataclass(frozen=True)
+class TodayRate:
+    currency: str
+    date: date           # el día del tipo: hoy o el último anterior
+    buy: Decimal
+    sell: Decimal
+    stale: bool          # tiene más de 3 días
 
 
 @dataclass(frozen=True)
@@ -59,6 +69,7 @@ class Overview:
     have: list[AccountRow]
     custody: list[CustodyRow]
     owe: list[AccountRow]
+    rates: list[TodayRate] = field(default_factory=list)   # los tipos con que se valoró lo que no es base
 
 
 @dataclass(frozen=True)
@@ -107,16 +118,39 @@ KIND_NAMES = {"savings": "Ahorros", "checking": "Corriente"}
 CURRENCY_NAMES = {"PEN": "soles", "USD": "dólares", "EUR": "euros"}
 
 
-def _balances(conn: psycopg.Connection, account_ids: list[int]) -> dict[int, list[Money]]:
+def _today_rates(conn: psycopg.Connection) -> dict[str, TodayRate]:
+    """El tipo de hoy (o el último anterior) de cada moneda que no es la base."""
+    rows = conn.execute("""
+        SELECT trim(c.name), r.name, r.rate_buy, r.rate_sell, user_today() - r.name > 3
+          FROM res_currency c
+          JOIN res_users u ON c.id <> u.currency_id
+          JOIN LATERAL (SELECT name, rate_buy, rate_sell FROM res_currency_rate
+                         WHERE currency_id = c.id AND name <= user_today()
+                         ORDER BY name DESC LIMIT 1) r ON true""").fetchall()
+    return {r[0]: TodayRate(*r) for r in rows}
+
+
+def _today(amount: Decimal, book: Decimal, rate: TodayRate | None, owed: bool) -> Decimal:
+    """Su valor hoy; sin ningún tipo cargado todavía, el de libros."""
+    if rate is None:
+        return book
+    return (amount * (rate.sell if owed else rate.buy)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _balances(conn: psycopg.Connection, account_ids: list[int],
+              rates: dict[str, TodayRate] | None = None) -> dict[int, list[Money]]:
     out: dict[int, list[Money]] = defaultdict(list)
     if not account_ids:
         return out
-    for acc, cur, amount, base in conn.execute(
-        "SELECT b.account_id, trim(c.name), b.amount_currency, b.balance FROM account_balance b"
-        " JOIN res_currency c ON c.id = b.currency_id WHERE b.account_id = ANY(%s) ORDER BY c.name",
+    rates = _today_rates(conn) if rates is None else rates
+    for acc, cur, amount, book, owed in conn.execute(
+        "SELECT b.account_id, trim(c.name), b.amount_currency, b.balance, a.account_type = 'liability'"
+        "  FROM account_balance b JOIN res_currency c ON c.id = b.currency_id"
+        "  JOIN account_account a ON a.id = b.account_id"
+        " WHERE b.account_id = ANY(%s) ORDER BY c.name",
         (account_ids,),
     ):
-        out[acc].append(Money(cur, amount, base))
+        out[acc].append(Money(cur, amount, _today(amount, book, rates.get(cur), owed), book))
     return out
 
 
@@ -157,7 +191,8 @@ def overview(user_id: int) -> Overview:
         rows = conn.execute(
             _ACCOUNTS_SQL + " WHERE a.active AND a.account_type IN ('asset', 'liability')"
             " AND a.system_role IS DISTINCT FROM 'custody' ORDER BY a.account_type, a.id").fetchall()
-        balances = _balances(conn, [r[0] for r in rows])
+        rates = _today_rates(conn)
+        balances = _balances(conn, [r[0] for r in rows], rates)
         accounts = [_row(r, balances.get(r[0], [])) for r in rows]
         # Las de sistema (Por cobrar, Por pagar, Por clasificar) solo aparecen si tienen algo
         accounts = [a for a in accounts if a.kind in ("cash", "bank", "other") or any(m.amount for m in a.balances)]
@@ -175,7 +210,7 @@ def overview(user_id: int) -> Overview:
             HAVING sum(l.amount_currency) <> 0
              ORDER BY p.name, c.name"""):
             names[pid] = pname
-            custody[pid].append(Money(cur, amount, bal))
+            custody[pid].append(Money(cur, amount, _today(amount, bal, rates.get(cur), False), bal))
 
     have = [a for a in accounts if a.kind in ("cash", "bank", "receivable", "suspense")]   # activos
     owe = [a for a in accounts if a.kind in ("payable", "other")]                         # pasivos
@@ -183,8 +218,9 @@ def overview(user_id: int) -> Overview:
     have_total = sum((a.base_total for a in have), ZERO)
     owe_total = -sum((a.base_total for a in owe), ZERO)
     custody_total = sum((c.base_total for c in keep), ZERO)
+    used = {m.currency for a in [*have, *owe] for m in a.balances} | {m.currency for c in keep for m in c.balances}
     return Overview(base, have_total - custody_total - owe_total, have_total, custody_total, owe_total,
-                    have, keep, owe)
+                    have, keep, owe, [r for cur, r in sorted(rates.items()) if cur in used])
 
 
 def detail(user_id: int, account_id: int, limit: int = 200) -> AccountDetail:
@@ -266,6 +302,8 @@ def _translate(e: psycopg.Error, bank_name: str | None = None, cci_code: str | N
         return AccountError(400, "El número de cuenta lleva solo dígitos y guiones")
     if isinstance(e, psycopg.errors.CheckViolation | psycopg.errors.RaiseException):
         return AccountError(400, e.diag.message_primary or "No se pudo guardar")
+    if isinstance(e, psycopg.errors.NoDataFound):
+        return AccountError(400, e.diag.message_primary or "Falta el tipo de cambio")
     if isinstance(e, psycopg.errors.ForeignKeyViolation):
         return AccountError(404, "No encontramos lo que elegiste")
     raise e
