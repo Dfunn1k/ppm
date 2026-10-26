@@ -11,6 +11,8 @@ React + TypeScript con Vite. Se levanta desde la raíz del repositorio con `dock
 | `/bienvenida/1` · `2` · `3` | la configuración inicial; lo elegido (y los saldos del paso 3) se manda a la API una sola vez, al final |
 | `/cuentas` · `/cuentas/:id` | C1 y C2: lo que realmente tengo, y el detalle con número, CCI y movimientos |
 | `/cuentas/nueva` · `/banco` · `/efectivo` · `/guardo` | C5: el tipo, y luego solo sus datos |
+| `/registrar` · `/movimientos/:id/editar` | R1: gasto, ingreso o transferencia, con «Dividir» y «Por confirmar» |
+| `/movimientos` · `/movimientos/:id` | M1 y M2: el mes por días con búsqueda y filtros (en la URL), y el detalle |
 | `/inicio` | provisional, hasta la rebanada 4; ahí está «Cerrar sesión» |
 
 Cada ruta sabe quién puede estar ahí (`Guard` en `src/App.tsx`): sin sesión vas a `/entrar`, sin configurar a `/bienvenida/1`, y ya configurado a `/cuentas`.

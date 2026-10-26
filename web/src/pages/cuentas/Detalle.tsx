@@ -131,8 +131,9 @@ function LineRow({ line: l, lang }: { line: AccountDetail["lines"][number]; lang
       ? { bg: "var(--attention-soft)", fg: "var(--attention)", icon: "inbox" }
       : { bg: `var(--cat-${l.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: l.counterpart_icon ?? "category" };
   const caption = opening ? "lo que tenía al empezar" : suspense ? "Por clasificar" : (l.counterpart ?? "Varias categorías");
+  const Row = opening ? "div" : Link;
   return (
-    <div className="flex min-h-[60px] items-center gap-3 border-b border-border">
+    <Row to={`/movimientos/${l.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
       <span className="grid size-9 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
         <Icon name={chip.icon} />
       </span>
@@ -153,7 +154,7 @@ function LineRow({ line: l, lang }: { line: AccountDetail["lines"][number]; lang
         )}
         {l.running !== null && <span className="text-caption text-muted-foreground">{formatNumber(l.running, lang)}</span>}
       </span>
-    </div>
+    </Row>
   );
 }
 
