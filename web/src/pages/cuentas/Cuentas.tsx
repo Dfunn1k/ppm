@@ -1,0 +1,110 @@
+// C1 · Cuentas: lo que realmente tengo, y debajo lo que tengo, lo que guardo de otros y lo que debo.
+import { Link, useLocation } from "react-router";
+
+import { type AccountRow, useAccounts, useMe } from "@/api/hooks";
+import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { formatAmount, symbolOf } from "@/lib/money";
+
+function Group({ label, total, children }: { label: string; total: string; children: React.ReactNode }) {
+  return (
+    <section aria-label={label} className="mt-6 flex flex-col">
+      <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
+        <span>{label}</span>
+        <span>{total}</span>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Row({ to, icon, letter, name, subtitle, amount, negative }: {
+  to?: string;
+  icon?: string | null;
+  letter?: string;
+  name: string;
+  subtitle?: string | null;
+  amount: string;
+  negative?: boolean;
+}) {
+  const body = (
+    <>
+      <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground">
+        {letter ?? <Icon name={icon ?? "payments"} />}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="font-semibold">{name}</span>
+        {subtitle && <span className="text-caption text-muted-foreground tabular-nums">{subtitle}</span>}
+      </span>
+      <span className={`text-amount ${negative ? "text-expense" : ""}`}>{amount}</span>
+    </>
+  );
+  const cls = "flex min-h-[60px] items-center gap-3 border-b border-border";
+  return to ? <Link to={to} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
+}
+
+/** El saldo de una cuenta en su moneda; si no es la base, el subtítulo dice cuánto es en soles. */
+function rowAmount(a: AccountRow, base: string, lang: string) {
+  const single = a.balances.length === 1 ? a.balances[0]! : null;
+  const currency = single?.currency ?? a.currency ?? base;
+  const amount = formatAmount(single?.amount ?? (a.balances.length ? a.base_total : "0.00"), symbolOf(currency), lang);
+  const inBase = currency !== base && single ? `son ${formatAmount(single.base, symbolOf(base), lang)}` : null;
+  return { amount, subtitle: [a.subtitle, inBase].filter(Boolean).join(" · ") || null };
+}
+
+export function Cuentas() {
+  const me = useMe().data;
+  const accounts = useAccounts();
+  const notice = (useLocation().state as { notice?: string } | null)?.notice;
+  if (!me?.currency || accounts.isPending) return <Spinner />;
+  if (accounts.isError) return <ErrorAlert>{accounts.error.message}</ErrorAlert>;
+
+  const o = accounts.data;
+  const lang = me.lang ?? "es-PE";
+  const money = (v: string) => formatAmount(v, symbolOf(o.currency), lang);
+
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
+      <div className="-mr-2.5 flex items-center justify-between">
+        <span className="text-label text-muted-foreground">Cuentas</span>
+        <Link to="/cuentas/nueva" aria-label="Nueva cuenta"
+          className="grid size-11 place-items-center rounded-full bg-secondary text-secondary-foreground">
+          <Icon name="add" className="text-[24px]" />
+        </Link>
+      </div>
+      {notice && <div className="mt-4"><ErrorAlert>{notice}</ErrorAlert></div>}
+      <span className="mt-5 text-caption text-muted-foreground">Lo que realmente tengo</span>
+      <h1 className="font-display text-[48px] leading-[50px] font-extrabold tracking-[-0.03em] tabular-nums">
+        {money(o.real_total)}
+      </h1>
+      <span className="mt-1 text-caption text-muted-foreground">Lo que tienes, menos lo que guardas de otros y lo que debes.</span>
+
+      <Group label="Lo que tengo" total={money(o.have_total)}>
+        {o.have.map((a) => {
+          const { amount, subtitle } = rowAmount(a, o.currency, lang);
+          return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} />;
+        })}
+      </Group>
+
+      {o.custody.length > 0 && (
+        <Group label="Guardo de otros" total={money(o.custody_total)}>
+          {o.custody.map((c) => (
+            <Row key={c.partner_id} letter={c.partner_name[0]?.toUpperCase()} name={c.partner_name}
+              subtitle="Te la dio para guardar"
+              amount={c.balances.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang)).join(" · ")} />
+          ))}
+        </Group>
+      )}
+
+      <Group label="Lo que debo" total={money(o.owe_total)}>
+        {o.owe.length === 0 ? (
+          <span className="py-3 text-caption text-muted-foreground">Nada por ahora. Tus tarjetas y préstamos aparecerán aquí.</span>
+        ) : (
+          o.owe.map((a) => {
+            const { amount, subtitle } = rowAmount(a, o.currency, lang);
+            return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} negative />;
+          })
+        )}
+      </Group>
+    </main>
+  );
+}

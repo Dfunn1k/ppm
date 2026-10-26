@@ -3,12 +3,21 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { Link } from "react-router";
 
+import type { BankIn } from "@/api/hooks";
 import { Icon } from "@/components/ui";
 
-export type Choices = { country: string; lang: string; tz: string; currencies: string[] };
+/** Lo elegido en los 3 pasos; en el 3, el saldo del efectivo y los bancos que se agregaron. */
+export type Choices = {
+  country: string;
+  lang: string;
+  tz: string;
+  currencies: string[];
+  cash: string;          // lo que escribió la persona: «320.00»
+  banks: BankIn[];       // se crean al final, con «Guardar y empezar»
+};
 
 const KEY = "ppm.bienvenida";
-const DEFAULTS: Choices = { country: "PE", lang: "es-PE", tz: "America/Lima", currencies: ["USD"] };
+const DEFAULTS: Choices = { country: "PE", lang: "es-PE", tz: "America/Lima", currencies: ["USD"], cash: "", banks: [] };
 
 function load(): Choices {
   try {
