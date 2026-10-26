@@ -403,3 +403,62 @@ export function useDeleteMove(id: number) {
     },
   });
 }
+
+// --- Inicio, Mi cuenta y Apariencia -------------------------------------------------------------
+
+export type Home = components["schemas"]["HomeOut"];
+type MePatch = components["schemas"]["MePatch"];
+
+export function useHome(month: string) {
+  return useQuery({
+    queryKey: ["home", month],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/home", { params: { query: { month } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** Cambiar nombre, tema o acento: se ve al instante y se guarda en la cuenta. */
+export function useUpdateMe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: MePatch) => {
+      const { data, error, response } = await api.PATCH("/me", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onMutate: (body) => {
+      const before = qc.getQueryData<Me | null>(ME);
+      if (before) qc.setQueryData(ME, { ...before, ...Object.fromEntries(Object.entries(body).filter(([, v]) => v != null)) });
+      return { before };
+    },
+    onError: (_e, _body, ctx) => ctx?.before && qc.setQueryData(ME, ctx.before),
+    onSuccess: (me) => qc.setQueryData(ME, me),
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (body: { current_password: string; new_password: string }) => {
+      const { error, response } = await api.POST("/auth/password", { body });
+      if (!response.ok) fail(response, error);
+    },
+  });
+}
+
+export function useLogoutAll() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error, response } = await api.POST("/auth/logout-all");
+      if (!response.ok && response.status !== 401) fail(response, error);
+    },
+    onSuccess: () => {
+      qc.clear();
+      qc.setQueryData(ME, null);
+    },
+  });
+}

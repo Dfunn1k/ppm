@@ -13,9 +13,10 @@ React + TypeScript con Vite. Se levanta desde la raíz del repositorio con `dock
 | `/cuentas/nueva` · `/banco` · `/efectivo` · `/guardo` | C5: el tipo, y luego solo sus datos |
 | `/registrar` · `/movimientos/:id/editar` | R1: gasto, ingreso o transferencia, con «Dividir» y «Por confirmar» |
 | `/movimientos` · `/movimientos/:id` | M1 y M2: el mes por días con búsqueda y filtros (en la URL), y el detalle |
-| `/inicio` | provisional, hasta la rebanada 4; ahí está «Cerrar sesión» |
+| `/inicio` | I1: lo que realmente tengo, «para mayo» (en trigo), en qué se va la plata, mis cuentas y lo último; `?mes=` elige el mes |
+| `/mas` · `/mas/cuenta` · `/mas/apariencia` | Más, Mi cuenta (contraseña, cerrar sesión) y Apariencia (tema y acento al instante) |
 
-Cada ruta sabe quién puede estar ahí (`Guard` en `src/App.tsx`): sin sesión vas a `/entrar`, sin configurar a `/bienvenida/1`, y ya configurado a `/cuentas`.
+Cada ruta sabe quién puede estar ahí (`Guard` en `src/App.tsx`): sin sesión vas a `/entrar`, sin configurar a `/bienvenida/1`, y ya configurado a `/inicio`.
 
 Elegir de una lista usa siempre la hoja que sube desde abajo (`SheetSelect` en `src/components/Sheet.tsx`), nunca el selector del navegador. Los montos llegan de la API como texto exacto y se formatean con `src/lib/money.ts`, sin pasar por números de coma flotante.
 

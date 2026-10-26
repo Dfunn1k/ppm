@@ -16,16 +16,19 @@ import { NuevaGuardo } from "./pages/cuentas/Guardo";
 import { NuevaCuenta, NuevaCuentaForm } from "./pages/cuentas/Nueva";
 import { Entrar } from "./pages/Entrar";
 import { Inicio } from "./pages/Inicio";
+import { Apariencia } from "./pages/mas/Apariencia";
+import { Mas } from "./pages/mas/Mas";
+import { MiCuenta } from "./pages/mas/MiCuenta";
 import { DetalleMovimiento } from "./pages/movimientos/Detalle";
 import { Movimientos } from "./pages/movimientos/Movimientos";
 import { EditarMovimiento, Registrar } from "./pages/movimientos/Registrar";
 import { Recuperar } from "./pages/Recuperar";
 import { Restablecer } from "./pages/Restablecer";
 
-/** Adónde va cada quien: sin sesión → entrar; sin configurar → los 3 pasos; si no, a sus cuentas. */
+/** Adónde va cada quien: sin sesión → entrar; sin configurar → los 3 pasos; si no, al Inicio. */
 function home(me: Me | null | undefined) {
   if (!me) return "/entrar";
-  return me.configured ? "/cuentas" : "/bienvenida/1";
+  return me.configured ? "/inicio" : "/bienvenida/1";
 }
 
 /** Deja pasar solo si `allow(me)`; si no, manda a donde le toca. */
@@ -92,7 +95,10 @@ export function App() {
           <Route path="/cuentas/:id" element={<Detalle />} />
           <Route path="/movimientos" element={<Movimientos />} />
           <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
+          <Route path="/mas" element={<Mas />} />
         </Route>
+        <Route path="/mas/cuenta" element={<MiCuenta />} />
+        <Route path="/mas/apariencia" element={<Apariencia />} />
         <Route path="/registrar" element={<Registrar />} />
         <Route path="/movimientos/:id/editar" element={<EditarMovimiento />} />
         <Route path="/cuentas/nueva" element={<NuevaCuenta />} />

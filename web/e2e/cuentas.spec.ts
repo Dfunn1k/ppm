@@ -23,7 +23,8 @@ async function readyUser(page: Page) {
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
-  await expect(page).toHaveURL("/cuentas");
+  await expect(page).toHaveURL("/inicio");
+  await page.goto("/cuentas");
 }
 
 async function pickBank(page: Page, bank: string) {
@@ -50,8 +51,9 @@ test("el paso 3 guarda el efectivo y crea los bancos al empezar", async ({ page 
   await expect(page.getByLabel("Lo que hay hoy en Efectivo")).toHaveValue("320");   // no se perdió
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
 
-  await expect(page).toHaveURL("/cuentas");
+  await expect(page).toHaveURL("/inicio");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("S/ 8,560.30");
+  await page.getByRole("link", { name: "Cuentas" }).click();
   await expect(page.getByRole("link", { name: /Efectivo.*S\/ 320\.00/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Cuenta digital BCP.*S\/ 8,240\.30/ })).toBeVisible();
 });

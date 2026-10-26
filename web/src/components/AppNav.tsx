@@ -1,5 +1,4 @@
-// La barra de abajo del diseño final. Funcionan Inicio (provisional), Movimientos, el + y Cuentas;
-// «Más» llega con su rebanada y se ve, pero no se puede tocar.
+// La barra de abajo del diseño final: Inicio, Movimientos, el + para registrar, Cuentas y Más.
 import { Link, NavLink } from "react-router";
 
 import { Icon } from "./ui";
@@ -10,7 +9,7 @@ const ITEMS: Item[] = [
   { to: "/inicio", label: "Inicio", icon: "home" },
   { to: "/movimientos", label: "Movimientos", icon: "receipt_long" },
   { label: "Cuentas", to: "/cuentas", icon: "account_balance_wallet" },
-  { label: "Más", icon: "menu" },
+  { to: "/mas", label: "Más", icon: "menu" },
 ];
 
 function Tab({ item }: { item: Item }) {

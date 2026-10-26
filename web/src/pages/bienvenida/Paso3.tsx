@@ -31,7 +31,7 @@ export function Paso3() {
       {
         onSuccess: ({ problems }) => {
           forgetWizard();
-          navigate("/cuentas", { replace: true, state: problems.length ? { notice: problems.join(" ") } : null });
+          navigate("/inicio", { replace: true, state: problems.length ? { notice: problems.join(" ") } : null });
         },
       },
     );

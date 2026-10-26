@@ -65,15 +65,16 @@ test("crear cuenta, los 3 pasos y llegar al inicio", async ({ page }) => {
   await expect(page.getByText("soles y dólares")).toBeVisible();
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
 
-  await expect(page).toHaveURL("/cuentas");
-  await expect(page.getByText("Lo que realmente tengo")).toBeVisible();
-  await page.getByRole("link", { name: "Inicio" }).click();
-  await expect(page.getByRole("heading", { name: "Hola, Ana." })).toBeVisible();
-  await expect(page.getByText("PEN, USD", { exact: false })).toBeVisible();
+  await expect(page).toHaveURL("/inicio");
+  await expect(page.getByText("Lo que realmente tengo · hoy")).toBeVisible();
+  await page.getByRole("link", { name: "Más" }).click();
+  await page.getByRole("link", { name: /Ana/ }).click();
+  await expect(page.getByRole("heading", { name: "Ana" })).toBeVisible();
+  await expect(page.getByText("soles y dólares", { exact: false })).toBeVisible();
 
   // Ya configurada, los pasos no vuelven
   await page.goto("/bienvenida/1");
-  await expect(page).toHaveURL("/cuentas");
+  await expect(page).toHaveURL("/inicio");
 });
 
 test("cerrar sesión y volver a entrar", async ({ page }) => {
@@ -83,16 +84,16 @@ test("cerrar sesión y volver a entrar", async ({ page }) => {
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
-  await expect(page).toHaveURL("/cuentas");
-  await page.getByRole("link", { name: "Inicio" }).click();
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page).toHaveURL("/inicio");
+  await page.goto("/mas/cuenta");
+  await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
 
   await expect(page).toHaveURL("/entrar");
   await page.goto("/inicio");
   await expect(page).toHaveURL("/entrar"); // sin sesión, no hay inicio
 
   await login(page, email);
-  await expect(page).toHaveURL("/cuentas");
+  await expect(page).toHaveURL("/inicio");
 });
 
 test("un correo ya usado lo dice y ofrece entrar", async ({ page, browser }) => {

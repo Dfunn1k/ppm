@@ -7,21 +7,10 @@ import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
+import { monthName, monthOptions } from "@/lib/months";
 import { formatAmount, formatNumber, isZero, symbolOf } from "@/lib/money";
 
-const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"];
 const DAYS = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
-
-const monthName = (ym: string) => `${MONTHS[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}`;
-
-/** Los últimos 12 meses y el siguiente (para lo que está por confirmar). */
-function monthOptions(): string[] {
-  const now = new Date();
-  return Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + 1 - i, 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  });
-}
 
 function dayLabel(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
