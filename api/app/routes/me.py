@@ -1,7 +1,7 @@
 """La persona conectada (A2 configuración inicial) y los catálogos que necesitan sus pantallas."""
 
 from dataclasses import asdict
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -37,6 +37,12 @@ class SetupIn(BaseModel):
     tz: str | None = None                                                      # 'America/Lima'
 
 
+class MePatch(BaseModel):
+    name: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    ui_theme: Literal["system", "light", "dark"] | None = None
+    ui_accent: Literal["tinta", "trigo", "morado", "azul"] | None = None
+
+
 class OptionOut(BaseModel):
     code: str
     name: str
@@ -58,6 +64,11 @@ class CatalogOut(BaseModel):
 @router.get("/me", summary="Quién está conectado")
 def me(session: CurrentSession = Depends(current_session)) -> MeOut:
     return MeOut.of(users.get_me(session.user_id))
+
+
+@router.patch("/me", summary="Cambiar tu nombre, el tema o el acento")
+def update(body: MePatch, session: CurrentSession = Depends(current_session)) -> MeOut:
+    return MeOut.of(users.update(session.user_id, body.name, body.ui_theme, body.ui_accent))
 
 
 @router.post("/me/setup", summary="Configuración inicial (los 3 pasos)")

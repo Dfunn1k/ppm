@@ -319,6 +319,14 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
     return s, money
 
 
+def summaries(conn: psycopg.Connection, heads: list[tuple]) -> list[MoveSummary]:
+    """Los resúmenes de varios asientos (id, fecha, glosa, estado) con una sola consulta de apuntes."""
+    by_move: dict[int, list[tuple]] = defaultdict(list)
+    for row in conn.execute(_LINES_SQL, ([h[0] for h in heads],)):
+        by_move[row[0]].append(row)
+    return [_classify(h, by_move[h[0]])[0] for h in heads if by_move[h[0]]]
+
+
 def _kind_of(conn: psycopg.Connection, move_id: int) -> str:
     head = conn.execute("SELECT id, date, ref, state FROM account_move WHERE id = %s", (move_id,)).fetchone()
     if head is None:
@@ -347,31 +355,27 @@ def month(user_id: int, ym: str, account_id: int | None = None, category_id: int
                                                    WHERE l.move_id = m.id AND (a.id = %s OR a.parent_id = %s)))
              ORDER BY m.date DESC, m.id DESC""",
                              (first, nxt, account_id, account_id, category_id, category_id, category_id)).fetchall()
-        by_move: dict[int, list[tuple]] = defaultdict(list)
-        for row in conn.execute(_LINES_SQL, ([h[0] for h in heads],)):
-            by_move[row[0]].append(row)
-
-    summaries = [s for s in (_classify(h, by_move[h[0]])[0] for h in heads if by_move[h[0]]) if s.kind != "opening"]
+        found = [s for s in summaries(conn, heads) if s.kind != "opening"]
     if kind:
-        summaries = [s for s in summaries if s.kind == kind]
+        found = [s for s in found if s.kind == kind]
     if pending_only:
-        summaries = [s for s in summaries if not s.posted]
+        found = [s for s in found if not s.posted]
     if q and q.strip():
         needle = q.strip().lower()
-        summaries = [s for s in summaries if needle in " ".join(
+        found = [s for s in found if needle in " ".join(
             [s.ref, s.account, f"{s.amount:.2f}", *(c.name for c in s.categories)]).lower()]
 
     def signed(s: MoveSummary) -> Decimal:
         return s.base if s.kind == "income" else -s.base if s.kind == "expense" else Decimal(0)
 
     days: dict[dt.date, list[MoveSummary]] = defaultdict(list)
-    for s in summaries:
+    for s in found:
         days[s.date].append(s)
     return Month(
         ym, base,
-        sum((s.base for s in summaries if s.posted and s.kind == "income"), Decimal("0.00")),
-        sum((s.base for s in summaries if s.posted and s.kind == "expense"), Decimal("0.00")),
-        sum(1 for s in summaries if not s.posted),
+        sum((s.base for s in found if s.posted and s.kind == "income"), Decimal("0.00")),
+        sum((s.base for s in found if s.posted and s.kind == "expense"), Decimal("0.00")),
+        sum(1 for s in found if not s.posted),
         [Day(d, sum((signed(s) for s in ms if s.posted), Decimal("0.00")), ms) for d, ms in days.items()],
     )
 

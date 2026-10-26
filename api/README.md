@@ -45,6 +45,15 @@ Los montos viajan como texto decimal exacto (`"1284.90"`), entran y salen así. 
 
 Los apuntes se arman aquí (`app/moves.py`): el gasto sale de la cuenta (Haber) y va a sus categorías (Debe), el ingreso al revés, y la transferencia pasa de una cuenta a otra. En otra moneda se usa el tipo de cambio que escribe la persona; entre monedas, la transferencia guarda los dos montos. Al dividir, la última parte absorbe el redondeo para que el total en soles sea exacto. Con fecha futura, el movimiento queda por confirmar.
 
+## Inicio y apariencia
+
+| Ruta | Qué hace |
+|---|---|
+| `GET /home?month=2026-10` | hoy (lo que realmente tengo, tengo, guardo, debo y los por confirmar cuya fecha llegó) y el mes elegido (entró, salió, «para mayo» con su %, las 3 categorías principales con más gasto y los últimos movimientos) |
+| `PATCH /me` | cambiar el nombre, el tema (`system`, `light`, `dark`) o el acento (`tinta`, `trigo`, `morado`, `azul`) |
+
+«Para mayo» es lo que entró menos lo que salió en el mes, solo lo confirmado; su % es qué parte de lo que entró se guardó (sin porcentaje si no entró nada).
+
 ## Acceso
 
 | Ruta | Qué hace |
