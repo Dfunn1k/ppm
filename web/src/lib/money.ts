@@ -89,6 +89,10 @@ export function divide(a: string, b: string, places = 3): string {
 }
 
 /** a − b, en céntimos. */
+export function add(a: string, b: string): string {
+  return unscaled(scaled(a, 2) + scaled(b, 2), 2);
+}
+
 export function subtract(a: string, b: string): string {
   return unscaled(scaled(a, 2) - scaled(b, 2), 2);
 }

@@ -1,5 +1,5 @@
 // La barra de abajo del diseño final: Inicio, Movimientos, el + para registrar, Cuentas y Más.
-import { Link, NavLink } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 
 import { Icon } from "./ui";
 
@@ -12,7 +12,12 @@ const ITEMS: Item[] = [
   { to: "/mas", label: "Más", icon: "menu" },
 ];
 
+/** Personas vive dentro de Cuentas: ahí también se marca Cuentas. */
+const ALSO: Record<string, string[]> = { "/cuentas": ["/personas"] };
+
 function Tab({ item }: { item: Item }) {
+  const path = useLocation().pathname;
+  const also = !!item.to && (ALSO[item.to]?.some((p) => path.startsWith(p)) ?? false);
   if (!item.to) {
     return (
       <span aria-disabled="true" title="Muy pronto" className="flex flex-col items-center gap-0.5 text-[12px] leading-4 text-muted-foreground opacity-60">
@@ -24,15 +29,16 @@ function Tab({ item }: { item: Item }) {
     );
   }
   return (
-    <NavLink to={item.to} className="flex flex-col items-center gap-0.5 text-[12px] leading-4 text-muted-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground">
-      {({ isActive }) => (
+    <NavLink to={item.to} aria-current={also ? "page" : undefined}
+      className="flex flex-col items-center gap-0.5 text-[12px] leading-4 text-muted-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground">
+      {({ isActive: exact }) => { const isActive = exact || also; return (
         <>
           <span className={`grid h-[30px] place-items-center ${isActive ? "w-14 rounded-full bg-secondary text-secondary-foreground" : ""}`}>
             <Icon name={item.icon} fill={isActive} className="text-[22px]" />
           </span>
           {item.label}
         </>
-      )}
+      ); }}
     </NavLink>
   );
 }

@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth } from "@/api/hooks";
-import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
+import { CategorySheet } from "@/components/CategorySheet";
+import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { monthName, monthOptions } from "@/lib/months";
-import { formatAmount, formatNumber, isZero, symbolOf } from "@/lib/money";
+import { formatAmount, isZero, symbolOf } from "@/lib/money";
 
 const DAYS = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
 
@@ -24,6 +25,11 @@ const KIND_OPTIONS = [
   { value: "expense", label: "Gastos" },
   { value: "income", label: "Ingresos" },
   { value: "transfer", label: "Transferencias" },
+  { value: "lend", label: "Préstamos que diste" },
+  { value: "borrow", label: "Préstamos que recibiste" },
+  { value: "collect", label: "Cobros" },
+  { value: "repay", label: "Pagos de deudas" },
+  { value: "refund", label: "Reembolsos" },
 ];
 
 export function Movimientos() {
@@ -164,31 +170,17 @@ export function Movimientos() {
 }
 
 function MoveRow({ move: x, lang, base }: { move: MoveSummary; lang: string; base: string }) {
-  const transfer = x.kind === "transfer";
-  const single = x.categories.length === 1 ? x.categories[0]! : null;
-  const caption = transfer
-    ? `${x.account}${x.to_amount && x.to_currency !== x.currency ? ` · ${formatAmount(x.to_amount, symbolOf(x.to_currency), lang)}` : ""}`
-    : `${single ? single.name : `Dividido en ${x.categories.length} categorías`} · ${x.account}`;
-  const amount = transfer
-    ? formatAmount(x.amount, symbolOf(x.currency), lang)
-    : `${x.kind === "income" ? "+" : "−"} ${x.currency === base ? formatNumber(x.amount, lang) : formatAmount(x.amount, symbolOf(x.currency), lang)}`;
+  const caption = moveCaption(x, lang);
   return (
     <Link to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
-      {transfer ? (
-        <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="sync_alt" /></span>
-      ) : single ? <CategoryChip category={single} /> : (
-        <CategoryChip category={{ icon: "call_split", color: x.categories[0]?.color ?? 0 }} />
-      )}
+      <MoveIcon move={x} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{x.ref}</span>
         <span className={`truncate text-caption ${x.posted ? "text-muted-foreground" : "font-semibold text-attention"}`}>
           {x.posted ? caption : `Por confirmar · ${caption}`}
         </span>
       </span>
-      <span className={`flex items-center gap-0.5 text-amount whitespace-nowrap ${transfer ? "text-muted-foreground" : x.kind === "income" ? "text-income" : "text-expense"}`}>
-        {!transfer && <Icon name={x.kind === "income" ? "south_west" : "north_east"} className="text-[16px]" />}
-        {amount}
-      </span>
+      <MoveAmount move={x} base={base} lang={lang} />
     </Link>
   );
 }

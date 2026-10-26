@@ -1,6 +1,7 @@
 // La hoja que sube desde abajo, y el campo que la abre para elegir de una lista.
 // Regla del sistema de diseño: nunca el selector del navegador, sin logos ni iniciales de marcas.
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Icon } from "./ui";
 
@@ -30,7 +31,8 @@ export function Sheet({ title, open, onClose, children }: {
   }, [open]);
 
   if (!open) return null;
-  return (
+  // Fuera del árbol de la pantalla: una hoja con su propio formulario no queda dentro de otro
+  return createPortal(
     <div className="fixed inset-0 z-50">
       <button type="button" aria-label="Cerrar" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div
@@ -47,7 +49,8 @@ export function Sheet({ title, open, onClose, children }: {
         </h2>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

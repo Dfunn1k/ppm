@@ -1,15 +1,18 @@
 // M2 · Detalle de un movimiento: los datos, lo dividido, el costo del cambio (o la ganancia) al cambiar
-// de moneda, editar, confirmar o pasar a por confirmar, y borrar.
+// de moneda, con quién (y qué deudas cancela), las líneas de un asiento manual, editar, confirmar o
+// pasar a por confirmar, y borrar.
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
+import { Avatar } from "@/components/MoveBits";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { shortDate } from "@/lib/dates";
+import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
 import { divide, formatAmount, isNegative, symbolOf } from "@/lib/money";
 
-const KIND = { expense: "Gasto", income: "Ingreso", transfer: "Transferencia", other: "Movimiento" } as const;
 const FX_GROUP = { gain: "Ingresos", loss: "Gastos financieros" } as const;
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -40,8 +43,12 @@ export function DetalleMovimiento() {
   const s = d.summary;
   const lang = me.lang ?? "es-PE";
   const transfer = s.kind === "transfer";
-  const sign = s.kind === "income" ? "+ " : s.kind === "expense" ? "− " : "";
-  const tone = s.kind === "income" ? "text-income" : s.kind === "expense" ? "text-expense" : "";
+  const f = flow(s.kind);
+  const sign = f === "in" ? "+ " : f === "out" ? "− " : "";
+  const tone = f === "none" ? "" : toneOf(s.kind);
+  const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || d.paid_by_partner_id;
+  const partnerId = d.partner_id ?? d.paid_by_partner_id ?? s.partner_id;
+  const editable = s.kind !== "offset" && s.kind !== "write_off";
   const [from, to] = transfer ? s.account.split(" → ") : [s.account, null];
   const exchange = transfer && s.to_currency !== s.currency && s.to_amount;
   // En un cambio que toca la moneda base, el tipo sale de los dos montos
@@ -56,7 +63,7 @@ export function DetalleMovimiento() {
         <button type="button" aria-label="Volver" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
-        <span className="pr-2.5 text-label text-muted-foreground">{exchange ? "Cambio de moneda" : KIND[s.kind as keyof typeof KIND] ?? "Movimiento"}</span>
+        <span className="pr-2.5 text-label text-muted-foreground">{exchange ? "Cambio de moneda" : KIND_NAME[s.kind]}</span>
       </div>
 
       {!s.posted && (
@@ -66,7 +73,7 @@ export function DetalleMovimiento() {
       )}
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
       <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-[32px] leading-10 font-semibold tracking-[-0.02em] tabular-nums whitespace-nowrap" : "text-amount-hero"} ${tone}`}>
-        {!transfer && <Icon name={s.kind === "income" ? "south_west" : "north_east"} className="text-[30px]" />}
+        {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} className="text-[30px]" />}
         {sign}{formatAmount(s.amount, symbolOf(s.currency), lang)}
         {exchange && <><Icon name="arrow_forward" aria-label="a" className="text-[26px] text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}
       </span>
@@ -77,7 +84,19 @@ export function DetalleMovimiento() {
       )}
 
       <div className="mt-5 flex flex-col">
-        <Field icon={transfer || s.kind === "expense" ? "north_east" : "south_west"} label={s.kind === "income" ? "Entró a" : "Salió de"} value={from!} />
+        {person && partnerId && (
+          <Link to={`/personas/${partnerId}`} className="flex min-h-14 items-center gap-3 border-b border-border">
+            <Avatar name={s.partner} />
+            <span className="flex flex-1 flex-col">
+              <span className="text-caption text-muted-foreground">{d.paid_by_partner_id ? "Pagó" : "Con"}</span>
+              <span className="font-semibold">{s.partner}</span>
+            </span>
+            <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+          </Link>
+        )}
+        {(transfer || d.account_id) && s.kind !== "other" && (
+          <Field icon={f === "in" ? "south_west" : "north_east"} label={f === "in" ? "Entró a" : "Salió de"} value={from!} />
+        )}
         {transfer && (
           <Field icon="south_west" label="Entró a"
             value={`${to}${s.to_amount && s.to_currency !== s.currency ? ` · ${formatAmount(s.to_amount, symbolOf(s.to_currency), lang)}` : ""}`} />
@@ -98,6 +117,32 @@ export function DetalleMovimiento() {
                 <span className="flex-1 font-semibold">{x.category?.name ?? `Parte de ${x.partner}`}</span>
                 {d.splits.length > 1 && <span className="tabular-nums">{formatAmount(x.amount, symbolOf(s.currency), lang)}</span>}
               </div>
+            ))}
+          </div>
+        )}
+        {s.kind === "other" && d.lines.length > 0 && (
+          <div className="flex flex-col border-b border-border py-2">
+            <div className="grid grid-cols-[1fr_84px_84px] gap-2 text-label text-muted-foreground">
+              <span>Cuenta</span><span className="text-right">Entra a</span><span className="text-right">Sale de</span>
+            </div>
+            {d.lines.map((l, i) => (
+              <div key={i} className="grid min-h-11 grid-cols-[1fr_84px_84px] items-center gap-2 tabular-nums">
+                <span className="truncate font-semibold">{l.account}{l.partner ? ` · ${l.partner}` : ""}</span>
+                <span className="text-right">{Number(l.debit) ? l.debit : ""}</span>
+                <span className="text-right">{Number(l.credit) ? l.credit : ""}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {d.settled.length > 0 && (
+          <div className="flex flex-col border-b border-border py-2">
+            <span className="text-caption text-muted-foreground">{s.kind === "collect" || s.kind === "repay" || s.kind === "offset" ? "Cancela" : "Lo pagado"}</span>
+            {d.settled.map((x) => (
+              <Link key={x.line_id} to={`/movimientos/${x.move_id}`} className="flex min-h-11 items-center gap-3">
+                <span className="flex-1 truncate font-semibold">{x.ref}</span>
+                <span className="text-caption text-muted-foreground">{shortDate(x.date)}</span>
+                <span className="tabular-nums">{formatAmount(x.amount, symbolOf(s.currency), lang)}</span>
+              </Link>
             ))}
           </div>
         )}
@@ -132,7 +177,7 @@ export function DetalleMovimiento() {
       <div className="min-h-6 flex-1" />
       <div className="flex flex-col gap-2">
         {(state.error || remove.error) && <ErrorAlert>{(state.error ?? remove.error)?.message}</ErrorAlert>}
-        {s.kind !== "other" && (
+        {editable && (
           <Link to={`/movimientos/${s.id}/editar`}
             className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground">
             <span>Editar</span><Icon name="edit" className="text-[22px]" />

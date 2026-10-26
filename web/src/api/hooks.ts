@@ -274,12 +274,72 @@ export function usePartners() {
 export function useCreatePartner() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (name: string) => {
-      const { data, error, response } = await api.POST("/partners", { body: { name } });
+    mutationFn: async (input: string | PartnerIn) => {
+      const body = typeof input === "string" ? { name: input } : input;
+      const { data, error, response } = await api.POST("/partners", { body });
       if (!data) fail(response, error);
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["partners"] }),
+  });
+}
+
+// --- Personas (C6) ------------------------------------------------------------------------------
+
+export type PartnersOverview = components["schemas"]["PartnersOverviewOut"];
+export type PartnerRow = components["schemas"]["PartnerRowOut"];
+export type PartnerDetail = components["schemas"]["PartnerDetailOut"];
+export type OpenItem = components["schemas"]["OpenItemOut"];
+type PartnerIn = components["schemas"]["PartnerIn"];
+type PartnerPatch = components["schemas"]["PartnerPatch"];
+
+export function usePartnersOverview() {
+  return useQuery({
+    queryKey: ["partners", "overview"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/partners/overview");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function usePartner(id: number) {
+  return useQuery({
+    queryKey: ["partners", id],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/partners/{partner_id}", { params: { path: { partner_id: id } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    enabled: id > 0,
+  });
+}
+
+export function useUpdatePartner(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: PartnerPatch) => {
+      const { error, response } = await api.PATCH("/partners/{partner_id}", { params: { path: { partner_id: id } }, body });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["partners"] }),
+  });
+}
+
+/** Compensar o dar por perdido: es un movimiento más, y cambia saldos y listas. */
+export function usePartnerAction(id: number, action: "offset" | "write-off") {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async () => {
+      const opts = { params: { path: { partner_id: id } } };
+      const { data, error, response } = action === "offset"
+        ? await api.POST("/partners/{partner_id}/offset", opts)
+        : await api.POST("/partners/{partner_id}/write-off", opts);
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => changed(),
   });
 }
 
@@ -306,7 +366,7 @@ export type MonthFilters = {
   month: string;
   account_id?: number;
   category_id?: number;
-  kind?: "expense" | "income" | "transfer";
+  kind?: MoveSummary["kind"];
   q?: string;
   pending?: boolean;
 };
@@ -318,6 +378,19 @@ export function useCategories(kind: "expense" | "income") {
     queryKey: ["categories", kind],
     queryFn: async () => {
       const { data, error, response } = await api.GET("/categories", { params: { query: { kind } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export type ManualAccount = components["schemas"]["ManualAccountOut"];
+
+export function useManualAccounts() {
+  return useQuery({
+    queryKey: [...ACCOUNTS, "manual"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/manual-accounts");
       if (!data) fail(response, error);
       return data;
     },
@@ -356,6 +429,8 @@ function useMovesChanged() {
       qc.invalidateQueries({ queryKey: MOVES }),
       qc.invalidateQueries({ queryKey: ACCOUNTS }),
       qc.invalidateQueries({ queryKey: ["categories"] }),
+      qc.invalidateQueries({ queryKey: ["partners"] }),
+      qc.invalidateQueries({ queryKey: ["home"] }),
     ]);
   };
 }

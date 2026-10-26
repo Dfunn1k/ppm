@@ -42,6 +42,25 @@ function Row({ to, icon, letter, name, subtitle, amount, negative }: {
   return to ? <Link to={to} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
+/** Por cobrar y Por pagar se leen como «Me deben» y «Debo a personas», y llevan a Personas. */
+function people(n: number | null | undefined, to: boolean) {
+  const count = n ?? 0;
+  return `${to ? "A " : ""}${count} ${count === 1 ? "persona" : "personas"}`;
+}
+
+function accountRow(a: AccountRow, base: string, lang: string, negative?: boolean) {
+  const { amount, subtitle } = rowAmount(a, base, lang);
+  if (a.kind === "receivable") {
+    return <Row key={a.id} to="/personas" icon="group" name="Me deben" subtitle={people(a.partners, false)}
+      amount={formatAmount(a.base_total, symbolOf(base), lang)} />;
+  }
+  if (a.kind === "payable") {
+    return <Row key={a.id} to="/personas" icon="group" name="Debo a personas" subtitle={people(a.partners, true)}
+      amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
+  }
+  return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} negative={negative} />;
+}
+
 /** El saldo de una cuenta en su moneda; si no es la base, el subtítulo dice cuánto es en soles. */
 function rowAmount(a: AccountRow, base: string, lang: string) {
   const single = a.balances.length === 1 ? a.balances[0]! : null;
@@ -79,16 +98,15 @@ export function Cuentas() {
       <span className="mt-1 text-caption text-muted-foreground">Lo que tienes, menos lo que guardas de otros y lo que debes.</span>
 
       <Group label="Lo que tengo" total={money(o.have_total)}>
-        {o.have.map((a) => {
-          const { amount, subtitle } = rowAmount(a, o.currency, lang);
-          return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} />;
-        })}
+        {/* Primero tu plata (efectivo y bancos); después lo que te deben y lo por clasificar */}
+        {[...o.have].sort((x, y) => Number(!["cash", "bank"].includes(x.kind)) - Number(!["cash", "bank"].includes(y.kind)))
+          .map((a) => accountRow(a, o.currency, lang))}
       </Group>
 
       {o.custody.length > 0 && (
         <Group label="Guardo de otros" total={money(o.custody_total)}>
           {o.custody.map((c) => (
-            <Row key={c.partner_id} letter={c.partner_name[0]?.toUpperCase()} name={c.partner_name}
+            <Row key={c.partner_id} to={`/personas/${c.partner_id}`} letter={c.partner_name[0]?.toUpperCase()} name={c.partner_name}
               subtitle="Te la dio para guardar"
               amount={c.balances.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang)).join(" · ")} />
           ))}
@@ -99,10 +117,7 @@ export function Cuentas() {
         {o.owe.length === 0 ? (
           <span className="py-3 text-caption text-muted-foreground">Nada por ahora. Tus tarjetas y préstamos aparecerán aquí.</span>
         ) : (
-          o.owe.map((a) => {
-            const { amount, subtitle } = rowAmount(a, o.currency, lang);
-            return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} negative />;
-          })
+          o.owe.map((a) => accountRow(a, o.currency, lang, true))
         )}
       </Group>
     </main>
