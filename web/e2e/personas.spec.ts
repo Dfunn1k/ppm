@@ -115,3 +115,23 @@ test("el asiento manual no deja guardar hasta que cuadre", async ({ page }) => {
   await page.getByRole("button", { name: "Registrar movimiento" }).click();
   await expect(page).toHaveURL("/movimientos");
 });
+
+test("lo que una persona ya me debía antes de PPM queda como deuda abierta con su fecha", async ({ page }) => {
+  await readyUser(page);
+  const luis = (await (await page.request.post("/api/partners", { data: { name: "Luis Pérez" } })).json()).id;
+  await page.goto(`/personas/${luis}`);
+  await page.getByRole("link", { name: "De antes de PPM" }).click();
+  await expect(page.getByRole("heading", { name: "De antes de PPM" })).toBeVisible();
+  await page.getByRole("textbox", { name: "¿Cuánto te debía?" }).fill("300");
+  const hace = new Date(Date.now() - 140 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Lima" });
+  await page.getByLabel("¿Desde cuándo?").fill(hace);
+  await page.getByLabel("Nota (opcional)").fill("Lo del celular");
+  await page.getByRole("button", { name: "Anotar lo que me debía" }).click();
+
+  await expect(page).toHaveURL(`/personas/${luis}`);
+  const deuda = page.getByRole("link", { name: /Lo del celular/ });
+  await expect(deuda).toContainText(/hace 14\d días/);
+  await expect(deuda).toContainText("S/ 300.00");
+  await page.goto("/cuentas");
+  await expect(page.getByRole("link", { name: /BCP.*S\/ 1,000\.00/ })).toBeVisible();   // tu banco no se movió
+});

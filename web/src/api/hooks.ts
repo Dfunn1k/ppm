@@ -327,6 +327,21 @@ export function useUpdatePartner(id: number) {
   });
 }
 
+type PartnerOpeningIn = components["schemas"]["PartnerOpeningIn"];
+
+/** «Ya me debía» o «Ya le debía»: el saldo inicial con una persona. */
+export function usePartnerOpening(id: number) {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (body: PartnerOpeningIn) => {
+      const { data, error, response } = await api.POST("/partners/{partner_id}/opening", { params: { path: { partner_id: id } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
 /** Compensar o dar por perdido: es un movimiento más, y cambia saldos y listas. */
 export function usePartnerAction(id: number, action: "offset" | "write-off") {
   const changed = useMovesChanged();

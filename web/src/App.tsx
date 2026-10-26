@@ -28,6 +28,7 @@ import { EditarMovimiento, Registrar } from "./pages/movimientos/Registrar";
 import { RegistrarPersona } from "./pages/movimientos/RegistrarPersona";
 import { Persona } from "./pages/personas/Persona";
 import { Personas } from "./pages/personas/Personas";
+import { YaDebia } from "./pages/personas/YaDebia";
 import { Recuperar } from "./pages/Recuperar";
 import { Restablecer } from "./pages/Restablecer";
 
@@ -112,6 +113,7 @@ export function App() {
         <Route path="/registrar/reembolso" element={<Reembolso />} />
         <Route path="/registrar/manual" element={<AsientoManual />} />
         <Route path="/personas/:id" element={<Persona />} />
+        <Route path="/personas/:id/ya-debia" element={<YaDebia />} />
         <Route path="/movimientos/:id/editar" element={<EditarMovimiento />} />
         <Route path="/cuentas/nueva" element={<NuevaCuenta />} />
         <Route path="/cuentas/nueva/banco" element={<NuevaCuentaForm kind="bank" />} />
