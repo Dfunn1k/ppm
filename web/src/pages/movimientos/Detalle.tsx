@@ -56,7 +56,7 @@ export function DetalleMovimiento() {
         <button type="button" aria-label="Volver" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
-        <span className="pr-2.5 text-label text-muted-foreground">{exchange ? "Cambio de moneda" : KIND[s.kind]}</span>
+        <span className="pr-2.5 text-label text-muted-foreground">{exchange ? "Cambio de moneda" : KIND[s.kind as keyof typeof KIND] ?? "Movimiento"}</span>
       </div>
 
       {!s.posted && (
@@ -93,9 +93,9 @@ export function DetalleMovimiento() {
           <div className="flex flex-col border-b border-border py-2">
             <span className="text-caption text-muted-foreground">{s.kind === "income" ? "De qué" : "En qué"}</span>
             {d.splits.map((x) => (
-              <div key={x.category.id} className="flex min-h-12 items-center gap-3">
-                <CategoryChip category={x.category} size={32} />
-                <span className="flex-1 font-semibold">{x.category.name}</span>
+              <div key={x.category?.id ?? `p${x.partner_id}`} className="flex min-h-12 items-center gap-3">
+                {x.category && <CategoryChip category={x.category} size={32} />}
+                <span className="flex-1 font-semibold">{x.category?.name ?? `Parte de ${x.partner}`}</span>
                 {d.splits.length > 1 && <span className="tabular-nums">{formatAmount(x.amount, symbolOf(s.currency), lang)}</span>}
               </div>
             ))}

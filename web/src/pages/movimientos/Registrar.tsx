@@ -12,7 +12,7 @@ import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/component
 import { longDate, shortDate, todayISO } from "@/lib/dates";
 import { divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 
-type Kind = MoveIn["kind"];
+type Kind = Extract<MoveIn["kind"], "expense" | "income" | "transfer">;
 type Part = { category: Category | null; amount: string };
 
 const KIND_LABEL: Record<Kind, string> = { expense: "Gasto", income: "Ingreso", transfer: "Transferir" };
@@ -47,7 +47,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const [split, setSplit] = useState((editing?.splits.length ?? 0) > 1);
   const [date, setDate] = useState(editing?.summary.date ?? todayISO());
   const [dateOpen, setDateOpen] = useState(false);
-  const [note, setNote] = useState(editing && editing.summary.ref !== editing.splits[0]?.category.name ? editing.summary.ref : "");
+  const [note, setNote] = useState(editing && editing.summary.ref !== editing.splits[0]?.category?.name ? editing.summary.ref : "");
   const [pending, setPending] = useState(editing ? !editing.summary.posted : false);
   const [sheetFor, setSheetFor] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -88,6 +88,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
     if (needRate && !(Number(rate.value) > 0))
       return setProblem("Escribe el tipo de cambio, como 3.443");
     const body: MoveIn = {
+      lines: [],
       kind,
       account_id: account.id,
       amount: total,

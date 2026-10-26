@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, BeforeValidator, Field
 
 from app import accounts
+from app import partners as partners_logic
 from app.routes.deps import CurrentSession, current_session
 
 router = APIRouter(tags=["cuentas"])
@@ -59,6 +60,7 @@ class AccountRowOut(BaseModel):
     subtitle: str | None
     balances: list[MoneyOut]
     base_total: Decimal
+    partners: int | None = None      # Por cobrar y Por pagar: cuántas personas
 
 
 class CustodyRowOut(BaseModel):
@@ -162,6 +164,8 @@ class CustodyIn(BaseModel):
 
 class PartnerIn(BaseModel):
     name: Name
+    phone: Annotated[str, Field(max_length=30)] | None = None
+    email: Annotated[str, Field(max_length=120)] | None = None
 
 
 # --- Rutas ------------------------------------------------------------------------------------
@@ -250,9 +254,10 @@ def partners(session: CurrentSession = Depends(current_session)) -> list[Partner
     return [PartnerOut.model_validate(asdict(p)) for p in accounts.partners(session.user_id)]
 
 
-@router.post("/partners", status_code=status.HTTP_201_CREATED, summary="Nueva persona (solo el nombre)")
+@router.post("/partners", status_code=status.HTTP_201_CREATED, summary="Nueva persona")
 def create_partner(body: PartnerIn, session: CurrentSession = Depends(current_session)) -> PartnerOut:
     try:
-        return PartnerOut.model_validate(asdict(accounts.create_partner(session.user_id, body.name)))
+        pid = partners_logic.create(session.user_id, body.name, body.phone, body.email)
+        return PartnerOut(id=pid, name=" ".join(body.name.split()))
     except accounts.AccountError as e:
         raise _http(e) from None
