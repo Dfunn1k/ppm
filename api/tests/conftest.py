@@ -14,10 +14,16 @@ from app.config import get_settings
 from app.db import act_as_user
 
 
+def owner_url() -> str:
+    """El dueño de la base, para preparar y limpiar datos. La API de las pruebas entra como ppm_api
+    (DATABASE_URL), igual que en producción; PPM_OWNER_URL dice cómo entrar como dueño."""
+    return os.environ.get("PPM_OWNER_URL") or get_settings().database_url
+
+
 @pytest.fixture
 def conn():
     """Una conexión como dueño de la base; todo se deshace al terminar la prueba."""
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         yield c
         c.rollback()
 
@@ -51,7 +57,7 @@ def as_user(conn) -> Callable[[int], psycopg.Connection]:
 def usd_today():
     """El último tipo del dólar que hay hasta hoy (compra, venta), o None si no se cargó ninguno.
     La API valora los dólares con él; las pruebas no lo fijan para no pisar el de la base."""
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         return c.execute(
             "SELECT rate_buy, rate_sell FROM res_currency_rate r JOIN res_currency c ON c.id = r.currency_id"
             " WHERE c.name = 'USD' AND r.name <= (now() AT TIME ZONE 'America/Lima')::date"

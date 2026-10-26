@@ -133,13 +133,14 @@ services:
     profiles: ["pruebas"]
     build: ./api
     environment:
-      DATABASE_URL: postgresql://ppm:ppm@db:5432/ppm
+      DATABASE_URL: postgresql://ppm_api:ppm_api@db:5432/ppm   # la API, como en producción
+      PPM_OWNER_URL: postgresql://ppm:ppm@db:5432/ppm           # el dueño, para preparar datos
       UV_PROJECT_ENVIRONMENT: /tmp/venv
     volumes:
       - ./api:/src:ro
     command: ["sh", "-c", "cp -r /src /w && cd /w && rm -rf .venv && uv sync --locked -q && uv run pytest -W error"]
     depends_on:
-      migrate:
+      usuario-api:
         condition: service_completed_successfully
 
 volumes:

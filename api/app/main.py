@@ -35,7 +35,7 @@ class HealthOut(BaseModel):
     postgres: str
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])   # HEAD: los monitores externos empiezan por ahí
 def health() -> HealthOut:
     """Responde si la API está viva y llega a la base de datos."""
     with get_pool().connection() as conn:

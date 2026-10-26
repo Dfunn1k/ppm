@@ -13,8 +13,8 @@ USD = "(SELECT id FROM res_currency WHERE name = 'USD')"
 @pytest.fixture
 def admin(conn):
     conn.execute("RESET ROLE")
+    conn.execute("DELETE FROM res_currency_rate")   # la prueba parte de cero (como dueño); se deshace al final
     conn.execute("SET ROLE ppm_admin")
-    conn.execute("DELETE FROM res_currency_rate")   # la prueba parte de cero; se deshace al final
     return conn
 
 
