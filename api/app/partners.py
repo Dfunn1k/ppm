@@ -12,7 +12,7 @@ import re
 
 import psycopg
 
-from app.accounts import ZERO, AccountError, Money, _today, _today_rates, _translate
+from app.accounts import ZERO, AccountError, Money, _currency_id, _today, _today_rates, _translate
 from app.db import user_transaction
 from app.moves import _first, owed, reconcile
 
@@ -158,6 +158,44 @@ def update(user_id: int, partner_id: int, name: str, phone: str | None, email: s
         if conn.execute("UPDATE res_partner SET name = %s, phone = %s, email = %s WHERE id = %s AND active"
                         " RETURNING id", (name, phone, email, partner_id)).fetchone() is None:
             raise AccountError(404, "No encontramos a esa persona")
+
+
+# --- Saldo inicial con una persona --------------------------------------------------------------
+
+def add_opening(user_id: int, partner_id: int, side: str, currency: str, amount: Decimal,
+                on: dt.date | None = None, rate: Decimal | None = None, ref: str | None = None) -> int:
+    """«Ya me debía» o «Ya le debía»: lo que había con esa persona antes de empezar a usar PPM.
+    Va contra Saldos iniciales y no mueve tus cuentas; queda como una deuda abierta con su fecha."""
+    if side not in ("owes_me", "i_owe"):
+        raise AccountError(400, "Elige si te debía o si le debías")
+    if amount <= 0:
+        raise AccountError(400, "Escribe un monto mayor que cero")
+    role = "receivable" if side == "owes_me" else "payable"
+    with user_transaction(user_id) as conn:
+        _name(conn, partner_id)
+        cur_id = _currency_id(conn, currency)
+        on = on or conn.execute("SELECT user_today()").fetchone()[0]
+        if on > conn.execute("SELECT user_today()").fetchone()[0]:
+            raise AccountError(400, "Un saldo inicial es de hoy o de antes: elige otra fecha")
+        base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
+        if cur_id == base_id:
+            rate = Decimal(1)
+        elif rate is None:
+            try:
+                with conn.transaction():
+                    rate = conn.execute("SELECT get_rate(%s, %s, %s)",
+                                        (cur_id, on, "buy" if role == "receivable" else "sell")).fetchone()[0]
+            except psycopg.errors.NoDataFound:
+                raise AccountError(400, f"Falta el tipo de cambio de {currency.upper()}: escríbelo") from None
+        try:
+            with conn.transaction():
+                move_id = conn.execute("SELECT post_partner_opening(%s, %s, %s, %s, %s, %s, %s)",
+                                       (role, partner_id, cur_id, amount, on, rate, ref)).fetchone()[0]
+                conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
+                reconcile(conn, {(partner_id, conn.execute("SELECT system_account(%s)", (role,)).fetchone()[0])})
+                return move_id
+        except psycopg.Error as e:
+            raise _translate(e) from None
 
 
 # --- Compensar y dar por perdido --------------------------------------------------------------

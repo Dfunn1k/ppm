@@ -3,6 +3,7 @@ gasto con alguien, el gasto que pagó otra persona, reembolsos, asientos manuale
 por perdido. Las deudas se concilian solas, de la más antigua a la más nueva."""
 
 from datetime import timedelta
+from decimal import Decimal
 
 import pytest
 
@@ -235,3 +236,51 @@ def test_editar_persona(ana: Con):
     assert ana.c.patch(f"/partners/{sandra}", json={"name": "S", "email": "no-es-correo"}).status_code == 400
     r = ana.c.post("/partners", json={"name": "Ana Torres", "phone": "999"})
     assert r.status_code == 201 and ana.detail(r.json()["id"])["partner"]["phone"] == "999"
+
+
+# --- Saldo inicial con una persona ------------------------------------------------------------
+
+HACE_MESES = (HOY - timedelta(days=140)).isoformat()
+
+
+def test_ya_me_debia_desde_hace_meses(ana: Con):
+    luis = ana.person("Luis Pérez")
+    antes = Decimal(ana.c.get("/accounts").json()["real_total"])
+    r = ana.c.post(f"/partners/{luis}/opening", json={"side": "owes_me", "currency": "PEN", "amount": "300.00",
+                                                     "date": HACE_MESES, "ref": "Lo del celular"})
+    assert r.status_code == 201, r.text
+    d = ana.detail(luis)
+    assert [(i["ref"], i["open"], i["days"]) for i in d["owes_me"]] == [("Lo del celular", "300.00", 140)]
+    assert ana.balance(ana.bcp) == "1000.00"                         # no movió tus cuentas
+    assert Decimal(ana.c.get("/accounts").json()["real_total"]) == antes + 300   # lo que te deben suma
+    m = ana.c.get(f"/moves/{r.json()['move_id']}").json()
+    assert (m["summary"]["kind"], m["summary"]["partner"]) == ("opening", "Luis Pérez")
+
+    ana.register(kind="collect", account_id=ana.bcp, amount="100.00", partner_id=luis)
+    assert [i["open"] for i in ana.detail(luis)["owes_me"]] == ["200.00"]
+
+
+def test_ya_le_debia_y_se_corrige_borrandolo(ana: Con):
+    maria = ana.person("María")
+    r = ana.c.post(f"/partners/{maria}/opening", json={"side": "i_owe", "currency": "PEN", "amount": "80.00",
+                                                      "date": HACE_MESES})
+    assert r.status_code == 201, r.text
+    assert ana.detail(maria)["i_owe"][0]["ref"] == "Saldo inicial"
+    move = r.json()["move_id"]
+    assert ana.c.put(f"/moves/{move}", json={"kind": "repay", "account_id": ana.bcp, "amount": "1.00",
+                                             "partner_id": maria}).status_code == 400
+    assert ana.c.delete(f"/moves/{move}").status_code == 204
+    assert ana.detail(maria)["i_owe"] == []
+
+
+def test_saldo_inicial_con_persona_reglas(ana: Con):
+    luis = ana.person("Luis")
+    manana = (HOY + timedelta(days=1)).isoformat()
+    r = ana.c.post(f"/partners/{luis}/opening", json={"side": "owes_me", "currency": "PEN", "amount": "5", "date": manana})
+    assert r.json()["detail"] == "Un saldo inicial es de hoy o de antes: elige otra fecha"
+    r = ana.c.post(f"/partners/{luis}/opening", json={"side": "owes_me", "currency": "EUR", "amount": "5"})
+    assert r.json()["detail"].startswith("No usas EUR")
+    r = ana.c.post(f"/partners/{luis}/opening", json={"side": "owes_me", "currency": "USD", "amount": "10",
+                                                     "rate": "3.70"})
+    assert r.status_code == 201, r.text
+    assert ana.detail(luis)["partner"]["owes_me"][0]["currency"] == "USD"

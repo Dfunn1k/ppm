@@ -470,6 +470,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/partners/{partner_id}/opening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Saldo inicial: lo que ya te debía o ya le debías */
+        post: operations["add_opening_partners__partner_id__opening_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/home": {
         parameters: {
             query?: never;
@@ -1004,7 +1021,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "other";
+            kind: "expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "opening" | "other";
             /** Currency */
             currency: string;
             /** Amount */
@@ -1123,6 +1140,24 @@ export interface components {
             phone?: string | null;
             /** Email */
             email?: string | null;
+        };
+        /** PartnerOpeningIn */
+        PartnerOpeningIn: {
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "owes_me" | "i_owe";
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: number | string;
+            /** Date */
+            date?: string | null;
+            /** Rate */
+            rate?: number | string | null;
+            /** Ref */
+            ref?: string | null;
         };
         /** PartnerOut */
         PartnerOut: {
@@ -2205,7 +2240,7 @@ export interface operations {
                 month: string;
                 account_id?: number | null;
                 category_id?: number | null;
-                kind?: ("expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "other") | null;
+                kind?: ("expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "opening" | "other") | null;
                 q?: string | null;
                 pending?: boolean;
             };
@@ -2554,6 +2589,43 @@ export interface operations {
             };
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_opening_partners__partner_id__opening_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                partner_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartnerOpeningIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             201: {
