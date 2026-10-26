@@ -25,7 +25,8 @@ jobs:
           --health-timeout 3s
           --health-retries 30
     env:
-      DATABASE_URL: postgresql://ppm:ppm@localhost:5432/ppm
+      DATABASE_URL: postgresql://ppm_api:ppm_api@localhost:5432/ppm   # la API entra como en producción
+      PPM_OWNER_URL: postgresql://ppm:ppm@localhost:5432/ppm         # el dueño, para preparar datos
     defaults:
       run:
         working-directory: api
@@ -52,6 +53,9 @@ jobs:
 
       - name: Dependencias
         run: uv sync --locked
+
+      - name: Contraseña de ppm_api (lo que hace el servicio usuario-api de Docker Compose)
+        run: psql "$PPM_OWNER_URL" -v ON_ERROR_STOP=1 -c "ALTER ROLE ppm_api LOGIN PASSWORD 'ppm_api'"
 
       - name: API
         run: uv run pytest -W error

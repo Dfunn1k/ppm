@@ -16,3 +16,9 @@ def test_health_llega_a_la_base():
 def test_postgres_es_18_o_mas(conn):
     version = int(conn.execute("SHOW server_version_num").fetchone()[0])
     assert version >= 180000
+
+
+def test_health_responde_a_head():
+    """Los monitores externos (UptimeRobot) empiezan con HEAD."""
+    with TestClient(app) as client:
+        assert client.head("/health").status_code == 200

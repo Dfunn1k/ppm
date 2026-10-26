@@ -9,7 +9,7 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config import get_settings
+from tests.conftest import owner_url
 from app.mail import Mail, get_mailer
 from app.main import app
 
@@ -35,7 +35,7 @@ def mailer():
 @pytest.fixture(autouse=True)
 def borrar_usuarios_de_prueba():
     yield
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         c.execute("DELETE FROM res_users WHERE login LIKE '%@prueba.ppm'")
 
 

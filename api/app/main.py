@@ -41,3 +41,10 @@ def health() -> HealthOut:
     with get_pool().connection() as conn:
         version = conn.execute("SHOW server_version").fetchone()[0]
     return HealthOut(status="ok", postgres=version)
+
+
+# Los monitores externos (UptimeRobot) consultan primero con HEAD. Va aparte y fuera del esquema:
+# con una sola ruta para GET y HEAD, FastAPI repite el nombre de la operación en los tipos de la web.
+@app.head("/health", include_in_schema=False)
+def health_head() -> HealthOut:
+    return health()

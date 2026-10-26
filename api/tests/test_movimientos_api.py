@@ -8,7 +8,7 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config import get_settings
+from tests.conftest import owner_url
 from app.main import app
 
 HOY = datetime.now(ZoneInfo("America/Lima")).date()   # «hoy» es el de la zona de la persona
@@ -18,7 +18,7 @@ MES = HOY.strftime("%Y-%m")
 @pytest.fixture(autouse=True)
 def borrar_usuarios_de_prueba():
     yield
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         c.execute("DELETE FROM res_users WHERE login LIKE '%@prueba.ppm'")
 
 
@@ -199,7 +199,7 @@ def test_borrar(ana: Ana):
 
 
 def test_el_saldo_inicial_no_se_edita_ni_borra_aqui(ana: Ana):
-    with psycopg.connect(get_settings().database_url) as db:
+    with psycopg.connect(owner_url()) as db:
         opening = db.execute("SELECT move_id FROM account_move_line WHERE account_id = %s", (ana.bcp,)).fetchone()[0]
     assert ana.c.delete(f"/moves/{opening}").status_code == 400
 

@@ -7,15 +7,14 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config import get_settings
 from app.main import app
-from tests.conftest import usd_value_today
+from tests.conftest import owner_url, usd_value_today
 
 
 @pytest.fixture(autouse=True)
 def borrar_usuarios_de_prueba():
     yield
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         c.execute("DELETE FROM res_users WHERE login LIKE '%@prueba.ppm'")
 
 
@@ -185,7 +184,7 @@ def test_las_cuentas_de_sistema_no_se_archivan():
     efectivo_y_sistema = c.get("/accounts").json()
     assert efectivo_y_sistema["have"][0]["name"] == "Efectivo"
     # Por clasificar no aparece con saldo cero, pero existe y es de sistema
-    with psycopg.connect(get_settings().database_url) as db:
+    with psycopg.connect(owner_url()) as db:
         suspense = db.execute(
             "SELECT a.id FROM account_account a JOIN res_users u ON u.id = a.user_id"
             " WHERE a.system_role = 'suspense' ORDER BY a.id DESC LIMIT 1").fetchone()[0]

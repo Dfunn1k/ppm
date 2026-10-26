@@ -7,8 +7,7 @@ from zoneinfo import ZoneInfo
 import psycopg
 import pytest
 
-from app.config import get_settings
-from tests.conftest import usd_value_today
+from tests.conftest import owner_url, usd_value_today
 from tests.test_movimientos_api import Ana
 
 HOY = datetime.now(ZoneInfo("America/Lima")).date()
@@ -18,7 +17,7 @@ MES = HOY.strftime("%Y-%m")
 @pytest.fixture(autouse=True)
 def borrar_usuarios_de_prueba():
     yield
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         c.execute("DELETE FROM res_users WHERE login LIKE '%@prueba.ppm'")
 
 

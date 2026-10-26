@@ -21,7 +21,7 @@ Internet ──443/80──▶ web (Caddy)
                                        └──▶ db:5432 (PostgreSQL 18, volumen pgdata), como ppm_api
 ```
 
-**Dos usuarios de PostgreSQL.** `ppm` es el dueño de las tablas: solo lo usan `migrate`, los respaldos y quien entra a mano. La API entra como `ppm_api`, que no es dueño ni superusuario: sin ponerse un rol no puede leer ninguna tabla, y solo puede ponerse `ppm_app` (cada persona, con seguridad por fila) o `ppm_admin` (el importador de SUNAT y Z1). Si alguien le robara la conexión a la API, no tendría la llave maestra. Cada uno tiene su contraseña en `.env`.
+**Dos usuarios de PostgreSQL.** `ppm` es el dueño de las tablas: solo lo usan `migrate`, los respaldos y quien entra a mano. La API entra como `ppm_api`, que no es dueño ni superusuario: sin ponerse un rol no puede leer ninguna tabla, y solo puede ponerse `ppm_app` (cada persona, con seguridad por fila) o `ppm_admin` (el importador de SUNAT y Z1, que solo lee y escribe el tipo de cambio y no ve cuentas ni movimientos de nadie). Qué protege y qué no: un error en el código que se olvide de ponerse el rol falla en vez de ver todo, y quien llegara a usar la conexión de la API no podría cambiar las tablas, quitar la seguridad por fila, saltarse las reglas de la base (el cuadre, el cierre) ni hacerse pasar por el dueño. Pero sí podría leer y cambiar datos de personas, porque con `ppm_app` la API declara de quién es cada pedido (`app.user_id`). Por eso la contraseña de `ppm_api` se cuida igual que la del dueño. Cada uno tiene su contraseña en `.env`.
 
 Solo Caddy publica puertos (80 y 443). La API y la base quedan dentro de la red de Docker. El proyecto se llama `ppm-prod` (`name:` en el compose), así nunca se mezcla con uno de desarrollo.
 
@@ -185,12 +185,19 @@ El importador de SUNAT escribe en los logs de `api` solo cuando falla («Importa
 
 ## 9. Monitoreo (UptimeRobot)
 
-Un servicio de afuera consulta `/api/health` cada 5 minutos y te avisa si deja de responder. `/api/health` responde `{"status":"ok",…}` solo si la API está viva **y** llega a la base; si la base no responde, devuelve un error 500. Tiene que ser de afuera: un monitor en la misma VPS se cae con ella.
+Un servicio de afuera consulta `/api/health` cada 5 minutos y te avisa si deja de responder. `/api/health` responde `200` con `{"status":"ok",…}` solo si la API está viva **y** llega a la base; si la base no responde, devuelve `500`. Responde a `GET` y a `HEAD`. Tiene que ser de afuera: un monitor en la misma VPS se cae con ella.
+
+Dos detalles de UptimeRobot que importan:
+
+- **Cuenta como arriba cualquier respuesta entre 200 y 399**, también una redirección. Por eso la URL va siempre con `https://`: con `http://`, Caddy responde con una redirección (308) aunque la API esté caída, y el monitor nunca avisaría.
+- **Por defecto consulta con `HEAD`.** `/api/health` lo atiende, pero `GET` es lo más directo: es lo que hace un navegador y devuelve el cuerpo con `"status":"ok"`.
+
+Pasos:
 
 1. Crea una cuenta en [uptimerobot.com](https://uptimerobot.com) y confirma tu correo. Para uso personal alcanza el plan gratis (revisa sus condiciones en su página de precios).
-2. **New monitor** → tipo **HTTP(s)**.
-   - **URL:** `https://ppm.ejemplo.com/api/health` (tu dominio).
+2. **New monitor**:
+   - Si tu plan ofrece el tipo **Keyword**, úsalo: URL `https://ppm.ejemplo.com/api/health` (tu dominio), palabra `"status":"ok"` y que avise cuando **no** aparezca. Es lo más estricto: solo cuenta como arriba si la API dice que llega a la base.
+   - Si no, tipo **HTTP(s)**, con la misma URL. En **Advanced Settings**, elige el método **GET**.
    - **Intervalo:** 5 minutos.
-   - Cualquier respuesta que no sea 2xx cuenta como caída: la API apagada, la base sin responder (500) o un certificado HTTPS vencido.
 3. En los contactos de alerta, deja tu correo (y la app de UptimeRobot o Telegram, si quieres el aviso en el celular).
 4. Pruébalo: `docker compose stop api`, espera el aviso (unos 5 a 10 minutos) y vuelve con `docker compose start api`. Debe llegar un segundo aviso de que volvió.

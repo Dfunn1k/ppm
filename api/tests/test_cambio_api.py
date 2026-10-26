@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from app import rates, users
 from app.config import get_settings
 from app.main import app
-from tests.conftest import usd_today
+from tests.conftest import owner_url, usd_today
 from tests.test_movimientos_api import MES, Ana
 
 ANTIGUO = date(2001, 1, 1)   # las pruebas cargan tipos antes de esta fecha y los borran al final
@@ -22,7 +22,7 @@ ANTIGUO = date(2001, 1, 1)   # las pruebas cargan tipos antes de esta fecha y lo
 @pytest.fixture(autouse=True)
 def limpiar():
     yield
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         c.execute("DELETE FROM res_users WHERE login LIKE '%@prueba.ppm'")
         c.execute("DELETE FROM res_currency_rate WHERE name < %s", (ANTIGUO,))
 
@@ -43,7 +43,7 @@ def admin(monkeypatch, ana: Ana) -> Ana:
 
 def dia(on: str) -> tuple:
     """Lo que quedó en la base para el dólar ese día (compra, origen)."""
-    with psycopg.connect(get_settings().database_url) as c:
+    with psycopg.connect(owner_url()) as c:
         return c.execute("SELECT r.rate_buy, r.source FROM res_currency_rate r JOIN res_currency c"
                          " ON c.id = r.currency_id WHERE c.name = 'USD' AND r.name = %s", (on,)).fetchone()
 
