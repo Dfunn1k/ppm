@@ -33,6 +33,18 @@ Los saldos no se guardan: se calculan (`account_balance`, y `account_move_line_r
 
 Los montos viajan como texto decimal exacto (`"1284.90"`), entran y salen así. Una moneda que no es la base pide su tipo de cambio (`rate`); sin él, la base rechaza el saldo.
 
+## Movimientos
+
+| Ruta | Qué hace |
+|---|---|
+| `GET /categories?kind=expense\|income` | las categorías que se eligen al registrar, por grupo y con su color, y las 4 más usadas |
+| `POST /moves` · `PUT /moves/{id}` | registrar o editar un gasto, ingreso o transferencia; `splits` divide en varias categorías |
+| `POST /moves/{id}/state` · `DELETE /moves/{id}` | confirmar o pasar a por confirmar · borrar |
+| `GET /moves?month=2026-10` | el mes por días, con lo que entró y salió; filtros `account_id`, `category_id`, `kind`, `pending` y búsqueda `q` |
+| `GET /moves/{id}` | el detalle, con lo necesario para editarlo |
+
+Los apuntes se arman aquí (`app/moves.py`): el gasto sale de la cuenta (Haber) y va a sus categorías (Debe), el ingreso al revés, y la transferencia pasa de una cuenta a otra. En otra moneda se usa el tipo de cambio que escribe la persona; entre monedas, la transferencia guarda los dos montos. Al dividir, la última parte absorbe el redondeo para que el total en soles sea exacto. Con fecha futura, el movimiento queda por confirmar.
+
 ## Acceso
 
 | Ruta | Qué hace |
