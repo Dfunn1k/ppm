@@ -42,6 +42,10 @@ docker compose exec web corepack pnpm test   # la web (con docker compose up cor
 
 Más detalles en [`api/README.md`](api/README.md) y [`web/README.md`](web/README.md).
 
+## Producción
+
+Para desplegar en un servidor, sigue [`DESPLIEGUE.md`](DESPLIEGUE.md). Usa `docker-compose.prod.yml` (Caddy con HTTPS, la API y PostgreSQL) y nunca el `docker-compose.yml` de desarrollo.
+
 ## Cómo se trabaja
 
 Cada paso llega en una rama con su pull request. Se aprueba con merge cuando las pruebas están en verde.

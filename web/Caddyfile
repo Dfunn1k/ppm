@@ -1,0 +1,28 @@
+# El servidor de PPM en producción. PPM_DOMAIN es el dominio (ppm.ejemplo.com): con él, Caddy
+# saca y renueva solo el certificado HTTPS de Let's Encrypt. Con ":80" sirve sin HTTPS (pruebas).
+{$PPM_DOMAIN} {
+	encode zstd gzip
+
+	# La API: /api/me → api:8000/me. La cookie de sesión funciona sola porque es el mismo origen.
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+
+	# La web: archivos de Vite; cualquier otra ruta (/inicio, /cuentas/3…) es la app
+	handle {
+		root * /srv
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header /index.html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
