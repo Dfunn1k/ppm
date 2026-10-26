@@ -137,7 +137,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Cambiar tu nombre, el tema o el acento */
+        patch: operations["update_me_patch"];
         trace?: never;
     };
     "/me/setup": {
@@ -383,6 +384,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El Inicio: hoy y el mes elegido */
+        get: operations["home_home_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -579,6 +597,35 @@ export interface components {
             /** Postgres */
             postgres: string;
         };
+        /** HomeOut */
+        HomeOut: {
+            /** Currency */
+            currency: string;
+            /** Real Total */
+            real_total: string;
+            /** Have Total */
+            have_total: string;
+            /** Custody Total */
+            custody_total: string;
+            /** Owe Total */
+            owe_total: string;
+            /** Overdue Pending */
+            overdue_pending: number;
+            /** Month */
+            month: string;
+            /** Income Total */
+            income_total: string;
+            /** Expense Total */
+            expense_total: string;
+            /** Saved */
+            saved: string;
+            /** Saved Percent */
+            saved_percent: number | null;
+            /** Top */
+            top: components["schemas"]["TopCategoryOut"][];
+            /** Recent */
+            recent: components["schemas"]["MoveSummaryOut"][];
+        };
         /** LineOut */
         LineOut: {
             /** Id */
@@ -643,6 +690,15 @@ export interface components {
             ui_accent: string;
             /** Currencies */
             currencies: string[];
+        };
+        /** MePatch */
+        MePatch: {
+            /** Name */
+            name?: string | null;
+            /** Ui Theme */
+            ui_theme?: ("system" | "light" | "dark") | null;
+            /** Ui Accent */
+            ui_accent?: ("tinta" | "trigo" | "morado" | "azul") | null;
         };
         /** MoneyOut */
         MoneyOut: {
@@ -872,6 +928,21 @@ export interface components {
             category: components["schemas"]["CategoryOut"];
             /** Amount */
             amount: string;
+        };
+        /** TopCategoryOut */
+        TopCategoryOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+            /** Amount */
+            amount: string;
+            /** Share */
+            share: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -1157,6 +1228,41 @@ export interface operations {
             };
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_me_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MePatch"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -1813,6 +1919,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MoveDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    home_home_get: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeOut"];
                 };
             };
             /** @description Validation Error */

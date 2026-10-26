@@ -42,6 +42,15 @@ def get_me(user_id: int) -> Me:
     return Me(*row[:10], currencies=list(row[10]))
 
 
+def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None) -> Me:
+    """Lo que la persona cambia de sí misma: su nombre y cómo se ve PPM."""
+    with user_transaction(user_id) as conn:
+        conn.execute(
+            "UPDATE res_users SET name = coalesce(%s, name), ui_theme = coalesce(%s, ui_theme),"
+            " ui_accent = coalesce(%s, ui_accent)", (name.strip() if name else None, ui_theme, ui_accent))
+    return get_me(user_id)
+
+
 def setup(user_id: int, country: str, other_currencies: list[str], lang: str | None, tz: str | None) -> Me:
     with user_transaction(user_id) as conn:
         try:
