@@ -5,7 +5,7 @@ Base de datos (PostgreSQL 18), migraciones (dbmate) y API (FastAPI). Se levanta 
 ## Estructura
 
 ```
-db/migrations/   0001_base … 0007_altas: se aplican en orden y nunca se editan una vez en main
+db/migrations/   0001_base … 0008_iconos_y_futuro: se aplican en orden y nunca se editan una vez en main
 app/             la API: rutas, lógica (dataclasses + Decimal) y adaptadores
 tests/           pytest contra un PostgreSQL de verdad
 ```
@@ -15,6 +15,8 @@ Cada migración tiene su parte `-- migrate:up` y su `-- migrate:down` (para desh
 ## Asientos y saldos
 
 Cada movimiento de dinero es un asiento (`account_move`) con sus apuntes (`account_move_line`), al Debe o al Haber, como en Odoo. La base cuida, al confirmar la transacción, que todo asiento confirmado cuadre, que cada apunte vaya en la moneda de su cuenta y que en moneda base el monto coincida. Además: solo las cuentas hoja reciben movimientos, «Por cobrar», «Por pagar» y «Plata que guardo de otros» exigen persona, y una cuenta con movimientos ya no cambia de tipo ni de moneda.
+
+Un movimiento con fecha futura no puede estar confirmado: queda por confirmar y no cuenta hasta que llegue su día.
 
 Los saldos no se guardan: se calculan (`account_balance`, y `account_move_line_running` con el saldo después de cada apunte). El saldo inicial es un asiento contra «Saldos iniciales» (`post_opening_balance`), y las altas lo hacen en un solo paso: `create_cash_account`, `create_bank_account` (con su CCI validado contra el banco) y `post_custody_opening`.
 
