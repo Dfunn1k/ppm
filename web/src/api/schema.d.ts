@@ -312,6 +312,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Categorías para elegir al registrar */
+        get: operations["categories_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Movimientos de un mes, con búsqueda y filtros */
+        get: operations["month_moves_get"];
+        put?: never;
+        /** Registrar gasto, ingreso o transferencia */
+        post: operations["create_moves_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moves/{move_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle de un movimiento */
+        get: operations["detail_moves__move_id__get"];
+        /** Editar un movimiento */
+        put: operations["update_moves__move_id__put"];
+        post?: never;
+        /** Borrar un movimiento */
+        delete: operations["delete_moves__move_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moves/{move_id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirmar o pasar a por confirmar */
+        post: operations["set_state_moves__move_id__state_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -431,6 +502,35 @@ export interface components {
             /** Banks */
             banks: components["schemas"]["app__routes__me__BankOut"][];
         };
+        /** CategoriesOut */
+        CategoriesOut: {
+            /** Groups */
+            groups: components["schemas"]["CategoryGroupOut"][];
+            /** Frequent */
+            frequent: components["schemas"]["CategoryOut"][];
+        };
+        /** CategoryGroupOut */
+        CategoryGroupOut: {
+            /** Id */
+            id: number | null;
+            /** Name */
+            name: string;
+            /** Color */
+            color: number | null;
+            /** Children */
+            children: components["schemas"]["CategoryOut"][];
+        };
+        /** CategoryOut */
+        CategoryOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+        };
         /** CustodyIn */
         CustodyIn: {
             /** Partner Id */
@@ -454,6 +554,18 @@ export interface components {
             balances: components["schemas"]["MoneyOut"][];
             /** Base Total */
             base_total: string;
+        };
+        /** DayOut */
+        DayOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Total */
+            total: string;
+            /** Moves */
+            moves: components["schemas"]["MoveSummaryOut"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -541,6 +653,98 @@ export interface components {
             /** Base */
             base: string;
         };
+        /** MonthOut */
+        MonthOut: {
+            /** Month */
+            month: string;
+            /** Currency */
+            currency: string;
+            /** Income Total */
+            income_total: string;
+            /** Expense Total */
+            expense_total: string;
+            /** Pending Count */
+            pending_count: number;
+            /** Days */
+            days: components["schemas"]["DayOut"][];
+        };
+        /** MoveDetailOut */
+        MoveDetailOut: {
+            summary: components["schemas"]["MoveSummaryOut"];
+            /** Account Id */
+            account_id: number | null;
+            /** To Account Id */
+            to_account_id: number | null;
+            /** Rate */
+            rate: string | null;
+            /** Splits */
+            splits: components["schemas"]["SplitOut"][];
+        };
+        /** MoveIn */
+        MoveIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "expense" | "income" | "transfer";
+            /** Account Id */
+            account_id: number;
+            /** Amount */
+            amount: number | string;
+            /** Date */
+            date?: string | null;
+            /** Ref */
+            ref?: string | null;
+            /**
+             * Pending
+             * @default false
+             */
+            pending: boolean;
+            /** Rate */
+            rate?: number | string | null;
+            /**
+             * Splits
+             * @default []
+             */
+            splits: components["schemas"]["SplitIn"][];
+            /** To Account Id */
+            to_account_id?: number | null;
+            /** To Amount */
+            to_amount?: number | string | null;
+        };
+        /** MoveSummaryOut */
+        MoveSummaryOut: {
+            /** Id */
+            id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Posted */
+            posted: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "expense" | "income" | "transfer" | "other";
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Base */
+            base: string;
+            /** Account */
+            account: string;
+            /** Categories */
+            categories: components["schemas"]["CategoryOut"][];
+            /** To Currency */
+            to_currency: string | null;
+            /** To Amount */
+            to_amount: string | null;
+        };
         /** OpeningIn */
         OpeningIn: {
             /**
@@ -610,6 +814,11 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** PendingIn */
+        PendingIn: {
+            /** Pending */
+            pending: boolean;
+        };
         /** ResetConfirmIn */
         ResetConfirmIn: {
             /** Token */
@@ -650,6 +859,19 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** SplitIn */
+        SplitIn: {
+            /** Category Id */
+            category_id: number;
+            /** Amount */
+            amount: number | string;
+        };
+        /** SplitOut */
+        SplitOut: {
+            category: components["schemas"]["CategoryOut"];
+            /** Amount */
+            amount: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1347,6 +1569,250 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PartnerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    categories_categories_get: {
+        parameters: {
+            query: {
+                kind: "expense" | "income";
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    month_moves_get: {
+        parameters: {
+            query: {
+                month: string;
+                account_id?: number | null;
+                category_id?: number | null;
+                kind?: ("expense" | "income" | "transfer") | null;
+                q?: string | null;
+                pending?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_moves_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_moves__move_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_moves__move_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_moves__move_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_state_moves__move_id__state_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PendingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
                 };
             };
             /** @description Validation Error */
