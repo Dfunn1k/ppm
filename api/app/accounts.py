@@ -40,16 +40,31 @@ class TodayRate:
 
 
 @dataclass(frozen=True)
+class CardAmount:
+    currency: str
+    amount: Decimal
+
+
+@dataclass(frozen=True)
+class CardBrief:
+    """Lo que dice C1 de una tarjeta: cuánto toca pagar (por moneda) y hasta cuándo."""
+    last_closing: date           # el corte del estado de cuenta que toca pagar
+    date_due: date | None        # None hasta que la copies del estado de cuenta
+    to_pay: list[CardAmount]     # solo las monedas con algo por pagar
+
+
+@dataclass(frozen=True)
 class AccountRow:
     id: int
     name: str
-    kind: str                    # 'cash', 'bank', 'receivable', 'payable', 'suspense' u 'other'
+    kind: str                    # 'cash', 'bank', 'card', 'receivable', 'payable', 'suspense' u 'other'
     currency: str | None         # None = multimoneda
     icon: str | None
     subtitle: str | None         # 'Ahorros en soles'
     balances: list[Money]
     base_total: Decimal          # suma de sus saldos en moneda base
     partners: int | None = None  # Por cobrar y Por pagar: con cuántas personas hay algo pendiente
+    card: CardBrief | None = None   # tarjetas: lo que toca pagar
 
 
 @dataclass(frozen=True)
@@ -157,19 +172,29 @@ def _balances(conn: psycopg.Connection, account_ids: list[int],
 
 _ACCOUNTS_SQL = """
 SELECT a.id, a.name, a.account_type, a.system_role, coalesce(a.icon, p.icon), trim(cur.name),
-       b.acc_kind, bk.name
+       b.acc_kind, bk.name, cc.account_id IS NOT NULL, cc.brand, cc.last4, cbk.name
   FROM account_account a
   LEFT JOIN account_account p ON p.id = a.parent_id
   LEFT JOIN res_currency cur  ON cur.id = a.currency_id
   LEFT JOIN res_partner_bank b ON b.account_id = a.id
   LEFT JOIN res_bank bk        ON bk.id = b.bank_id
+  LEFT JOIN account_credit_card cc ON cc.account_id = a.id
+  LEFT JOIN res_bank cbk       ON cbk.id = cc.bank_id
 """
 
 
+def card_subtitle(bank: str | None, brand: str | None, last4: str | None) -> str | None:
+    """«BBVA · Visa •••• 4417», con lo que haya."""
+    tail = " ".join(x for x in [brand, f"•••• {last4}" if last4 else None] if x)
+    return " · ".join(x for x in [bank, tail] if x) or None
+
+
 def _row(r: tuple, balances: list[Money]) -> AccountRow:
-    acc_id, name, _type, role, icon, currency, acc_kind, bank_name = r
+    acc_id, name, _type, role, icon, currency, acc_kind, bank_name, is_card, brand, last4, card_bank = r
     if role in ROLE_KIND:
         kind = ROLE_KIND[role]
+    elif is_card:
+        kind = "card"
     elif acc_kind:
         kind = "bank"
     elif _type == "asset":
@@ -181,6 +206,8 @@ def _row(r: tuple, balances: list[Money]) -> AccountRow:
         subtitle = f"{KIND_NAMES[acc_kind]} en {CURRENCY_NAMES.get(currency or '', currency)} · {bank_name}"
     elif kind == "cash" and currency and currency != "PEN":
         subtitle = f"En {CURRENCY_NAMES.get(currency, currency)}"
+    elif kind == "card":
+        subtitle = card_subtitle(card_bank, brand, last4)
     return AccountRow(acc_id, name, kind, currency, icon or ("account_balance" if kind == "bank" else "payments"),
                       subtitle, balances, sum((m.base for m in balances), ZERO))
 
@@ -196,7 +223,10 @@ def overview(user_id: int) -> Overview:
         balances = _balances(conn, [r[0] for r in rows], rates)
         accounts = [_row(r, balances.get(r[0], [])) for r in rows]
         # Las de sistema (Por cobrar, Por pagar, Por clasificar) solo aparecen si tienen algo
-        accounts = [a for a in accounts if a.kind in ("cash", "bank", "other") or any(m.amount for m in a.balances)]
+        accounts = [a for a in accounts
+                    if a.kind in ("cash", "bank", "card", "other") or any(m.amount for m in a.balances)]
+        briefs = card_briefs(conn)
+        accounts = [replace(a, card=briefs.get(a.id)) if a.kind == "card" else a for a in accounts]
         counts = dict(conn.execute(
             "SELECT account_id, count(DISTINCT partner_id) FROM res_partner_balance"
             " WHERE amount_currency <> 0 GROUP BY account_id").fetchall())
@@ -219,7 +249,7 @@ def overview(user_id: int) -> Overview:
             custody[pid].append(Money(cur, amount, _today(amount, bal, rates.get(cur), False), bal))
 
     have = [a for a in accounts if a.kind in ("cash", "bank", "receivable", "suspense")]   # activos
-    owe = [a for a in accounts if a.kind in ("payable", "other")]                         # pasivos
+    owe = [a for a in accounts if a.kind in ("card", "payable", "other")]                 # pasivos
     keep = [CustodyRow(pid, names[pid], ms, sum((m.base for m in ms), ZERO)) for pid, ms in custody.items()]
     have_total = sum((a.base_total for a in have), ZERO)
     owe_total = -sum((a.base_total for a in owe), ZERO)
@@ -229,6 +259,18 @@ def overview(user_id: int) -> Overview:
                     have, keep, owe, [r for cur, r in sorted(rates.items()) if cur in used])
 
 
+def card_briefs(conn: psycopg.Connection) -> dict[int, CardBrief]:
+    """Lo que toca pagar de cada tarjeta, por moneda, con la fecha de pago de su último corte."""
+    out: dict[int, CardBrief] = {}
+    for acc, last, due, cur, to_pay in conn.execute(
+        "SELECT s.account_id, s.last_closing, s.date_due, trim(c.name), s.to_pay FROM credit_card_status() s"
+        " JOIN res_currency c ON c.id = s.currency_id ORDER BY s.account_id, c.id <> (SELECT currency_id FROM res_users), c.name"):
+        brief = out.setdefault(acc, CardBrief(last, due, []))
+        if to_pay > 0:
+            brief.to_pay.append(CardAmount(cur, to_pay.quantize(Decimal("0.01"))))
+    return out
+
+
 def detail(user_id: int, account_id: int, limit: int = 200) -> AccountDetail:
     with user_transaction(user_id) as conn:
         r = conn.execute(_ACCOUNTS_SQL + " WHERE a.id = %s AND a.account_type IN ('asset', 'liability')",
@@ -236,6 +278,8 @@ def detail(user_id: int, account_id: int, limit: int = 200) -> AccountDetail:
         if r is None:
             raise AccountError(404, "No encontramos esa cuenta")
         row = _row(r, _balances(conn, [account_id]).get(account_id, []))
+        if row.kind == "card":
+            row = replace(row, card=card_briefs(conn).get(account_id))
         role = r[3]
 
         bank = None
@@ -375,6 +419,8 @@ def set_opening(user_id: int, account_id: int, amount: Decimal, on: date | None,
                             (account_id,)).fetchone()
         if kind is None:
             raise AccountError(404, "No encontramos esa cuenta")
+        if conn.execute("SELECT 1 FROM account_credit_card WHERE account_id = %s", (account_id,)).fetchone():
+            raise AccountError(400, "Lo que debías al empezar en una tarjeta se corrige en su detalle")
         try:
             with conn.transaction():
                 conn.execute("SELECT set_opening_balance(%s, %s, coalesce(%s, user_today()), %s)",

@@ -51,16 +51,28 @@ class TodayRateOut(BaseModel):
     stale: bool
 
 
+class CardAmountOut(BaseModel):
+    currency: str
+    amount: Decimal
+
+
+class CardBriefOut(BaseModel):
+    last_closing: dt.date
+    date_due: dt.date | None
+    to_pay: list[CardAmountOut]
+
+
 class AccountRowOut(BaseModel):
     id: int
     name: str
-    kind: Literal["cash", "bank", "receivable", "payable", "suspense", "other"]
+    kind: Literal["cash", "bank", "card", "receivable", "payable", "suspense", "other"]
     currency: str | None
     icon: str | None
     subtitle: str | None
     balances: list[MoneyOut]
     base_total: Decimal
     partners: int | None = None      # Por cobrar y Por pagar: cuántas personas
+    card: CardBriefOut | None = None # tarjetas: lo que toca pagar y hasta cuándo
 
 
 class CustodyRowOut(BaseModel):
