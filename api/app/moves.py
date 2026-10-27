@@ -8,7 +8,7 @@ Después de guardar, los pagos y las deudas de cada persona se concilian (de lo 
 nuevo), como el cuaderno de fiados: «pagó 60, faltan 40»."""
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import datetime as dt
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -77,6 +77,8 @@ class MoveInput:
     debt_line_id: int | None = None                      # cobrar o pagar: qué deuda cancela primero
     paid_by_partner_id: int | None = None                # gasto que pagó otra persona: le debes tu parte
     lines: list[ManualLine] = field(default_factory=list)   # asiento manual
+    currency: str | None = None                          # con una tarjeta (multimoneda): en qué moneda; None = la base
+    installments: int | None = None                      # gasto con tarjeta: en cuántas cuotas
 
 
 @dataclass(frozen=True)
@@ -90,26 +92,45 @@ class _Acc:
     active: bool
     has_children: bool
     partner_required: bool
+    card: bool                   # una tarjeta: multimoneda, la moneda la pone el movimiento
 
 
 def _accounts(conn: psycopg.Connection, ids: list[int]) -> dict[int, _Acc]:
     rows = conn.execute("""
         SELECT a.id, a.name, a.account_type, a.currency_id, trim(c.name), a.system_role, a.active,
-               EXISTS (SELECT 1 FROM account_account k WHERE k.parent_id = a.id), a.partner_required
+               EXISTS (SELECT 1 FROM account_account k WHERE k.parent_id = a.id), a.partner_required,
+               EXISTS (SELECT 1 FROM account_credit_card cc WHERE cc.account_id = a.id)
           FROM account_account a LEFT JOIN res_currency c ON c.id = a.currency_id
          WHERE a.id = ANY(%s)""", (ids,)).fetchall()
     return {r[0]: _Acc(*r) for r in rows}
 
 
-def _money_account(accs: dict[int, _Acc], acc_id: int | None, what: str) -> _Acc:
+def _money_account(accs: dict[int, _Acc], acc_id: int | None, what: str,
+                   card_currency: tuple[int, str] | None = None) -> _Acc:
+    """La cuenta de dinero del movimiento. Una tarjeta solo vale si el movimiento la admite
+    (`card_currency`): entonces va en esa moneda."""
     a = accs.get(acc_id) if acc_id is not None else None
     if acc_id is None:
         raise AccountError(400, f"Elige la cuenta {what}")
     if a is None or not a.active:
         raise AccountError(404, f"No encontramos la cuenta {what}")
+    if a.card:
+        if card_currency is None:
+            raise AccountError(400, "Con una tarjeta se registran gastos, devoluciones y su pago")
+        return replace(a, currency_id=card_currency[0], currency=card_currency[1])
     if a.type not in ("asset", "liability") or a.currency_id is None or a.role in ("opening", "custody"):
         raise AccountError(400, f"Elige una cuenta tuya {what}: efectivo o banco")
     return a
+
+
+def _use_currency(conn: psycopg.Connection, code: str | None, base_id: int) -> tuple[int, str]:
+    """La moneda de un movimiento con tarjeta: una de las que usa la persona; sin elegir, la base."""
+    row = conn.execute(
+        "SELECT c.id, trim(c.name) FROM res_users_currency uc JOIN res_currency c ON c.id = uc.currency_id"
+        " WHERE (%s::text IS NULL AND c.id = %s) OR c.name = upper(%s)", (code, base_id, code)).fetchone()
+    if row is None:
+        raise AccountError(400, f"No usas {(code or '').upper()}")
+    return row
 
 
 def _partner(conn: psycopg.Connection, partner_id: int | None, what: str = "con quién") -> str:
@@ -272,7 +293,13 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         src = _money_account(accs, m.account_id, "de donde sale")
         if m.to_account_id is None:
             raise AccountError(400, "Elige adónde entra")
-        dst = _money_account(accs, m.to_account_id, "adonde entra")
+        # Pagar una tarjeta: un bolsillo a la vez, con plata de esa misma moneda
+        if m.currency and accs.get(m.to_account_id) and accs[m.to_account_id].card \
+                and m.currency.upper() != src.currency:
+            name = {"USD": "dólares", "PEN": "soles"}.get(m.currency.upper(), m.currency.upper())
+            raise AccountError(400, f"La deuda en {name} se paga desde una cuenta en {name}: "
+                                    f"si no tienes, compra {name} primero")
+        dst = _money_account(accs, m.to_account_id, "adonde entra", (src.currency_id, src.currency))  # type: ignore[arg-type]
         if src.id == dst.id:
             raise AccountError(400, "Sale y entra de la misma cuenta: elige otra")
         same = src.currency_id == dst.currency_id
@@ -304,7 +331,10 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         rate = Decimal(1)
     else:
         what = "adonde entra" if m.kind in ("income", "refund") else "de donde sale"
-        money = _money_account(accs, m.account_id, what)
+        card = accs.get(m.account_id) is not None and accs[m.account_id].card  # type: ignore[index]
+        if card and m.kind == "income":
+            raise AccountError(400, "Una tarjeta no recibe ingresos: si te devolvieron una compra, es un reembolso")
+        money = _money_account(accs, m.account_id, what, _use_currency(conn, m.currency, base_id) if card else None)
         cur_id = money.currency_id  # type: ignore[assignment]
         rate = _rate(conn, money, base_id, on, m.rate)
     if not m.splits:
@@ -419,6 +449,8 @@ def create(user_id: int, m: MoveInput) -> int:
                     "INSERT INTO account_move (date, ref, state) VALUES (%s, %s, %s) RETURNING id",
                     (on, (m.ref or "").strip() or default_ref, state)).fetchone()[0]
                 _write(conn, move_id, lines)
+                if m.installments is not None:
+                    _installments(conn, m, move_id)
                 if m.debt_line_id is not None and m.kind in ("collect", "repay"):
                     _settle_first(conn, move_id, m.debt_line_id)
                 reconcile(conn, _pairs(conn, move_id))
@@ -426,6 +458,20 @@ def create(user_id: int, m: MoveInput) -> int:
         except psycopg.Error as e:
             raise _translate(e) from None
 
+
+def _installments(conn: psycopg.Connection, m: MoveInput, move_id: int) -> None:
+    """Un gasto con tarjeta en cuotas: el gasto cuenta completo hoy; las cuotas dicen en qué cortes."""
+    acc = _accounts(conn, [m.account_id]).get(m.account_id) if m.account_id is not None else None
+    if m.kind != "expense" or m.paid_by_partner_id is not None or acc is None or not acc.card:
+        raise AccountError(400, "En cuotas va solo un gasto con tarjeta")
+    conn.execute("SELECT create_installment_plan(%s, %s)", (move_id, m.installments))
+
+
+def _has_plan(conn: psycopg.Connection, move_id: int) -> bool:
+    return conn.execute("SELECT 1 FROM account_installment_plan WHERE move_id = %s", (move_id,)).fetchone() is not None
+
+
+PLAN_NOT_EDITABLE = "Una compra en cuotas no se edita: bórrala y regístrala de nuevo"
 
 NOT_EDITABLE = {"opening": "Un saldo inicial no se edita aquí: corrígelo desde su cuenta o, si es con una persona, bórralo y vuelve a anotarlo",
                 "offset": "Una compensación no se edita: bórrala y vuelve a compensar",
@@ -437,6 +483,8 @@ def update(user_id: int, move_id: int, m: MoveInput) -> None:
     limpio vale más que el rastro del error). Después se vuelve a conciliar."""
     with user_transaction(user_id) as conn:
         kind = _kind_of(conn, move_id)
+        if _has_plan(conn, move_id):
+            raise AccountError(400, PLAN_NOT_EDITABLE)
         if kind in NOT_EDITABLE:
             raise AccountError(400, NOT_EDITABLE[kind])
         try:
@@ -488,7 +536,9 @@ def _check_limit_on_post(conn: psycopg.Connection, move_id: int) -> None:
 def delete(user_id: int, move_id: int) -> None:
     with user_transaction(user_id) as conn:
         kind = _kind_of(conn, move_id)
-        if kind == "opening" and not _pairs(conn, move_id):
+        on_card = conn.execute("SELECT 1 FROM account_move_line l JOIN account_credit_card cc ON cc.account_id = l.account_id"
+                               " WHERE l.move_id = %s", (move_id,)).fetchone() is not None
+        if kind == "opening" and not _pairs(conn, move_id) and not on_card:
             raise AccountError(400, "Un saldo inicial se corrige desde su cuenta")
         pairs = _pairs(conn, move_id)
         conn.execute("DELETE FROM account_move WHERE id = %s", (move_id,))
@@ -573,6 +623,24 @@ class Settled:
 
 
 @dataclass(frozen=True)
+class PlanLine:
+    sequence: int
+    closing_date: dt.date
+    principal: Decimal
+    billed: bool                 # ya llegó en un estado de cuenta (su corte ya pasó)
+
+
+@dataclass(frozen=True)
+class PlanDetail:
+    card_id: int
+    currency: str
+    n_installments: int
+    principal: Decimal
+    remaining: Decimal           # lo que falta facturar
+    lines: list[PlanLine]
+
+
+@dataclass(frozen=True)
 class MoveDetail:
     summary: MoveSummary
     account_id: int | None
@@ -585,6 +653,7 @@ class MoveDetail:
     paid_by_partner_id: int | None = None
     settled: list[Settled] = field(default_factory=list)
     lines: list[LineOut] = field(default_factory=list)   # todos los apuntes (para el asiento manual)
+    plan: PlanDetail | None = None                       # una compra en cuotas: su calendario
 
 
 _LINES_SQL = """
@@ -776,6 +845,7 @@ def detail(user_id: int, move_id: int) -> MoveDetail:
                                                       THEN r.credit_move_line_id ELSE r.debit_move_line_id END
               JOIN account_move m ON m.id = o.move_id
              WHERE l.move_id = %s ORDER BY m.date, o.id""", (move_id,))]
+        plan = _plan_detail(conn, move_id)
     summary, cash = _classify(head, lines)
     all_lines = [LineOut(x[1], x[2], x[13], x[14], x[7], x[8], x[10], x[11]) for x in lines]
     kind, _cash, persons, cats, _fx = _kind(lines)
@@ -801,13 +871,28 @@ def detail(user_id: int, move_id: int) -> MoveDetail:
         splits = [SplitOut(Category(x[1], x[2], x[5], x[6]), a) if x[3] in ("income", "expense")
                   else SplitOut(None, a, x[10], x[11]) for x, a in zip(parts, amounts, strict=True)]
         return MoveDetail(summary, cash[0][1] if cash else None, None, rate, splits,
-                          paid_by_partner_id=paid_by, lines=all_lines)
+                          paid_by_partner_id=paid_by, lines=all_lines, plan=plan)
 
     m = cash[0] if cash else None
     rate = _round6(abs(m[9] / m[8])) if m is not None and m[7] != base and m[8] else None
     splits = [SplitOut(Category(x[1], x[2], x[5], x[6]), abs(x[9])) for x in cats]
     return MoveDetail(summary, m[1] if m else None, None, rate, splits, partner_id=pid,
-                      settled=settled, lines=all_lines)
+                      settled=settled, lines=all_lines, plan=plan)
+
+
+def _plan_detail(conn: psycopg.Connection, move_id: int) -> PlanDetail | None:
+    head = conn.execute("""
+        SELECT p.id, p.card_account_id, trim(c.name), p.n_installments, p.principal,
+               card_last_closing(p.card_account_id, user_today())
+          FROM account_installment_plan p JOIN res_currency c ON c.id = p.currency_id
+         WHERE p.move_id = %s""", (move_id,)).fetchone()
+    if head is None:
+        return None
+    plan_id, card, cur, n, principal, last = head
+    lines = [PlanLine(seq, closing, amount, closing <= last) for seq, closing, amount in conn.execute(
+        "SELECT sequence, closing_date, principal FROM account_installment_plan_line WHERE plan_id = %s"
+        " ORDER BY sequence", (plan_id,))]
+    return PlanDetail(card, cur, n, principal, sum((x.principal for x in lines if not x.billed), ZERO), lines)
 
 
 def _round6(v: Decimal) -> Decimal:

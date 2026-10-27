@@ -1,0 +1,206 @@
+"""Tarjetas (C3, C5): el alta, el detalle con sus ciclos, la fecha de pago y las cuotas de antes de
+PPM. Comprar con la tarjeta, en cuotas o no, y pagarla se registran en /moves."""
+
+from dataclasses import asdict
+import datetime as dt
+from decimal import Decimal
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
+from app import cards
+from app.accounts import AccountError
+from app.routes.accounts import AccountRowOut, Currency, Name, Rate
+from app.routes.deps import CurrentSession, current_session
+
+router = APIRouter(tags=["tarjetas"])
+
+Brand = Literal["Visa", "Mastercard", "Amex", "Diners"]
+Last4 = Annotated[str, Field(pattern=r"^[0-9]{4}$")]
+ClosingDay = Annotated[int, Field(ge=1, le=31)]
+Limit = Annotated[Decimal, Field(ge=0, max_digits=14, decimal_places=2)]
+NonNegative = Annotated[Decimal, Field(ge=0, max_digits=14, decimal_places=2)]
+Positive = Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)]
+
+
+def _http(e: AccountError) -> HTTPException:
+    return HTTPException(e.status, str(e))
+
+
+# --- Salida -----------------------------------------------------------------------------------
+
+class CardStatusOut(BaseModel):
+    currency: str
+    total_debt: Decimal
+    unbilled: Decimal
+    to_pay: Decimal
+
+
+class PlanRowOut(BaseModel):
+    id: int
+    move_id: int
+    name: str
+    currency: str
+    n_installments: int
+    billed: int
+    principal: Decimal
+    remaining: Decimal
+    next_installment: Decimal | None
+    next_closing: dt.date | None
+    opening: bool
+
+
+class CycleItemOut(BaseModel):
+    move_id: int
+    date: dt.date
+    ref: str
+    posted: bool
+    kind: Literal["charge", "payment", "refund", "installment", "opening"]
+    currency: str
+    amount: Decimal                  # + sube la deuda, − la baja
+    counterpart: str | None
+    counterpart_icon: str | None
+    counterpart_color: int | None
+    sequence: int | None
+    n_installments: int | None
+
+
+class CycleAmountOut(BaseModel):
+    currency: str
+    amount: Decimal
+
+
+class CycleOut(BaseModel):
+    closing_date: dt.date
+    state: Literal["current", "billed", "past"]
+    date_due: dt.date | None
+    charges: list[CycleAmountOut]
+    items: list[CycleItemOut]
+
+
+class CardDetailOut(BaseModel):
+    account: AccountRowOut
+    bank_id: int | None
+    bank_name: str | None
+    brand: Brand | None
+    last4: str | None
+    closing_day: int
+    credit_limit: Decimal
+    limit_currency: str
+    last_closing: dt.date
+    next_closing: dt.date
+    date_due: dt.date | None
+    status: list[CardStatusOut]
+    used: Decimal
+    available: Decimal
+    plans: list[PlanRowOut]
+    cycles: list[CycleOut]
+
+
+# --- Entrada ----------------------------------------------------------------------------------
+
+class CardOpeningIn(BaseModel):
+    currency: Currency
+    amount: NonNegative                  # lo que toca pagar en esa moneda
+    rate: Rate | None = None             # si no es la base; None = el de venta del día
+
+
+class CardIn(BaseModel):
+    name: Name
+    closing_day: ClosingDay
+    credit_limit: Limit
+    bank_id: int | None = None
+    brand: Brand | None = None
+    last4: Last4 | None = None
+    to_pay: list[CardOpeningIn] = []     # el último estado de cuenta, por moneda
+    date_due: dt.date | None = None      # hasta cuándo pagarlo
+
+
+class CardPatch(BaseModel):
+    name: Name | None = None
+    closing_day: ClosingDay | None = None
+    credit_limit: Limit | None = None
+    bank_id: int | None = None
+    brand: Brand | None = None
+    last4: Last4 | None = None
+    clear: list[Literal["bank_id", "brand", "last4"]] = []
+
+
+class DueDateIn(BaseModel):
+    closing_date: dt.date
+    date_due: dt.date | None             # None la borra
+
+
+class InstallmentsIn(BaseModel):
+    currency: Currency
+    each: Positive                       # cuánto es cada cuota
+    n: Annotated[int, Field(ge=1, le=59)]   # cuántas faltan facturar
+    ref: Annotated[str, Field(min_length=1, max_length=120)]   # qué compraste
+    rate: Rate | None = None
+
+
+# --- Rutas ------------------------------------------------------------------------------------
+
+def _detail(user_id: int, card_id: int) -> CardDetailOut:
+    try:
+        return CardDetailOut.model_validate(asdict(cards.detail(user_id, card_id)))
+    except AccountError as e:
+        raise _http(e) from None
+
+
+@router.post("/cards", status_code=status.HTTP_201_CREATED, summary="Nueva tarjeta de crédito")
+def create(body: CardIn, session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    try:
+        card = cards.create(session.user_id, body.name, body.closing_day, body.credit_limit, body.bank_id,
+                            body.brand, body.last4,
+                            [cards.OpeningAmount(o.currency, o.amount, o.rate) for o in body.to_pay], body.date_due)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, card)
+
+
+@router.get("/cards/{card_id}", summary="Detalle de una tarjeta: su ciclo, cuotas y movimientos")
+def detail(card_id: int, session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    return _detail(session.user_id, card_id)
+
+
+@router.patch("/cards/{card_id}", summary="Renombrar o editar corte, línea y datos")
+def update(card_id: int, body: CardPatch, session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    try:
+        cards.update(session.user_id, card_id, body.name, body.closing_day, body.credit_limit, body.bank_id,
+                     body.brand, body.last4, set(body.clear))
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, card_id)
+
+
+@router.put("/cards/{card_id}/opening", summary="Corregir lo que tocaba pagar al empezar, en una moneda")
+def set_opening(card_id: int, body: CardOpeningIn,
+                session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    try:
+        cards.set_opening(session.user_id, card_id, body.currency, body.amount, body.rate)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, card_id)
+
+
+@router.put("/cards/{card_id}/due-date", summary="La fecha de pago de un ciclo, del estado de cuenta")
+def set_due_date(card_id: int, body: DueDateIn,
+                 session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    try:
+        cards.set_due_date(session.user_id, card_id, body.closing_date, body.date_due)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, card_id)
+
+
+@router.post("/cards/{card_id}/installments", status_code=status.HTTP_201_CREATED,
+             summary="Cuotas de antes de PPM")
+def add_installments(card_id: int, body: InstallmentsIn,
+                     session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    try:
+        cards.add_installments(session.user_id, card_id, body.currency, body.each, body.n, body.ref, body.rate)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, card_id)

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from app import rates as rates_logic
 from app.config import get_settings
 from app.db import close_pool, get_pool
-from app.routes import accounts, auth, home, me, moves, partners, rates
+from app.routes import accounts, auth, cards, home, me, moves, partners, rates
 
 
 @asynccontextmanager
@@ -24,6 +24,7 @@ app = FastAPI(title="PPM API", version="0.1.0", lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(me.router)
 app.include_router(accounts.router)
+app.include_router(cards.router)
 app.include_router(moves.router)
 app.include_router(partners.router)
 app.include_router(home.router)

@@ -59,13 +59,16 @@ class MoveIn(BaseModel):
     debt_line_id: int | None = None      # cobrar o pagar: qué deuda cancela primero («Elegir otra deuda»)
     paid_by_partner_id: int | None = None   # un gasto que pagó otra persona
     lines: list[ManualLineIn] = []       # asiento manual
+    currency: Annotated[str, Field(min_length=3, max_length=3)] | None = None   # con tarjeta: en qué moneda
+    installments: Annotated[int, Field(ge=2, le=60)] | None = None             # gasto con tarjeta en cuotas
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
             self.kind, self.account_id, self.amount or Decimal("0.00"), self.date, self.ref, self.pending,
             self.rate, [moves.Split(s.category_id, s.amount, s.partner_id) for s in self.splits],
             self.to_account_id, self.to_amount, self.partner_id, self.debt_line_id, self.paid_by_partner_id,
-            [moves.ManualLine(x.account_id, x.debit, x.credit, x.partner_id) for x in self.lines])
+            [moves.ManualLine(x.account_id, x.debit, x.credit, x.partner_id) for x in self.lines],
+            self.currency, self.installments)
 
 
 class PendingIn(BaseModel):
@@ -140,6 +143,22 @@ class SettledOut(BaseModel):
     amount: Decimal
 
 
+class PlanLineOut(BaseModel):
+    sequence: int
+    closing_date: dt.date
+    principal: Decimal
+    billed: bool
+
+
+class PlanOut(BaseModel):
+    card_id: int
+    currency: str
+    n_installments: int
+    principal: Decimal
+    remaining: Decimal
+    lines: list[PlanLineOut]
+
+
 class MoveDetailOut(BaseModel):
     summary: MoveSummaryOut
     account_id: int | None
@@ -152,6 +171,7 @@ class MoveDetailOut(BaseModel):
     paid_by_partner_id: int | None = None
     settled: list[SettledOut] = []   # las deudas que cancela (o los pagos que la cancelan)
     lines: list[LineOut] = []        # todos los apuntes, para el asiento manual
+    plan: PlanOut | None = None      # una compra en cuotas: su calendario
 
 
 class ManualAccountOut(BaseModel):

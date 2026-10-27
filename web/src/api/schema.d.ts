@@ -313,6 +313,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Nueva tarjeta de crédito */
+        post: operations["create_cards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{card_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle de una tarjeta: su ciclo, cuotas y movimientos */
+        get: operations["detail_cards__card_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Renombrar o editar corte, línea y datos */
+        patch: operations["update_cards__card_id__patch"];
+        trace?: never;
+    };
+    "/cards/{card_id}/opening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Corregir lo que tocaba pagar al empezar, en una moneda */
+        put: operations["set_opening_cards__card_id__opening_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{card_id}/due-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** La fecha de pago de un ciclo, del estado de cuenta */
+        put: operations["set_due_date_cards__card_id__due_date_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{card_id}/installments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cuotas de antes de PPM */
+        post: operations["add_installments_cards__card_id__installments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -618,7 +704,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cash" | "bank" | "receivable" | "payable" | "suspense" | "other";
+            kind: "cash" | "bank" | "card" | "receivable" | "payable" | "suspense" | "other";
             /** Currency */
             currency: string | null;
             /** Icon */
@@ -631,6 +717,7 @@ export interface components {
             base_total: string;
             /** Partners */
             partners?: number | null;
+            card?: components["schemas"]["CardBriefOut"] | null;
         };
         /** AdminRatesOut */
         AdminRatesOut: {
@@ -661,6 +748,127 @@ export interface components {
             acc_number?: string | null;
             /** Cci */
             cci?: string | null;
+        };
+        /** CardAmountOut */
+        CardAmountOut: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+        };
+        /** CardBriefOut */
+        CardBriefOut: {
+            /**
+             * Last Closing
+             * Format: date
+             */
+            last_closing: string;
+            /** Date Due */
+            date_due: string | null;
+            /** To Pay */
+            to_pay: components["schemas"]["CardAmountOut"][];
+        };
+        /** CardDetailOut */
+        CardDetailOut: {
+            account: components["schemas"]["AccountRowOut"];
+            /** Bank Id */
+            bank_id: number | null;
+            /** Bank Name */
+            bank_name: string | null;
+            /** Brand */
+            brand: ("Visa" | "Mastercard" | "Amex" | "Diners") | null;
+            /** Last4 */
+            last4: string | null;
+            /** Closing Day */
+            closing_day: number;
+            /** Credit Limit */
+            credit_limit: string;
+            /** Limit Currency */
+            limit_currency: string;
+            /**
+             * Last Closing
+             * Format: date
+             */
+            last_closing: string;
+            /**
+             * Next Closing
+             * Format: date
+             */
+            next_closing: string;
+            /** Date Due */
+            date_due: string | null;
+            /** Status */
+            status: components["schemas"]["CardStatusOut"][];
+            /** Used */
+            used: string;
+            /** Available */
+            available: string;
+            /** Plans */
+            plans: components["schemas"]["PlanRowOut"][];
+            /** Cycles */
+            cycles: components["schemas"]["CycleOut"][];
+        };
+        /** CardIn */
+        CardIn: {
+            /** Name */
+            name: string;
+            /** Closing Day */
+            closing_day: number;
+            /** Credit Limit */
+            credit_limit: number | string;
+            /** Bank Id */
+            bank_id?: number | null;
+            /** Brand */
+            brand?: ("Visa" | "Mastercard" | "Amex" | "Diners") | null;
+            /** Last4 */
+            last4?: string | null;
+            /**
+             * To Pay
+             * @default []
+             */
+            to_pay: components["schemas"]["CardOpeningIn"][];
+            /** Date Due */
+            date_due?: string | null;
+        };
+        /** CardOpeningIn */
+        CardOpeningIn: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: number | string;
+            /** Rate */
+            rate?: number | string | null;
+        };
+        /** CardPatch */
+        CardPatch: {
+            /** Name */
+            name?: string | null;
+            /** Closing Day */
+            closing_day?: number | null;
+            /** Credit Limit */
+            credit_limit?: number | string | null;
+            /** Bank Id */
+            bank_id?: number | null;
+            /** Brand */
+            brand?: ("Visa" | "Mastercard" | "Amex" | "Diners") | null;
+            /** Last4 */
+            last4?: string | null;
+            /**
+             * Clear
+             * @default []
+             */
+            clear: ("bank_id" | "brand" | "last4")[];
+        };
+        /** CardStatusOut */
+        CardStatusOut: {
+            /** Currency */
+            currency: string;
+            /** Total Debt */
+            total_debt: string;
+            /** Unbilled */
+            unbilled: string;
+            /** To Pay */
+            to_pay: string;
         };
         /** CashIn */
         CashIn: {
@@ -751,6 +959,65 @@ export interface components {
             /** Base Total */
             base_total: string;
         };
+        /** CycleAmountOut */
+        CycleAmountOut: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+        };
+        /** CycleItemOut */
+        CycleItemOut: {
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Posted */
+            posted: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "charge" | "payment" | "refund" | "installment" | "opening";
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Counterpart */
+            counterpart: string | null;
+            /** Counterpart Icon */
+            counterpart_icon: string | null;
+            /** Counterpart Color */
+            counterpart_color: number | null;
+            /** Sequence */
+            sequence: number | null;
+            /** N Installments */
+            n_installments: number | null;
+        };
+        /** CycleOut */
+        CycleOut: {
+            /**
+             * Closing Date
+             * Format: date
+             */
+            closing_date: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "current" | "billed" | "past";
+            /** Date Due */
+            date_due: string | null;
+            /** Charges */
+            charges: components["schemas"]["CycleAmountOut"][];
+            /** Items */
+            items: components["schemas"]["CycleItemOut"][];
+        };
         /** DayOut */
         DayOut: {
             /**
@@ -762,6 +1029,16 @@ export interface components {
             total: string;
             /** Moves */
             moves: components["schemas"]["MoveSummaryOut"][];
+        };
+        /** DueDateIn */
+        DueDateIn: {
+            /**
+             * Closing Date
+             * Format: date
+             */
+            closing_date: string;
+            /** Date Due */
+            date_due: string | null;
         };
         /** ForeignOut */
         ForeignOut: {
@@ -821,6 +1098,19 @@ export interface components {
             recent: components["schemas"]["MoveSummaryOut"][];
             /** Foreign */
             foreign: components["schemas"]["ForeignOut"][];
+        };
+        /** InstallmentsIn */
+        InstallmentsIn: {
+            /** Currency */
+            currency: string;
+            /** Each */
+            each: number | string;
+            /** N */
+            n: number;
+            /** Ref */
+            ref: string;
+            /** Rate */
+            rate?: number | string | null;
         };
         /** LoginIn */
         LoginIn: {
@@ -960,6 +1250,7 @@ export interface components {
              * @default []
              */
             lines: components["schemas"]["app__routes__moves__LineOut"][];
+            plan?: components["schemas"]["PlanOut"] | null;
         };
         /** MoveIn */
         MoveIn: {
@@ -1003,6 +1294,10 @@ export interface components {
              * @default []
              */
             lines: components["schemas"]["ManualLineIn"][];
+            /** Currency */
+            currency?: string | null;
+            /** Installments */
+            installments?: number | null;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
@@ -1220,6 +1515,60 @@ export interface components {
         PendingIn: {
             /** Pending */
             pending: boolean;
+        };
+        /** PlanLineOut */
+        PlanLineOut: {
+            /** Sequence */
+            sequence: number;
+            /**
+             * Closing Date
+             * Format: date
+             */
+            closing_date: string;
+            /** Principal */
+            principal: string;
+            /** Billed */
+            billed: boolean;
+        };
+        /** PlanOut */
+        PlanOut: {
+            /** Card Id */
+            card_id: number;
+            /** Currency */
+            currency: string;
+            /** N Installments */
+            n_installments: number;
+            /** Principal */
+            principal: string;
+            /** Remaining */
+            remaining: string;
+            /** Lines */
+            lines: components["schemas"]["PlanLineOut"][];
+        };
+        /** PlanRowOut */
+        PlanRowOut: {
+            /** Id */
+            id: number;
+            /** Move Id */
+            move_id: number;
+            /** Name */
+            name: string;
+            /** Currency */
+            currency: string;
+            /** N Installments */
+            n_installments: number;
+            /** Billed */
+            billed: number;
+            /** Principal */
+            principal: string;
+            /** Remaining */
+            remaining: string;
+            /** Next Installment */
+            next_installment: string | null;
+            /** Next Closing */
+            next_closing: string | null;
+            /** Opening */
+            opening: boolean;
         };
         /** RateDayOut */
         RateDayOut: {
@@ -2157,6 +2506,222 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PartnerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_cards_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_cards__card_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_cards__card_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_opening_cards__card_id__opening_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardOpeningIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_due_date_cards__card_id__due_date_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DueDateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_installments_cards__card_id__installments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstallmentsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
                 };
             };
             /** @description Validation Error */
