@@ -758,6 +758,8 @@ export interface components {
         };
         /** CardBriefOut */
         CardBriefOut: {
+            /** Closing Day */
+            closing_day: number;
             /**
              * Last Closing
              * Format: date

@@ -57,6 +57,7 @@ class CardAmountOut(BaseModel):
 
 
 class CardBriefOut(BaseModel):
+    closing_day: int
     last_closing: dt.date
     date_due: dt.date | None
     to_pay: list[CardAmountOut]

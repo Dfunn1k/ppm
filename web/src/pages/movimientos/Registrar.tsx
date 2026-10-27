@@ -1,7 +1,7 @@
 // R1 · Registrar (y editar): gasto, ingreso o transferencia; dividir en varias categorías (y una
 // parte de otra persona, que te la debe); un gasto que pagó otra persona; «Más» abre el panel;
 // en otra moneda con el tipo del día (editable); entre monedas con los dos montos y, al vender, el
-// costo del cambio o la ganancia; por confirmar.
+// costo del cambio o la ganancia; con tarjeta, en soles o dólares y en cuotas; por confirmar.
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 
@@ -13,9 +13,10 @@ import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { installmentClosings } from "@/lib/cards";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
 import { isPersonKind } from "@/lib/kinds";
-import { divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 import { PersonaSheet } from "@/pages/personas/PersonaForm";
 
 import { AsientoManual } from "./AsientoManual";
@@ -50,10 +51,14 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const lang = me?.lang ?? "es-PE";
   const fmt = (v: string) => formatNumber(v, lang);
 
-  const tipo = useSearchParams()[0].get("tipo");
+  const [search] = useSearchParams();
+  const tipo = search.get("tipo");
   const initialKind = editing?.summary.kind ?? (tipo === "income" || tipo === "transfer" ? tipo : "expense");
   const [kind, setKind] = useState<Kind>(initialKind as Kind);
-  const [accountId, setAccountId] = useState<string>(editing?.account_id ? String(editing.account_id) : "");
+  const [accountId, setAccountId] = useState<string>(editing?.account_id ? String(editing.account_id) : search.get("cuenta") ?? "");
+  const [cardCurrency, setCardCurrency] = useState<string | null>(editing?.summary.currency ?? null);
+  const [inInstallments, setInInstallments] = useState(false);
+  const [installments, setInstallments] = useState(6);
   const [toAccountId, setToAccountId] = useState<string>(editing?.to_account_id ? String(editing.to_account_id) : "");
   const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : "");
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
@@ -77,28 +82,33 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const partners = usePartners().data ?? [];
 
   const base = me?.currency ?? "PEN";
-  const accounts: AccountRow[] = overview
-    ? [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "other"].includes(a.kind)) : [];
+  // Una tarjeta: es de donde sale un gasto y adonde entra su pago (no recibe ingresos ni se transfiere desde ella)
+  const all: AccountRow[] = overview
+    ? [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "card", "other"].includes(a.kind)) : [];
+  const accounts = all.filter((a) => a.kind !== "card" || kind === "expense");
   const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
-  const toAccount = accounts.find((a) => String(a.id) === toAccountId);
+  const toAccount = all.find((a) => String(a.id) === toAccountId);
   const other = kind === "expense" && payer === "other";   // lo pagó otra persona: no sale de tus cuentas
-  const currency = other ? base : account?.currency ?? base;
-  const side = account?.kind === "other" ? "sell" : "buy";   // compra para lo que tienes, venta para lo que debes
+  const card = !other && account?.kind === "card";
+  const currency = other ? base : card ? (cardCurrency ?? base) : account?.currency ?? base;
+  const side = account?.kind === "other" || card ? "sell" : "buy";   // compra para lo que tienes, venta para lo que debes
+  const toCurrency = toAccount?.kind === "card" ? currency : toAccount?.currency ?? base;   // a una tarjeta se paga en la moneda que sale
   const rate = useRateInput(currency, base, date, side, editing?.rate ? Number(editing.rate).toFixed(3) : null);
-  const foreignSide = toAccount && toAccount.currency !== base ? toAccount.currency ?? base : currency;
+  const foreignSide = toAccount && toCurrency !== base ? toCurrency : currency;
   const sunat = useSuggestedRate(foreignSide, base, date, "buy");
   const sunatSell = useSuggestedRate(foreignSide, base, date, "sell");
   if (!me?.currency || !overview) return <Spinner />;
   const foreign = currency !== base;
-  const crossCurrency = kind === "transfer" && toAccount && toAccount.currency !== currency;
+  const crossCurrency = kind === "transfer" && toAccount && toCurrency !== currency;
   const future = date > todayISO();
   // El tipo de cambio se escribe solo si nada lo da: en una transferencia que toca la moneda base, sale de los dos montos
-  const needRate = foreign && !(kind === "transfer" && toAccount?.currency === base);
-  const options = (except?: number) =>
-    accounts.filter((a) => a.id !== except).map((a) => ({
+  const needRate = foreign && !(kind === "transfer" && toCurrency === base) && !(kind === "transfer" && toAccount?.kind === "card");
+  const options = (except?: number, list = accounts) =>
+    list.filter((a) => a.id !== except).map((a) => ({
       value: String(a.id),
       label: a.name,
-      hint: [a.subtitle, formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang)].filter(Boolean).join(" · "),
+      hint: a.kind === "card" ? a.subtitle ?? "Tarjeta de crédito"
+        : [a.subtitle, formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang)].filter(Boolean).join(" · "),
     }));
 
   const total = parseAmount(amount || "0", lang);
@@ -126,13 +136,15 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
       to_account_id: null,
       to_amount: null,
       paid_by_partner_id: other ? paidBy : null,
+      currency: card ? currency : null,
+      installments: card && inInstallments && kind === "expense" ? installments : null,
     };
     if (kind === "transfer") {
       if (!toAccount) return setProblem("Elige adónde entra");
       body.to_account_id = toAccount.id;
       if (crossCurrency) {
         const t = parseAmount(toAmount || "", lang);
-        if (!t || Number(t) <= 0) return setProblem(`Escribe cuánto entró en ${symbolOf(toAccount.currency)}`);
+        if (!t || Number(t) <= 0) return setProblem(`Escribe cuánto entró en ${symbolOf(toCurrency)}`);
         body.to_amount = t;
       }
     } else {
@@ -218,6 +230,12 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
             <SheetSelect label={kind === "income" ? "Entra a" : "Sale de"} sheetTitle={kind === "income" ? "¿A qué cuenta entra?" : "¿De qué cuenta sale?"}
               value={account ? String(account.id) : ""} onChange={setAccountId} options={options()} />
           )}
+          {card && me.currencies.length > 1 && (
+            <div className="mt-3">
+              <Segmented label="Moneda" size="sm" value={currency} onChange={setCardCurrency}
+                options={me.currencies.map((c) => ({ value: c, label: `${(CURRENCY_NAME[c] ?? c).replace(/^./, (x) => x.toUpperCase())} · ${symbolOf(c)}` }))} />
+            </div>
+          )}
 
           {needRate && !other && (
             <div className="mt-3 border-b border-border pb-3">
@@ -234,26 +252,26 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
           {kind === "transfer" && (
             <>
               <div className="mt-3">
-                <SheetSelect label="Entra a" sheetTitle="¿A qué cuenta entra?" value={toAccountId} onChange={setToAccountId} options={options(account?.id)} />
+                <SheetSelect label="Entra a" sheetTitle="¿A qué cuenta entra?" value={toAccountId} onChange={setToAccountId} options={options(account?.id, all)} />
               </div>
               {crossCurrency && (
                 <div className="mt-3 grid grid-cols-2 items-end gap-4 border-b border-border pb-3">
                   <label className="flex flex-col gap-0.5 text-caption font-semibold">
                     Entraron
                     <span className="flex items-baseline gap-1.5 border-b-2 border-input-line">
-                      <span aria-hidden="true" className="font-semibold text-muted-foreground">{symbolOf(toAccount.currency)}</span>
+                      <span aria-hidden="true" className="font-semibold text-muted-foreground">{symbolOf(toCurrency)}</span>
                       <input inputMode="decimal" placeholder="0.00" value={toAmount} onChange={(e) => setToAmount(e.target.value)}
                         className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-[20px] leading-7 font-semibold tabular-nums" />
                     </span>
                   </label>
                   <span className="pb-1.5 text-caption text-muted-foreground tabular-nums">
-                    {impliedRate(amount, toAmount, currency, toAccount.currency ?? base, base, lang)}
+                    {impliedRate(amount, toAmount, currency, toCurrency, base, lang)}
                     {sunat.value && sunatSell.value &&
                       ` SUNAT ${sunat.date === todayISO() ? "hoy" : `del ${shortDate(sunat.date!)}`}: ${sunat.value} · ${sunatSell.value}`}
                   </span>
                 </div>
               )}
-              {crossCurrency && toAccount.currency === base && (
+              {crossCurrency && toCurrency === base && (
                 <FxPreview account={account} out={parseAmount(amount || "", lang)} into={parseAmount(toAmount || "", lang)}
                   base={base} lang={lang} />
               )}
@@ -356,6 +374,23 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
                 }} />
             </label>
           )}
+          {card && kind === "expense" && !editing && (
+            <>
+              <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
+                <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
+                <span className="flex flex-1 flex-col">
+                  <span>En cuotas</span>
+                  <span className="text-caption text-muted-foreground">El banco te lo cobra en varios cortes</span>
+                </span>
+                <input type="checkbox" role="switch" checked={inInstallments} onChange={() => setInInstallments(!inInstallments)}
+                  className="size-[22px] accent-primary" />
+              </label>
+              {inInstallments && (
+                <Installments n={installments} setN={setInstallments} total={total} currency={currency} date={date}
+                  closingDay={account!.card?.closing_day ?? null} category={parts[0]?.category?.name ?? null} lang={lang} />
+              )}
+            </>
+          )}
           <label className="flex min-h-[52px] cursor-pointer items-center gap-3">
             <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
             <span className="flex flex-1 flex-col">
@@ -373,7 +408,8 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
         <div className="flex flex-col gap-3">
           {(problem || save.error) && <ErrorAlert>{problem ?? save.error?.message}</ErrorAlert>}
           <PrimaryButton pending={save.isPending}>
-            {editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar" : SUBMIT[kind]}
+            {editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar"
+              : card && inInstallments && kind === "expense" ? `Registrar gasto en ${installments} cuotas` : SUBMIT[kind]}
           </PrimaryButton>
         </div>
       </form>
@@ -426,6 +462,40 @@ function FxPreview({ account, out, into, base, lang }: {
         Esos {formatAmount(out, symbolOf(account!.currency), lang)} te costaron {money(cost)} (a {avg} en promedio) y recibes {money(into)}.
       </span>
     </section>
+  );
+}
+
+/** En cuotas: cuántas, y en qué cortes llegan. El gasto cuenta completo el día de la compra. */
+function Installments({ n, setN, total, currency, date, closingDay, category, lang }: {
+  n: number; setN: (n: number) => void; total: string | null; currency: string; date: string;
+  closingDay: number | null; category: string | null; lang: string;
+}) {
+  const step = "grid size-9 place-items-center rounded-full border border-border";
+  const cents = total ? Math.round(Number(total) * 100) : 0;
+  const each = Math.round(cents / n);
+  const last = cents - each * (n - 1);
+  const money = (c: number) => formatAmount((c / 100).toFixed(2), symbolOf(currency), lang);
+  const closings = closingDay ? installmentClosings(date, n, closingDay) : null;
+  return (
+    <div className="flex flex-col gap-2.5 border-b border-border pt-1 pb-3.5">
+      <div className="flex items-center gap-3">
+        <span id="cuantas" className="flex-1 font-semibold">¿En cuántas cuotas?</span>
+        <div role="group" aria-labelledby="cuantas" className="flex items-center gap-3">
+          <button type="button" aria-label="Una cuota menos" onClick={() => setN(Math.max(2, n - 1))} className={step}><Icon name="remove" /></button>
+          <span className="min-w-7 text-center text-[20px] leading-7 font-semibold tabular-nums">{n}</span>
+          <button type="button" aria-label="Una cuota más" onClick={() => setN(Math.min(60, n + 1))} className={step}><Icon name="add" /></button>
+        </div>
+      </div>
+      {cents > 0 && (
+        <div role="status" className="flex flex-col gap-0.5 rounded-md bg-muted p-3 tabular-nums">
+          <span className="font-semibold">{n} cuotas de {money(each)}{last !== each ? ` (la última, ${money(last)})` : ""}</span>
+          <span className="text-caption text-muted-foreground">
+            {closings ? `La primera llega en el corte del ${shortDate(closings[0]!)}; la última, el ${shortDate(closings.at(-1)!)}. ` : ""}
+            El gasto cuenta completo hoy{category ? ` en ${category}` : ""}.
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 

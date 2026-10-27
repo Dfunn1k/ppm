@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 
 import { type AccountRow, useAccounts, useMe } from "@/api/hooks";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { cardHint } from "@/lib/cards";
 import { formatAmount, symbolOf } from "@/lib/money";
 
 function Group({ label, total, children }: { label: string; total: string; children: React.ReactNode }) {
@@ -17,7 +18,7 @@ function Group({ label, total, children }: { label: string; total: string; child
   );
 }
 
-function Row({ to, icon, letter, name, subtitle, amount, negative }: {
+function Row({ to, icon, letter, name, subtitle, amount, negative, attention }: {
   to?: string;
   icon?: string | null;
   letter?: string;
@@ -25,6 +26,7 @@ function Row({ to, icon, letter, name, subtitle, amount, negative }: {
   subtitle?: string | null;
   amount: string;
   negative?: boolean;
+  attention?: boolean;   // el subtítulo pide algo (falta la fecha de pago)
 }) {
   const body = (
     <>
@@ -33,7 +35,9 @@ function Row({ to, icon, letter, name, subtitle, amount, negative }: {
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{name}</span>
-        {subtitle && <span className="text-caption text-muted-foreground tabular-nums">{subtitle}</span>}
+        {subtitle && (
+          <span className={`text-caption tabular-nums ${attention ? "font-semibold text-attention" : "text-muted-foreground"}`}>{subtitle}</span>
+        )}
       </span>
       <span className={`text-amount ${negative ? "text-expense" : ""}`}>{amount}</span>
     </>
@@ -57,6 +61,11 @@ function accountRow(a: AccountRow, base: string, lang: string, negative?: boolea
   if (a.kind === "payable") {
     return <Row key={a.id} to="/personas" icon="group" name="Debo a personas" subtitle={people(a.partners, true)}
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
+  }
+  if (a.kind === "card") {
+    const hint = cardHint(a, lang);
+    return <Row key={a.id} to={`/tarjetas/${a.id}`} icon="credit_card" name={a.name} subtitle={hint.text} attention={hint.attention}
+      amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} negative={!a.base_total.startsWith("-") ? false : negative} />;
   }
   return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} negative={negative} />;
 }

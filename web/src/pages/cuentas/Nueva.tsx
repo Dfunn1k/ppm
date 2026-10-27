@@ -22,9 +22,9 @@ const TYPES = [
   { to: "/cuentas/nueva/banco", icon: "account_balance", name: "Cuenta de banco", hint: "Ahorros o corriente, con su CCI" },
   { to: "/cuentas/nueva/efectivo", icon: "payments", name: "Efectivo o billetera", hint: "Billetera, alcancía, sobre de dólares" },
   { to: "/cuentas/nueva/guardo", icon: "volunteer_activism", name: "Plata que guardo de otros", hint: "Te la dieron para guardar; no es tuya" },
+  { to: "/cuentas/nueva/tarjeta", icon: "credit_card", name: "Tarjeta de crédito", hint: "Con su corte, su línea y sus cuotas" },
 ];
 const SOON = [
-  { icon: "credit_card", name: "Tarjeta de crédito", hint: "Muy pronto, con su corte y sus cuotas" },
   { icon: "real_estate_agent", name: "Préstamo", hint: "Muy pronto, con su cuota de cada mes" },
 ];
 
