@@ -85,10 +85,16 @@ export function Cuentas() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
       <div className="-mr-2.5 flex items-center justify-between">
         <span className="text-label text-muted-foreground">Cuentas</span>
-        <Link to="/cuentas/nueva" aria-label="Nueva cuenta"
-          className="grid size-11 place-items-center rounded-full bg-secondary text-secondary-foreground">
-          <Icon name="add" className="text-[24px]" />
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Personas siempre a mano, aunque todavía no haya deudas */}
+          <Link to="/personas" aria-label="Personas" className="grid size-11 place-items-center rounded-full">
+            <Icon name="group" className="text-[24px]" />
+          </Link>
+          <Link to="/cuentas/nueva" aria-label="Nueva cuenta"
+            className="grid size-11 place-items-center rounded-full bg-secondary text-secondary-foreground">
+            <Icon name="add" className="text-[24px]" />
+          </Link>
+        </div>
       </div>
       {notice && <div className="mt-4"><ErrorAlert>{notice}</ErrorAlert></div>}
       <span className="mt-5 text-caption text-muted-foreground">Lo que realmente tengo</span>

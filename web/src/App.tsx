@@ -112,6 +112,7 @@ export function App() {
         <Route path="/registrar/persona/:kind" element={<RegistrarPersona />} />
         <Route path="/registrar/reembolso" element={<Reembolso />} />
         <Route path="/registrar/manual" element={<AsientoManual />} />
+        <Route path="/registrar/saldo-inicial" element={<YaDebia />} />
         <Route path="/personas/:id" element={<Persona />} />
         <Route path="/personas/:id/ya-debia" element={<YaDebia />} />
         <Route path="/movimientos/:id/editar" element={<EditarMovimiento />} />
