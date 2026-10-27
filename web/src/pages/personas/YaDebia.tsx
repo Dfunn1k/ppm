@@ -1,10 +1,12 @@
 // C6 · «Ya me debía» o «Ya le debía»: lo que había con una persona antes de empezar a usar PPM.
 // Es la foto del cuaderno de fiados el día que lo abriste: no mueve tus cuentas (esa plata ya había
 // salido o entrado) y queda como una deuda abierta desde su fecha, que se cancela con los pagos.
+// Desde una persona ya viene elegida; desde «Más» en Registrar, se elige (o se crea) aquí.
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 
 import { useMe, usePartner, usePartnerOpening } from "@/api/hooks";
+import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Segmented } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
@@ -15,7 +17,9 @@ import { AmountField } from "@/pages/cuentas/CuentaForm";
 type Side = "owes_me" | "i_owe";
 
 export function YaDebia() {
-  const id = Number(useParams().id);
+  const fixed = Number(useParams().id) || 0;
+  const [chosen, setChosen] = useState<number | null>(null);
+  const id = fixed || chosen || 0;
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const me = useMe().data;
@@ -28,15 +32,16 @@ export function YaDebia() {
   const [note, setNote] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const rate = useRateInput(currency, me?.currency ?? "PEN", date, side === "owes_me" ? "buy" : "sell");
-  if (!me?.currency || person.isPending) return <Spinner />;
+  if (!me?.currency || (fixed && person.isPending)) return <Spinner />;
   if (person.isError) return <Screen><ErrorAlert>{person.error.message}</ErrorAlert></Screen>;
 
-  const first = person.data.partner.name.split(" ")[0];
+  const first = person.data?.partner.name.split(" ")[0];
   const foreign = currency !== me.currency;
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setProblem(null);
     const value = parseAmount(amount, me.lang ?? "es-PE");
+    if (!id) return setProblem("Elige con quién");
     if (!value || Number(value) <= 0) return setProblem("Escribe un monto mayor que cero");
     if (date > todayISO()) return setProblem("Un saldo inicial es de hoy o de antes: elige otra fecha");
     if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
@@ -55,13 +60,14 @@ export function YaDebia() {
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
         <h1 className="mt-4 text-title-hero">De antes de PPM</h1>
         <p className="mt-4 text-muted-foreground">
-          Lo que ya había con {first} cuando empezaste. No mueve tus cuentas: esa plata ya había salido o entrado.
+          Lo que ya había con {first ?? "una persona"} cuando empezaste. No mueve tus cuentas: esa plata ya había salido o entrado.
           Queda como una deuda abierta desde la fecha que elijas.
         </p>
 
         <div className="mt-6 flex flex-col gap-5">
+          {!fixed && <PersonPicker label="¿Con quién?" value={chosen} onChange={setChosen} />}
           <Segmented label="¿Quién le debía a quién?" value={side} onChange={(v) => setSide(v as Side)}
-            options={[{ value: "owes_me", label: `${first} me debía` }, { value: "i_owe", label: `Yo le debía` }]} />
+            options={[{ value: "owes_me", label: first ? `${first} me debía` : "Me debía" }, { value: "i_owe", label: `Yo le debía` }]} />
           {me.currencies.length > 1 && (
             <Segmented label="Moneda" size="sm" value={currency} onChange={setCurrency}
               options={me.currencies.map((c) => ({ value: c, label: `${(CURRENCY_NAME[c] ?? c).replace(/^./, (x) => x.toUpperCase())} · ${symbolOf(c)}` }))} />

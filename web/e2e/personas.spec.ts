@@ -135,3 +135,24 @@ test("lo que una persona ya me debía antes de PPM queda como deuda abierta con 
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /BCP.*S\/ 1,000\.00/ })).toBeVisible();   // tu banco no se movió
 });
+
+test("sin deudas todavía, Personas se abre desde Cuentas y el saldo inicial se anota desde «Más»", async ({ page }) => {
+  await readyUser(page);
+  await page.goto("/cuentas");
+  await page.getByRole("link", { name: "Personas", exact: true }).click();
+  await expect(page).toHaveURL("/personas");
+
+  await page.goto("/registrar");
+  await page.getByRole("radio", { name: "Más" }).click();
+  await page.getByRole("link", { name: /De antes de PPM/ }).click();
+  await expect(page).toHaveURL("/registrar/saldo-inicial");
+  await newPerson(page, "Rosa Díaz");
+  await page.getByRole("radio", { name: "Yo le debía" }).click();
+  await page.getByRole("textbox", { name: "¿Cuánto le debías?" }).fill("80");
+  await page.getByRole("button", { name: "Anotar lo que le debía" }).click();
+
+  await expect(page).toHaveURL(/\/personas\/\d+$/);
+  await expect(page.getByText("S/ 80.00").first()).toBeVisible();
+  await page.goto("/cuentas");
+  await expect(page.getByRole("link", { name: /Debo a personas/ })).toContainText("S/ 80.00");
+});

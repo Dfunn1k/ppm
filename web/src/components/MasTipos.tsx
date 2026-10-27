@@ -6,7 +6,7 @@ import { Link } from "react-router";
 import { Sheet } from "./Sheet";
 import { Icon } from "./ui";
 
-export type MasKind = "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "manual";
+export type MasKind = "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "manual" | "opening";
 
 export const MAS: Record<MasKind, { icon: string; name: string; hint: string; to: string }> = {
   lend: { icon: "volunteer_activism", name: "Le presté a alguien", hint: "Sale de tu cuenta y te queda debiendo", to: "/registrar/persona/lend" },
@@ -16,11 +16,12 @@ export const MAS: Record<MasKind, { icon: string; name: string; hint: string; to
   custody_in: { icon: "inventory_2", name: "Me dio para guardar", hint: "Entra a tu cuenta, pero sigue siendo suya", to: "/registrar/persona/custody_in" },
   custody_out: { icon: "undo", name: "Le devolví o usé su plata", hint: "Sale de tu cuenta y baja lo que guardas", to: "/registrar/persona/custody_out" },
   refund: { icon: "replay", name: "Reembolso", hint: "Te devolvieron plata de un gasto: no es ingreso", to: "/registrar/reembolso" },
+  opening: { icon: "history", name: "De antes de PPM", hint: "Lo que ya se debían cuando empezaste: no mueve tus cuentas", to: "/registrar/saldo-inicial" },
   manual: { icon: "edit_note", name: "Asiento manual", hint: "Eliges las cuentas y los montos a mano", to: "/registrar/manual" },
 };
 
 const GROUPS: [string, MasKind[]][] = [
-  ["Con otra persona", ["lend", "borrow", "collect", "repay"]],
+  ["Con otra persona", ["lend", "borrow", "collect", "repay", "opening"]],
   ["Plata de otros", ["custody_in", "custody_out"]],
   ["Otros", ["refund", "manual"]],
 ];
