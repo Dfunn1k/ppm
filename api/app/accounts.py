@@ -48,6 +48,7 @@ class CardAmount:
 @dataclass(frozen=True)
 class CardBrief:
     """Lo que dice C1 de una tarjeta: cuánto toca pagar (por moneda) y hasta cuándo."""
+    closing_day: int             # el día de corte (31 = el último del mes)
     last_closing: date           # el corte del estado de cuenta que toca pagar
     date_due: date | None        # None hasta que la copies del estado de cuenta
     to_pay: list[CardAmount]     # solo las monedas con algo por pagar
@@ -262,10 +263,12 @@ def overview(user_id: int) -> Overview:
 def card_briefs(conn: psycopg.Connection) -> dict[int, CardBrief]:
     """Lo que toca pagar de cada tarjeta, por moneda, con la fecha de pago de su último corte."""
     out: dict[int, CardBrief] = {}
-    for acc, last, due, cur, to_pay in conn.execute(
-        "SELECT s.account_id, s.last_closing, s.date_due, trim(c.name), s.to_pay FROM credit_card_status() s"
-        " JOIN res_currency c ON c.id = s.currency_id ORDER BY s.account_id, c.id <> (SELECT currency_id FROM res_users), c.name"):
-        brief = out.setdefault(acc, CardBrief(last, due, []))
+    for acc, day, last, due, cur, to_pay in conn.execute(
+        "SELECT s.account_id, cc.closing_day, s.last_closing, s.date_due, trim(c.name), s.to_pay"
+        "  FROM credit_card_status() s JOIN res_currency c ON c.id = s.currency_id"
+        "  JOIN account_credit_card cc ON cc.account_id = s.account_id"
+        " ORDER BY s.account_id, c.id <> (SELECT currency_id FROM res_users), c.name"):
+        brief = out.setdefault(acc, CardBrief(day, last, due, []))
         if to_pay > 0:
             brief.to_pay.append(CardAmount(cur, to_pay.quantize(Decimal("0.01"))))
     return out

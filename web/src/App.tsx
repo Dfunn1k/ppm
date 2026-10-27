@@ -31,6 +31,10 @@ import { Personas } from "./pages/personas/Personas";
 import { YaDebia } from "./pages/personas/YaDebia";
 import { Recuperar } from "./pages/Recuperar";
 import { Restablecer } from "./pages/Restablecer";
+import { CuotasAntes } from "./pages/tarjetas/CuotasAntes";
+import { NuevaTarjeta } from "./pages/tarjetas/NuevaTarjeta";
+import { PagarTarjeta } from "./pages/tarjetas/PagarTarjeta";
+import { Tarjeta } from "./pages/tarjetas/Tarjeta";
 
 /** Adónde va cada quien: sin sesión → entrar; sin configurar → los 3 pasos; si no, al Inicio. */
 function home(me: Me | null | undefined) {
@@ -100,6 +104,7 @@ export function App() {
           <Route path="/inicio" element={<Inicio />} />
           <Route path="/cuentas" element={<Cuentas />} />
           <Route path="/cuentas/:id" element={<Detalle />} />
+          <Route path="/tarjetas/:id" element={<Tarjeta />} />
           <Route path="/personas" element={<Personas />} />
           <Route path="/movimientos" element={<Movimientos />} />
           <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
@@ -120,6 +125,9 @@ export function App() {
         <Route path="/cuentas/nueva/banco" element={<NuevaCuentaForm kind="bank" />} />
         <Route path="/cuentas/nueva/efectivo" element={<NuevaCuentaForm kind="cash" />} />
         <Route path="/cuentas/nueva/guardo" element={<NuevaGuardo />} />
+        <Route path="/cuentas/nueva/tarjeta" element={<NuevaTarjeta />} />
+        <Route path="/tarjetas/:id/pagar" element={<PagarTarjeta />} />
+        <Route path="/tarjetas/:id/cuotas-antes" element={<CuotasAntes />} />
         <Route path="/cuentas/:id/editar" element={<EditarBanco />} />
       </Route>
       <Route path="*" element={me.isPending ? <Spinner /> : <Navigate to={home(me.data)} replace />} />

@@ -12,8 +12,8 @@ const ITEMS: Item[] = [
   { to: "/mas", label: "Más", icon: "menu" },
 ];
 
-/** Personas vive dentro de Cuentas: ahí también se marca Cuentas. */
-const ALSO: Record<string, string[]> = { "/cuentas": ["/personas"] };
+/** Personas y las tarjetas viven dentro de Cuentas: ahí también se marca Cuentas. */
+const ALSO: Record<string, string[]> = { "/cuentas": ["/personas", "/tarjetas"] };
 
 function Tab({ item }: { item: Item }) {
   const path = useLocation().pathname;

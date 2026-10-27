@@ -446,6 +446,7 @@ function useMovesChanged() {
       qc.invalidateQueries({ queryKey: ["categories"] }),
       qc.invalidateQueries({ queryKey: ["partners"] }),
       qc.invalidateQueries({ queryKey: ["home"] }),
+      qc.invalidateQueries({ queryKey: ["cards"] }),
     ]);
   };
 }
@@ -491,6 +492,88 @@ export function useDeleteMove(id: number) {
       qc.removeQueries({ queryKey: [...MOVES, id] });
       return changed();
     },
+  });
+}
+
+// --- Tarjetas ------------------------------------------------------------------------------------
+
+export type CardDetail = components["schemas"]["CardDetailOut"];
+export type CardIn = components["schemas"]["CardIn"];
+type CardPatch = components["schemas"]["CardPatch"];
+type DueDateIn = components["schemas"]["DueDateIn"];
+type InstallmentsIn = components["schemas"]["InstallmentsIn"];
+
+const CARDS = ["cards"] as const;
+
+export function useCard(id: number) {
+  return useQuery({
+    queryKey: [...CARDS, id],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/cards/{card_id}", { params: { path: { card_id: id } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Una tarjeta que cambia cambia también la lista de cuentas y el Inicio. */
+function useCardChanged() {
+  const qc = useQueryClient();
+  return (detail: CardDetail) => {
+    qc.setQueryData([...CARDS, detail.account.id], detail);
+    return Promise.all([
+      qc.invalidateQueries({ queryKey: ACCOUNTS }),
+      qc.invalidateQueries({ queryKey: MOVES }),
+      qc.invalidateQueries({ queryKey: ["home"] }),
+    ]);
+  };
+}
+
+export function useCreateCard() {
+  const changed = useCardChanged();
+  return useMutation({
+    mutationFn: async (body: CardIn) => {
+      const { data, error, response } = await api.POST("/cards", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useUpdateCard(id: number) {
+  const changed = useCardChanged();
+  return useMutation({
+    mutationFn: async (body: CardPatch) => {
+      const { data, error, response } = await api.PATCH("/cards/{card_id}", { params: { path: { card_id: id } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useCardDueDate(id: number) {
+  const changed = useCardChanged();
+  return useMutation({
+    mutationFn: async (body: DueDateIn) => {
+      const { data, error, response } = await api.PUT("/cards/{card_id}/due-date", { params: { path: { card_id: id } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
+export function useCardInstallments(id: number) {
+  const changed = useCardChanged();
+  return useMutation({
+    mutationFn: async (body: InstallmentsIn) => {
+      const { data, error, response } = await api.POST("/cards/{card_id}/installments", { params: { path: { card_id: id } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
   });
 }
 
