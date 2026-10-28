@@ -66,7 +66,7 @@ class CardBriefOut(BaseModel):
 class AccountRowOut(BaseModel):
     id: int
     name: str
-    kind: Literal["cash", "bank", "card", "receivable", "payable", "suspense", "other"]
+    kind: Literal["cash", "bank", "card", "loan", "receivable", "payable", "suspense", "other"]
     currency: str | None
     icon: str | None
     subtitle: str | None
