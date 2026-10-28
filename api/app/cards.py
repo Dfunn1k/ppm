@@ -27,6 +27,7 @@ class CardStatus:
     total_debt: Decimal          # todo lo que debes, con las cuotas que faltan facturar
     unbilled: Decimal            # compras después del último corte + cuotas de cortes futuros
     to_pay: Decimal              # lo facturado; negativo = saldo a favor
+    next_bill: Decimal = ZERO    # lo que se factura en el próximo corte: compras y sus cuotas
 
 
 @dataclass(frozen=True)
@@ -37,12 +38,11 @@ class Plan:
     currency: str
     n_installments: int
     billed: int                  # cuántas cuotas ya se facturaron (corte hasta el último)
-    principal: Decimal           # el total de la compra
-    remaining: Decimal           # lo que falta facturar
-    next_installment: Decimal | None   # la próxima cuota: su capital…
+    principal: Decimal           # todas las cuotas
+    remaining: Decimal           # las cuotas por venir
+    next_installment: Decimal | None   # la próxima cuota
     next_closing: dt.date | None       # en qué corte llega
     opening: bool                # cuotas de antes de PPM (no fue un gasto en PPM)
-    next_interest: Decimal = ZERO      # …y su interés estimado
 
 
 @dataclass(frozen=True)
@@ -59,7 +59,7 @@ class CycleItem:
     counterpart_color: int | None
     sequence: int | None = None  # cuota: cuál…
     n_installments: int | None = None   # …de cuántas
-    interest: Decimal | None = None     # cuota: su interés, ya dentro de amount (estimado si no se facturó)
+    interest: Decimal | None = None     # cuota: su interés, dentro de amount (del estado de cuenta; None = sin dato)
     bank: bool = False                  # cargo del banco (desgravamen, comisiones): va al total facturado
 
 
@@ -76,6 +76,7 @@ class Cycle:
     date_due: dt.date | None
     charges: list[CardStatusAmount] = field(default_factory=list)   # compras y cuotas, por moneda
     items: list[CycleItem] = field(default_factory=list)
+    statement: bool = False      # tiene su estado de cuenta importado
 
 
 @dataclass(frozen=True)
@@ -98,7 +99,8 @@ class CardDetail:
     cycles: list[Cycle]
     charges: list["BankCharge"] = field(default_factory=list)
     rates: list["CardRate"] = field(default_factory=list)   # el ciclo abierto: a cuánto cuentan otras monedas
-    line_matched: bool = False   # la línea usa el saldo de cuotas del último estado de cuenta
+    line_matched: bool = False   # la línea es la foto del último estado de cuenta, sin nada después
+    line_from: dt.date | None = None   # el corte del estado de cuenta de donde parte la línea
 
 
 @dataclass(frozen=True)
@@ -146,8 +148,7 @@ def _plans(conn: psycopg.Connection, card_id: int, last: dt.date) -> list[Plan]:
                (array_agg(pl.principal ORDER BY pl.sequence) FILTER (WHERE pl.closing_date > %(last)s))[1],
                min(pl.closing_date) FILTER (WHERE pl.closing_date > %(last)s),
                EXISTS (SELECT 1 FROM account_move_line x WHERE x.move_id = p.move_id
-                                                         AND x.account_id = system_account('opening')),
-               coalesce((array_agg(pl.interest ORDER BY pl.sequence) FILTER (WHERE pl.closing_date > %(last)s))[1], 0)
+                                                         AND x.account_id = system_account('opening'))
           FROM account_installment_plan p
           JOIN account_move m ON m.id = p.move_id AND m.state = 'posted'
           JOIN res_currency c ON c.id = p.currency_id
@@ -194,32 +195,30 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
     for closing, *item in conn.execute("""
         SELECT pl.closing_date, m.id, m.date, m.ref, true,
                CASE WHEN o.role = 'opening' THEN 'opening' ELSE 'installment' END,
-               trim(c.name), pl.principal + coalesce(i.amount, pl.interest), o.name, o.icon, o.color,
-               pl.sequence, p.n_installments, coalesce(i.amount, pl.interest)
+               trim(c.name), pl.principal, o.name, o.icon, o.color, pl.sequence, p.n_installments, pl.interest
           FROM account_installment_plan_line pl
           JOIN account_installment_plan p ON p.id = pl.plan_id
           JOIN account_move m ON m.id = p.move_id AND m.state = 'posted'
           JOIN res_currency c ON c.id = p.currency_id
-          CROSS JOIN LATERAL (
+          CROSS JOIN LATERAL (                         -- tuya: la categoría de la compra
             SELECT CASE WHEN count(*) = 1 THEN min(a.name) END AS name,
                    CASE WHEN count(*) = 1 THEN min(coalesce(a.icon, pa.icon)) END AS icon,
                    CASE WHEN count(*) = 1 THEN min(coalesce(a.color, pa.color)) END AS color,
                    min(a.system_role) AS role
-              FROM account_move_line x
-              JOIN account_account a ON a.id = x.account_id
+              FROM account_account a
               LEFT JOIN account_account pa ON pa.id = a.parent_id
-             WHERE x.move_id = m.id AND x.account_id <> p.card_account_id) o
-          LEFT JOIN LATERAL (                          -- el interés ya facturado, con su monto real
-            SELECT -sum(x.amount_currency) AS amount
-              FROM account_move im JOIN account_move_line x ON x.move_id = im.id AND x.account_id = p.card_account_id
-             WHERE im.installment_plan_id = pl.plan_id AND im.installment_sequence = pl.sequence
-               AND im.state = 'posted') i ON i.amount IS NOT NULL
+             WHERE a.id = p.expense_account_id
+                OR (p.expense_account_id IS NULL
+                    AND a.id IN (SELECT x.account_id FROM account_move_line x
+                                  WHERE x.move_id = m.id AND x.account_id <> p.card_account_id))) o
          WHERE p.card_account_id = %(card)s AND pl.closing_date > %(oldest)s AND pl.closing_date <= %(next)s
          ORDER BY pl.closing_date DESC, m.date DESC""", {"card": card_id, "oldest": oldest, "next": nxt}):
         items[closing].append(CycleItem(*item))
 
+    imported = {r[0] for r in conn.execute(
+        "SELECT closing_date FROM account_credit_card_statement WHERE card_account_id = %s", (card_id,))}
     cycles = []
-    for closing in sorted(items, reverse=True):
+    for closing in sorted(set(items) | {d for d in imported if d > oldest}, reverse=True):
         rows = sorted(items[closing], key=lambda i: (i.date, i.move_id), reverse=True)
         charges: dict[str, Decimal] = defaultdict(lambda: ZERO)
         for i in rows:
@@ -227,7 +226,7 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
                 charges[i.currency] += i.amount
         state = "current" if closing > last else "billed" if closing == last else "past"
         cycles.append(Cycle(closing, state, due.get(closing),
-                            [CardStatusAmount(c, a) for c, a in sorted(charges.items())], rows))
+                            [CardStatusAmount(c, a) for c, a in sorted(charges.items())], rows, closing in imported))
     return cycles
 
 
@@ -245,29 +244,29 @@ def detail(user_id: int, card_id: int) -> CardDetail:
             " WHERE s.account_id = %s ORDER BY c.id <> (SELECT currency_id FROM res_users), c.name",
             (card_id,)).fetchall()
         last, nxt, date_due = rows[0][4], rows[0][5], rows[0][6]
-        status = [CardStatus(cur, _cents(debt), _cents(unbilled), _cents(to_pay))
+        later = dict(conn.execute("""
+            SELECT trim(c.name), sum(pl.principal)                 -- cuotas de después del próximo corte
+              FROM account_installment_plan_line pl
+              JOIN account_installment_plan p ON p.id = pl.plan_id
+              JOIN account_move m ON m.id = p.move_id AND m.state = 'posted'
+              JOIN res_currency c ON c.id = p.currency_id
+             WHERE p.card_account_id = %s AND pl.closing_date > %s GROUP BY c.name""", (card_id, nxt)).fetchall())
+        status = [CardStatus(cur, _cents(debt), _cents(unbilled), _cents(to_pay), _cents(unbilled - later.get(cur, ZERO)))
                   for cur, debt, unbilled, to_pay, *_ in rows]
-        # La línea se ocupa con toda la deuda: lo que no es su moneda, al tipo de venta del ciclo
-        # abierto (el del día o el escrito a mano)
+        # La línea: la foto del último estado de cuenta y lo de después; lo que no es su moneda, al
+        # tipo de venta del ciclo abierto (el del día o el escrito a mano)
         book = {m.currency: m.book for m in balances}
         open_rates = card_statements.open_rates(conn, card_id, last, rates)
-        used = sum((s.total_debt if s.currency == limit_cur
-                    else _cents(s.total_debt * open_rates[s.currency].rate) if s.currency in open_rates
-                    else -book.get(s.currency, ZERO)
-                    for s in status), ZERO)
-        # Con un estado de cuenta del último corte, sus cuotas son las del banco
-        card_statements.snapshot(conn, card_id, last)
-        delta = card_statements.installments_delta(conn, card_id, last)
-        if delta is not None:
-            used += delta
+        ln = card_statements.line(conn, card_id, limit_cur, last, {s.currency: s.total_debt for s in status},
+                                  open_rates, book)
         due = dict(conn.execute("SELECT closing_date, date_due FROM account_credit_card_cycle"
                                 " WHERE card_account_id = %s", (card_id,)).fetchall())
         plans = _plans(conn, card_id, last)
         cycles = _cycles(conn, card_id, last, nxt, due)
         charges = _charges(conn, card_id)
     return CardDetail(replace(account, card=brief), bank_id, bank_name, brand, last4, closing_day, limit, limit_cur,
-                      last, nxt, date_due, status, used, limit - used, plans, cycles, charges,
-                      list(open_rates.values()), delta is not None)
+                      last, nxt, date_due, status, ln.used, limit - ln.used, plans, cycles, charges,
+                      list(open_rates.values()), ln.matched, ln.statement)
 
 
 def _charges(conn: psycopg.Connection, card_id: int) -> list[BankCharge]:

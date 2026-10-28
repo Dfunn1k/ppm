@@ -433,6 +433,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cards/{card_id}/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Importar el estado de cuenta en PDF */
+        post: operations["import_statement_cards__card_id__statements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cards/{card_id}/statements/{closing}": {
         parameters: {
             query?: never;
@@ -440,10 +457,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Conciliar un estado de cuenta con PPM */
+        /** Un estado de cuenta importado, conciliado con PPM */
         get: operations["reconciliation_cards__card_id__statements__closing__get"];
-        /** Lo que dice el banco de un ciclo */
-        put: operations["save_statement_cards__card_id__statements__closing__put"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -550,23 +566,6 @@ export interface paths {
         get?: never;
         /** Poner o quitar la fecha de vencimiento de una deuda */
         put: operations["set_maturity_move_lines__line_id__maturity_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/moves/{move_id}/installments/{sequence}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Corregir capital e interés de una cuota */
-        put: operations["set_installment_split_moves__move_id__installments__sequence__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1054,7 +1053,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cash" | "bank" | "card" | "loan" | "receivable" | "payable" | "suspense" | "other";
+            kind: "cash" | "bank" | "card" | "loan" | "receivable" | "payable" | "suspense" | "installments" | "other";
             /** Currency */
             currency: string | null;
             /** Icon */
@@ -1164,6 +1163,11 @@ export interface components {
              */
             balance_end?: number | string | null;
         };
+        /** Body_import_statement_cards__card_id__statements_post */
+        Body_import_statement_cards__card_id__statements_post: {
+            /** File */
+            file: string;
+        };
         /** Body_preview_accounts__account_id__statements_preview_post */
         Body_preview_accounts__account_id__statements_preview_post: {
             /** File */
@@ -1251,6 +1255,8 @@ export interface components {
             rates: components["schemas"]["CardRateOut"][];
             /** Line Matched */
             line_matched: boolean;
+            /** Line From */
+            line_from: string | null;
         };
         /** CardIn */
         CardIn: {
@@ -1332,6 +1338,8 @@ export interface components {
             unbilled: string;
             /** To Pay */
             to_pay: string;
+            /** Next Bill */
+            next_bill: string;
         };
         /** CashIn */
         CashIn: {
@@ -1544,6 +1552,8 @@ export interface components {
             charges: components["schemas"]["CycleAmountOut"][];
             /** Items */
             items: components["schemas"]["CycleItemOut"][];
+            /** Statement */
+            statement: boolean;
         };
         /** DayOut */
         DayOut: {
@@ -1995,8 +2005,6 @@ export interface components {
             installments?: number | null;
             /** Installment Amount */
             installment_amount?: number | string | null;
-            /** Interest Mine */
-            interest_mine?: boolean | null;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
@@ -2315,7 +2323,7 @@ export interface components {
             /** Billed */
             billed: boolean;
             /** Interest */
-            interest: string;
+            interest: string | null;
         };
         /** PlanOut */
         PlanOut: {
@@ -2335,6 +2343,10 @@ export interface components {
             installment_amount: string | null;
             /** Plan Id */
             plan_id: number | null;
+            /** Price */
+            price: string | null;
+            /** Category */
+            category: string | null;
         };
         /** PlanRowOut */
         PlanRowOut: {
@@ -2360,8 +2372,6 @@ export interface components {
             next_closing: string | null;
             /** Opening */
             opening: boolean;
-            /** Next Interest */
-            next_interest: string;
         };
         /** PreviewRowOut */
         PreviewRowOut: {
@@ -2423,38 +2433,38 @@ export interface components {
              */
             closing_date: string;
             /**
-             * Previous Closing
+             * Date From
              * Format: date
              */
-            previous_closing: string;
+            date_from: string;
+            /** Date Due */
+            date_due: string | null;
+            /** Filename */
+            filename: string | null;
             /** Credit Limit */
             credit_limit: string;
             /** Limit Currency */
             limit_currency: string;
-            /** Currencies */
-            currencies: components["schemas"]["StatementCurrencyOut"][];
-            /** Bank Charges */
-            bank_charges: string;
-            /** Billed */
-            billed: string;
-            /** Bank Billed */
-            bank_billed: string | null;
-            /** Installments */
-            installments: string;
-            /** Bank Installments */
-            bank_installments: string | null;
+            /** Used */
+            used: string;
             /** Available */
             available: string;
-            /** Bank Available */
-            bank_available: string | null;
-            /** Used At Closing */
-            used_at_closing: string;
+            /** Currencies */
+            currencies: components["schemas"]["StatementCurrencyOut"][];
+            /** Fees */
+            fees: components["schemas"]["StatementFeeOut"][];
+            /** Bank Charges */
+            bank_charges: string;
+            /** Installments */
+            installments: components["schemas"]["StatementInstallmentOut"][];
             /** Explanations */
             explanations: string[];
             /** Lines */
             lines: components["schemas"]["StatementLineOut"][];
             /** Unmatched */
             unmatched: components["schemas"]["UnmatchedOut"][];
+            /** Unread */
+            unread: string[];
         };
         /** RecurringDetailOut */
         RecurringDetailOut: {
@@ -2669,13 +2679,6 @@ export interface components {
             /** Password */
             password: string;
         };
-        /** SplitFixIn */
-        SplitFixIn: {
-            /** Principal */
-            principal: number | string;
-            /** Interest */
-            interest: number | string;
-        };
         /** SplitIn */
         SplitIn: {
             /** Category Id */
@@ -2707,16 +2710,16 @@ export interface components {
         StatementCurrencyOut: {
             /** Currency */
             currency: string;
-            /** Debt */
-            debt: string;
-            /** Rate */
-            rate: string | null;
-            /** Rate Date */
-            rate_date: string | null;
             /** Subtotal */
             subtotal: string;
             /** Bank Subtotal */
             bank_subtotal: string | null;
+            /** Bank Billed */
+            bank_billed: string | null;
+            /** Bank Installments */
+            bank_installments: string | null;
+            /** Read */
+            read: string;
         };
         /** StatementDetailOut */
         StatementDetailOut: {
@@ -2738,24 +2741,17 @@ export interface components {
             /** Has File */
             has_file: boolean;
         };
-        /** StatementIn */
-        StatementIn: {
-            /**
-             * Subtotals
-             * @default []
-             */
-            subtotals: components["schemas"]["SubtotalIn"][];
-            /** Billed */
-            billed?: number | string | null;
-            /** Available */
-            available?: number | string | null;
-            /** Installments */
-            installments?: number | string | null;
-            /** Lines */
-            lines?: components["schemas"]["StatementLineIn"][] | null;
+        /** StatementFeeOut */
+        StatementFeeOut: {
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
         };
-        /** StatementLineIn */
-        StatementLineIn: {
+        /** StatementInstallmentOut */
+        StatementInstallmentOut: {
             /**
              * Date
              * Format: date
@@ -2763,10 +2759,22 @@ export interface components {
             date: string;
             /** Name */
             name: string;
-            /** Amount */
-            amount: number | string;
             /** Currency */
             currency: string;
+            /** Price */
+            price: string;
+            /** Sequence */
+            sequence: number;
+            /** N Installments */
+            n_installments: number;
+            /** Capital */
+            capital: string;
+            /** Interest */
+            interest: string;
+            /** Move Id */
+            move_id: number | null;
+            /** Mine */
+            mine: boolean;
         };
         /** StatementLineOut */
         StatementLineOut: {
@@ -2805,13 +2813,6 @@ export interface components {
             balance_end: string | null;
             /** Difference */
             difference: string | null;
-        };
-        /** SubtotalIn */
-        SubtotalIn: {
-            /** Currency */
-            currency: string;
-            /** Amount */
-            amount: number | string | null;
         };
         /** TodayRateOut */
         TodayRateOut: {
@@ -3999,22 +4000,25 @@ export interface operations {
             };
         };
     };
-    reconciliation_cards__card_id__statements__closing__get: {
+    import_statement_cards__card_id__statements_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 card_id: number;
-                closing: string;
             };
             cookie?: {
                 ppm_session?: string | null;
             };
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_statement_cards__card_id__statements_post"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4033,7 +4037,7 @@ export interface operations {
             };
         };
     };
-    save_statement_cards__card_id__statements__closing__put: {
+    reconciliation_cards__card_id__statements__closing__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4045,11 +4049,7 @@ export interface operations {
                 ppm_session?: string | null;
             };
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StatementIn"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -4404,44 +4404,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    set_installment_split_moves__move_id__installments__sequence__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                move_id: number;
-                sequence: number;
-            };
-            cookie?: {
-                ppm_session?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SplitFixIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MoveDetailOut"];
-                };
             };
             /** @description Validation Error */
             422: {

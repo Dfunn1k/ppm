@@ -1,6 +1,7 @@
 // C3 · Detalle de tarjeta: lo que toca pagar y para cuándo (la fecha se copia del estado de cuenta;
-// si falta, la pide), lo por facturar, la línea disponible, las cuotas que faltan y los movimientos
-// agrupados por ciclo, como en el estado de cuenta. El menú ⋮ renombra, edita corte y línea, cambia
+// si falta, la pide), lo que se factura en el próximo corte, la línea disponible (la del último
+// estado de cuenta importado más lo de después), las cuotas por venir y los movimientos agrupados
+// por ciclo, como en el estado de cuenta. El menú ⋮ renombra, edita corte y línea, cambia
 // la fecha de pago o archiva.
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -8,10 +9,11 @@ import { Link, useNavigate, useParams } from "react-router";
 import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useCardRate, useMe, useUpdateCard } from "@/api/hooks";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { ImportStatement } from "@/pages/tarjetas/Conciliar";
 import { DateField } from "@/components/DateSheet";
 import { daysUntil } from "@/lib/cards";
 import { shortDate, todayISO } from "@/lib/dates";
-import { add, formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
+import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
 
 type Menu = null | "open" | "rename" | "edit" | "due" | "archive" | "charge" | "rate";
 type Item = CardDetail["cycles"][number]["items"][number];
@@ -49,7 +51,7 @@ export function Tarjeta() {
       : `A pagar · ciclo que cerró el ${shortDate(d.last_closing)}`;
   const hero = owed.length === 0 && favor.length ? favor[0]!.to_pay.replace("-", "") : Number(main.to_pay) > 0 ? main.to_pay : "0.00";
   const heroCur = owed.length === 0 && favor.length ? favor[0]!.currency : main.currency;
-  const unbilledOthers = d.status.filter((s) => s.currency !== main.currency && Number(s.unbilled) > 0);
+  const nextOthers = d.status.filter((s) => s.currency !== main.currency && Number(s.next_bill) > 0);
   // El tipo de cambio del ciclo abierto, solo de las monedas en que debes
   const foreignRates = d.rates.filter((r) => r.currency !== d.limit_currency
     && d.status.some((s) => s.currency === r.currency && Number(s.total_debt) !== 0));
@@ -100,9 +102,9 @@ export function Tarjeta() {
       <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-0.5 rounded-lg border border-border bg-card p-3">
           <span className="text-caption text-muted-foreground">Por facturar · cierra {shortDate(d.next_closing)}</span>
-          <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(main.unbilled, main.currency)}</span>
-          {unbilledOthers.map((s) => (
-            <span key={s.currency} className="text-caption text-muted-foreground tabular-nums">y {money(s.unbilled, s.currency)}</span>
+          <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(main.next_bill, main.currency)}</span>
+          {nextOthers.map((s) => (
+            <span key={s.currency} className="text-caption text-muted-foreground tabular-nums">y {money(s.next_bill, s.currency)}</span>
           ))}
         </div>
         <div className="flex flex-col gap-0.5 rounded-lg border border-border bg-card p-3">
@@ -119,8 +121,14 @@ export function Tarjeta() {
         <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
       </div>
       <span className="mt-1.5 text-caption text-muted-foreground">
-        {pct === 0 ? "Todavía no usas tu línea." : `Usas el ${pct}% de tu línea. El capital de las cuotas que faltan también la ocupa; sus intereses, recién cuando se facturan${d.status.length > 1 ? "; los dólares cuentan al tipo de venta" : ""}.`}
+        {pct === 0 ? "Todavía no usas tu línea. " : `Usas el ${pct}% de tu línea. `}
+        {d.line_from
+          ? d.line_matched
+            ? `Es la del estado de cuenta del ${shortDate(d.line_from)}.`
+            : `Parte del estado de cuenta del ${shortDate(d.line_from)} y suma lo de después: una compra en cuotas ocupa su precio${foreignRates.length ? "; los dólares, al tipo de venta" : ""}.`
+          : "Sin estado de cuenta, PPM la estima con todo lo que debes. Importa el último para cuadrarla."}
       </span>
+      <ImportStatement cardId={id} />
 
       {foreignRates.map((r) => (
         <button key={r.currency} type="button" onClick={() => setMenu("rate")}
@@ -131,9 +139,9 @@ export function Tarjeta() {
         </button>
       ))}
 
-      <section aria-label="Cuotas que faltan" className="mt-6 flex flex-col">
+      <section aria-label="Cuotas por venir" className="mt-6 flex flex-col">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-          <span>Cuotas que faltan</span>
+          <span>Cuotas por venir</span>
           <span>{plansTotal(d, lang)}</span>
         </div>
         {d.plans.map((p) => (
@@ -145,7 +153,7 @@ export function Tarjeta() {
               <span className="font-semibold">{p.name}</span>
               <span className="text-caption text-muted-foreground tabular-nums">
                 {p.opening ? "De antes de PPM" : `Facturada ${p.billed} de ${p.n_installments}`}
-                {" · "}quedan {p.n_installments - p.billed}{p.next_installment ? ` de ${money(add(p.next_installment, p.next_interest), p.currency)}` : ""}
+                {" · "}quedan {p.n_installments - p.billed}{p.next_installment ? ` de ${money(p.next_installment, p.currency)}` : ""}
               </span>
             </span>
             <span className="text-amount">{money(p.remaining, p.currency)}</span>
@@ -197,10 +205,10 @@ export function Tarjeta() {
               <span>{cycleLabel(c)}</span>
               <span className="text-right">{c.charges.map((x) => money(x.amount, x.currency)).join(" · ")}</span>
             </div>
-            {c.state !== "current" && (
+            {c.statement && (
               <Link to={`/tarjetas/${id}/estado/${c.closing_date}`}
                 className="flex min-h-11 items-center gap-1.5 border-b border-border text-caption font-semibold text-primary-strong">
-                <Icon name="fact_check" className="text-[18px]" />Conciliar con el estado de cuenta
+                <Icon name="fact_check" className="text-[18px]" />Ver su estado de cuenta
               </Link>
             )}
             {c.items.map((i, n) => <ItemRow key={`${i.move_id}-${i.sequence ?? n}`} item={i} base={base} lang={lang} />)}
@@ -247,7 +255,7 @@ function RateSheet({ open, onClose, card, rate }: {
     <Sheet title={`Tipo de cambio de ${symbolOf(rate.currency)}`} open={open} onClose={onClose}>
       <div className="flex flex-col gap-4 px-3">
         <p className="text-caption text-muted-foreground">
-          Con este tipo cuentan tus {symbolOf(rate.currency)} en la línea hasta el próximo corte. Los ciclos cerrados guardan el suyo.
+          Con este tipo cuentan en la línea tus compras en {symbolOf(rate.currency)} de después del último corte, hasta el próximo. Lo de antes viene del estado de cuenta.
         </p>
         <LineField label="Tipo de venta" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />
         {save.error && <ErrorAlert>{save.error.message}</ErrorAlert>}

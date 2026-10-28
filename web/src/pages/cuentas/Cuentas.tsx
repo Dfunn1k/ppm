@@ -62,6 +62,10 @@ function accountRow(a: AccountRow, base: string, lang: string, negative?: boolea
     return <Row key={a.id} to="/personas" icon="group" name="Debo a personas" subtitle={people(a.partners, true)}
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
   }
+  if (a.kind === "installments") {   // lo que ya le debes al banco por compras en cuotas: cada cuota es gasto en su corte
+    return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle="Se vuelven gasto en su corte"
+      amount={formatAmount(a.base_total, symbolOf(base), lang)} />;
+  }
   if (a.kind === "card") {
     const hint = cardHint(a, lang);
     return <Row key={a.id} to={`/tarjetas/${a.id}`} icon="credit_card" name={a.name} subtitle={hint.text} attention={hint.attention}

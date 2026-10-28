@@ -1,5 +1,7 @@
 // Tarjetas de punta a punta: el alta con lo que toca pagar y la fecha de pago, un gasto en cuotas,
 // pagarla un bolsillo a la vez y las cuotas de antes de PPM.
+import { readFileSync } from "node:fs";
+
 import { expect, type Page, test } from "@playwright/test";
 
 import { pickDate } from "./fechas";
@@ -66,7 +68,7 @@ test("crear una tarjeta con lo que toca pagar y escribir después la fecha de pa
   await expect(page.getByRole("link", { name: /Visa BBVA/ })).toContainText("Pagar S/ 1,284.90 antes del");
 });
 
-test("un gasto con tarjeta en 6 cuotas: cuenta completo y se factura de a poco", async ({ page }) => {
+test("un gasto con tarjeta en 6 cuotas: cada cuota se factura en su corte", async ({ page }) => {
   await readyUser(page);
   const id = await card(page);
   await page.goto(`/registrar?cuenta=${id}`);
@@ -80,7 +82,7 @@ test("un gasto con tarjeta en 6 cuotas: cuenta completo y se factura de a poco",
   await expect(page).toHaveURL("/movimientos");
 
   await page.goto(`/tarjetas/${id}`);
-  const cuota = page.getByRole("region", { name: "Cuotas que faltan" }).getByRole("link", { name: /Televisor/ });
+  const cuota = page.getByRole("region", { name: "Cuotas por venir" }).getByRole("link", { name: /Televisor/ });
   await expect(cuota).toContainText("S/ 1,200.00");
   await cuota.click();
   await expect(page.getByText("6 cuotas · 0 facturadas")).toBeVisible();
@@ -125,7 +127,7 @@ test("las cuotas de antes de PPM no son gasto y se facturan desde el próximo co
   await page.getByRole("button", { name: "Agregar 4 cuotas" }).click();
 
   await expect(page).toHaveURL(`/tarjetas/${id}`);
-  await expect(page.getByRole("region", { name: "Cuotas que faltan" }).getByRole("link", { name: /Laptop/ }))
+  await expect(page.getByRole("region", { name: "Cuotas por venir" }).getByRole("link", { name: /Laptop/ }))
     .toContainText("De antes de PPM");
   await expect(page.getByText("Nada por pagar ahora")).toBeVisible();
 });
@@ -152,32 +154,36 @@ test("el desgravamen de cada corte nace por confirmar y avisa en el Inicio", asy
   await expect(page).toHaveURL(/\/movimientos\/\d+$/);
 });
 
-test("conciliar el estado de cuenta: cuadra el subtotal y explica el desgravamen", async ({ page }) => {
+test("importar el PDF del estado de cuenta: la foto del banco y la cuota en capital e interés", async ({ page }) => {
   await readyUser(page);
-  const lima = (days: number) => new Date(Date.now() + days * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Lima" });
-  const corte = lima(-3);
   const r = await page.request.post("/api/cards", {
-    data: { name: "Visa Qore", closing_day: Number(corte.slice(8, 10)), credit_limit: "6000", brand: "Visa" },
+    data: { name: "Visa Qore", closing_day: 25, credit_limit: "7010.91", brand: "Visa", last4: "1111" },
   });
   const card = (await r.json()).account.id as number;
   const groups = (await (await page.request.get("/api/categories?kind=expense")).json()).groups as { children: { id: number; name: string }[] }[];
   const hogar = groups.flatMap((g) => g.children).find((k) => k.name === "Hogar")!.id;
   await page.request.post("/api/moves", {
-    data: { kind: "expense", account_id: card, amount: "1117.82", date: lima(-10), ref: "Supermercado",
-            splits: [{ category_id: hogar, amount: "1117.82" }] },
+    data: { kind: "expense", account_id: card, amount: "693.00", date: "2026-10-14", ref: "Unipiel", installments: 3,
+            installment_amount: "262.02", splits: [{ category_id: hogar, amount: "693.00" }] },
   });
+  // El PDF: el texto anonimizado del estado de cuenta, impreso por el navegador en letra de ancho fijo
+  const text = readFileSync(new URL("./fixtures/bcp_visa_2026-10.txt", import.meta.url), "utf8");
+  const printer = await page.context().newPage();
+  await printer.setContent(`<pre style="font: 7px/9px monospace; margin: 0">${text.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</pre>`);
+  const pdf = await printer.pdf({ format: "A4", landscape: true });
+  await printer.close();
 
   await page.goto(`/tarjetas/${card}`);
-  await page.getByRole("link", { name: "Conciliar con el estado de cuenta" }).click();
+  await expect(page.getByText("Estimada")).toBeVisible();
+  await page.getByLabel("PDF del estado de cuenta").setInputFiles({ name: "EECC_VISA.pdf", mimeType: "application/pdf", buffer: pdf });
   await expect(page.getByRole("heading", { name: "Estado de cuenta" })).toBeVisible();
-  await page.getByLabel("Subtotal S/").fill("1117.82");
-  await page.getByLabel("Total facturado").fill("1120.23");
-  const [y, m, d] = lima(-10).split("-");
-  await page.getByLabel("Movimientos del estado de cuenta").fill(`${d}/${m}/${y} SUPERMERCADOS PERUANOS 1,117.82\n${corte.slice(8, 10)}/${corte.slice(5, 7)} SEGURO DESGRAVAMEN 2.41`);
-  await expect(page.getByText("Se leyeron 2 movimientos.")).toBeVisible();
-  await page.getByRole("button", { name: "Conciliar" }).click();
+  await expect(page.getByText("Ciclo del 28 set al 25 oct", { exact: false })).toBeVisible();
+  const foto = page.getByRole("region", { name: "Foto del corte" });
+  await expect(foto).toContainText("S/ 5,283.53");
+  await expect(foto).toContainText("S/ 1,716.47");
+  await expect(page.getByRole("region", { name: "Detalle plan cuotas" })).toContainText("Capital S/ 221.43 + interés S/ 40.59");
 
-  await expect(page.getByRole("region", { name: "De dónde sale" })).toContainText("Subtotal en S/: cuadra al céntimo.");
-  await expect(page.getByRole("region", { name: "De dónde sale" })).toContainText("S/ 2.41 son cargos del banco");
-  await expect(page.getByRole("region", { name: "Del banco, sin par en PPM" })).toContainText("SEGURO DESGRAVAMEN");
+  await page.goto(`/tarjetas/${card}`);
+  await expect(page.getByText("S/ 5,283.53")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ver su estado de cuenta" })).toBeVisible();
 });

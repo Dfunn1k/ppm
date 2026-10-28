@@ -510,22 +510,6 @@ export function useDeleteMove(id: number) {
 }
 
 /** La fecha de vencimiento de una deuda: ponerla o quitarla (en una parte de cuotas, vuelve a la de la tarjeta). */
-/** Corregir capital e interés de una cuota con el «Detalle plan cuotas» del estado de cuenta. */
-export function useInstallmentSplit(moveId: number) {
-  const changed = useMovesChanged();
-  return useMutation({
-    mutationFn: async ({ sequence, principal, interest }: { sequence: number; principal: string; interest: string }) => {
-      const { data, error, response } = await api.PUT("/moves/{move_id}/installments/{sequence}", {
-        params: { path: { move_id: moveId, sequence } },
-        body: { principal, interest },
-      });
-      if (!data) fail(response, error);
-      return data;
-    },
-    onSuccess: () => changed(),
-  });
-}
-
 export function useSetMaturity() {
   const changed = useMovesChanged();
   return useMutation({
@@ -602,7 +586,7 @@ export function useAddBankCharge(id: number) {
 
 export type Reconciliation = components["schemas"]["ReconciliationOut"];
 
-/** Conciliar un estado de cuenta: lo que dice PPM del ciclo, lo que dice el banco y de dónde sale la diferencia. */
+/** Un estado de cuenta importado: la foto del banco y el ciclo conciliado con PPM. */
 export function useReconciliation(id: number, closing: string) {
   return useQuery({
     queryKey: [...CARDS, id, "statement", closing],
@@ -615,19 +599,25 @@ export function useReconciliation(id: number, closing: string) {
   });
 }
 
-export function useSaveStatement(id: number, closing: string) {
+/** Importar el estado de cuenta en PDF: su foto, sus fechas y el capital e interés de sus cuotas. */
+export function useImportCardStatement(id: number) {
   const qc = useQueryClient();
+  const changed = useMovesChanged();
   return useMutation({
-    mutationFn: async (body: components["schemas"]["StatementIn"]) => {
-      const { data, error, response } = await api.PUT("/cards/{card_id}/statements/{closing}",
-        { params: { path: { card_id: id, closing } }, body });
+    mutationFn: async (file: File) => {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      const { data, error, response } = await api.POST("/cards/{card_id}/statements", {
+        params: { path: { card_id: id } },
+        body: form as never,
+        bodySerializer: (b) => b as unknown as FormData,
+      });
       if (!data) fail(response, error);
       return data;
     },
     onSuccess: (d) => {
-      qc.setQueryData([...CARDS, id, "statement", closing], d);
-      return Promise.all([qc.invalidateQueries({ queryKey: [...CARDS, id], exact: true }),
-        qc.invalidateQueries({ queryKey: ACCOUNTS })]);
+      qc.setQueryData([...CARDS, id, "statement", d.closing_date], d);
+      return changed();
     },
   });
 }

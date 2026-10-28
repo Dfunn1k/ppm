@@ -35,30 +35,28 @@ async function chooseAccount(page: Page, label: string, name: string) {
   await page.getByRole("dialog").getByRole("radio", { name: new RegExp(`^${name}`) }).click();
 }
 
-test("un gasto en 6 cuotas de S/ 207: el precio a la categoría y S/ 42 de intereses", async ({ page }) => {
+test("un gasto en 6 cuotas de S/ 207: no es gasto hoy, cada cuota lo es en su corte", async ({ page }) => {
   const visa = await readyUser(page);
   await page.goto(`/registrar?cuenta=${visa}`);
   await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("1200");
   await page.getByRole("button", { name: /En qué/ }).click();
   await page.getByRole("dialog").getByLabel("Buscar categoría").fill("hogar");
   await page.getByRole("dialog").getByRole("radio", { name: "Hogar" }).click();
+  await page.getByLabel("Nota").fill("Sofá");
   await page.getByRole("switch", { name: /En cuotas/ }).check();
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("207");
-  await expect(page.getByText("6 cuotas de S/ 207.00 · S/ 42.00 de intereses")).toBeVisible();
+  await expect(page.getByText("6 cuotas de S/ 207.00 · S/ 1,242.00 en total")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Cada cuota es gasto de Hogar en el corte que la factura");
   await page.getByRole("button", { name: "Registrar gasto en 6 cuotas" }).click();
 
   await expect(page).toHaveURL(/\/movimientos/);
-  await page.getByRole("link", { name: /Hogar/ }).first().click();
+  await page.goto(`/tarjetas/${visa}`);
+  await page.getByRole("region", { name: "Cuotas por venir" }).getByRole("link", { name: /Sofá/ }).click();
+  await expect(page.getByText("Gasto en cuotas")).toBeVisible();
   await expect(page.getByText("6 cuotas · 0 facturadas")).toBeVisible();
-  await expect(page.getByText("Capital S/ 200.00 + interés S/ 7.00").first()).toBeVisible();
-
-  // El banco dice otra cosa en la cuota 1: se corrige y el capital que falta se reparte
-  await page.getByRole("button", { name: "Cuota 1: corregir capital e interés" }).click();
-  await page.getByRole("textbox", { name: "Capital" }).fill("190");
-  await page.getByRole("textbox", { name: "Interés" }).fill("17");
-  await page.getByRole("button", { name: "Guardar la cuota" }).click();
-  await expect(page.getByText("Capital S/ 190.00 + interés S/ 17.00")).toBeVisible();
-  await expect(page.getByText("Capital S/ 202.00 + interés S/ 7.00").first()).toBeVisible();
+  await expect(page.getByText("6 cuotas de S/ 207.00 · precio S/ 1,200.00")).toBeVisible();
+  await expect(page.getByText("Cada cuota es gasto de «Hogar» en el corte que la factura", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: /corregir capital e interés/ })).toHaveCount(0);
 });
 
 test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte", async ({ page }) => {
@@ -72,7 +70,7 @@ test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte",
   await page.getByRole("button", { name: "Una cuota menos" }).click();
   await page.getByRole("button", { name: "Una cuota menos" }).click();       // 3 cuotas
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("410");
-  await expect(page.getByText("3 cuotas de S/ 410.00 · S/ 30.00 de intereses")).toBeVisible();
+  await expect(page.getByText("3 cuotas de S/ 410.00 · S/ 1,230.00 en total")).toBeVisible();
   await page.getByRole("button", { name: "Registrar préstamo en 3 cuotas" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
@@ -88,7 +86,7 @@ test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte",
   await expect(page.getByRole("button", { name: /^Parte 1 de 3/ })).toContainText("Vence el");
 });
 
-test("una compra en cuotas que es de otra persona: no es tu gasto, te la debe por cuotas", async ({ page }) => {
+test("una compra en cuotas que es de otra persona: no es tu gasto, te debe todas las cuotas", async ({ page }) => {
   const visa = await readyUser(page);
   const luis = (await (await page.request.post("/api/partners", { data: { name: "Luis Pérez" } })).json()).id;
   await page.goto(`/registrar?cuenta=${visa}`);
@@ -98,13 +96,13 @@ test("una compra en cuotas que es de otra persona: no es tu gasto, te la debe po
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("262.02");
   await page.getByRole("switch", { name: /Es de otra persona/ }).check();
   await page.getByRole("radio", { name: /Luis/ }).click();
-  await expect(page.getByRole("status")).toContainText("Luis te debe hoy");
+  await expect(page.getByRole("status")).toContainText("Luis te debe todas las cuotas desde hoy");
   await page.getByLabel("Nota").fill("Unipiel");
   await page.getByRole("button", { name: "Registrar gasto en 3 cuotas" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
   await expect(page.getByText("3 cuotas · 3 por facturar")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Unipiel/ })).toContainText("S/ 693.00");
+  await expect(page.getByRole("link", { name: /Unipiel/ })).toContainText("S/ 786.06");
 });
 
 test("ponerle fecha de vencimiento a un préstamo y verla vencida", async ({ page }) => {

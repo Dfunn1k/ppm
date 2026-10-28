@@ -104,7 +104,7 @@ def test_comprar_en_cuotas(ana: Con):
     assert [x["principal"] for x in plan["lines"]] == ["200.00"] * 6
     assert plan["lines"][0]["closing_date"] == CORTE.isoformat() and plan["lines"][0]["billed"]
     assert plan["remaining"] == "1000.00"
-    assert m["summary"]["base"] == "1200.00"                           # el gasto cuenta completo hoy
+    assert (m["summary"]["kind"], m["summary"]["base"]) == ("transfer", "1200.00")   # a «Cuotas por venir»
 
     d = ana.detail(card)
     assert status(d) == ("1200.00", "1000.00", "200.00")

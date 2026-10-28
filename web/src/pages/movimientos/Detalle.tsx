@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
-import { useDeleteMove, useInstallmentSplit, useMe, useMove, useSetMoveState } from "@/api/hooks";
+import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
@@ -13,7 +13,7 @@ import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
-import { add, divide, formatAmount, isNegative, parseAmount, symbolOf } from "@/lib/money";
+import { divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
 
 const FX_GROUP = { gain: "Ingresos", loss: "Gastos financieros" } as const;
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
@@ -34,7 +34,6 @@ export function DetalleMovimiento() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [classifying, setClassifying] = useState(false);
   const [dating, setDating] = useState<(Maturity & { owesMe: boolean }) | null>(null);
-  const [fixing, setFixing] = useState<number | null>(null);   // la cuota que se corrige con el detalle del banco
   if (move.isPending || !me) return <Spinner />;
   if (move.isError) {
     return (
@@ -79,7 +78,7 @@ export function DetalleMovimiento() {
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">
-          {exchange ? "Cambio de moneda" : plan && s.kind === "expense" ? "Gasto en cuotas" : plan ? "Cuotas de antes de PPM" : KIND_NAME[s.kind]}
+          {exchange ? "Cambio de moneda" : plan && transfer ? "Gasto en cuotas" : plan && s.kind === "lend" ? "Préstamo en cuotas" : plan ? "Cuotas de antes de PPM" : KIND_NAME[s.kind]}
         </span>
       </div>
 
@@ -103,6 +102,11 @@ export function DetalleMovimiento() {
         {sign}{formatAmount(s.amount, symbolOf(s.currency), lang)}
         {exchange && <><Icon name="arrow_forward" aria-label="a" className="text-[26px] text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}
       </span>
+      {plan?.price && plan.installment_amount && (
+        <span className="text-caption text-muted-foreground tabular-nums">
+          {plan.n_installments} cuotas de {formatAmount(plan.installment_amount, symbolOf(plan.currency), lang)} · precio {formatAmount(plan.price, symbolOf(plan.currency), lang)}
+        </span>
+      )}
       {s.currency !== me.currency && !transfer && (
         <span className="text-caption text-muted-foreground tabular-nums">
           Son {formatAmount(s.base, symbolOf(me.currency), lang)}{d.rate ? ` al ${Number(d.rate).toFixed(3)}` : ""}
@@ -123,7 +127,8 @@ export function DetalleMovimiento() {
         {(transfer || d.account_id) && s.kind !== "other" && (
           <Field icon={f === "in" ? "south_west" : "north_east"} label={f === "in" ? "Entró a" : "Salió de"} value={from!} />
         )}
-        {transfer && (
+        {plan?.category && <Field icon="category" label="En qué" value={plan.category} />}
+        {transfer && !plan && (
           <Field icon="south_west" label="Entró a"
             value={`${to}${s.to_amount && s.to_currency !== s.currency ? ` · ${formatAmount(s.to_amount, symbolOf(s.to_currency), lang)}` : ""}`} />
         )}
@@ -225,33 +230,28 @@ export function DetalleMovimiento() {
             <span>{plan.n_installments} cuotas · {billedText(plan.lines.filter((x) => x.billed).length)}</span>
             <span>Quedan {formatAmount(plan.remaining, symbolOf(plan.currency), lang)}</span>
           </div>
-          {plan.lines.map((x) => {
-            const interest = Number(x.interest) > 0;
-            return (
-              <button key={x.sequence} type="button" onClick={() => setFixing(x.sequence)}
-                aria-label={`Cuota ${x.sequence}: corregir capital e interés`}
-                className="flex min-h-11 items-center gap-3 border-b border-border py-1.5 text-left">
-                <span className={`grid size-[26px] flex-none place-items-center rounded-full text-[12px] font-semibold ${x.billed ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                  {x.sequence}
-                </span>
-                <span className="flex flex-1 flex-col">
-                  <span>Corte del {shortDate(x.closing_date)}</span>
-                  {interest && (
-                    <span className="text-caption text-muted-foreground tabular-nums">
-                      Capital {formatAmount(x.principal, symbolOf(plan.currency), lang)} + interés {formatAmount(x.interest, symbolOf(plan.currency), lang)}
-                    </span>
-                  )}
-                </span>
-                {x.billed && <span className="text-caption font-semibold text-income">Facturada</span>}
-                <span className="w-24 text-right font-medium tabular-nums">{formatAmount(add(x.principal, x.interest), symbolOf(plan.currency), lang)}</span>
-              </button>
-            );
-          })}
+          {plan.lines.map((x) => (
+            <div key={x.sequence} className="flex min-h-11 items-center gap-3 border-b border-border py-1.5">
+              <span className={`grid size-[26px] flex-none place-items-center rounded-full text-[12px] font-semibold ${x.billed ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                {x.sequence}
+              </span>
+              <span className="flex flex-1 flex-col">
+                <span>Corte del {shortDate(x.closing_date)}</span>
+                {x.interest != null && (
+                  <span className="text-caption text-muted-foreground tabular-nums">
+                    Capital {formatAmount(subtract(x.principal, x.interest), symbolOf(plan.currency), lang)} + interés {formatAmount(x.interest, symbolOf(plan.currency), lang)}
+                  </span>
+                )}
+              </span>
+              {x.billed && <span className="text-caption font-semibold text-income">Facturada</span>}
+              <span className="w-24 text-right font-medium tabular-nums">{formatAmount(x.principal, symbolOf(plan.currency), lang)}</span>
+            </div>
+          ))}
           <p className="mt-3 text-caption text-muted-foreground">
-            {s.kind === "expense"
-              ? "El precio contó completo el día de la compra; el interés de cada cuota cuenta cuando el banco la factura. Toca una cuota para corregirla con el «Detalle plan cuotas» de tu estado de cuenta."
+            {transfer
+              ? `Cada cuota es gasto${plan.category ? ` de «${plan.category}»` : ""} en el corte que la factura. Con el estado de cuenta, la cuota facturada se divide en capital e interés.`
               : s.kind === "lend"
-              ? "No es tu gasto: te debe el precio y, con cada cuota facturada, su interés. Toca una cuota para corregirla con el «Detalle plan cuotas» de tu estado de cuenta."
+              ? "No es tu gasto: te debe todas las cuotas y cada una vence con su corte."
               : "Una compra de antes de PPM: no es un gasto de este mes. Si te equivocaste, bórrala y vuelve a anotarla desde la tarjeta."}
           </p>
         </section>
@@ -313,11 +313,6 @@ export function DetalleMovimiento() {
           title={dating.owesMe ? `¿Hasta cuándo te paga${s.partner ? ` ${s.partner.split(" ")[0]}` : ""}?` : `¿Hasta cuándo le pagas${s.partner ? ` a ${s.partner.split(" ")[0]}` : ""}?`} />
       )}
 
-      {plan && fixing !== null && (
-        <SplitSheet key={fixing} moveId={s.id} line={plan.lines.find((x) => x.sequence === fixing)!} n={plan.n_installments}
-          currency={plan.currency} lang={lang} onClose={() => setFixing(null)} />
-      )}
-
       <Sheet title="¿Borrar este movimiento?" open={confirmDelete} onClose={() => setConfirmDelete(false)}>
         <div className="flex flex-col gap-4 px-3">
           <p className="text-muted-foreground">
@@ -351,50 +346,5 @@ function Field({ icon, label, value }: { icon: string; label: string; value: str
         <span className="font-semibold">{value}</span>
       </span>
     </div>
-  );
-}
-
-/** Corregir una cuota con el «Detalle plan cuotas» del banco: capital + interés. El capital que falta
- *  se reparte entre las cuotas que siguen. */
-function SplitSheet({ moveId, line, n, currency, lang, onClose }: {
-  moveId: number; line: { sequence: number; principal: string; interest: string }; n: number;
-  currency: string; lang: string; onClose: () => void;
-}) {
-  const fix = useInstallmentSplit(moveId);
-  const [principal, setPrincipal] = useState(line.principal);
-  const [interest, setInterest] = useState(line.interest);
-  const p = parseAmount(principal, lang);
-  const i = parseAmount(interest || "0", lang);
-  const ok = p !== null && Number(p) > 0 && i !== null && Number(i) >= 0;
-  const field = "flex h-11 items-baseline gap-1.5 border-b-2 border-input-line pt-2";
-  return (
-    <Sheet title={`Cuota ${line.sequence} de ${n}`} open onClose={onClose}>
-      <div className="flex flex-col gap-4 px-3">
-        <p className="text-caption text-muted-foreground">Cópialos del «Detalle plan cuotas» de tu estado de cuenta.</p>
-        <div className="grid grid-cols-2 gap-4">
-          {([["Capital", principal, setPrincipal], ["Interés", interest, setInterest]] as const).map(([label, v, set]) => (
-            <label key={label} className="flex flex-col gap-1.5 text-caption font-semibold">
-              {label}
-              <span className={field}>
-                <span className="text-muted-foreground">{symbolOf(currency)}</span>
-                <input aria-label={label} inputMode="decimal" value={v} onChange={(e) => set(e.target.value)}
-                  className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[20px] leading-7 font-semibold tabular-nums" />
-              </span>
-            </label>
-          ))}
-        </div>
-        {ok && (
-          <span role="status" className="text-caption text-muted-foreground tabular-nums">
-            Cuota de {formatAmount(add(p!, i!), symbolOf(currency), lang)}.{line.sequence < n ? " El capital que falta se reparte entre las cuotas que siguen." : ""}
-          </span>
-        )}
-        {fix.error && <ErrorAlert>{fix.error.message}</ErrorAlert>}
-        <button type="button" disabled={!ok || fix.isPending}
-          onClick={() => fix.mutate({ sequence: line.sequence, principal: p!, interest: i! }, { onSuccess: onClose })}
-          className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">
-          <span>Guardar la cuota</span><Icon name={fix.isPending ? "progress_activity" : "check"} className={fix.isPending ? "animate-spin" : ""} />
-        </button>
-      </div>
-    </Sheet>
   );
 }

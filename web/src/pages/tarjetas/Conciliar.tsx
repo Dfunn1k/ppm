@@ -1,16 +1,37 @@
-// Conciliar un estado de cuenta: escribes lo que dice el banco del ciclo (subtotales, total
-// facturado, línea disponible y saldo de cuotas) y pegas sus movimientos. PPM muestra cada
-// diferencia, de dónde sale y qué movimientos no tienen par de cada lado. El saldo de cuotas del
-// banco reemplaza el de PPM en la línea hasta el siguiente estado de cuenta.
-import { useState } from "react";
-import { Link, useParams } from "react-router";
+// El estado de cuenta de la tarjeta, importado del PDF: la foto del banco al corte (línea, utilizada,
+// disponible, facturado y saldo de cuotas), sus fechas, el capital e interés de cada cuota, si la
+// lectura cuadra con el subtotal y qué movimientos no tienen par de cada lado.
+import { useRef } from "react";
+import { Link, useNavigate, useParams } from "react-router";
 
-import { type Reconciliation, useCard, useMe, useReconciliation, useSaveStatement } from "@/api/hooks";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
+import { type Reconciliation, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
+import { ErrorAlert, Icon, Screen, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
-import { formatAmount, parseAmount, subtract, symbolOf } from "@/lib/money";
-import { parseStatement } from "@/lib/statement";
+import { add, formatAmount, subtract, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
+
+/** Subir el PDF del estado de cuenta: al leerlo, abre su conciliación. */
+export function ImportStatement({ cardId, label = "Importar estado de cuenta (PDF)" }: { cardId: number; label?: string }) {
+  const input = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const upload = useImportCardStatement(cardId);
+  return (
+    <div className="mt-2 flex flex-col gap-1.5">
+      <input ref={input} type="file" accept="application/pdf,.pdf" aria-label="PDF del estado de cuenta" className="sr-only"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) upload.mutate(file, { onSuccess: (r) => navigate(`/tarjetas/${cardId}/estado/${r.closing_date}`) });
+        }} />
+      <button type="button" disabled={upload.isPending} onClick={() => input.current?.click()}
+        className="flex min-h-11 items-center gap-1.5 self-start font-semibold disabled:opacity-60">
+        <Icon name={upload.isPending ? "progress_activity" : "upload_file"} className={upload.isPending ? "animate-spin" : ""} />
+        {upload.isPending ? "Leyendo el PDF…" : label}
+      </button>
+      {upload.error && <ErrorAlert>{upload.error.message}</ErrorAlert>}
+    </div>
+  );
+}
 
 export function Conciliar() {
   const { id: raw, closing = "" } = useParams();
@@ -20,109 +41,90 @@ export function Conciliar() {
   const rec = useReconciliation(id, closing);
   if (!me?.currency || card.isPending || rec.isPending) return <Spinner />;
   if (card.isError || rec.isError) return <Screen><ErrorAlert>{(card.error ?? rec.error)!.message}</ErrorAlert></Screen>;
-  return <Form key={closing} id={id} name={card.data.account.name} r={rec.data} lang={me.lang ?? "es-PE"} />;
+  return <View id={id} name={card.data.account.name} r={rec.data} lang={me.lang ?? "es-PE"} />;
 }
 
-function Form({ id, name, r, lang }: { id: number; name: string; r: Reconciliation; lang: string }) {
-  const save = useSaveStatement(id, r.closing_date);
-  const fmt = (v: string | null | undefined) => (v == null ? "" : v);
-  const [subtotals, setSubtotals] = useState<Record<string, string>>(
-    Object.fromEntries(r.currencies.map((c) => [c.currency, fmt(c.bank_subtotal)])));
-  const [billed, setBilled] = useState(fmt(r.bank_billed));
-  const [available, setAvailable] = useState(fmt(r.bank_available));
-  const [installments, setInstallments] = useState(fmt(r.bank_installments));
-  const [pasted, setPasted] = useState("");
-  const [problem, setProblem] = useState<string | null>(null);
-  const lines = pasted.trim() ? parseStatement(pasted, r.closing_date) : null;
+function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliation; lang: string }) {
   const money = (v: string, cur = r.limit_currency) => formatAmount(v, symbolOf(cur), lang);
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setProblem(null);
-    const read = (v: string, label: string) => {
-      if (!v.trim()) return null;
-      const x = parseAmount(v, lang);
-      if (x === null) throw new Error(`Escribe ${label} como 1,120.23`);
-      return x;
-    };
-    try {
-      save.mutate({
-        subtotals: Object.entries(subtotals).map(([currency, v]) => ({ currency, amount: read(v, `el subtotal en ${symbolOf(currency)}`) })),
-        billed: read(billed, "el total facturado"),
-        available: read(available, "la línea disponible"),
-        installments: read(installments, "el saldo de cuotas"),
-        lines,
-      });
-    } catch (err) {
-      setProblem((err as Error).message);
-    }
-  };
-
-  const rows: { label: string; ppm: string; bank: string | null; cur: string }[] = [
-    ...r.currencies.map((c) => ({ label: `Subtotal en ${symbolOf(c.currency)}`, ppm: c.subtotal, bank: c.bank_subtotal, cur: c.currency })),
-    { label: "Total facturado", ppm: r.billed, bank: r.bank_billed, cur: r.limit_currency },
-    { label: "Saldo de cuotas", ppm: r.installments, bank: r.bank_installments, cur: r.limit_currency },
-    { label: "Línea disponible hoy", ppm: r.available, bank: r.bank_available, cur: r.limit_currency },
-  ];
   const missing = r.lines.filter((l) => l.move_id === null);
-  const foreign = r.currencies.filter((c) => c.rate);
+  const photo: [string, string][] = [
+    ["Línea de crédito", money(r.credit_limit)],
+    ["Línea utilizada", money(r.used)],
+    ["Crédito disponible", money(r.available)],
+    ...r.currencies.filter((c) => c.bank_billed !== null)
+      .map((c): [string, string] => [`Total facturado ${symbolOf(c.currency)}`, money(c.bank_billed!, c.currency)]),
+    ...r.currencies.filter((c) => c.bank_installments !== null && Number(c.bank_installments) > 0)
+      .map((c): [string, string] => [`Saldo de compras en cuotas ${symbolOf(c.currency)}`, money(c.bank_installments!, c.currency)]),
+  ];
 
   return (
     <Screen className="pt-4">
       <FormHeader back={`/tarjetas/${id}`} label={name} />
       <h1 className="mt-2 text-title-hero">Estado de cuenta</h1>
       <p className="mt-2 text-muted-foreground">
-        Ciclo del {shortDate(nextDay(r.previous_closing))} al {shortDate(r.closing_date)}. Escribe lo que dice el banco y pega sus movimientos.
+        Ciclo del {shortDate(r.date_from)} al {shortDate(r.closing_date)}{r.date_due ? ` · pagar antes del ${shortDate(r.date_due)}` : ""}.
       </p>
-      <span className="mt-2 text-caption text-muted-foreground tabular-nums">
-        Foto del corte: línea usada {money(r.used_at_closing)}
-        {foreign.map((c) => ` · ${symbolOf(c.currency)} a ${Number(c.rate).toFixed(3)} del ${shortDate(c.rate_date!)}`).join("")}. No cambia con el tipo de cambio de otro día.
-      </span>
+      {r.filename && <span className="text-caption text-muted-foreground">{r.filename}</span>}
 
-      <form noValidate onSubmit={submit} className="mt-5 flex flex-col gap-5">
-        <div className="grid grid-cols-2 gap-4">
-          {r.currencies.map((c) => (
-            <LineField key={c.currency} label={`Subtotal ${symbolOf(c.currency)}`} inputMode="decimal" placeholder="0.00"
-              value={subtotals[c.currency] ?? ""} onChange={(e) => setSubtotals({ ...subtotals, [c.currency]: e.target.value })} />
-          ))}
-          <LineField label="Total facturado" inputMode="decimal" placeholder="0.00" value={billed} onChange={(e) => setBilled(e.target.value)} />
-          <LineField label="Línea disponible" inputMode="decimal" placeholder="0.00" value={available} onChange={(e) => setAvailable(e.target.value)} />
-        </div>
-        <LineField label="Saldo de compras en cuotas" inputMode="decimal" placeholder="0.00" value={installments}
-          onChange={(e) => setInstallments(e.target.value)} hint="En «¿Cómo está compuesta su deuda?» → Compras cuotas. Reemplaza el de PPM en tu línea hasta el próximo estado de cuenta." />
-        <label className="flex flex-col gap-1.5 text-caption font-semibold">
-          Movimientos del estado de cuenta
-          <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={5}
-            placeholder={"17/10 OPENAI *CHATGPT US$ 30.84\n12/10 TIKTOK ADS 25.90"}
-            className="rounded-md border border-input-line bg-transparent p-3 font-mono text-[13px] leading-5 font-normal" />
-          <span className="font-normal text-muted-foreground">
-            {lines ? `Se leyeron ${lines.length} ${lines.length === 1 ? "movimiento" : "movimientos"}.`
-              : r.lines.length ? `Ya pegaste ${r.lines.length}: si pegas otros, los reemplazan.` : "Cópialos del PDF o del Excel: fecha, descripción y monto."}
-          </span>
-        </label>
-        {(problem ?? save.error?.message) && <ErrorAlert>{problem ?? save.error?.message}</ErrorAlert>}
-        <PrimaryButton pending={save.isPending}>Conciliar</PrimaryButton>
-      </form>
+      <section aria-label="Foto del corte" className="mt-5 flex flex-col">
+        <span className="border-b border-border pb-1 text-label text-muted-foreground">Foto del corte · lo que dice el banco</span>
+        {photo.map(([label, value]) => (
+          <div key={label} className="flex min-h-11 items-center justify-between border-b border-border text-[14px] tabular-nums">
+            <span className="font-semibold">{label}</span><span>{value}</span>
+          </div>
+        ))}
+        <span className="mt-1.5 text-caption text-muted-foreground">
+          No se recalcula: tu línea parte de aquí y suma lo que registres después del corte.
+        </span>
+      </section>
 
-      <section aria-label="PPM y el banco" className="mt-6 flex flex-col">
+      {r.installments.length > 0 && (
+        <section aria-label="Detalle plan cuotas" className="mt-5 flex flex-col">
+          <span className="border-b border-border pb-1 text-label text-muted-foreground">Detalle plan cuotas</span>
+          {r.installments.map((x) => {
+            const row = (
+              <>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold">{x.name} · cuota {x.sequence}/{x.n_installments}</span>
+                  <span className="text-caption text-muted-foreground tabular-nums">
+                    Capital {money(x.capital, x.currency)} + interés {money(x.interest, x.currency)}
+                    {x.move_id === null ? " · no la encontramos en PPM" : x.mine ? " · dividida en tu gasto" : " · de otra persona: te debe la cuota completa"}
+                  </span>
+                </span>
+                <span className="text-amount">{money(add(x.capital, x.interest), x.currency)}</span>
+              </>
+            );
+            return x.move_id === null
+              ? <div key={`${x.name}-${x.sequence}`} className="flex min-h-[58px] items-center gap-3 border-b border-border">{row}</div>
+              : <Link key={`${x.name}-${x.sequence}`} to={`/movimientos/${x.move_id}`} className="flex min-h-[58px] items-center gap-3 border-b border-border">{row}</Link>;
+          })}
+        </section>
+      )}
+
+      <section aria-label="PPM y el banco" className="mt-5 flex flex-col">
         <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 border-b border-border pb-1 text-label text-muted-foreground">
           <span /><span className="text-right">PPM</span><span className="text-right">Banco</span><span className="text-right">Diferencia</span>
         </div>
-        {rows.map((x) => {
-          const gap = x.bank === null ? null : subtract(x.bank, x.ppm);
+        {r.currencies.filter((c) => c.bank_subtotal !== null).map((c) => {
+          const gap = subtract(c.bank_subtotal!, c.subtotal);
           return (
-            <div key={x.label} className="grid min-h-11 grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b border-border text-[14px] tabular-nums">
-              <span className="font-semibold">{x.label}</span>
-              <span className="text-right">{money(x.ppm, x.cur)}</span>
-              <span className="text-right">{x.bank === null ? "—" : money(x.bank, x.cur)}</span>
-              <span className={`text-right font-semibold ${gap === null ? "" : Number(gap) === 0 ? "text-income" : "text-attention"}`}>
-                {gap === null ? "" : Number(gap) === 0 ? "Cuadra" : money(gap, x.cur)}
+            <div key={c.currency} className="grid min-h-11 grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b border-border text-[14px] tabular-nums">
+              <span className="font-semibold">Subtotal {symbolOf(c.currency)}</span>
+              <span className="text-right">{money(c.subtotal, c.currency)}</span>
+              <span className="text-right">{money(c.bank_subtotal!, c.currency)}</span>
+              <span className={`text-right font-semibold ${Number(gap) === 0 ? "text-income" : "text-attention"}`}>
+                {Number(gap) === 0 ? "Cuadra" : money(gap, c.currency)}
               </span>
             </div>
           );
         })}
+        {r.fees.map((f) => (
+          <div key={f.name} className="flex min-h-11 items-center justify-between border-b border-border text-[14px] tabular-nums">
+            <span>{f.name}</span><span>{money(f.amount, f.currency)}</span>
+          </div>
+        ))}
         {r.bank_charges !== "0.00" && (
-          <span className="mt-1.5 text-caption text-muted-foreground">El total facturado de PPM incluye {money(r.bank_charges)} de cargos del banco.</span>
+          <span className="mt-1.5 text-caption text-muted-foreground">En PPM hay {money(r.bank_charges)} de cargos del banco en este ciclo.</span>
         )}
       </section>
 
@@ -130,6 +132,14 @@ function Form({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
         <section aria-label="De dónde sale" className="mt-5 flex flex-col gap-2 rounded-[12px] bg-muted p-3.5">
           <span className="text-label text-muted-foreground">De dónde sale</span>
           {r.explanations.map((t) => <p key={t} className="text-[14px] leading-5">{t}</p>)}
+        </section>
+      )}
+
+      {r.unread.length > 0 && (
+        <section aria-label="No se pudieron leer" className="mt-5 flex flex-col gap-1.5 rounded-[12px] bg-attention-soft p-3.5 text-attention">
+          <span className="text-label">No se pudieron leer</span>
+          {r.unread.map((t) => <span key={t} className="font-mono text-[13px] leading-5">{t}</span>)}
+          <span className="text-caption">Regístralas a mano si faltan en PPM.</span>
         </section>
       )}
 
@@ -150,7 +160,7 @@ function Form({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
           </Link>
         </section>
       )}
-      {r.unmatched.length > 0 && r.lines.length > 0 && (
+      {r.unmatched.length > 0 && (
         <section aria-label="De PPM, sin par en el banco" className="mt-5 flex flex-col">
           <span className="border-b border-border pb-1 text-label text-muted-foreground">De PPM, sin par en el banco</span>
           {r.unmatched.map((u) => (
@@ -164,13 +174,10 @@ function Form({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
           ))}
         </section>
       )}
+
+      <ImportStatement cardId={id} label="Volver a importar el PDF" />
       <div className="h-6" />
     </Screen>
   );
 }
 
-function nextDay(iso: string) {
-  const d = new Date(`${iso}T12:00:00`);
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
-}

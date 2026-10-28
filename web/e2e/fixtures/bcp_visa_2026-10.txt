@@ -1,0 +1,131 @@
+
+
+
+       Estado de Cuenta Tarjeta VISA                                 Pag 1 de 2
+                                                                Ciclo de Facturación
+       ANA PEREZ                                  Número de tarjeta Del Al(día de cierre)
+       CALLE LAS FLORES 1                         4111-11XX-XXXX-1111 28/09/26 25/10/26
+       LIMA-01 000                                              Fecha límite de pago
+                                                                  23/11/26
+       100,001
+      Línea de crédito                                   Cuenta de cargo (si escogiste esta opción)
+       Línea de crédito S/ - Línea utilizada S/ = Crédito disponible S/ En soles
+             7,000   1,716.47 5,283.53                   En dólares
+      Pagos
+      Pago mínimo S/ Pago total S/      En caso pague pasada la fecha máxima de pago se le cobrará una comisión
+                                        de penalidad por pago atrasado de 0.0% del pago minimo (en soles min
+            294.43   1,120.23
+                                        S/0 y max S/0 ; en dólares min $0 y max $0 )
+      Pago mínimo US$ Pago total US$
+             10.00     30.84
+       Fecha de Fecha de              Descripción       Tipo de  Soles  Dólares
+       proceso consumo                                  Operación
+                   SALDO ANTERIOR
+                   ANA PEREZ       411111XXXXXX1111
+      05Oct  03Oct BODEGA UNO LIMA          PE           CONSUMO    22.30
+      05Oct  04Oct DULCERIA DOS LIMA          PE         CONSUMO    16.00
+      07Oct  06Oct CINE TRES LIMA            PE          CONSUMO   126.00
+      09Oct  08Oct SUPERMERCADO CUATRO LIMA    PE        CONSUMO   266.30
+      09Oct  07Oct FARMACIA CINCO LIMA         PE        CONSUMO    49.80
+      12Oct  09Oct DELIVERY SEIS LIMA       PE           CONSUMO    98.60
+      12Oct  10Oct RESTAURANTE SIETE LIMA              PE CONSUMO   97.00
+      14Oct  13Oct CAFE OCHO LIMA           PE           CONSUMO    19.90
+      19Oct  16Oct PIZZERIA NUEVE LIMA      PE           CONSUMO    79.90
+      19Oct  17Oct Parrilla Diez Lima       PE           CONSUMO    80.00
+      13Oct  12Oct SERVICIO WEB ONCE                CA   CONSUMO             6.83
+      19Oct  17Oct SUSCRIPCION DOCE                  CA  CONSUMO            24.01
+      25Oct  25Oct CUOTA DEL MES                         CARGO     262.02
+                   INTERESES
+                   COMISION POR USO DE CANALES
+                   SUB TOTAL                                      1,117.82  30.84
+                   ENVIO FISICO DE ESTADO DE CUENTA
+                   GASTO MENSUAL POR SEGURO DE DESGRAVAMEN          2.41
+                   COMISION ANUAL POR MEMBRESIA
+      ___________________________________________________________________________________________________________
+                   MONTO TOTAL FACTURADO                          1,120.23  30.84
+      ___________________________________________________________________________________________________________
+                   DETALLE PLAN CUOTAS SOLES
+                                  Compras Nro.Cuota TEA Capital + Interés =
+      25Oct  14Oct TIENDA CUOTAS   693.00 01/03 95.89 % 221.43 40.59 262.02
+      ¿Cómo calcular tu pago mínimo?
+                        Interés de la deuda no
+              De c u u d o a ta n s o ( r fi e n v a o n lv c e ia n d t a e ) en (int f e in r a é n s c d ia e d u a d a e n re c v u o o lv ta e s nte) Cuota del mes Com p is e io n n a e lid s, a g d a e s s tos y Sobregiro TOTAL
+                    30.00      0.00     262.02     2.41        0.00      294.43
+      En soles
+                    10.00      0.00      0.00      0.00        0.00      10.00
+      En dólares
+      Si el cliente sólo realiza el pago mínimo, efectuará un pago mayor por concepto de intereses, comisiones y g a stos.
+      Plan de cuotas de los próximos 6 meses (hasta lo consumido en el día de cierre) Programa de fidelidad
+              Nov-26 Dic-26 Ene-27 Feb-27 Mar-27 Abr-27
+              262.02 262.02 0.00 0.00  0.00  0.00
+      En soles
+      En dólares 0.00 0.00 0.00  0.00  0.00  0.00
+       F E C H A D E C O B R O D E M E M B R E S I A : 2 5 / 1 0 / 2 0 2 7 - M O N T O S / 1 7 0 .00 - PERIODO Del 01/10/2026 al 30/09/2027
+       (*) TEA Tasa Efectiva Anual. Las comisiones pendientes de pago no están incluidas
+       (**) La tasa que corresponde a cada una de las transacciones en cuotas se indica en el detalle de plan de cuota s.
+       Para conocer la deuda total actualizada comuníquese a Banca por Teléfono VíaBCP 3119898.
+
+
+
+       Estado de Cuenta Tarjeta VISA
+                                                                     Pag 2 de 2
+                                                               Ciclo de Facturación
+       ANA PEREZ                                  Número de tarjeta Del Al (día de cierre)
+       CALLE LAS FLORES 1                         4111-11XX-XXXX-1111 28/09/26 25/10/26
+       LIMA-01 000                                              Fecha límite de pago
+                                                                  23/11/26
+       100,001
+
+       Fecha de Fecha de            Descripción          Tipo de Soles   Dólares
+       proceso consumo                                   Operación
+                   TOTAL SOLES     693.00            221.43  40.59 262.02
+      ___________________________________________________________________________________________________________
+                   ¿COMO ESTA COMPUESTA SU DEUDA? (*)
+                   Descripcion     Saldo S/ TEA S/ Saldo US$ TEA US$
+                   Compras          855.80 95.89 %   30.84 76.90 %
+                   Disposicion Efectivo 0.00 107.00 % 0.00 85.90 %
+                   Compras Cuotas   487.72 (**)       0.00 (**)
+                   Saldo Total     1,343.52          30.84
+                   INFORMACION IMPORTANTE:
+                   Si solo realiza el pago mínimo de su deuda en soles y no realiza más
+                   operaciones, esta se cancelará en 27 meses.
+                   Si solo realiza el pago mínimo de su deuda en dólares y no realiza más
+                   operaciones, esta se cancelará en 2 meses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

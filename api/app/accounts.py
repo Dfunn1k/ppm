@@ -141,7 +141,8 @@ class AccountDetail:
     last_statement: LastStatement | None = None
 
 
-ROLE_KIND = {"receivable": "receivable", "payable": "payable", "suspense": "suspense"}
+ROLE_KIND = {"receivable": "receivable", "payable": "payable", "suspense": "suspense",
+             "installments": "installments"}
 KIND_NAMES = {"savings": "Ahorros", "checking": "Corriente"}
 CURRENCY_NAMES = {"PEN": "soles", "USD": "dólares", "EUR": "euros"}
 
@@ -268,7 +269,7 @@ def overview(user_id: int) -> Overview:
             names[pid] = pname
             custody[pid].append(Money(cur, amount, _today(amount, bal, rates.get(cur), False), bal))
 
-    have = [a for a in accounts if a.kind in ("cash", "bank", "receivable", "suspense")]   # activos
+    have = [a for a in accounts if a.kind in ("cash", "bank", "receivable", "suspense", "installments")]   # activos
     owe = [a for a in accounts if a.kind in ("card", "loan", "payable", "other")]               # pasivos
     keep = [CustodyRow(pid, names[pid], ms, sum((m.base for m in ms), ZERO)) for pid, ms in custody.items()]
     have_total = sum((a.base_total for a in have), ZERO)

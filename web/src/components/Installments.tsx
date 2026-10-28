@@ -1,15 +1,15 @@
 // En cuotas, igual al gastar con la tarjeta y al prestarla: cuántas, de cuánto cada una (la del
-// cronograma del banco) y en qué cortes llegan. Lo que pasa del precio son intereses: se cargan con
-// cada cuota facturada, no hoy.
+// cronograma del banco) y en qué cortes llegan. Tuya: cada cuota es gasto en el corte que la factura
+// y el estado de cuenta la divide en capital e interés. De otra persona: te debe todas las cuotas.
 import { installmentClosings } from "@/lib/cards";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, parseAmount, symbolOf } from "@/lib/money";
 
 import { Icon } from "./ui";
 
-/** En cuotas: cuántas, de cuánto cada una (la del cronograma del banco) y en qué cortes llegan. El
- *  precio cuenta completo el día de la compra; lo que pasa del precio son intereses, que el banco
- *  carga con cada cuota (a ti, o a la persona si es suya: `who`). */
+/** En cuotas: cuántas, de cuánto cada una (la del cronograma del banco) y en qué cortes llegan. Cada
+ *  cuota es gasto de su categoría cuando el banco la factura; si la compra es de otra persona (`who`),
+ *  te debe todas desde hoy. */
 export function Installments({ n, setN, cuota, setCuota, total, currency, date, closingDay, category, lang, who }: {
   n: number; setN: (n: number) => void; cuota: string; setCuota: (v: string) => void; total: string | null;
   currency: string; date: string; closingDay: number | null; category: string | null; lang: string; who?: string;
@@ -47,23 +47,20 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
       <span className="text-caption text-muted-foreground">Cópiala del cronograma del banco. Sin intereses es {money(plain)}.</span>
       {cents > 0 && (
         <div role="status" className="flex flex-col gap-1 rounded-md bg-muted p-3 tabular-nums">
-          {interest > 0 ? (
-            <>
-              <span className="font-semibold">{n} cuotas de {money(each)} · {money(interest)} de intereses</span>
-              <span className="grid grid-cols-[1fr_auto] text-caption text-muted-foreground">
-                <span>{who ? `${who} te debe hoy` : `${category ?? "Lo que costó"} · cuenta hoy`}</span><span>{money(cents)}</span>
-                <span>{who ? "Interés · se le suma con cada cuota" : "Intereses · con cada cuota facturada"}</span>
-                <span>{money(Math.round(interest / n))} c/u</span>
-              </span>
-            </>
-          ) : interest < 0 ? (
+          {interest < 0 ? (
             <span className="font-semibold text-attention">{n} cuotas de {money(each)} no llegan a lo que costó: revisa la cuota.</span>
           ) : (
-            <span className="font-semibold">{n} cuotas de {money(each)}{last !== each ? ` (la última, ${money(last)})` : ""}</span>
+            <span className="font-semibold">
+              {n} cuotas de {money(each)}{last !== each ? ` (la última, ${money(last)})` : ""}{interest > 0 ? ` · ${money(cents + interest)} en total` : ""}
+            </span>
           )}
-          <span className="text-caption text-muted-foreground">
-            {when}{who ? "" : ` El precio cuenta completo hoy${category ? ` en ${category}` : ""}.`}
-          </span>
+          {interest >= 0 && (
+            <span className="text-caption text-muted-foreground">
+              {when} {who
+                ? `${who} te debe todas las cuotas desde hoy; cada una vence con su corte.`
+                : `Cada cuota es gasto${category ? ` de ${category}` : ""} en el corte que la factura; con el estado de cuenta se divide en capital e interés.`}
+            </span>
+          )}
         </div>
       )}
     </div>

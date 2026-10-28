@@ -62,7 +62,6 @@ class MoveIn(BaseModel):
     currency: Annotated[str, Field(min_length=3, max_length=3)] | None = None   # con tarjeta: en qué moneda
     installments: Annotated[int, Field(ge=2, le=60)] | None = None             # gasto o préstamo con tarjeta en cuotas
     installment_amount: Positive | None = None   # cada cuota, del cronograma del banco; sin ella, sin intereses
-    interest_mine: bool | None = None            # le presté la tarjeta en cuotas: el interés lo pago yo
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
@@ -70,7 +69,7 @@ class MoveIn(BaseModel):
             self.rate, [moves.Split(s.category_id, s.amount, s.partner_id) for s in self.splits],
             self.to_account_id, self.to_amount, self.partner_id, self.debt_line_id, self.paid_by_partner_id,
             [moves.ManualLine(x.account_id, x.debit, x.credit, x.partner_id) for x in self.lines],
-            self.currency, self.installments, self.installment_amount, bool(self.interest_mine))
+            self.currency, self.installments, self.installment_amount)
 
 
 class PendingIn(BaseModel):
@@ -168,7 +167,7 @@ class PlanLineOut(BaseModel):
     closing_date: dt.date
     principal: Decimal
     billed: bool
-    interest: Decimal
+    interest: Decimal | None             # del estado de cuenta; None = sin dato
 
 
 class PlanOut(BaseModel):
@@ -180,11 +179,8 @@ class PlanOut(BaseModel):
     lines: list[PlanLineOut]
     installment_amount: Decimal | None
     plan_id: int | None
-
-
-class SplitFixIn(BaseModel):
-    principal: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
-    interest: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
+    price: Decimal | None
+    category: str | None
 
 
 class BankLineOut(BaseModel):
@@ -319,14 +315,7 @@ def set_maturity(line_id: int, body: MaturityIn, session: CurrentSession = Depen
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.put("/moves/{move_id}/installments/{sequence}", summary="Corregir capital e interés de una cuota")
-def set_installment_split(move_id: int, sequence: int, body: SplitFixIn,
-                          session: CurrentSession = Depends(current_session)) -> MoveDetailOut:
-    try:
-        moves.set_installment_split(session.user_id, move_id, sequence, body.principal, body.interest)
-    except AccountError as e:
-        raise _http(e) from None
-    return _detail(session.user_id, move_id)
+
 
 
 @router.delete("/moves/{move_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Borrar un movimiento")
