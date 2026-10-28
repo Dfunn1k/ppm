@@ -416,6 +416,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cards/{card_id}/rates/{currency}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** El tipo de cambio del ciclo abierto, escrito a mano */
+        put: operations["set_rate_cards__card_id__rates__currency__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{card_id}/statements/{closing}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Conciliar un estado de cuenta con PPM */
+        get: operations["reconciliation_cards__card_id__statements__closing__get"];
+        /** Lo que dice el banco de un ciclo */
+        put: operations["save_statement_cards__card_id__statements__closing__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -1212,6 +1247,10 @@ export interface components {
             cycles: components["schemas"]["CycleOut"][];
             /** Charges */
             charges: components["schemas"]["BankChargeOut"][];
+            /** Rates */
+            rates: components["schemas"]["CardRateOut"][];
+            /** Line Matched */
+            line_matched: boolean;
         };
         /** CardIn */
         CardIn: {
@@ -1263,6 +1302,25 @@ export interface components {
              * @default []
              */
             clear: ("bank_id" | "brand" | "last4")[];
+        };
+        /** CardRateIn */
+        CardRateIn: {
+            /** Rate */
+            rate?: number | string | null;
+        };
+        /** CardRateOut */
+        CardRateOut: {
+            /** Currency */
+            currency: string;
+            /** Rate */
+            rate: string;
+            /**
+             * Rate Date
+             * Format: date
+             */
+            rate_date: string;
+            /** Edited */
+            edited: boolean;
         };
         /** CardStatusOut */
         CardStatusOut: {
@@ -1465,6 +1523,8 @@ export interface components {
             n_installments: number | null;
             /** Interest */
             interest: string | null;
+            /** Bank */
+            bank: boolean;
         };
         /** CycleOut */
         CycleOut: {
@@ -2355,6 +2415,47 @@ export interface components {
             /** Sell */
             sell: number | string;
         };
+        /** ReconciliationOut */
+        ReconciliationOut: {
+            /**
+             * Closing Date
+             * Format: date
+             */
+            closing_date: string;
+            /**
+             * Previous Closing
+             * Format: date
+             */
+            previous_closing: string;
+            /** Credit Limit */
+            credit_limit: string;
+            /** Limit Currency */
+            limit_currency: string;
+            /** Currencies */
+            currencies: components["schemas"]["StatementCurrencyOut"][];
+            /** Bank Charges */
+            bank_charges: string;
+            /** Billed */
+            billed: string;
+            /** Bank Billed */
+            bank_billed: string | null;
+            /** Installments */
+            installments: string;
+            /** Bank Installments */
+            bank_installments: string | null;
+            /** Available */
+            available: string;
+            /** Bank Available */
+            bank_available: string | null;
+            /** Used At Closing */
+            used_at_closing: string;
+            /** Explanations */
+            explanations: string[];
+            /** Lines */
+            lines: components["schemas"]["StatementLineOut"][];
+            /** Unmatched */
+            unmatched: components["schemas"]["UnmatchedOut"][];
+        };
         /** RecurringDetailOut */
         RecurringDetailOut: {
             row: components["schemas"]["RecurringRowOut"];
@@ -2602,6 +2703,21 @@ export interface components {
              */
             action: "pause" | "resume" | "end";
         };
+        /** StatementCurrencyOut */
+        StatementCurrencyOut: {
+            /** Currency */
+            currency: string;
+            /** Debt */
+            debt: string;
+            /** Rate */
+            rate: string | null;
+            /** Rate Date */
+            rate_date: string | null;
+            /** Subtotal */
+            subtotal: string;
+            /** Bank Subtotal */
+            bank_subtotal: string | null;
+        };
         /** StatementDetailOut */
         StatementDetailOut: {
             statement: components["schemas"]["StatementRowOut"];
@@ -2621,6 +2737,52 @@ export interface components {
             matched: number;
             /** Has File */
             has_file: boolean;
+        };
+        /** StatementIn */
+        StatementIn: {
+            /**
+             * Subtotals
+             * @default []
+             */
+            subtotals: components["schemas"]["SubtotalIn"][];
+            /** Billed */
+            billed?: number | string | null;
+            /** Available */
+            available?: number | string | null;
+            /** Installments */
+            installments?: number | string | null;
+            /** Lines */
+            lines?: components["schemas"]["StatementLineIn"][] | null;
+        };
+        /** StatementLineIn */
+        StatementLineIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: number | string;
+            /** Currency */
+            currency: string;
+        };
+        /** StatementLineOut */
+        StatementLineOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            /** Move Id */
+            move_id: number | null;
         };
         /** StatementRowOut */
         StatementRowOut: {
@@ -2643,6 +2805,13 @@ export interface components {
             balance_end: string | null;
             /** Difference */
             difference: string | null;
+        };
+        /** SubtotalIn */
+        SubtotalIn: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: number | string | null;
         };
         /** TodayRateOut */
         TodayRateOut: {
@@ -2705,6 +2874,22 @@ export interface components {
         UndoOut: {
             /** Deleted */
             deleted: number;
+        };
+        /** UnmatchedOut */
+        UnmatchedOut: {
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
         };
         /** UserRateOut */
         UserRateOut: {
@@ -3763,6 +3948,116 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_rate_cards__card_id__rates__currency__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+                currency: string;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardRateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconciliation_cards__card_id__statements__closing__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+                closing: string;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_statement_cards__card_id__statements__closing__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+                closing: string;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationOut"];
                 };
             };
             /** @description Validation Error */

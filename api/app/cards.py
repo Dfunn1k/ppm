@@ -15,6 +15,7 @@ import psycopg
 
 from app.accounts import (ZERO, AccountError, AccountRow, _balances, _ACCOUNTS_SQL, _bank, _currency_id,
                           _row, _today, _today_rates, _translate, card_briefs)
+from app import card_statements
 from app.db import user_transaction
 
 PAST_CYCLES = 6   # cuántos ciclos ya cerrados se muestran, además del que toca pagar
@@ -59,6 +60,7 @@ class CycleItem:
     sequence: int | None = None  # cuota: cuál…
     n_installments: int | None = None   # …de cuántas
     interest: Decimal | None = None     # cuota: su interés, ya dentro de amount (estimado si no se facturó)
+    bank: bool = False                  # cargo del banco (desgravamen, comisiones): va al total facturado
 
 
 @dataclass(frozen=True)
@@ -95,6 +97,16 @@ class CardDetail:
     plans: list[Plan]
     cycles: list[Cycle]
     charges: list["BankCharge"] = field(default_factory=list)
+    rates: list["CardRate"] = field(default_factory=list)   # el ciclo abierto: a cuánto cuentan otras monedas
+    line_matched: bool = False   # la línea usa el saldo de cuotas del último estado de cuenta
+
+
+@dataclass(frozen=True)
+class CardRate:
+    currency: str
+    rate: Decimal                # tipo de venta, en la moneda de la línea por unidad
+    rate_date: dt.date
+    edited: bool                 # escrito a mano (si no, el del día)
 
 
 @dataclass(frozen=True)
@@ -158,7 +170,8 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
                     WHEN l.credit > 0 THEN 'charge'
                     WHEN o.type IN ('income', 'expense') THEN 'refund'
                     ELSE 'payment' END,
-               trim(c.name), -l.amount_currency, o.name, o.icon, o.color
+               trim(c.name), -l.amount_currency, o.name, o.icon, o.color,
+               o.bank OR EXISTS (SELECT 1 FROM account_recurring r WHERE r.id = m.recurring_id AND r.bank_charge)
           FROM account_move_line l
           JOIN account_move m ON m.id = l.move_id
           JOIN res_currency c ON c.id = l.currency_id
@@ -166,7 +179,8 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
             SELECT CASE WHEN count(*) = 1 THEN min(a.name) END AS name,
                    CASE WHEN count(*) = 1 THEN min(coalesce(a.icon, pa.icon)) END AS icon,
                    CASE WHEN count(*) = 1 THEN min(coalesce(a.color, pa.color)) END AS color,
-                   min(a.system_role) AS role, min(a.account_type) AS type
+                   min(a.system_role) AS role, min(a.account_type) AS type,
+                   coalesce(bool_or(pa.name = 'Gastos financieros'), false) AS bank
               FROM account_move_line x
               JOIN account_account a ON a.id = x.account_id
               LEFT JOIN account_account pa ON pa.id = a.parent_id
@@ -176,7 +190,7 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
            AND m.installment_plan_id IS NULL          -- el interés de una cuota va con su cuota
            AND m.date > %(oldest)s
          ORDER BY m.date DESC, m.id DESC""", {"card": card_id, "oldest": oldest}):
-        items[closing].append(CycleItem(*item))
+        items[closing].append(CycleItem(*item[:-1], bank=item[-1]))
     for closing, *item in conn.execute("""
         SELECT pl.closing_date, m.id, m.date, m.ref, true,
                CASE WHEN o.role = 'opening' THEN 'opening' ELSE 'installment' END,
@@ -233,18 +247,27 @@ def detail(user_id: int, card_id: int) -> CardDetail:
         last, nxt, date_due = rows[0][4], rows[0][5], rows[0][6]
         status = [CardStatus(cur, _cents(debt), _cents(unbilled), _cents(to_pay))
                   for cur, debt, unbilled, to_pay, *_ in rows]
-        # La línea se ocupa con toda la deuda: lo que no es su moneda, al tipo de venta de hoy
+        # La línea se ocupa con toda la deuda: lo que no es su moneda, al tipo de venta del ciclo
+        # abierto (el del día o el escrito a mano)
         book = {m.currency: m.book for m in balances}
+        open_rates = card_statements.open_rates(conn, card_id, last, rates)
         used = sum((s.total_debt if s.currency == limit_cur
-                    else _today(s.total_debt, -book.get(s.currency, ZERO), rates.get(s.currency), True)
+                    else _cents(s.total_debt * open_rates[s.currency].rate) if s.currency in open_rates
+                    else -book.get(s.currency, ZERO)
                     for s in status), ZERO)
+        # Con un estado de cuenta del último corte, sus cuotas son las del banco
+        card_statements.snapshot(conn, card_id, last)
+        delta = card_statements.installments_delta(conn, card_id, last)
+        if delta is not None:
+            used += delta
         due = dict(conn.execute("SELECT closing_date, date_due FROM account_credit_card_cycle"
                                 " WHERE card_account_id = %s", (card_id,)).fetchall())
         plans = _plans(conn, card_id, last)
         cycles = _cycles(conn, card_id, last, nxt, due)
         charges = _charges(conn, card_id)
     return CardDetail(replace(account, card=brief), bank_id, bank_name, brand, last4, closing_day, limit, limit_cur,
-                      last, nxt, date_due, status, used, limit - used, plans, cycles, charges)
+                      last, nxt, date_due, status, used, limit - used, plans, cycles, charges,
+                      list(open_rates.values()), delta is not None)
 
 
 def _charges(conn: psycopg.Connection, card_id: int) -> list[BankCharge]:

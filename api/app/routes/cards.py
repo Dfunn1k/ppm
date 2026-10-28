@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app import cards, recurring
+from app import card_statements, cards, recurring
 from app.accounts import AccountError
 from app.routes.accounts import AccountRowOut, Currency, Name, Rate
 from app.routes.deps import CurrentSession, current_session
@@ -66,6 +66,7 @@ class CycleItemOut(BaseModel):
     sequence: int | None
     n_installments: int | None
     interest: Decimal | None
+    bank: bool
 
 
 class CycleAmountOut(BaseModel):
@@ -79,6 +80,13 @@ class CycleOut(BaseModel):
     date_due: dt.date | None
     charges: list[CycleAmountOut]
     items: list[CycleItemOut]
+
+
+class CardRateOut(BaseModel):
+    currency: str
+    rate: Decimal
+    rate_date: dt.date
+    edited: bool
 
 
 class BankChargeOut(BaseModel):
@@ -116,6 +124,8 @@ class CardDetailOut(BaseModel):
     plans: list[PlanRowOut]
     cycles: list[CycleOut]
     charges: list[BankChargeOut]
+    rates: list[CardRateOut]
+    line_matched: bool
 
 
 # --- Entrada ----------------------------------------------------------------------------------
@@ -234,3 +244,112 @@ def add_charge(card_id: int, body: BankChargeIn, session: CurrentSession = Depen
     except AccountError as e:
         raise _http(e) from None
     return _detail(session.user_id, card_id)
+
+
+# --- Tipo de cambio y estado de cuenta ----------------------------------------------------------
+
+class CardRateIn(BaseModel):
+    rate: Rate | None = None             # None = volver al tipo de venta del día
+
+
+@router.put("/cards/{card_id}/rates/{currency}", summary="El tipo de cambio del ciclo abierto, escrito a mano")
+def set_rate(card_id: int, currency: Currency, body: CardRateIn,
+             session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    try:
+        card_statements.set_rate(session.user_id, card_id, currency, body.rate)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, card_id)
+
+
+class StatementLineOut(BaseModel):
+    date: dt.date
+    name: str
+    amount: Decimal
+    currency: str
+    move_id: int | None
+
+
+class UnmatchedOut(BaseModel):
+    move_id: int
+    date: dt.date
+    ref: str
+    amount: Decimal
+    currency: str
+
+
+class StatementCurrencyOut(BaseModel):
+    currency: str
+    debt: Decimal
+    rate: Decimal | None
+    rate_date: dt.date | None
+    subtotal: Decimal
+    bank_subtotal: Decimal | None
+
+
+class ReconciliationOut(BaseModel):
+    closing_date: dt.date
+    previous_closing: dt.date
+    credit_limit: Decimal
+    limit_currency: str
+    currencies: list[StatementCurrencyOut]
+    bank_charges: Decimal
+    billed: Decimal
+    bank_billed: Decimal | None
+    installments: Decimal
+    bank_installments: Decimal | None
+    available: Decimal
+    bank_available: Decimal | None
+    used_at_closing: Decimal
+    explanations: list[str]
+    lines: list[StatementLineOut]
+    unmatched: list[UnmatchedOut]
+
+
+Amount = Annotated[Decimal, Field(max_digits=14, decimal_places=2)]
+
+
+class StatementLineIn(BaseModel):
+    date: dt.date
+    name: str = Field(max_length=200)
+    amount: Amount
+    currency: Currency
+
+
+class SubtotalIn(BaseModel):
+    currency: Currency
+    amount: Amount | None
+
+
+class StatementIn(BaseModel):
+    subtotals: list[SubtotalIn] = []
+    billed: Amount | None = None         # total facturado
+    available: Amount | None = None      # línea disponible
+    installments: Amount | None = None   # saldo de compras en cuotas
+    lines: list[StatementLineIn] | None = None   # None = los pegados antes no cambian
+
+
+def _reconciliation(user_id: int, card_id: int, closing: dt.date) -> ReconciliationOut:
+    try:
+        return ReconciliationOut.model_validate(asdict(card_statements.reconciliation(user_id, card_id, closing)))
+    except AccountError as e:
+        raise _http(e) from None
+
+
+@router.get("/cards/{card_id}/statements/{closing}", summary="Conciliar un estado de cuenta con PPM")
+def reconciliation(card_id: int, closing: dt.date,
+                   session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
+    return _reconciliation(session.user_id, card_id, closing)
+
+
+@router.put("/cards/{card_id}/statements/{closing}", summary="Lo que dice el banco de un ciclo")
+def save_statement(card_id: int, closing: dt.date, body: StatementIn,
+                   session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
+    lines = None if body.lines is None else [card_statements.StatementLine(x.date, x.name, x.amount, x.currency)
+                                             for x in body.lines]
+    try:
+        card_statements.save(session.user_id, card_id, closing, card_statements.StatementInput(
+            {x.currency: x.amount for x in body.subtotals}, body.billed, body.available, body.installments, lines))
+    except AccountError as e:
+        raise _http(e) from None
+    return _reconciliation(session.user_id, card_id, closing)

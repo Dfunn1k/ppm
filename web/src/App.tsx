@@ -37,6 +37,7 @@ import { Personas } from "./pages/personas/Personas";
 import { YaDebia } from "./pages/personas/YaDebia";
 import { Recuperar } from "./pages/Recuperar";
 import { Restablecer } from "./pages/Restablecer";
+import { Conciliar } from "./pages/tarjetas/Conciliar";
 import { CuotasAntes } from "./pages/tarjetas/CuotasAntes";
 import { NuevaTarjeta } from "./pages/tarjetas/NuevaTarjeta";
 import { PagarTarjeta } from "./pages/tarjetas/PagarTarjeta";
@@ -144,6 +145,7 @@ export function App() {
         <Route path="/cuentas/nueva/tarjeta" element={<NuevaTarjeta />} />
         <Route path="/tarjetas/:id/pagar" element={<PagarTarjeta />} />
         <Route path="/tarjetas/:id/cuotas-antes" element={<CuotasAntes />} />
+        <Route path="/tarjetas/:id/estado/:closing" element={<Conciliar />} />
         <Route path="/cuentas/:id/editar" element={<EditarBanco />} />
         <Route path="/cuentas/:id/importar" element={<Importar />} />
         <Route path="/extractos/:id" element={<Extracto />} />

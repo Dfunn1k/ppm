@@ -600,6 +600,52 @@ export function useAddBankCharge(id: number) {
   });
 }
 
+export type Reconciliation = components["schemas"]["ReconciliationOut"];
+
+/** Conciliar un estado de cuenta: lo que dice PPM del ciclo, lo que dice el banco y de dónde sale la diferencia. */
+export function useReconciliation(id: number, closing: string) {
+  return useQuery({
+    queryKey: [...CARDS, id, "statement", closing],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/cards/{card_id}/statements/{closing}",
+        { params: { path: { card_id: id, closing } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useSaveStatement(id: number, closing: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: components["schemas"]["StatementIn"]) => {
+      const { data, error, response } = await api.PUT("/cards/{card_id}/statements/{closing}",
+        { params: { path: { card_id: id, closing } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (d) => {
+      qc.setQueryData([...CARDS, id, "statement", closing], d);
+      return Promise.all([qc.invalidateQueries({ queryKey: [...CARDS, id], exact: true }),
+        qc.invalidateQueries({ queryKey: ACCOUNTS })]);
+    },
+  });
+}
+
+/** El tipo de cambio del ciclo abierto, escrito a mano (o null: el de venta del día). */
+export function useCardRate(id: number) {
+  const changed = useCardChanged();
+  return useMutation({
+    mutationFn: async ({ currency, rate }: { currency: string; rate: string | null }) => {
+      const { data, error, response } = await api.PUT("/cards/{card_id}/rates/{currency}",
+        { params: { path: { card_id: id, currency } }, body: { rate } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: changed,
+  });
+}
+
 export function useUpdateCard(id: number) {
   const changed = useCardChanged();
   return useMutation({
