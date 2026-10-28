@@ -120,7 +120,7 @@ test("las cuotas de antes de PPM no son gasto y se facturan desde el próximo co
   await page.goto(`/tarjetas/${id}`);
   await page.getByRole("link", { name: "Cuotas de antes de PPM" }).click();
   await page.getByLabel("¿Qué compraste?").fill("Laptop");
-  await page.getByLabel("¿Cuánto es cada cuota?").fill("250");
+  await page.getByLabel("¿Cuánto es el capital de cada cuota?").fill("250");
   await expect(page.getByRole("status")).toContainText("Le debes S/ 1,000.00 al banco por laptop");
   await page.getByRole("button", { name: "Agregar 4 cuotas" }).click();
 
@@ -150,4 +150,34 @@ test("el desgravamen de cada corte nace por confirmar y avisa en el Inicio", asy
   await page.goto("/inicio");
   await page.getByRole("link", { name: "Tienes 1 cargo del banco por confirmar" }).click();
   await expect(page).toHaveURL(/\/movimientos\/\d+$/);
+});
+
+test("conciliar el estado de cuenta: cuadra el subtotal y explica el desgravamen", async ({ page }) => {
+  await readyUser(page);
+  const lima = (days: number) => new Date(Date.now() + days * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Lima" });
+  const corte = lima(-3);
+  const r = await page.request.post("/api/cards", {
+    data: { name: "Visa Qore", closing_day: Number(corte.slice(8, 10)), credit_limit: "6000", brand: "Visa" },
+  });
+  const card = (await r.json()).account.id as number;
+  const groups = (await (await page.request.get("/api/categories?kind=expense")).json()).groups as { children: { id: number; name: string }[] }[];
+  const hogar = groups.flatMap((g) => g.children).find((k) => k.name === "Hogar")!.id;
+  await page.request.post("/api/moves", {
+    data: { kind: "expense", account_id: card, amount: "1117.82", date: lima(-10), ref: "Supermercado",
+            splits: [{ category_id: hogar, amount: "1117.82" }] },
+  });
+
+  await page.goto(`/tarjetas/${card}`);
+  await page.getByRole("link", { name: "Conciliar con el estado de cuenta" }).click();
+  await expect(page.getByRole("heading", { name: "Estado de cuenta" })).toBeVisible();
+  await page.getByLabel("Subtotal S/").fill("1117.82");
+  await page.getByLabel("Total facturado").fill("1120.23");
+  const [y, m, d] = lima(-10).split("-");
+  await page.getByLabel("Movimientos del estado de cuenta").fill(`${d}/${m}/${y} SUPERMERCADOS PERUANOS 1,117.82\n${corte.slice(8, 10)}/${corte.slice(5, 7)} SEGURO DESGRAVAMEN 2.41`);
+  await expect(page.getByText("Se leyeron 2 movimientos.")).toBeVisible();
+  await page.getByRole("button", { name: "Conciliar" }).click();
+
+  await expect(page.getByRole("region", { name: "De dónde sale" })).toContainText("Subtotal en S/: cuadra al céntimo.");
+  await expect(page.getByRole("region", { name: "De dónde sale" })).toContainText("S/ 2.41 son cargos del banco");
+  await expect(page.getByRole("region", { name: "Del banco, sin par en PPM" })).toContainText("SEGURO DESGRAVAMEN");
 });

@@ -40,7 +40,7 @@ export function CuotasAntes() {
     e.preventDefault();
     setProblem(null);
     if (!what.trim()) return setProblem("Escribe qué compraste, como Laptop");
-    if (!value || Number(value) <= 0) return setProblem("Escribe cuánto es cada cuota");
+    if (!value || Number(value) <= 0) return setProblem("Escribe el capital de cada cuota");
     if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.762");
     add.mutate({ currency, each: value, n, ref: what.trim(), rate: foreign ? rate.value.trim() : null },
       { onSuccess: () => navigate(`/tarjetas/${id}`, { replace: true }) });
@@ -64,7 +64,7 @@ export function CuotasAntes() {
               options={me.currencies.map((c) => ({ value: c, label: `${(CURRENCY_NAME[c] ?? c).replace(/^./, (x) => x.toUpperCase())} · ${symbolOf(c)}` }))} />
           )}
           <div className="grid grid-cols-[1fr_140px] items-end gap-4">
-            <LineField label="¿Cuánto es cada cuota?" inputMode="decimal" placeholder="0.00" value={each} onChange={(e) => setEach(e.target.value)}
+            <LineField label="¿Cuánto es el capital de cada cuota?" inputMode="decimal" placeholder="0.00" value={each} onChange={(e) => setEach(e.target.value)}
               className="text-[22px] font-semibold tabular-nums" />
             <div className="flex flex-col gap-1.5">
               <span id="faltan" className="text-caption font-semibold">¿Cuántas faltan?</span>
@@ -87,7 +87,7 @@ export function CuotasAntes() {
             </span>
           </div>
         )}
-        <span className="mt-2.5 text-caption text-muted-foreground">No cuenta como gasto de este mes: la compra fue antes de PPM. Tus cuentas no se mueven.</span>
+        <span className="mt-2.5 text-caption text-muted-foreground">Solo el capital, sin intereses: es lo que ocupa tu línea. No cuenta como gasto de este mes: la compra fue antes de PPM. Tus cuentas no se mueven.</span>
 
         <div className="min-h-6 flex-1" />
         <div className="flex flex-col gap-3">

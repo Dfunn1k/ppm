@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
-import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useMe, useUpdateCard } from "@/api/hooks";
+import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useCardRate, useMe, useUpdateCard } from "@/api/hooks";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
@@ -13,7 +13,7 @@ import { daysUntil } from "@/lib/cards";
 import { shortDate, todayISO } from "@/lib/dates";
 import { add, formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
 
-type Menu = null | "open" | "rename" | "edit" | "due" | "archive" | "charge";
+type Menu = null | "open" | "rename" | "edit" | "due" | "archive" | "charge" | "rate";
 type Item = CardDetail["cycles"][number]["items"][number];
 
 export function Tarjeta() {
@@ -50,6 +50,9 @@ export function Tarjeta() {
   const hero = owed.length === 0 && favor.length ? favor[0]!.to_pay.replace("-", "") : Number(main.to_pay) > 0 ? main.to_pay : "0.00";
   const heroCur = owed.length === 0 && favor.length ? favor[0]!.currency : main.currency;
   const unbilledOthers = d.status.filter((s) => s.currency !== main.currency && Number(s.unbilled) > 0);
+  // El tipo de cambio del ciclo abierto, solo de las monedas en que debes
+  const foreignRates = d.rates.filter((r) => r.currency !== d.limit_currency
+    && d.status.some((s) => s.currency === r.currency && Number(s.total_debt) !== 0));
   const pct = Number(d.credit_limit) > 0 ? Math.min(100, Math.max(0, Math.round((Number(d.used) / Number(d.credit_limit)) * 100))) : 0;
   const label = [d.account.subtitle, `Corte el ${d.closing_day}`].filter(Boolean).join(" · ");
 
@@ -106,6 +109,9 @@ export function Tarjeta() {
           <span className="text-caption text-muted-foreground">Línea disponible</span>
           <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(d.available, d.limit_currency)}</span>
           <span className="text-caption text-muted-foreground tabular-nums">de {money(d.credit_limit, d.limit_currency)}</span>
+          <span className={`mt-1 self-start rounded-full px-2 py-0.5 text-[12px] font-semibold ${d.line_matched ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}>
+            {d.line_matched ? "Cuadrada con banco" : "Estimada"}
+          </span>
         </div>
       </div>
       <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted" role="meter" aria-label="Línea usada"
@@ -115,6 +121,15 @@ export function Tarjeta() {
       <span className="mt-1.5 text-caption text-muted-foreground">
         {pct === 0 ? "Todavía no usas tu línea." : `Usas el ${pct}% de tu línea. El capital de las cuotas que faltan también la ocupa; sus intereses, recién cuando se facturan${d.status.length > 1 ? "; los dólares cuentan al tipo de venta" : ""}.`}
       </span>
+
+      {foreignRates.map((r) => (
+        <button key={r.currency} type="button" onClick={() => setMenu("rate")}
+          className="mt-1 flex min-h-10 items-center gap-1.5 self-start text-caption text-muted-foreground tabular-nums">
+          <Icon name="currency_exchange" className="text-[16px]" />
+          {symbolOf(r.currency)} al tipo de venta {Number(r.rate).toFixed(3)} · {r.edited ? `escrito el ${shortDate(r.rate_date)}` : `del ${shortDate(r.rate_date)}`}
+          <span className="font-semibold text-primary-strong">Cambiar</span>
+        </button>
+      ))}
 
       <section aria-label="Cuotas que faltan" className="mt-6 flex flex-col">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
@@ -182,6 +197,12 @@ export function Tarjeta() {
               <span>{cycleLabel(c)}</span>
               <span className="text-right">{c.charges.map((x) => money(x.amount, x.currency)).join(" · ")}</span>
             </div>
+            {c.state !== "current" && (
+              <Link to={`/tarjetas/${id}/estado/${c.closing_date}`}
+                className="flex min-h-11 items-center gap-1.5 border-b border-border text-caption font-semibold text-primary-strong">
+                <Icon name="fact_check" className="text-[18px]" />Conciliar con el estado de cuenta
+              </Link>
+            )}
             {c.items.map((i, n) => <ItemRow key={`${i.move_id}-${i.sequence ?? n}`} item={i} base={base} lang={lang} />)}
           </section>
         ))}
@@ -209,7 +230,35 @@ export function Tarjeta() {
       <DueSheet key={`d${menu}`} open={menu === "due"} onClose={close} card={d} />
       <ArchiveSheet open={menu === "archive"} onClose={close} card={d} />
       <ChargeSheet key={`c${menu}`} open={menu === "charge"} onClose={close} card={d} lang={lang} />
+      {foreignRates[0] && <RateSheet key={`t${menu}`} open={menu === "rate"} onClose={close} card={d} rate={foreignRates[0]} />}
     </main>
+  );
+}
+
+/** El tipo de cambio del ciclo abierto: el de venta del día o uno escrito a mano (como el del banco). */
+function RateSheet({ open, onClose, card, rate }: {
+  open: boolean; onClose: () => void; card: CardDetail; rate: CardDetail["rates"][number];
+}) {
+  const save = useCardRate(card.account.id);
+  const [value, setValue] = useState(Number(rate.rate).toFixed(3));
+  const parsed = value.trim().replace(",", ".");
+  const ok = /^\d+(\.\d{1,6})?$/.test(parsed) && Number(parsed) > 0;
+  return (
+    <Sheet title={`Tipo de cambio de ${symbolOf(rate.currency)}`} open={open} onClose={onClose}>
+      <div className="flex flex-col gap-4 px-3">
+        <p className="text-caption text-muted-foreground">
+          Con este tipo cuentan tus {symbolOf(rate.currency)} en la línea hasta el próximo corte. Los ciclos cerrados guardan el suyo.
+        </p>
+        <LineField label="Tipo de venta" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />
+        {save.error && <ErrorAlert>{save.error.message}</ErrorAlert>}
+        <PrimaryButton type="button" disabled={!ok} pending={save.isPending}
+          onClick={() => save.mutate({ currency: rate.currency, rate: parsed }, { onSuccess: onClose })}>Guardar</PrimaryButton>
+        {rate.edited && (
+          <button type="button" onClick={() => save.mutate({ currency: rate.currency, rate: null }, { onSuccess: onClose })}
+            className="h-11 font-semibold">Volver al tipo del día</button>
+        )}
+      </div>
+    </Sheet>
   );
 }
 
