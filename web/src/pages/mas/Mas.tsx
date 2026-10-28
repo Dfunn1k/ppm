@@ -1,4 +1,4 @@
-// X0 · Más (mínimo): Mi cuenta, Apariencia y, para el administrador, Tipo de cambio (Z1);
+// X0 · Más (mínimo): Mi cuenta, Apariencia, Categorías (X3) y, para el administrador, Tipo de cambio (Z1);
 // lo demás llega con su rebanada.
 import { Link } from "react-router";
 
@@ -8,7 +8,6 @@ import { Icon } from "@/components/ui";
 const SOON = [
   ["event_repeat", "Recurrentes", "Netflix, el alquiler, la cuota del préstamo"],
   ["bar_chart", "Reportes", "En qué se va la plata, mes a mes"],
-  ["category", "Categorías", "Crear, mover, archivar y fusionar"],
   ["lock_clock", "Cierre de periodo", "Que los meses revisados no cambien"],
   ["tune", "Monedas, idioma y formato", "Agregar monedas y cambiar cómo se ven"],
 ] as const;
@@ -33,6 +32,14 @@ export function Mas() {
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">Apariencia</span>
           <span className="text-caption text-muted-foreground">Tema y color de acento</span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
+      <Link to="/mas/categorias" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="category" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Categorías</span>
+          <span className="text-caption text-muted-foreground">Las de gasto y de ingreso · crear nuevas</span>
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>

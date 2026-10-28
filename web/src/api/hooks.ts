@@ -399,6 +399,20 @@ export function useCategories(kind: "expense" | "income") {
   });
 }
 
+export type CategoryIn = components["schemas"]["CategoryIn"];
+
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: CategoryIn) => {
+      const { data, error, response } = await api.POST("/categories", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+  });
+}
+
 export type ManualAccount = components["schemas"]["ManualAccountOut"];
 
 export function useManualAccounts() {

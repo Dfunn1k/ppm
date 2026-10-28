@@ -19,6 +19,7 @@ import { Extracto } from "./pages/importar/Extracto";
 import { Importar } from "./pages/importar/Importar";
 import { Inicio } from "./pages/Inicio";
 import { Apariencia } from "./pages/mas/Apariencia";
+import { Categorias, NuevaCategoria } from "./pages/mas/Categorias";
 import { Mas } from "./pages/mas/Mas";
 import { MiCuenta } from "./pages/mas/MiCuenta";
 import { TipoCambio } from "./pages/mas/TipoCambio";
@@ -113,9 +114,11 @@ export function App() {
           <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
           <Route path="/por-clasificar" element={<PorClasificar />} />
           <Route path="/mas" element={<Mas />} />
+          <Route path="/mas/categorias" element={<Categorias />} />
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
+        <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />
         <Route path="/mas/tipo-de-cambio" element={<TipoCambio />} />
         <Route path="/registrar" element={<Registrar />} />
         <Route path="/registrar/persona/:kind" element={<RegistrarPersona />} />
