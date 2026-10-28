@@ -89,14 +89,18 @@ test("ponerle fecha de vencimiento a un préstamo y verla vencida", async ({ pag
   await page.getByLabel("Nota").fill("Para el pasaje");
   await page.getByRole("button", { name: "Registrar préstamo" }).click();
 
+  // Sin vencimiento la ficha no muestra nada: la fecha se pone desde el detalle del movimiento
   await expect(page).toHaveURL(`/personas/${luis}`);
-  await page.getByRole("button", { name: "Poner fecha de vencimiento" }).click();
+  await expect(page.getByText("Sin fecha de vencimiento")).toHaveCount(0);
+  await page.getByRole("link", { name: /Para el pasaje/ }).click();
+  await page.getByRole("button", { name: /Sin fecha de vencimiento/ }).click();
   await expect(page.getByRole("dialog", { name: "¿Hasta cuándo te paga Luis?" })).toBeVisible();
   await pickInOpenCalendar(page, lima(-3));
+  await page.goto(`/personas/${luis}`);
   await expect(page.getByText(/Vencida hace 3 días/)).toBeVisible();
   await expect(page.getByText("S/ 50.00 vencidos")).toBeVisible();
 
   await page.getByRole("button", { name: /Vencida hace 3 días/ }).click();
   await page.getByRole("button", { name: "Quitar la fecha" }).click();
-  await expect(page.getByRole("button", { name: "Poner fecha de vencimiento" })).toBeVisible();
+  await expect(page.getByText(/Vencida/)).toHaveCount(0);
 });

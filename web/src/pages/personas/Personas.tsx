@@ -17,11 +17,13 @@ export function joinMoney(list: Money[], lang: string) {
   return list.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang)).join(" + ");
 }
 
-/** «Te debe S/ 39.00 · le debes S/ 50.00 · guardas S/ 200.00» */
-export function personDetail(p: PartnerRow, lang: string) {
+/** «Te debe S/ 39.00 · le debes S/ 50.00 · guardas S/ 200.00». Con `net`, sin el lado de la deuda
+ *  cuando es el único: ese ya va a la derecha con su monto. */
+export function personDetail(p: PartnerRow, lang: string, net = false) {
+  const single = net && (p.owes_me.length > 0) !== (p.i_owe.length > 0);
   return [
-    p.owes_me.length ? `te debe ${joinMoney(p.owes_me, lang)}` : null,
-    p.i_owe.length ? `le debes ${joinMoney(p.i_owe, lang)}` : null,
+    p.owes_me.length && !single ? `te debe ${joinMoney(p.owes_me, lang)}` : null,
+    p.i_owe.length && !single ? `le debes ${joinMoney(p.i_owe, lang)}` : null,
     p.keep.length ? `guardas ${joinMoney(p.keep, lang)}` : null,
   ].filter(Boolean).join(" · ").replace(/^./, (c) => c.toUpperCase());
 }
@@ -84,7 +86,7 @@ export function Personas() {
                     <Avatar name={p.name} size={40} />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="font-semibold">{p.name}</span>
-                      <span className="text-caption text-muted-foreground tabular-nums">{personDetail(p, lang)}</span>
+                      {personDetail(p, lang, true) && <span className="text-caption text-muted-foreground tabular-nums">{personDetail(p, lang, true)}</span>}
                     </span>
                     {net && (
                       <span className="flex flex-col items-end">
