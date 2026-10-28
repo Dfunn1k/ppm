@@ -1,6 +1,9 @@
 """Crear categorías desde Más › Categorías, a través de la API."""
 
+import psycopg
 import pytest
+
+from tests.conftest import owner_url
 
 from tests.test_movimientos_api import Ana, borrar_usuarios_de_prueba  # noqa: F401
 
@@ -77,11 +80,14 @@ def test_lo_que_no_se_puede(ana: Ana):
 
 
 def test_un_grupo_con_movimientos_propios_no_tiene_hijas(ana: Ana):
-    otras = groups(ana, "expense").get("Otras")
-    if otras is None:
-        pytest.skip("La plantilla no trae categorías de gasto sueltas")
-    suelta = otras["children"][0]["id"]
+    # una categoría de gasto suelta (la plantilla no trae ninguna) y usada
+    with psycopg.connect(owner_url()) as c:
+        suelta = c.execute("""
+            INSERT INTO account_account (user_id, name, account_type, currency_id, icon, color)
+            SELECT user_id, 'Varios', 'expense', currency_id, 'category', 0 FROM account_account WHERE id = %s
+            RETURNING id""", (ana.bcp,)).fetchone()[0]
     ana.register(kind="expense", account_id=ana.bcp, amount="3",
                  splits=[{"category_id": suelta, "amount": "3"}])
     r = ana.c.post("/categories", json={"kind": "expense", "name": "Hija", "parent_id": suelta})
-    assert r.status_code == 400 and "movimientos propios" in r.json()["detail"]
+    assert r.status_code == 400
+    assert r.json()["detail"] == "Ese grupo ya tiene movimientos propios: no puede tener categorías adentro"
