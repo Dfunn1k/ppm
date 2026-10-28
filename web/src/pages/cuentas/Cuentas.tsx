@@ -67,6 +67,10 @@ function accountRow(a: AccountRow, base: string, lang: string, negative?: boolea
     return <Row key={a.id} to={`/tarjetas/${a.id}`} icon="credit_card" name={a.name} subtitle={hint.text} attention={hint.attention}
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} negative={!a.base_total.startsWith("-") ? false : negative} />;
   }
+  if (a.kind === "loan") {
+    return <Row key={a.id} to={`/prestamos/${a.id}`} icon={a.icon} name={a.name} subtitle={a.subtitle ?? subtitle}
+      amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
+  }
   return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} negative={negative} />;
 }
 

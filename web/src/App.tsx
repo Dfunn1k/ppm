@@ -20,6 +20,8 @@ import { Importar } from "./pages/importar/Importar";
 import { Inicio } from "./pages/Inicio";
 import { Apariencia } from "./pages/mas/Apariencia";
 import { Categorias, NuevaCategoria } from "./pages/mas/Categorias";
+import { NuevoPrestamo, PagarCuota, Prestamo } from "./pages/prestamos/Prestamos";
+import { Recurrente, Recurrentes } from "./pages/recurrentes/Recurrentes";
 import { Mas } from "./pages/mas/Mas";
 import { MiCuenta } from "./pages/mas/MiCuenta";
 import { TipoCambio } from "./pages/mas/TipoCambio";
@@ -28,7 +30,7 @@ import { Movimientos } from "./pages/movimientos/Movimientos";
 import { PorClasificar } from "./pages/movimientos/PorClasificar";
 import { AsientoManual } from "./pages/movimientos/AsientoManual";
 import { Reembolso } from "./pages/movimientos/Reembolso";
-import { EditarMovimiento, Registrar } from "./pages/movimientos/Registrar";
+import { EditarMovimiento, EditarRecurrente, Registrar, RegistrarAviso } from "./pages/movimientos/Registrar";
 import { RegistrarPersona } from "./pages/movimientos/RegistrarPersona";
 import { Persona } from "./pages/personas/Persona";
 import { Personas } from "./pages/personas/Personas";
@@ -115,10 +117,17 @@ export function App() {
           <Route path="/por-clasificar" element={<PorClasificar />} />
           <Route path="/mas" element={<Mas />} />
           <Route path="/mas/categorias" element={<Categorias />} />
+          <Route path="/mas/recurrentes" element={<Recurrentes />} />
+          <Route path="/prestamos/:id" element={<Prestamo />} />
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
         <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />
+        <Route path="/mas/recurrentes/:id" element={<Recurrente />} />
+        <Route path="/mas/recurrentes/:id/editar" element={<EditarRecurrente />} />
+        <Route path="/registrar/aviso/:id/:occurrence" element={<RegistrarAviso />} />
+        <Route path="/cuentas/nueva/prestamo" element={<NuevoPrestamo />} />
+        <Route path="/prestamos/:id/pagar" element={<PagarCuota />} />
         <Route path="/mas/tipo-de-cambio" element={<TipoCambio />} />
         <Route path="/registrar" element={<Registrar />} />
         <Route path="/registrar/persona/:kind" element={<RegistrarPersona />} />
