@@ -62,9 +62,13 @@ export function Movimientos() {
     setParams(next, { replace: true });
   };
 
-  // La búsqueda espera a que dejes de escribir
+  // La búsqueda espera a que dejes de escribir. Solo toca la URL si de verdad cambió: si no, al abrir
+  // la pantalla esos 300 ms reescribían la dirección y podían pisar el movimiento que tocaste
   useEffect(() => {
-    const t = setTimeout(() => set("q", search.trim() || null), 300);
+    const t = setTimeout(() => {
+      const q = search.trim() || null;
+      if (q !== new URLSearchParams(window.location.search).get("q")) set("q", q);
+    }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
