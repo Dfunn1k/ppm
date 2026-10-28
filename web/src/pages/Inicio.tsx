@@ -78,6 +78,16 @@ export function Inicio() {
         </div>
       ))}
 
+      {h.unclassified > 0 && (
+        <Link to="/por-clasificar" className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
+          <Icon name="inbox" />
+          <span className="flex-1">
+            {h.unclassified === 1 ? "1 movimiento del banco por clasificar" : `${h.unclassified} movimientos del banco por clasificar`}
+          </span>
+          <Icon name="chevron_right" />
+        </Link>
+      )}
+
       {h.overdue_pending > 0 && (
         <Link to="/movimientos?pendientes=1" className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
           <Icon name="schedule" />

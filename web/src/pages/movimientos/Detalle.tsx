@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
+import { ClassifySheet } from "@/components/ClassifySheet";
 import { Avatar } from "@/components/MoveBits";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
@@ -30,6 +31,7 @@ export function DetalleMovimiento() {
   const state = useSetMoveState(id);
   const remove = useDeleteMove(id);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [classifying, setClassifying] = useState(false);
   if (move.isPending || !me) return <Spinner />;
   if (move.isError) {
     return (
@@ -43,13 +45,15 @@ export function DetalleMovimiento() {
   const s = d.summary;
   const lang = me.lang ?? "es-PE";
   const transfer = s.kind === "transfer";
-  const f = flow(s.kind);
+  const f = flow(s.kind, s.incoming);
+  const unclassified = s.kind === "unclassified";
+  const bank = d.bank ?? [];
   const sign = f === "in" ? "+ " : f === "out" ? "− " : "";
   const tone = f === "none" ? "" : toneOf(s.kind);
   const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || s.kind === "opening" || d.paid_by_partner_id;
   const partnerId = d.partner_id ?? d.paid_by_partner_id ?? s.partner_id;
   const plan = d.plan;
-  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !plan;
+  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan;
   // Saldo inicial con una persona: lo que ya había antes de PPM (te debía, o le debías)
   const opening = s.kind === "opening" && s.partner
     ? d.lines.some((l) => l.partner_id && Number(l.debit) > 0) ? `${s.partner} ya te debía esto cuando empezaste a usar PPM.` : `Ya le debías esto a ${s.partner} cuando empezaste a usar PPM.`
@@ -79,6 +83,14 @@ export function DetalleMovimiento() {
         </div>
       )}
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
+      {unclassified && (
+        <div className="mt-4 flex items-center gap-2.5 rounded-[12px] bg-attention-soft py-2.5 pr-2.5 pl-3.5 text-attention">
+          <Icon name="inbox" />
+          <span className="flex-1 text-[14px]">Falta decir en qué fue. Hasta entonces no cuenta como {f === "in" ? "ingreso" : "gasto"}.</span>
+          <button type="button" onClick={() => setClassifying(true)}
+            className="h-10 flex-none rounded-full bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground">Clasificar</button>
+        </div>
+      )}
       {opening && <p className="mt-2 text-caption text-muted-foreground">{opening} Para corregirlo, bórralo y vuelve a anotarlo desde la persona.</p>}
       <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-[32px] leading-10 font-semibold tracking-[-0.02em] tabular-nums whitespace-nowrap" : "text-amount-hero"} ${tone}`}>
         {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} className="text-[30px]" />}
@@ -160,6 +172,26 @@ export function DetalleMovimiento() {
         </div>
       </div>
 
+      {bank.length > 0 && (
+        <>
+          <section aria-label="Lo que dice el banco" className="mt-4 flex flex-col gap-2 rounded-[12px] bg-muted px-3.5 py-3">
+            <span className="text-label text-muted-foreground">Lo que dice el banco</span>
+            {bank.map((b) => (
+              <div key={b.statement_id} className="flex flex-col gap-1">
+                <span className="font-mono text-[14px] leading-5">{b.payment_ref}</span>
+                <span className="flex items-center justify-between gap-2 text-caption text-muted-foreground">
+                  <span>{b.operation_number ? <>Operación <span className="font-mono text-foreground">{b.operation_number}</span></> : ""}</span>
+                  <Link to={`/extractos/${b.statement_id}`} className="flex items-center gap-0.5 font-semibold text-foreground">
+                    <span className="max-w-[180px] truncate">{b.statement}</span><Icon name="chevron_right" className="text-[18px]" />
+                  </Link>
+                </span>
+              </div>
+            ))}
+          </section>
+          <span className="mt-2 text-caption text-muted-foreground">El nombre de arriba es tuyo y lo puedes cambiar; lo que dice el banco no cambia.</span>
+        </>
+      )}
+
       {plan && (
         <section aria-label="Cuotas" className="mt-4 flex flex-col">
           <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
@@ -228,10 +260,18 @@ export function DetalleMovimiento() {
         </button>
       </div>
 
+      {unclassified && classifying && (
+        <ClassifySheet open onClose={() => setClassifying(false)} items={[{
+          move_id: s.id, title: bank[0]?.payment_ref ?? s.ref, caption: `${shortDate(s.date)} · ${s.account}`,
+          account_id: d.account_id ?? 0, currency: s.currency, amount: f === "out" ? `-${s.amount}` : s.amount,
+        }]} />
+      )}
+
       <Sheet title="¿Borrar este movimiento?" open={confirmDelete} onClose={() => setConfirmDelete(false)}>
         <div className="flex flex-col gap-4 px-3">
           <p className="text-muted-foreground">
             «{s.ref}» desaparece de tus movimientos{plan ? ", con sus cuotas," : ""} y sus montos vuelven a las cuentas. No se puede deshacer.
+            {bank.length > 0 && " Si vuelves a importar el extracto, regresa: el banco dice que pasó."}
           </p>
           <button type="button" disabled={remove.isPending}
             onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : "/movimientos", { replace: true }) })}

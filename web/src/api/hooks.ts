@@ -577,6 +577,146 @@ export function useCardInstallments(id: number) {
   });
 }
 
+// --- Importar extracto y Por clasificar ------------------------------------------------------------
+
+export type ImportResult = components["schemas"]["ImportOut"];
+export type ImportMapping = components["schemas"]["MappingOut"];
+export type StatementRow = components["schemas"]["StatementRowOut"];
+export type StatementDetail = components["schemas"]["StatementDetailOut"];
+export type Unclassified = components["schemas"]["UnclassifiedOut"];
+export type ClassifyIn = components["schemas"]["ClassifyIn"];
+
+/** Lo que se manda con el archivo: el mapeo elegido (si no, el recordado o el adivinado) y el saldo del banco. */
+export type ImportForm = {
+  file: File;
+  mapping?: ImportMapping | null;
+  balance_end?: string | null;
+};
+
+const STATEMENTS = ["statements"] as const;
+const UNCLASSIFIED = ["unclassified"] as const;
+
+/** El archivo va como multipart; openapi-fetch lo deja pasar tal cual con este serializador. */
+function importBody(f: ImportForm): FormData {
+  const form = new FormData();
+  form.append("file", f.file, f.file.name);
+  if (f.mapping) {
+    form.append("header_row", String(f.mapping.header_row));
+    form.append("date_format", f.mapping.date_format);
+    form.append("decimal_separator", f.mapping.decimal_separator);
+    form.append("columns", JSON.stringify(f.mapping.columns));
+  }
+  if (f.balance_end) form.append("balance_end", f.balance_end);
+  return form;
+}
+
+/** Leer el extracto y decir qué pasaría, sin guardar nada. */
+export function useImportPreview(accountId: number) {
+  return useMutation({
+    mutationFn: async (f: ImportForm) => {
+      const { data, error, response } = await api.POST("/accounts/{account_id}/statements/preview", {
+        params: { path: { account_id: accountId } },
+        body: importBody(f) as never,
+        bodySerializer: (b) => b as unknown as FormData,
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useImportStatement(accountId: number) {
+  const changed = useMovesChanged();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (f: ImportForm) => {
+      const { data, error, response } = await api.POST("/accounts/{account_id}/statements", {
+        params: { path: { account_id: accountId } },
+        body: importBody(f) as never,
+        bodySerializer: (b) => b as unknown as FormData,
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => Promise.all([changed(), qc.invalidateQueries({ queryKey: STATEMENTS }), qc.invalidateQueries({ queryKey: UNCLASSIFIED })]),
+  });
+}
+
+export function useStatements(accountId: number) {
+  return useQuery({
+    queryKey: [...STATEMENTS, "account", accountId],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/accounts/{account_id}/statements", {
+        params: { path: { account_id: accountId } },
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useStatement(id: number) {
+  return useQuery({
+    queryKey: [...STATEMENTS, id],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/statements/{statement_id}", {
+        params: { path: { statement_id: id } },
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Dónde se descarga el archivo original: un enlace del mismo origen, con la cookie de sesión. */
+export function statementFileUrl(id: number) {
+  return `${window.location.origin}/api/statements/${id}/file`;
+}
+
+export function useUndoStatement(id: number) {
+  const qc = useQueryClient();
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.DELETE("/statements/{statement_id}", {
+        params: { path: { statement_id: id } },
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: [...STATEMENTS, id] });
+      return Promise.all([changed(), qc.invalidateQueries({ queryKey: STATEMENTS }), qc.invalidateQueries({ queryKey: UNCLASSIFIED })]);
+    },
+  });
+}
+
+/** La bandeja: lo traído del banco que falta clasificar (de una cuenta o de todas). */
+export function useUnclassified(accountId?: number) {
+  return useQuery({
+    queryKey: [...UNCLASSIFIED, accountId ?? "all"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/unclassified", {
+        params: { query: accountId ? { account_id: accountId } : {} },
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useClassify() {
+  const qc = useQueryClient();
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (body: ClassifyIn) => {
+      const { error, response } = await api.POST("/unclassified/classify", { body });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => Promise.all([changed(), qc.invalidateQueries({ queryKey: UNCLASSIFIED }), qc.invalidateQueries({ queryKey: STATEMENTS })]),
+  });
+}
+
 // --- Inicio, Mi cuenta y Apariencia -------------------------------------------------------------
 
 export type Home = components["schemas"]["HomeOut"];

@@ -15,6 +15,8 @@ import { EditarBanco } from "./pages/cuentas/EditarBanco";
 import { NuevaGuardo } from "./pages/cuentas/Guardo";
 import { NuevaCuenta, NuevaCuentaForm } from "./pages/cuentas/Nueva";
 import { Entrar } from "./pages/Entrar";
+import { Extracto } from "./pages/importar/Extracto";
+import { Importar } from "./pages/importar/Importar";
 import { Inicio } from "./pages/Inicio";
 import { Apariencia } from "./pages/mas/Apariencia";
 import { Mas } from "./pages/mas/Mas";
@@ -22,6 +24,7 @@ import { MiCuenta } from "./pages/mas/MiCuenta";
 import { TipoCambio } from "./pages/mas/TipoCambio";
 import { DetalleMovimiento } from "./pages/movimientos/Detalle";
 import { Movimientos } from "./pages/movimientos/Movimientos";
+import { PorClasificar } from "./pages/movimientos/PorClasificar";
 import { AsientoManual } from "./pages/movimientos/AsientoManual";
 import { Reembolso } from "./pages/movimientos/Reembolso";
 import { EditarMovimiento, Registrar } from "./pages/movimientos/Registrar";
@@ -108,6 +111,7 @@ export function App() {
           <Route path="/personas" element={<Personas />} />
           <Route path="/movimientos" element={<Movimientos />} />
           <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
+          <Route path="/por-clasificar" element={<PorClasificar />} />
           <Route path="/mas" element={<Mas />} />
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
@@ -129,6 +133,8 @@ export function App() {
         <Route path="/tarjetas/:id/pagar" element={<PagarTarjeta />} />
         <Route path="/tarjetas/:id/cuotas-antes" element={<CuotasAntes />} />
         <Route path="/cuentas/:id/editar" element={<EditarBanco />} />
+        <Route path="/cuentas/:id/importar" element={<Importar />} />
+        <Route path="/extractos/:id" element={<Extracto />} />
       </Route>
       <Route path="*" element={me.isPending ? <Spinner /> : <Navigate to={home(me.data)} replace />} />
     </Routes>

@@ -30,6 +30,7 @@ const KIND_OPTIONS = [
   { value: "collect", label: "Cobros" },
   { value: "repay", label: "Pagos de deudas" },
   { value: "refund", label: "Reembolsos" },
+  { value: "unclassified", label: "Por clasificar" },
 ];
 
 export function Movimientos() {
