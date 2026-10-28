@@ -20,6 +20,9 @@ export function MoveIcon({ move: x }: { move: MoveSummary }) {
   if (x.kind === "transfer") {
     return <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="sync_alt" /></span>;
   }
+  if (x.kind === "unclassified") {
+    return <span className="grid size-9 flex-none place-items-center rounded-full bg-attention-soft text-attention"><Icon name="inbox" /></span>;
+  }
   if (isPersonKind(x.kind) || x.kind === "offset") return <Avatar name={x.partner} />;
   if (x.kind === "other") {
     return <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="edit_note" /></span>;
@@ -34,6 +37,7 @@ export function moveCaption(x: MoveSummary, lang: string): string {
     return `${x.account}${x.to_amount && x.to_currency !== x.currency ? ` · ${formatAmount(x.to_amount, symbolOf(x.to_currency), lang)}` : ""}`;
   }
   if (isPersonKind(x.kind)) return `${x.partner} · ${x.account}`;
+  if (x.kind === "unclassified") return `Por clasificar · ${x.account}`;
   if (x.kind === "offset" || x.kind === "write_off") return x.partner ?? x.account;
   if (x.kind === "other" || x.categories.length === 0) return x.account;
   const what = x.categories.length === 1 ? x.categories[0]!.name : `Dividido en ${x.categories.length} categorías`;
@@ -41,7 +45,7 @@ export function moveCaption(x: MoveSummary, lang: string): string {
 }
 
 export function MoveAmount({ move: x, base, lang }: { move: MoveSummary; base: string; lang: string }) {
-  const f = flow(x.kind);
+  const f = flow(x.kind, x.incoming);
   const value = x.currency === base && f !== "none" ? formatNumber(x.amount, lang) : formatAmount(x.amount, symbolOf(x.currency), lang);
   return (
     <span className={`flex items-center gap-0.5 text-amount whitespace-nowrap ${tone(x.kind)}`}>

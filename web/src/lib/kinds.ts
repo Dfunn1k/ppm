@@ -25,7 +25,8 @@ export const KIND_NAME: Record<Kind, string> = {
 };
 
 /** Si la plata entra (+), sale (−) o no cambia lo que tienes (una transferencia, una compensación). */
-export function flow(kind: Kind): "in" | "out" | "none" {
+export function flow(kind: Kind, incoming?: boolean | null): "in" | "out" | "none" {
+  if (kind === "unclassified") return incoming ? "in" : "out";   // por clasificar: lo dice el banco
   if (["income", "borrow", "collect", "custody_in", "refund"].includes(kind)) return "in";
   if (["expense", "lend", "repay", "custody_out", "write_off"].includes(kind)) return "out";
   return "none";

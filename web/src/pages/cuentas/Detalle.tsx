@@ -94,6 +94,8 @@ export function Detalle() {
         </div>
       )}
 
+      {d.bank && <StatementCard detail={d} lang={lang} />}
+
       <section aria-label="Movimientos" className="mt-5 flex flex-col">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
           <span>Movimientos</span>
@@ -119,6 +121,48 @@ export function Detalle() {
       <OpeningSheet open={menu === "opening"} onClose={close} detail={d} base={me.currency} lang={lang} />
       <ArchiveSheet open={menu === "archive"} onClose={close} detail={d} />
     </main>
+  );
+}
+
+/** El último extracto (si cuadra) con «Importar extracto», y cuántos faltan clasificar de esta cuenta. */
+function StatementCard({ detail: d, lang }: { detail: AccountDetail; lang: string }) {
+  const last = d.last_statement;
+  const status = !last
+    ? { icon: "upload", text: "Trae tus movimientos", cls: "" }
+    : last.difference === null
+      ? { icon: "description", text: last.name, cls: "" }
+      : isZero(last.difference)
+        ? { icon: "check_circle", text: "El saldo cuadra", cls: "text-income" }
+        : { icon: "error", text: `${isNegative(last.difference) ? "Sobran" : "Faltan"} ${formatNumber(last.difference.replace("-", ""), lang)}`, cls: "text-attention" };
+  return (
+    <>
+      <div className="mt-4 flex items-center gap-3 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
+        {last ? (
+          <Link to={`/extractos/${last.id}`} className="flex min-w-0 flex-1 flex-col">
+            <span className="text-caption text-muted-foreground">Último extracto{last.date_to ? ` · hasta el ${shortDate(last.date_to)}` : ""}</span>
+            <span className={`flex items-center gap-1 truncate font-semibold ${status.cls}`}><Icon name={status.icon} className="text-[18px]" />{status.text}</span>
+          </Link>
+        ) : (
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-caption text-muted-foreground">Extracto del banco</span>
+            <span className="flex items-center gap-1 font-semibold"><Icon name={status.icon} className="text-[18px]" />{status.text}</span>
+          </span>
+        )}
+        <Link to={`/cuentas/${d.account.id}/importar`}
+          className="flex h-10 flex-none items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[14px] font-semibold">
+          <Icon name="upload_file" />Importar extracto
+        </Link>
+      </div>
+      {d.unclassified > 0 && (
+        <Link to={`/por-clasificar?cuenta=${d.account.id}`}
+          className="mt-2 flex min-h-12 items-center gap-2.5 rounded-[12px] bg-attention-soft px-3 text-attention">
+          <Icon name="inbox" />
+          <span className="flex-1 text-[14px]"><b>{d.unclassified} por clasificar</b> de esta cuenta</span>
+          <span className="text-[14px] font-semibold">Clasificar</span>
+          <Icon name="chevron_right" />
+        </Link>
+      )}
+    </>
   );
 }
 
