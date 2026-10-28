@@ -31,7 +31,8 @@ export function Inicio() {
   const accounts = useAccounts().data;
   const [picking, setPicking] = useState(false);
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
-  const reminders = useRecurringPending().data?.reminders ?? [];
+  const pending = useRecurringPending().data;
+  const reminders = pending?.reminders ?? [];
   const done = useReminderDone();
 
   if (!me?.currency || home.isPending) return <Spinner />;
@@ -110,6 +111,17 @@ export function Inicio() {
           </span>
         </section>
       ))}
+
+      {(pending?.bank_charges ?? 0) > 0 && (
+        <Link to={pending!.bank_charges === 1 ? `/movimientos/${pending!.bank_charge_move_id}` : "/movimientos?pendientes=1"}
+          className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
+          <Icon name="account_balance" />
+          <span className="flex-1">
+            {pending!.bank_charges === 1 ? "Tienes 1 cargo del banco por confirmar" : `Tienes ${pending!.bank_charges} cargos del banco por confirmar`}
+          </span>
+          <Icon name="chevron_right" />
+        </Link>
+      )}
 
       {h.overdue_pending > 0 && (
         <Link to="/movimientos?pendientes=1" className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">

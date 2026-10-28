@@ -586,6 +586,20 @@ export function useCreateCard() {
   });
 }
 
+/** Un cargo del banco que se repite (desgravamen, membresía): nace como recurrente por confirmar. */
+export function useAddBankCharge(id: number) {
+  const changed = useCardChanged();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: components["schemas"]["BankChargeIn"]) => {
+      const { data, error, response } = await api.POST("/cards/{card_id}/charges", { params: { path: { card_id: id } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (d) => Promise.all([changed(d), qc.invalidateQueries({ queryKey: RECURRING })]),
+  });
+}
+
 export function useUpdateCard(id: number) {
   const changed = useCardChanged();
   return useMutation({

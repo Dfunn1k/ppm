@@ -129,3 +129,25 @@ test("las cuotas de antes de PPM no son gasto y se facturan desde el próximo co
     .toContainText("De antes de PPM");
   await expect(page.getByText("Nada por pagar ahora")).toBeVisible();
 });
+
+test("el desgravamen de cada corte nace por confirmar y avisa en el Inicio", async ({ page }) => {
+  await readyUser(page);
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });
+  const r = await page.request.post("/api/cards", {
+    data: { name: "Visa Qore", closing_day: Number(today.slice(8, 10)), credit_limit: "6000", brand: "Visa" },
+  });
+  const card = (await r.json()).account.id as number;
+  await page.goto(`/tarjetas/${card}`);
+  await page.getByRole("button", { name: "Agregar cargo del banco" }).click();
+  await page.getByLabel("¿Cuánto fue el último?").fill("2.41");
+  await page.getByRole("button", { name: "Agregar cargo", exact: true }).click();
+
+  const cargos = page.getByRole("region", { name: "Cargos del banco" });
+  await expect(cargos).toContainText("Seguro de desgravamen");
+  await expect(cargos).toContainText("1 por confirmar");
+  await expect(page.getByText("Por confirmar", { exact: true })).toBeVisible();     // en el ciclo, distinto
+
+  await page.goto("/inicio");
+  await page.getByRole("link", { name: "Tienes 1 cargo del banco por confirmar" }).click();
+  await expect(page).toHaveURL(/\/movimientos\/\d+$/);
+});

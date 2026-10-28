@@ -94,6 +94,19 @@ class CardDetail:
     available: Decimal
     plans: list[Plan]
     cycles: list[Cycle]
+    charges: list["BankCharge"] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class BankCharge:
+    """Un cargo del banco que se repite (desgravamen, membresía): por confirmar cada vez."""
+    id: int                      # la recurrente
+    name: str
+    amount: Decimal              # el que se sugiere: el último confirmado
+    next_date: dt.date | None    # el próximo; None = terminado
+    state: str                   # 'active', 'paused' o 'done'
+    drafts: int                  # cuántos esperan que los confirmes
+    yearly: bool
 
 
 def _cents(v: Decimal) -> Decimal:
@@ -229,8 +242,26 @@ def detail(user_id: int, card_id: int) -> CardDetail:
                                 " WHERE card_account_id = %s", (card_id,)).fetchall())
         plans = _plans(conn, card_id, last)
         cycles = _cycles(conn, card_id, last, nxt, due)
+        charges = _charges(conn, card_id)
     return CardDetail(replace(account, card=brief), bank_id, bank_name, brand, last4, closing_day, limit, limit_cur,
-                      last, nxt, date_due, status, used, limit - used, plans, cycles)
+                      last, nxt, date_due, status, used, limit - used, plans, cycles, charges)
+
+
+def _charges(conn: psycopg.Connection, card_id: int) -> list[BankCharge]:
+    return [BankCharge(*r) for r in conn.execute("""
+        SELECT r.id, r.name,
+               (SELECT abs(t.amount) FROM account_recurring_line t WHERE t.recurring_id = r.id AND t.account_id = %(card)s
+                 LIMIT 1),
+               CASE WHEN r.state <> 'done' THEN
+                 (SELECT min(d.occurrence_date) FROM account_recurring_dates(r.id, user_today() + 800) d
+                   WHERE d.occurrence_date > coalesce(r.generated_until, '-infinity')) END,
+               r.state,
+               (SELECT count(*) FROM account_move m WHERE m.recurring_id = r.id AND m.state = 'draft')::int,
+               r.interval_type = 'year'
+          FROM account_recurring r
+         WHERE r.bank_charge
+           AND EXISTS (SELECT 1 FROM account_recurring_line t WHERE t.recurring_id = r.id AND t.account_id = %(card)s)
+         ORDER BY r.state = 'done', r.id""", {"card": card_id})]
 
 
 # --- Alta y cambios ---------------------------------------------------------------------------

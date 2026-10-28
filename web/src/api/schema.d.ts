@@ -399,6 +399,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cards/{card_id}/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Un cargo del banco que se repite: desgravamen, membresía */
+        post: operations["add_charge_cards__card_id__charges_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -1024,6 +1041,37 @@ export interface components {
             /** History */
             history: components["schemas"]["RateDayOut"][];
         };
+        /** BankChargeIn */
+        BankChargeIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "insurance" | "membership" | "other";
+            /** Amount */
+            amount: number | string;
+            /** Date */
+            date?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** BankChargeOut */
+        BankChargeOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+            /** Next Date */
+            next_date: string | null;
+            /** State */
+            state: string;
+            /** Drafts */
+            drafts: number;
+            /** Yearly */
+            yearly: boolean;
+        };
         /** BankIn */
         BankIn: {
             /** Name */
@@ -1162,6 +1210,8 @@ export interface components {
             plans: components["schemas"]["PlanRowOut"][];
             /** Cycles */
             cycles: components["schemas"]["CycleOut"][];
+            /** Charges */
+            charges: components["schemas"]["BankChargeOut"][];
         };
         /** CardIn */
         CardIn: {
@@ -2186,6 +2236,10 @@ export interface components {
             reminders: components["schemas"]["ReminderOut"][];
             /** Drafts Due */
             drafts_due: number;
+            /** Bank Charges */
+            bank_charges: number;
+            /** Bank Charge Move Id */
+            bank_charge_move_id: number | null;
         };
         /** PlanLineOut */
         PlanLineOut: {
@@ -3662,6 +3716,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["InstallmentsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_charge_cards__card_id__charges_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankChargeIn"];
             };
         };
         responses: {

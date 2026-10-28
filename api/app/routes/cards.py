@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app import cards
+from app import cards, recurring
 from app.accounts import AccountError
 from app.routes.accounts import AccountRowOut, Currency, Name, Rate
 from app.routes.deps import CurrentSession, current_session
@@ -81,6 +81,23 @@ class CycleOut(BaseModel):
     items: list[CycleItemOut]
 
 
+class BankChargeOut(BaseModel):
+    id: int
+    name: str
+    amount: Decimal
+    next_date: dt.date | None
+    state: str
+    drafts: int
+    yearly: bool
+
+
+class BankChargeIn(BaseModel):
+    kind: Literal["insurance", "membership", "other"]   # desgravamen, membresía u otro cargo de cada corte
+    amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)   # el último que te cobraron (o un estimado)
+    date: dt.date | None = None          # membresía: cuándo te la cobran
+    name: str | None = Field(default=None, max_length=120)
+
+
 class CardDetailOut(BaseModel):
     account: AccountRowOut
     bank_id: int | None
@@ -98,6 +115,7 @@ class CardDetailOut(BaseModel):
     available: Decimal
     plans: list[PlanRowOut]
     cycles: list[CycleOut]
+    charges: list[BankChargeOut]
 
 
 # --- Entrada ----------------------------------------------------------------------------------
@@ -203,6 +221,16 @@ def add_installments(card_id: int, body: InstallmentsIn,
                      session: CurrentSession = Depends(current_session)) -> CardDetailOut:
     try:
         cards.add_installments(session.user_id, card_id, body.currency, body.each, body.n, body.ref, body.rate)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, card_id)
+
+
+@router.post("/cards/{card_id}/charges", status_code=status.HTTP_201_CREATED,
+             summary="Un cargo del banco que se repite: desgravamen, membresía")
+def add_charge(card_id: int, body: BankChargeIn, session: CurrentSession = Depends(current_session)) -> CardDetailOut:
+    try:
+        recurring.create_bank_charge(session.user_id, card_id, body.kind, body.amount, body.date, body.name)
     except AccountError as e:
         raise _http(e) from None
     return _detail(session.user_id, card_id)

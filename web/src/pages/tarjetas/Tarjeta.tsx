@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
-import { type CardDetail, useArchiveAccount, useCard, useCardDueDate, useMe, useUpdateCard } from "@/api/hooks";
+import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useMe, useUpdateCard } from "@/api/hooks";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
@@ -13,7 +13,7 @@ import { daysUntil } from "@/lib/cards";
 import { shortDate, todayISO } from "@/lib/dates";
 import { add, formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
 
-type Menu = null | "open" | "rename" | "edit" | "due" | "archive";
+type Menu = null | "open" | "rename" | "edit" | "due" | "archive" | "charge";
 type Item = CardDetail["cycles"][number]["items"][number];
 
 export function Tarjeta() {
@@ -144,6 +144,37 @@ export function Tarjeta() {
         </Link>
       </section>
 
+      <section aria-label="Cargos del banco" className="mt-6 flex flex-col">
+        <span className="border-b border-border pb-1 text-label text-muted-foreground">Cargos del banco</span>
+        {d.charges.map((c) => (
+          <Link key={c.id} to={`/mas/recurrentes/${c.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+            <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
+              <Icon name={c.yearly ? "workspace_premium" : "shield"} />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="font-semibold">{c.name}</span>
+              <span className="text-caption text-muted-foreground">
+                {c.yearly ? "Cada año" : "Cada corte"} · {c.next_date ? `el próximo, ${shortDate(c.next_date)}` : "terminado"}
+              </span>
+              {c.drafts > 0 && (
+                <span className="mt-1 self-start rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">
+                  {c.drafts === 1 ? "1 por confirmar" : `${c.drafts} por confirmar`}
+                </span>
+              )}
+            </span>
+            <span className="text-amount">{money(c.amount, d.limit_currency)}</span>
+          </Link>
+        ))}
+        {d.charges.length === 0 && (
+          <span className="pt-3 pb-1 text-caption text-muted-foreground">
+            El seguro de desgravamen de cada corte o la membresía anual: PPM los crea por confirmar y no cuentan hasta que los confirmas.
+          </span>
+        )}
+        <button type="button" onClick={() => setMenu("charge")} className="flex min-h-12 items-center gap-1.5 font-semibold">
+          <Icon name="add" />Agregar cargo del banco
+        </button>
+      </section>
+
       <div className="mt-3 flex flex-col gap-4">
         {d.cycles.map((c) => (
           <section key={c.closing_date} aria-label={cycleLabel(c)} className="flex flex-col">
@@ -177,7 +208,48 @@ export function Tarjeta() {
       <EditSheet key={`e${menu}`} open={menu === "edit"} onClose={close} card={d} lang={lang} />
       <DueSheet key={`d${menu}`} open={menu === "due"} onClose={close} card={d} />
       <ArchiveSheet open={menu === "archive"} onClose={close} card={d} />
+      <ChargeSheet key={`c${menu}`} open={menu === "charge"} onClose={close} card={d} lang={lang} />
     </main>
+  );
+}
+
+const CHARGES = {
+  insurance: { label: "Desgravamen", hint: "Se crea el día de cada corte, por confirmar" },
+  membership: { label: "Membresía", hint: "Una vez al año, en su fecha, por confirmar" },
+  other: { label: "Otro", hint: "Se crea el día de cada corte, por confirmar" },
+} as const;
+
+/** Agregar un cargo del banco que se repite. El monto es el último que te cobraron: cada vez se
+ *  sugiere el del último que confirmaste. */
+function ChargeSheet({ open, onClose, card, lang }: { open: boolean; onClose: () => void; card: CardDetail; lang: string }) {
+  const create = useAddBankCharge(card.account.id);
+  const [kind, setKind] = useState<keyof typeof CHARGES>("insurance");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [problem, setProblem] = useState<string | null>(null);
+  const save = () => {
+    setProblem(null);
+    const value = parseAmount(amount, lang);
+    if (!value || Number(value) <= 0) return setProblem("Escribe el monto del último cargo, como 2.41");
+    if (kind === "membership" && !date) return setProblem("Elige cuándo te la cobran");
+    if (kind === "other" && !name.trim()) return setProblem("Escribe cómo se llama el cargo");
+    create.mutate({ kind, amount: value, date: kind === "membership" ? date : null, name: kind === "other" ? name.trim() : null },
+      { onSuccess: onClose });
+  };
+  return (
+    <Sheet title="Cargo del banco" open={open} onClose={onClose}>
+      <div className="flex flex-col gap-4 px-3">
+        <Segmented label="¿Qué cargo es?" size="sm" value={kind} onChange={(v) => setKind(v as keyof typeof CHARGES)}
+          options={Object.entries(CHARGES).map(([value, c]) => ({ value, label: c.label }))} />
+        <span className="text-caption text-muted-foreground">{CHARGES[kind].hint}. No cuenta en lo que debes ni en tu línea hasta que lo confirmes.</span>
+        {kind === "other" && <LineField label="¿Cómo se llama?" placeholder="Comisión por envío de estado" maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />}
+        <LineField label="¿Cuánto fue el último?" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        {kind === "membership" && <DateField label="¿Cuándo te la cobran?" value={date} onChange={setDate} min={todayISO()} />}
+        {(problem ?? create.error?.message) && <ErrorAlert>{problem ?? create.error?.message}</ErrorAlert>}
+        <PrimaryButton type="button" onClick={save} pending={create.isPending}>Agregar cargo</PrimaryButton>
+      </div>
+    </Sheet>
   );
 }
 
@@ -224,8 +296,11 @@ function ItemRow({ item: i, base, lang }: { item: Item; base: string; lang: stri
         <Icon name={chip.icon} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="font-semibold">{i.kind === "opening" && !i.sequence ? "Saldo inicial" : i.ref}</span>
-        <span className="text-caption text-muted-foreground">{hint}{i.posted ? "" : " · por confirmar"}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="truncate font-semibold">{i.kind === "opening" && !i.sequence ? "Saldo inicial" : i.ref}</span>
+          {!i.posted && <span className="flex-none rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">Por confirmar</span>}
+        </span>
+        <span className="text-caption text-muted-foreground">{hint}{i.posted ? "" : " · no cuenta todavía"}</span>
       </span>
       <span className={`flex items-center gap-0.5 text-amount ${up ? "text-expense" : "text-income"}`}>
         <Icon name={up ? "north_east" : "south_west"} className="text-[16px]" />
