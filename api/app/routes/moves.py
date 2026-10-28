@@ -77,6 +77,15 @@ class PendingIn(BaseModel):
     pending: bool
 
 
+class CategoryIn(BaseModel):
+    kind: Literal["expense", "income"]
+    name: str = Field(min_length=1, max_length=60)
+    parent_id: int | None = None     # gasto: dentro de un grupo que ya existe…
+    group: str | None = Field(None, max_length=60)  # …o de uno nuevo, que nace con ella
+    icon: str | None = Field(None, pattern=r"^[a-z0-9_]+$", max_length=60)  # Material Symbols
+    color: int | None = Field(None, ge=0, le=11)    # paleta fija; None = el del grupo
+
+
 class MaturityIn(BaseModel):
     date: dt.date | None             # None = sin fecha (en una parte de cuotas: la de la tarjeta)
 
@@ -207,6 +216,7 @@ class ManualAccountOut(BaseModel):
 class CategoryGroupOut(BaseModel):
     id: int | None
     name: str
+    icon: str | None
     color: int | None
     children: list[CategoryOut]
 
@@ -229,6 +239,16 @@ def _detail(user_id: int, move_id: int) -> MoveDetailOut:
 def categories(kind: Literal["expense", "income"],
                session: CurrentSession = Depends(current_session)) -> CategoriesOut:
     return CategoriesOut.model_validate(asdict(moves.categories(session.user_id, kind)))
+
+
+@router.post("/categories", status_code=status.HTTP_201_CREATED, summary="Crear una categoría")
+def create_category(body: CategoryIn, session: CurrentSession = Depends(current_session)) -> CategoryOut:
+    try:
+        c = moves.create_category(session.user_id, body.kind, body.name, body.parent_id, body.group,
+                                  body.icon, body.color)
+    except AccountError as e:
+        raise _http(e) from None
+    return CategoryOut.model_validate(asdict(c))
 
 
 @router.get("/manual-accounts", summary="Cuentas para un asiento manual")

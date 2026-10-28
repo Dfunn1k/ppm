@@ -1015,6 +1015,7 @@ def _round6(v: Decimal) -> Decimal:
 class CategoryGroup:
     id: int | None
     name: str
+    icon: str | None
     color: int | None
     children: list[Category]
 
@@ -1053,14 +1054,66 @@ def categories(user_id: int, kind: str) -> Categories:
     loose: list[Category] = []
     for r in rows:
         if r[4] is None and r[5]:   # una principal con hijas
-            groups.append(CategoryGroup(r[0], r[1], r[3], [leaves[x[0]] for x in rows if x[4] == r[0] and x[0] in leaves]))
+            groups.append(CategoryGroup(r[0], r[1], r[2], r[3], [leaves[x[0]] for x in rows if x[4] == r[0] and x[0] in leaves]))
         elif r[4] is None:
             loose.append(leaves[r[0]])
         elif r[4] not in by_id:      # hija de una principal archivada
             loose.append(leaves[r[0]])
     if loose:
-        groups.append(CategoryGroup(None, "Ingresos" if kind == "income" else "Otras", loose[0].color, loose))
+        groups.append(CategoryGroup(None, "Ingresos" if kind == "income" else "Otras", None, loose[0].color, loose))
     return Categories(groups, [leaves[i] for i in frequent_ids if i in leaves])
+
+
+def create_category(user_id: int, kind: str, name: str, parent_id: int | None, group: str | None,
+                    icon: str | None, color: int | None) -> Category:
+    """Una categoría nueva (Más › Categorías). La de gasto va dentro de un grupo que ya existe o de
+    uno nuevo, que nace con ella: nunca hay grupos vacíos, porque la base no distingue un grupo vacío
+    de una categoría suelta. En un grupo nuevo el ícono y el color son del grupo y ella los hereda.
+    Las de ingreso van sueltas, con su ícono y su color."""
+    name, group = name.strip(), (group or "").strip() or None
+    if not name:
+        raise AccountError(400, "Ponle un nombre")
+    if kind == "income" and (parent_id is not None or group is not None):
+        raise AccountError(400, "Las de ingreso van sueltas: no tienen grupo")
+    if kind == "expense" and (parent_id is None) == (group is None):
+        raise AccountError(400, "Elige un grupo o crea uno nuevo")
+    if (kind == "income" or group is not None) and (icon is None or color is None):
+        raise AccountError(400, "Elige un ícono y un color")
+    with user_transaction(user_id) as conn:
+        currency = conn.execute("SELECT currency_id FROM res_users WHERE id = current_user_id()").fetchone()[0]
+        if parent_id is not None:
+            row = conn.execute("""
+                SELECT p.account_type, p.parent_id, p.system_role, p.active,
+                       EXISTS (SELECT 1 FROM account_move_line l WHERE l.account_id = p.id)
+                  FROM account_account p WHERE p.id = %s""", (parent_id,)).fetchone()
+            if row is None or not row[3] or row[0] != "expense":
+                raise AccountError(404, "No encontramos ese grupo")
+            if row[1] is not None or row[2] is not None:
+                raise AccountError(400, "Esa categoría no puede agrupar otras")
+            if row[4]:
+                raise AccountError(400, "Ese grupo ya tiene movimientos propios: no puede tener categorías adentro")
+        try:
+            with conn.transaction():
+                if group is not None:
+                    parent_id = conn.execute("""
+                        INSERT INTO account_account (name, account_type, currency_id, icon, color)
+                        VALUES (%s, 'expense', %s, %s, %s) RETURNING id""",
+                        (group, currency, icon, color)).fetchone()[0]
+                    icon = color = None
+                new_id = conn.execute("""
+                    INSERT INTO account_account (name, account_type, parent_id, currency_id, icon, color)
+                    VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
+                    (name, kind, parent_id, currency, icon, color)).fetchone()[0]
+        except psycopg.errors.UniqueViolation:
+            raise AccountError(409, "Ya tienes un grupo con ese nombre" if group is not None
+                               else "Ya tienes una categoría con ese nombre ahí") from None
+        except psycopg.Error as e:
+            raise _translate(e) from None
+        r = conn.execute("""
+            SELECT a.id, a.name, coalesce(a.icon, p.icon), coalesce(a.color, p.color)
+              FROM account_account a LEFT JOIN account_account p ON p.id = a.parent_id
+             WHERE a.id = %s""", (new_id,)).fetchone()
+    return Category(*r)
 
 
 @dataclass(frozen=True)
