@@ -8,6 +8,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { type CardDetail, useArchiveAccount, useCard, useCardDueDate, useMe, useUpdateCard } from "@/api/hooks";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { DateField } from "@/components/DateSheet";
 import { daysUntil } from "@/lib/cards";
 import { shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
@@ -302,7 +303,7 @@ function DueSheet({ open, onClose, card }: { open: boolean; onClose: () => void;
         <p className="text-muted-foreground">
           El ciclo que cerró el {shortDate(card.last_closing)}. En tu estado de cuenta aparece como «Último día de pago».
         </p>
-        <LineField label="Último día de pago" type="date" min={card.last_closing} value={due} onChange={(e) => setDue(e.target.value)} />
+        <DateField label="Último día de pago" min={card.last_closing} value={due || null} onChange={setDue} />
         {set.error && <ErrorAlert>{set.error.message}</ErrorAlert>}
         <PrimaryButton pending={set.isPending} disabled={!due && !card.date_due}>Guardar fecha</PrimaryButton>
       </form>

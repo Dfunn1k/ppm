@@ -2,6 +2,8 @@
 // pagarla un bolsillo a la vez y las cuotas de antes de PPM.
 import { expect, type Page, test } from "@playwright/test";
 
+import { pickDate } from "./fechas";
+
 const lima = (offsetDays: number) =>
   new Date(Date.now() + offsetDays * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Lima" });
 // El corte de la tarjeta de prueba fue hace 3 días
@@ -56,7 +58,7 @@ test("crear una tarjeta con lo que toca pagar y escribir después la fecha de pa
   await expect(page.getByText("S/ 1,284.90").first()).toBeVisible();
   await expect(page.getByText("Falta la fecha de pago.")).toBeVisible();
   await page.getByRole("button", { name: "Escribir fecha de pago" }).click();
-  await page.getByLabel("Último día de pago").fill(lima(10));
+  await pickDate(page, /Último día de pago/, lima(10));
   await page.getByRole("button", { name: "Guardar fecha" }).click();
   await expect(page.getByText(/A pagar antes del .* faltan 10 días/)).toBeVisible();
 

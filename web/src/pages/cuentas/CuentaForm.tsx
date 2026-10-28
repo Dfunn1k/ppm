@@ -9,6 +9,7 @@ import type { BankIn, CashIn } from "@/api/hooks";
 import { rateHint, useSuggestedRate } from "@/components/RateField";
 import { Segmented, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
+import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, parseAmount, symbolOf } from "@/lib/money";
 
@@ -193,7 +194,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       </div>
       {dateOpen && (
         <div className="mt-3">
-          <LineField label="Saldo al día" type="date" max={todayISO()} {...form.register("date")} />
+          <DateField label="Saldo al día" max={todayISO()} value={date} onChange={(v) => form.setValue("date", v)} />
         </div>
       )}
       {kind === "bank" && moreOpen && (

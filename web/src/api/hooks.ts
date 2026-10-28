@@ -495,6 +495,21 @@ export function useDeleteMove(id: number) {
   });
 }
 
+/** La fecha de vencimiento de una deuda: ponerla o quitarla (en una parte de cuotas, vuelve a la de la tarjeta). */
+export function useSetMaturity() {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async ({ lineId, date }: { lineId: number; date: string | null }) => {
+      const { error, response } = await api.PUT("/move-lines/{line_id}/maturity", {
+        params: { path: { line_id: lineId } },
+        body: { date },
+      });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
 // --- Tarjetas ------------------------------------------------------------------------------------
 
 export type CardDetail = components["schemas"]["CardDetailOut"];

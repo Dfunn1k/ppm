@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction } from "@/api/hooks";
+import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
@@ -62,6 +63,7 @@ export function Persona() {
     keep && { kind: "custody_out", icon: "undo", name: "Le devolví o usé su plata", hint: "Sale de tu cuenta y baja lo que guardas" },
   ].filter(Boolean) as { kind: string; icon: string; name: string; hint: string }[];
   const failure = (offset.error ?? writeOff.error)?.message;
+  const late = [...d.owes_me, ...d.i_owe].filter((i) => maturityText(i)?.late);
 
   const why = [
     owes ? `Te debe ${joinMoney(p.owes_me, lang)}` : null,
@@ -92,13 +94,20 @@ export function Persona() {
           {keep ? `Guardas ${joinMoney(p.keep, lang)} suyos.` : "Están a mano: no hay nada pendiente."}
         </span>
       )}
+      {late.length > 0 && (
+        <span className="mt-2 flex h-8 items-center gap-1.5 self-start rounded-full bg-attention-soft px-3 text-caption font-semibold text-attention tabular-nums">
+          <Icon name="schedule" className="text-[18px]" />
+          {Object.entries(late.reduce<Record<string, number>>((t, i) => ({ ...t, [i.currency]: (t[i.currency] ?? 0) + Number(i.open) }), {}))
+            .map(([c, v]) => formatAmount(v.toFixed(2), symbolOf(c), lang)).join(" + ")} vencidos
+        </span>
+      )}
       {(p.phone || p.email) && (
         <span className="mt-2 text-caption text-muted-foreground">{[p.phone, p.email].filter(Boolean).join(" · ")}</span>
       )}
 
       <div className="mt-4 flex flex-col gap-4">
-        <Items label="Te debe" items={d.owes_me} paid="te pagó" lang={lang} />
-        <Items label="Le debes" items={d.i_owe} paid="le pagaste" lang={lang} />
+        <Items label="Te debe" items={d.owes_me} paid="te pagó" lang={lang} ask={`¿Hasta cuándo te paga ${first}?`} />
+        <Items label="Le debes" items={d.i_owe} paid="le pagaste" lang={lang} ask={`¿Hasta cuándo le pagas a ${first}?`} />
         {keep && (
           <section aria-label="Guardas suyo" className="flex flex-col">
             <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
@@ -188,30 +197,72 @@ export function Persona() {
   );
 }
 
-function Items({ label, items, paid, lang }: { label: string; items: OpenItem[]; paid: string; lang: string }) {
+/** Las deudas abiertas de un lado. Las partes de una compra en cuotas van juntas, bajo su compra. */
+function Items({ label, items, paid, lang, ask }: { label: string; items: OpenItem[]; paid: string; lang: string; ask: string }) {
+  const [editing, setEditing] = useState<OpenItem | null>(null);
   if (items.length === 0) return null;
   const total = items.reduce<Record<string, number>>((t, i) => ({ ...t, [i.currency]: (t[i.currency] ?? 0) + Number(i.open) }), {});
+  // Una compra en cuotas, una sola vez, donde aparece su primera parte
+  const groups: OpenItem[][] = [];
+  for (const i of items) {
+    const g = i.parts ? groups.find((x) => x[0]!.move_id === i.move_id && x[0]!.parts) : undefined;
+    if (g) g.push(i);
+    else groups.push([i]);
+  }
   return (
     <section aria-label={label} className="flex flex-col">
       <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
         <span>{label}</span>
         <span>{Object.entries(total).map(([c, v]) => formatAmount(v.toFixed(2), symbolOf(c), lang)).join(" + ")}</span>
       </div>
-      {items.map((i) => {
-        const partial = i.open !== i.amount;
-        return (
-          <Link key={i.line_id} to={`/movimientos/${i.move_id}`} className="flex min-h-14 items-center gap-3 border-b border-border">
+      {groups.map((g) => g[0]!.parts ? (
+        <div key={`m${g[0]!.move_id}`} className="flex flex-col border-b border-border py-2">
+          <Link to={`/movimientos/${g[0]!.move_id}`} className="flex items-center gap-3">
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-semibold">{i.ref}</span>
-              <span className="text-caption text-muted-foreground tabular-nums">
-                {shortDate(i.date)} · {ago(i.days).toLowerCase()}
-                {partial && ` · era ${formatAmount(i.amount, symbolOf(i.currency), lang)}, ${paid} ${formatAmount(subtract(i.amount, i.open), symbolOf(i.currency), lang)}`}
+              <span className="truncate font-semibold">{g[0]!.ref}</span>
+              <span className="text-caption text-muted-foreground">
+                {shortDate(g[0]!.date)} · {g[0]!.parts} partes{g.length < g[0]!.parts! ? ` · faltan ${g.length}` : ""}
               </span>
             </span>
-            <span className="text-amount">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>
+            <span className="text-amount">{formatAmount(g.reduce((t, i) => t + Number(i.open), 0).toFixed(2), symbolOf(g[0]!.currency), lang)}</span>
           </Link>
+          {g.map((i) => {
+            const m = maturityText(i);
+            return (
+              <button key={i.line_id} type="button" onClick={() => setEditing(i)} aria-label={`Parte ${i.part} de ${i.parts}: ${m?.text ?? "sin fecha"}. Cambiar la fecha`}
+                className="flex min-h-10 items-center gap-2.5 text-left">
+                <span className="grid size-6 flex-none place-items-center rounded-full bg-muted text-[12px] font-semibold">{i.part}</span>
+                <span className={`flex-1 text-caption ${m?.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>{m?.text ?? "Sin fecha de vencimiento"}</span>
+                <span className="text-[14px] tabular-nums">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (() => {
+        const i = g[0]!;
+        const partial = i.open !== i.amount;
+        const m = maturityText(i);
+        return (
+          <div key={i.line_id} className="flex flex-col border-b border-border py-2">
+            <Link to={`/movimientos/${i.move_id}`} className="flex items-center gap-3">
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-semibold">{i.ref}</span>
+                <span className="text-caption text-muted-foreground tabular-nums">
+                  {shortDate(i.date)} · {ago(i.days).toLowerCase()}
+                  {partial && ` · era ${formatAmount(i.amount, symbolOf(i.currency), lang)}, ${paid} ${formatAmount(subtract(i.amount, i.open), symbolOf(i.currency), lang)}`}
+                </span>
+              </span>
+              <span className="text-amount">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>
+            </Link>
+            <button type="button" onClick={() => setEditing(i)}
+              className={`mt-0.5 flex h-8 items-center gap-1 self-start text-caption ${m?.late ? "font-semibold text-attention" : m ? "text-muted-foreground" : "font-semibold text-primary-strong"}`}>
+              <Icon name={m?.late ? "schedule" : "event"} className="text-[16px]" />
+              {m?.text ?? "Poner fecha de vencimiento"}
+            </button>
+          </div>
         );
-      })}
+      })())}
+      {editing && <MaturitySheet key={editing.line_id} open onClose={() => setEditing(null)} item={editing} title={ask} />}
     </section>
   );
 }

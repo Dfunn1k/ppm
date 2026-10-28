@@ -6,6 +6,7 @@ import { ApiError, useAddCustody, useCreatePartner, useMe, usePartners } from "@
 import { RateField, useRateInput } from "@/components/RateField";
 import { Segmented } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen } from "@/components/ui";
+import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, parseAmount, symbolOf } from "@/lib/money";
 
@@ -101,7 +102,7 @@ export function NuevaGuardo() {
             <Icon name="event" className="text-[18px]" />
             {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : "Hoy · otra fecha"}
           </button>
-          {dateOpen && <LineField label="Te la dio el" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} />}
+          {dateOpen && <DateField label="Te la dio el" max={todayISO()} value={date} onChange={setDate} />}
           {(problem || failure) && (
             <ErrorAlert>{problem ?? (failure instanceof ApiError ? failure.message : "No se pudo guardar")}</ErrorAlert>
           )}

@@ -6,6 +6,7 @@ import { Link, Navigate } from "react-router";
 import { type AdminRates, useAdminRates, useImportSunat, useMe, useSetRate } from "@/api/hooks";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { DateField } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { rateText, symbolOf } from "@/lib/money";
 
@@ -132,7 +133,7 @@ function ManualSheet({ open, onClose, codes }: { open: boolean; onClose: () => v
           <Segmented label="Moneda" value={currency} onChange={setCurrency}
             options={codes.map((c) => ({ value: c, label: NAME[c] ?? c }))} />
         )}
-        <LineField label="Día" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
+        <DateField label="Día" max={todayISO()} value={date} onChange={setDate} />
         <div className="grid grid-cols-2 gap-4">
           <LineField label="Compra" inputMode="decimal" value={buy} onChange={(e) => setBuy(e.target.value)} />
           <LineField label="Venta" inputMode="decimal" value={sell} onChange={(e) => setSell(e.target.value)} />

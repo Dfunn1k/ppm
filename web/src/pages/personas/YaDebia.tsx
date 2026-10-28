@@ -10,6 +10,7 @@ import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Segmented } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
+import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, parseAmount, symbolOf } from "@/lib/money";
 import { AmountField } from "@/pages/cuentas/CuentaForm";
@@ -74,7 +75,7 @@ export function YaDebia() {
           )}
           <AmountField label={side === "owes_me" ? "¿Cuánto te debía?" : "¿Cuánto le debías?"} symbol={symbolOf(currency)}
             value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <LineField label="¿Desde cuándo?" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value || todayISO())}
+          <DateField label="¿Desde cuándo?" max={todayISO()} value={date} onChange={setDate}
             hint="La fecha de la deuda: con ella se ve cuánto tiempo tiene." />
           {foreign && <RateField input={rate} currency={currency} side={side === "owes_me" ? "buy" : "sell"} />}
           <LineField label="Nota (opcional)" placeholder="Lo del celular" maxLength={120} value={note} onChange={(e) => setNote(e.target.value)} />
