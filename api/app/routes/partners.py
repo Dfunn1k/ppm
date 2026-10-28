@@ -51,6 +51,11 @@ class OpenItemOut(BaseModel):
     amount: Decimal                  # lo que era
     open: Decimal                    # lo que falta
     days: int
+    date_maturity: dt.date | None    # vence: el de a mano o la fecha de pago del ciclo de su corte
+    maturity_manual: dt.date | None  # el puesto a mano
+    maturity_closing: dt.date | None # parte de una compra en cuotas: el corte de su cuota
+    part: int | None                 # qué cuota es…
+    parts: int | None                # …de cuántas
 
 
 class PartnerDetailOut(BaseModel):

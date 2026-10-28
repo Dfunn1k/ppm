@@ -78,7 +78,9 @@ class MoveInput:
     paid_by_partner_id: int | None = None                # gasto que pagó otra persona: le debes tu parte
     lines: list[ManualLine] = field(default_factory=list)   # asiento manual
     currency: str | None = None                          # con una tarjeta (multimoneda): en qué moneda; None = la base
-    installments: int | None = None                      # gasto con tarjeta: en cuántas cuotas
+    installments: int | None = None                      # gasto o préstamo con tarjeta: en cuántas cuotas
+    installment_amount: Decimal | None = None            # cada cuota, del cronograma del banco; None = sin intereses
+    interest_mine: bool = False                          # le presté la tarjeta en cuotas: el interés lo pago yo
 
 
 @dataclass(frozen=True)
@@ -226,21 +228,67 @@ def _build_person(conn: psycopg.Connection, m: MoveInput, on: dt.date, base_id: 
                   move_id: int | None) -> tuple[str, list[Line]]:
     role, into = PERSON_KINDS[m.kind]
     name = _partner(conn, m.partner_id, "a quién" if m.kind in ("lend", "repay", "custody_out") else "quién")
-    money = _money_account(_accounts(conn, [m.account_id] if m.account_id else []), m.account_id,
-                           "adonde entra" if into else "de donde sale")
+    accs = _accounts(conn, [m.account_id] if m.account_id else [])
+    # Prestar la tarjeta: la persona compra con tu tarjeta; el banco te cobra a ti y ella te debe a ti
+    card = m.kind == "lend" and m.account_id in accs and accs[m.account_id].card
+    money = _money_account(accs, m.account_id, "adonde entra" if into else "de donde sale",
+                           _use_currency(conn, m.currency, base_id) if card else None)
     # Un cobro, un pago o una devolución no pueden pasar de lo que hay (no queda un «me deben» negativo)
     if m.kind in ("collect", "repay", "custody_out"):
         have = owed(conn, role, m.partner_id, money.currency_id, move_id)  # type: ignore[arg-type]
         if m.amount > have:
             raise AccountError(400, _limit_message(m.kind, name, money.currency or "", have))
-    base = _round(m.amount * _rate(conn, money, base_id, on, m.rate))
+    rate = _rate(conn, money, base_id, on, m.rate)
+    base = _round(m.amount * rate)
     person = conn.execute("SELECT system_account(%s)", (role,)).fetchone()[0]
     n = _first(name)
     ref = {"lend": f"Préstamo a {n}", "borrow": f"Préstamo de {n}", "collect": f"{n} me pagó",
            "repay": f"Pago a {n}", "custody_in": f"Plata de {n} para guardar",
            "custody_out": f"Devolución a {n}"}[m.kind]
+    if m.installments is not None:
+        if not card:
+            raise AccountError(400, "En cuotas va solo un gasto o un préstamo con tarjeta")
+        return ref, _lend_in_installments(conn, m, money, person, rate, base_id)
     return ref, [_side(money.id, base, money.currency_id, m.amount, None, into),  # type: ignore[arg-type]
                  _side(person, base, money.currency_id, m.amount, m.partner_id, not into)]  # type: ignore[arg-type]
+
+
+def _installment_total(m: MoveInput) -> tuple[Decimal, Decimal]:
+    """Lo que le deberás al banco (las cuotas) y lo que pasa del precio: el interés."""
+    n = m.installments or 1
+    if m.installment_amount is None:
+        return m.amount, Decimal(0)
+    total = m.installment_amount * n
+    if total < m.amount:
+        raise AccountError(400, f"{n} cuotas de {m.installment_amount} no llegan a lo que costó: revisa la cuota")
+    return total, total - m.amount
+
+
+def _split(amount: Decimal, n: int) -> list[Decimal]:
+    """Un monto en n partes iguales; la última cierra el redondeo."""
+    each = _round(amount / n)
+    return [each] * (n - 1) + [amount - each * (n - 1)]
+
+
+def _lend_in_installments(conn: psycopg.Connection, m: MoveInput, money: _Acc, person: int, rate: Decimal,
+                          base_id: int) -> list[Line]:
+    """Le presté la tarjeta en cuotas: una parte de la deuda por cuota contra la tarjeta. Con interés,
+    la persona te debe las cuotas; si el interés lo pagas tú, va a tus Intereses y te debe el precio."""
+    n = m.installments or 1
+    total, interest = _installment_total(m)
+    mine = interest if m.interest_mine else Decimal(0)
+    parts = _split(total - mine, n)
+    total_base = _round(total * rate)
+    mine_base = _round(mine * rate)
+    bases = [_round(p * rate) for p in parts[:-1]]
+    bases.append(total_base - mine_base - sum(bases, Decimal(0)))
+    lines: list[Line] = [_side(money.id, total_base, money.currency_id, total, None, False)]  # type: ignore[arg-type]
+    lines += [_side(person, b, money.currency_id, p, m.partner_id, True)  # type: ignore[arg-type]
+              for p, b in zip(parts, bases, strict=True)]
+    if mine:
+        lines.append(_side(conn.execute("SELECT system_account('interest')").fetchone()[0], mine_base, base_id,
+                           mine_base, None, True))
+    return lines
 
 
 def _build_manual(conn: psycopg.Connection, m: MoveInput, base_id: int) -> tuple[str, list[Line]]:
@@ -370,11 +418,18 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         raise AccountError(400, "Revisa las partes: con ese tipo de cambio no cuadran")
 
     out = m.kind == "expense"   # el gasto sale de la cuenta (Haber) y va a la categoría (Debe)
+    # En cuotas con interés: lo que pasa del precio va a Intereses y la tarjeta carga todas las cuotas
+    interest = Decimal(0)
+    if m.installment_amount is not None:
+        if m.kind != "expense" or paid_by is not None or not card or m.installments is None:
+            raise AccountError(400, "El monto de la cuota va solo en un gasto con tarjeta en cuotas")
+        interest = _installment_total(m)[1]
+    interest_base = _round(interest * rate)
     if paid_by is not None:
         payable = conn.execute("SELECT system_account('payable')").fetchone()[0]
         lines = [_side(payable, total_base, base_id, m.amount, paid_by, False)]
     else:
-        lines = [_side(money.id, total_base, cur_id, m.amount, None, not out)]
+        lines = [_side(money.id, total_base + interest_base, cur_id, m.amount + interest, None, not out)]
     receivable = None
     for s, b in zip(m.splits, parts, strict=True):
         if s.partner_id is not None:
@@ -382,6 +437,9 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
             lines.append(_side(receivable, b, cur_id, s.amount, s.partner_id, True))
         else:
             lines.append(_side(s.category_id, b, base_id, b, None, out))  # type: ignore[arg-type]
+    if interest:
+        lines.append(_side(conn.execute("SELECT system_account('interest')").fetchone()[0], interest_base, base_id,
+                           interest_base, None, True))
     ref = accs[own[0].category_id].name  # type: ignore[index]
     if paid_by is not None:
         ref = f"{ref} (pagó {_first(payer)})"
@@ -460,11 +518,14 @@ def create(user_id: int, m: MoveInput) -> int:
 
 
 def _installments(conn: psycopg.Connection, m: MoveInput, move_id: int) -> None:
-    """Un gasto con tarjeta en cuotas: el gasto cuenta completo hoy; las cuotas dicen en qué cortes."""
+    """Un gasto con tarjeta en cuotas: el gasto cuenta completo hoy; las cuotas dicen en qué cortes.
+    Prestar la tarjeta en cuotas: además, cada parte de la deuda toma el corte de su cuota."""
     acc = _accounts(conn, [m.account_id]).get(m.account_id) if m.account_id is not None else None
-    if m.kind != "expense" or m.paid_by_partner_id is not None or acc is None or not acc.card:
-        raise AccountError(400, "En cuotas va solo un gasto con tarjeta")
-    conn.execute("SELECT create_installment_plan(%s, %s)", (move_id, m.installments))
+    if m.kind not in ("expense", "lend") or m.paid_by_partner_id is not None or acc is None or not acc.card:
+        raise AccountError(400, "En cuotas va solo un gasto o un préstamo con tarjeta")
+    plan = conn.execute("SELECT create_installment_plan(%s, %s)", (move_id, m.installments)).fetchone()[0]
+    if m.kind == "lend":
+        conn.execute("SELECT set_plan_maturities(%s)", (plan,))
 
 
 def _has_plan(conn: psycopg.Connection, move_id: int) -> bool:
@@ -531,6 +592,19 @@ def _check_limit_on_post(conn: psycopg.Connection, move_id: int) -> None:
     have = owed(conn, role, partner, cur_id, move_id)
     if amount > have:
         raise AccountError(400, _limit_message(kind, name, cur, have))
+
+
+def set_maturity(user_id: int, line_id: int, on: dt.date | None) -> None:
+    """La fecha de vencimiento de una deuda (lo que te deben o lo que debes), puesta a mano o quitada.
+    En una parte de una compra en cuotas, quitarla vuelve a la fecha de pago de la tarjeta."""
+    with user_transaction(user_id) as conn:
+        row = conn.execute("""
+            SELECT l.partner_id, l.account_id FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+             WHERE l.id = %s AND a.system_role = ANY(%s)""", (line_id, list(RECONCILED_ROLES))).fetchone()
+        if row is None:
+            raise AccountError(404, "No encontramos esa deuda")
+        conn.execute("UPDATE account_move_line SET date_maturity = %s WHERE id = %s", (on, line_id))
+        reconcile(conn, {(row[0], row[1])})
 
 
 def delete(user_id: int, move_id: int) -> None:
@@ -612,6 +686,10 @@ class LineOut:
     amount: Decimal              # en la moneda del apunte, con signo
     partner_id: int | None = None
     partner: str | None = None
+    line_id: int | None = None
+    date_maturity: dt.date | None = None     # vence: el de a mano o la fecha de pago del ciclo de su corte
+    maturity_manual: dt.date | None = None   # el puesto a mano
+    maturity_closing: dt.date | None = None  # parte de una compra en cuotas: el corte de su cuota
 
 
 @dataclass(frozen=True)
@@ -672,17 +750,22 @@ class MoveDetail:
 _LINES_SQL = """
 SELECT l.move_id, l.account_id, a.name, a.account_type, a.system_role,
        coalesce(a.icon, p.icon), coalesce(a.color, p.color), trim(c.name), l.amount_currency, l.balance,
-       l.partner_id, rp.name, l.id, l.debit, l.credit
+       l.partner_id, rp.name, l.id, l.debit, l.credit,
+       coalesce(l.date_maturity, cy.date_due), l.date_maturity, l.maturity_closing
   FROM account_move_line l
   JOIN account_account a ON a.id = l.account_id
   LEFT JOIN account_account p ON p.id = a.parent_id
   JOIN res_currency c ON c.id = l.currency_id
   LEFT JOIN res_partner rp ON rp.id = l.partner_id
+  LEFT JOIN account_installment_plan ip ON ip.move_id = l.move_id
+  LEFT JOIN account_credit_card_cycle cy ON cy.card_account_id = ip.card_account_id
+                                        AND cy.closing_date = l.maturity_closing
  WHERE l.move_id = ANY(%s)
  ORDER BY l.move_id, l.id
 """
 # Columnas: 0 asiento, 1 cuenta, 2 nombre, 3 tipo, 4 rol, 5 ícono, 6 color, 7 moneda, 8 monto, 9 balance,
-#           10 persona, 11 nombre de la persona, 12 apunte, 13 debe, 14 haber
+#           10 persona, 11 nombre de la persona, 12 apunte, 13 debe, 14 haber, 15 vence, 16 vence (a mano),
+#           17 corte de su cuota
 
 PERSON_KIND_BY = {("receivable", True): "lend", ("receivable", False): "collect",
                   ("payable", False): "borrow", ("payable", True): "repay",
@@ -716,7 +799,8 @@ def _kind(lines: list[tuple]) -> tuple[str, list[tuple], list[tuple], list[tuple
         kind = "income"
     elif not cats and len(cash) == 2 and not persons:
         kind = "transfer"
-    elif not cats and len(cash) == 1 and len(persons) == 1 and (cash[0][8] > 0) != (persons[0][8] > 0):
+    elif (not cats and len(cash) == 1 and persons and len({(x[4], x[10], x[8] > 0) for x in persons}) == 1
+          and (cash[0][8] > 0) != (persons[0][8] > 0)):                # también en partes (cuotas)
         kind = PERSON_KIND_BY[(persons[0][4], persons[0][8] > 0)]
     elif (not cats and not cash and len(persons) == 2 and {x[4] for x in persons} == {"receivable", "payable"}
           and persons[0][10] == persons[1][10]):
@@ -875,7 +959,7 @@ def _detail(user_id: int, move_id: int) -> MoveDetail:
              WHERE l.move_id = %s ORDER BY m.date, o.id""", (move_id,))]
         plan = _plan_detail(conn, move_id)
     summary, cash = _classify(head, lines)
-    all_lines = [LineOut(x[1], x[2], x[13], x[14], x[7], x[8], x[10], x[11]) for x in lines]
+    all_lines = [LineOut(x[1], x[2], x[13], x[14], x[7], x[8], x[10], x[11], x[12], x[15], x[16], x[17]) for x in lines]
     kind, _cash, persons, cats, _fx = _kind(lines)
     pid = persons[0][10] if persons else None
 

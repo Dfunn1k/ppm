@@ -60,7 +60,9 @@ class MoveIn(BaseModel):
     paid_by_partner_id: int | None = None   # un gasto que pagó otra persona
     lines: list[ManualLineIn] = []       # asiento manual
     currency: Annotated[str, Field(min_length=3, max_length=3)] | None = None   # con tarjeta: en qué moneda
-    installments: Annotated[int, Field(ge=2, le=60)] | None = None             # gasto con tarjeta en cuotas
+    installments: Annotated[int, Field(ge=2, le=60)] | None = None             # gasto o préstamo con tarjeta en cuotas
+    installment_amount: Positive | None = None   # cada cuota, del cronograma del banco; sin ella, sin intereses
+    interest_mine: bool | None = None            # le presté la tarjeta en cuotas: el interés lo pago yo
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
@@ -68,11 +70,15 @@ class MoveIn(BaseModel):
             self.rate, [moves.Split(s.category_id, s.amount, s.partner_id) for s in self.splits],
             self.to_account_id, self.to_amount, self.partner_id, self.debt_line_id, self.paid_by_partner_id,
             [moves.ManualLine(x.account_id, x.debit, x.credit, x.partner_id) for x in self.lines],
-            self.currency, self.installments)
+            self.currency, self.installments, self.installment_amount, bool(self.interest_mine))
 
 
 class PendingIn(BaseModel):
     pending: bool
+
+
+class MaturityIn(BaseModel):
+    date: dt.date | None             # None = sin fecha (en una parte de cuotas: la de la tarjeta)
 
 
 # --- Salida -----------------------------------------------------------------------------------
@@ -134,6 +140,10 @@ class LineOut(BaseModel):
     amount: Decimal
     partner_id: int | None
     partner: str | None
+    line_id: int | None = None
+    date_maturity: dt.date | None = None     # vence: el de a mano o la fecha de pago del ciclo de su corte
+    maturity_manual: dt.date | None = None   # el puesto a mano
+    maturity_closing: dt.date | None = None  # parte de una compra en cuotas: el corte de su cuota
 
 
 class SettledOut(BaseModel):
@@ -269,6 +279,16 @@ def set_state(move_id: int, body: PendingIn, session: CurrentSession = Depends(c
     except AccountError as e:
         raise _http(e) from None
     return _detail(session.user_id, move_id)
+
+
+@router.put("/move-lines/{line_id}/maturity", status_code=status.HTTP_204_NO_CONTENT,
+            summary="Poner o quitar la fecha de vencimiento de una deuda")
+def set_maturity(line_id: int, body: MaturityIn, session: CurrentSession = Depends(current_session)) -> Response:
+    try:
+        moves.set_maturity(session.user_id, line_id, body.date)
+    except AccountError as e:
+        raise _http(e) from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.delete("/moves/{move_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Borrar un movimiento")
