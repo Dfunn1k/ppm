@@ -23,9 +23,7 @@ const TYPES = [
   { to: "/cuentas/nueva/efectivo", icon: "payments", name: "Efectivo o billetera", hint: "Billetera, alcancía, sobre de dólares" },
   { to: "/cuentas/nueva/guardo", icon: "volunteer_activism", name: "Plata que guardo de otros", hint: "Te la dieron para guardar; no es tuya" },
   { to: "/cuentas/nueva/tarjeta", icon: "credit_card", name: "Tarjeta de crédito", hint: "Con su corte, su línea y sus cuotas" },
-];
-const SOON = [
-  { icon: "real_estate_agent", name: "Préstamo", hint: "Muy pronto, con su cuota de cada mes" },
+  { to: "/cuentas/nueva/prestamo", icon: "real_estate_agent", name: "Préstamo de banco", hint: "Lo que debes y su cuota de cada mes" },
 ];
 
 export function NuevaCuenta() {
@@ -48,17 +46,6 @@ export function NuevaCuenta() {
               </span>
               <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
             </Link>
-          </li>
-        ))}
-        {SOON.map((t) => (
-          <li key={t.name} aria-disabled="true" className="flex min-h-[72px] items-center gap-3.5 border-b border-border text-muted-foreground last:border-0">
-            <span className="grid size-11 flex-none place-items-center rounded-full border-[1.5px] border-dashed border-border">
-              <Icon name={t.icon} className="text-[22px]" />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-[17px] leading-6 font-semibold">{t.name}</span>
-              <span className="text-caption">{t.hint}</span>
-            </span>
           </li>
         ))}
       </ul>

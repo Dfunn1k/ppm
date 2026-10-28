@@ -864,3 +864,151 @@ export function useImportSunat() {
     onSuccess: changed,
   });
 }
+
+// --- Recurrentes (X1) y préstamos de banco (C4) --------------------------------------------------
+
+export type RecurringIn = components["schemas"]["RecurringIn"];
+export type RuleIn = components["schemas"]["RuleIn"];
+export type RecurringRow = components["schemas"]["RecurringRowOut"];
+export type RecurringDetail = components["schemas"]["RecurringDetailOut"];
+export type RecurringNext = components["schemas"]["NextOut"];
+export type Loan = components["schemas"]["LoanOut"];
+export type LoanIn = components["schemas"]["LoanIn"];
+export type PayIn = components["schemas"]["PayIn"];
+
+const RECURRING = ["recurring"] as const;
+
+/** Una recurrente o una cuota toca saldos, movimientos y avisos: todo se vuelve a pedir. */
+function useRecurringChanged() {
+  const qc = useQueryClient();
+  const moves = useMovesChanged();
+  return () => Promise.all([qc.invalidateQueries({ queryKey: RECURRING }), qc.invalidateQueries({ queryKey: ["loans"] }), moves()]);
+}
+
+export function useRecurringList() {
+  return useQuery({
+    queryKey: [...RECURRING, "list"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/recurring");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useRecurringPending() {
+  return useQuery({
+    queryKey: [...RECURRING, "pending"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/recurring/pending");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useRecurring(id: number) {
+  return useQuery({
+    queryKey: [...RECURRING, id],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/recurring/{recurring_id}", { params: { path: { recurring_id: id } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useSaveRecurring(id?: number) {
+  const changed = useRecurringChanged();
+  return useMutation({
+    mutationFn: async (body: RecurringIn) => {
+      if (id) {
+        const { error, response } = await api.PUT("/recurring/{recurring_id}", { params: { path: { recurring_id: id } }, body });
+        if (!response.ok) fail(response, error);
+        return id;
+      }
+      const { data, error, response } = await api.POST("/recurring", { body });
+      if (!data) fail(response, error);
+      return data.id;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function useRecurringState(id: number) {
+  const changed = useRecurringChanged();
+  return useMutation({
+    mutationFn: async (action: "pause" | "resume" | "end") => {
+      const { error, response } = await api.POST("/recurring/{recurring_id}/state", {
+        params: { path: { recurring_id: id } }, body: { action },
+      });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export type OccurrenceChange = { occurrence: string; skip?: boolean; date?: string | null; total?: string | null; reset?: boolean };
+
+export function useOccurrence(id: number) {
+  const changed = useRecurringChanged();
+  return useMutation({
+    mutationFn: async ({ occurrence, reset, skip = false, ...rest }: OccurrenceChange) => {
+      const body = { skip, ...rest };
+      const params = { path: { recurring_id: id, occurrence } };
+      const { error, response } = reset
+        ? await api.DELETE("/recurring/{recurring_id}/occurrences/{occurrence}", { params })
+        : await api.PUT("/recurring/{recurring_id}/occurrences/{occurrence}", { params, body });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function useReminderDone() {
+  const changed = useRecurringChanged();
+  return useMutation({
+    mutationFn: async ({ id, occurrence }: { id: number; occurrence: string }) => {
+      const { error, response } = await api.POST("/recurring/{recurring_id}/occurrences/{occurrence}/done", {
+        params: { path: { recurring_id: id, occurrence } },
+      });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function useLoan(id: number) {
+  return useQuery({
+    queryKey: ["loans", id],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/loans/{account_id}", { params: { path: { account_id: id } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useCreateLoan() {
+  const changed = useRecurringChanged();
+  return useMutation({
+    mutationFn: async (body: LoanIn) => {
+      const { data, error, response } = await api.POST("/loans", { body });
+      if (!data) fail(response, error);
+      return data.id;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function usePayLoan(id: number) {
+  const changed = useRecurringChanged();
+  return useMutation({
+    mutationFn: async (body: PayIn) => {
+      const { data, error, response } = await api.POST("/loans/{account_id}/pay", { params: { path: { account_id: id } }, body });
+      if (!data) fail(response, error);
+      return data.id;
+    },
+    onSuccess: () => changed(),
+  });
+}

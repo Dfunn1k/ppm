@@ -2,10 +2,14 @@
 // parte de otra persona, que te la debe); un gasto que pagó otra persona; «Más» abre el panel;
 // en otra moneda con el tipo del día (editable); entre monedas con los dos montos y, al vender, el
 // costo del cambio o la ganancia; con tarjeta, en soles o dólares y en cuotas; por confirmar.
+// «Se repite» lo vuelve una recurrente (X1): la regla, hasta cuándo y cómo se registra.
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 
-import { type AccountRow, type Category, type MoveDetail, type MoveIn, useAccounts, useMe, useMove, usePartners, useSaveMove } from "@/api/hooks";
+import {
+  type AccountRow, type Category, type MoveDetail, type MoveIn, type RecurringDetail, type RuleIn, useAccounts, useMe, useMove,
+  usePartners, useRecurring, useReminderDone, useSaveMove, useSaveRecurring,
+} from "@/api/hooks";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { MasTipos } from "@/components/MasTipos";
 import { Avatar } from "@/components/MoveBits";
@@ -13,9 +17,10 @@ import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
-import { DateSheet, dateLabel } from "@/components/DateSheet";
+import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
 import { shortDate, todayISO } from "@/lib/dates";
+import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
 import { CURRENCY_NAME, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 import { PersonaSheet } from "@/pages/personas/PersonaForm";
@@ -30,6 +35,10 @@ type Part = { category: Category | null; partner?: Who | null; amount: string };
 
 const KIND_LABEL: Record<Kind, string> = { expense: "Gasto", income: "Ingreso", transfer: "Transferir" };
 const SUBMIT: Record<Kind, string> = { expense: "Registrar gasto", income: "Registrar ingreso", transfer: "Registrar transferencia" };
+type Mode = "auto" | "draft" | "reminder";
+type Freq = "month" | "week" | "year" | "other";
+const FREQS: [Freq, string][] = [["month", "Cada mes"], ["week", "Cada semana"], ["year", "Cada año"], ["other", "Otro"]];
+const MODES: [Mode, string][] = [["auto", "Se registra solo en su fecha"], ["draft", "Se crea para que revises el monto"], ["reminder", "Te avisamos y lo registras tú"]];
 
 /** Pantalla de edición: espera el movimiento y abre el formulario con sus datos. */
 export function EditarMovimiento() {
@@ -44,35 +53,66 @@ export function EditarMovimiento() {
   return <Registrar editing={move.data} />;
 }
 
-export function Registrar({ editing }: { editing?: MoveDetail }) {
+/** Editar una recurrente: el mismo formulario con «Se repite» ya puesto. */
+export function EditarRecurrente() {
+  const id = Number(useParams().id);
+  const rec = useRecurring(id);
+  if (rec.isPending) return <Spinner />;
+  if (rec.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{rec.error.message}</ErrorAlert></main>;
+  return <Registrar recurring={rec.data} />;
+}
+
+/** Desde el aviso del Inicio: Registrar con lo de la recurrente; al guardar, el aviso se va. */
+export function RegistrarAviso() {
+  const id = Number(useParams().id);
+  const occurrence = useParams().occurrence ?? "";
+  const rec = useRecurring(id);
+  if (rec.isPending) return <Spinner />;
+  if (rec.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{rec.error.message}</ErrorAlert></main>;
+  return <Registrar reminder={{ detail: rec.data, occurrence }} />;
+}
+
+export function Registrar({ editing, recurring, reminder }: {
+  editing?: MoveDetail;
+  recurring?: RecurringDetail;
+  reminder?: { detail: RecurringDetail; occurrence: string };
+}) {
   const navigate = useNavigate();
   const me = useMe().data;
   const overview = useAccounts().data;
   const save = useSaveMove(editing?.summary.id);
+  const saveRecurring = useSaveRecurring(recurring?.row.id);
+  const reminderDone = useReminderDone();
+  const source = recurring ?? reminder?.detail;   // de dónde se llena el formulario
   const lang = me?.lang ?? "es-PE";
   const fmt = (v: string) => formatNumber(v, lang);
 
   const [search] = useSearchParams();
   const tipo = search.get("tipo");
-  const initialKind = editing?.summary.kind ?? (tipo === "income" || tipo === "transfer" ? tipo : "expense");
+  const rec = source?.row;
+  const initialKind = editing?.summary.kind ?? rec?.kind ?? (tipo === "income" || tipo === "transfer" ? tipo : "expense");
   const [kind, setKind] = useState<Kind>(initialKind as Kind);
-  const [accountId, setAccountId] = useState<string>(editing?.account_id ? String(editing.account_id) : search.get("cuenta") ?? "");
-  const [cardCurrency, setCardCurrency] = useState<string | null>(editing?.summary.currency ?? null);
+  const [accountId, setAccountId] = useState<string>(
+    editing?.account_id ? String(editing.account_id) : rec ? String(rec.account_id) : search.get("cuenta") ?? "");
+  const [cardCurrency, setCardCurrency] = useState<string | null>(editing?.summary.currency ?? rec?.currency ?? null);
   const [inInstallments, setInInstallments] = useState(false);
   const [installments, setInstallments] = useState(6);
   const [cuota, setCuota] = useState("");
   const [toAccountId, setToAccountId] = useState<string>(editing?.to_account_id ? String(editing.to_account_id) : "");
-  const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : "");
+  const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : rec ? fmt(rec.amount.replace("-", "")) : "");
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
   const [parts, setParts] = useState<Part[]>(
     editing?.splits.length
       ? editing.splits.map((s) => ({ category: s.category, partner: s.partner_id ? { id: s.partner_id, name: s.partner ?? "" } : null, amount: fmt(s.amount) }))
-      : [{ category: null, amount: "" }],
+      : source?.categories.length
+        ? source.categories.map((c, i) => ({ category: c, amount: fmt(source.splits[i] ?? "0") }))
+        : [{ category: null, amount: "" }],
   );
-  const [split, setSplit] = useState((editing?.splits.length ?? 0) > 1);
-  const [date, setDate] = useState(editing?.summary.date ?? todayISO());
+  const [split, setSplit] = useState((editing?.splits.length ?? source?.categories.length ?? 0) > 1);
+  const [date, setDate] = useState(editing?.summary.date ?? recurring?.rule.start ?? todayISO());
   const [dateOpen, setDateOpen] = useState(false);
-  const [note, setNote] = useState(editing && editing.summary.ref !== editing.splits[0]?.category?.name ? editing.summary.ref : "");
+  const [note, setNote] = useState(editing && editing.summary.ref !== editing.splits[0]?.category?.name ? editing.summary.ref
+    : rec && rec.name !== rec.category?.name && !rec.name.startsWith("Transferencia a ") ? rec.name : "");
   const [pending, setPending] = useState(editing ? !editing.summary.posted : false);
   const [sheetFor, setSheetFor] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -82,6 +122,15 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const [partFor, setPartFor] = useState(false);
   const [adding, setAdding] = useState(false);
   const partners = usePartners().data ?? [];
+  const rule = recurring?.rule;
+  const [repeat, setRepeat] = useState(!!recurring || search.get("repite") === "1");
+  const [freq, setFreq] = useState<Freq>(!rule ? "month" : rule.every > 1 || rule.interval === "day" ? "other" : rule.interval as Freq);
+  const [every, setEvery] = useState(String(rule?.every ?? 2));
+  const [unit, setUnit] = useState<RuleIn["interval"]>(rule?.interval ?? "day");
+  const [endType, setEndType] = useState<RuleIn["end_type"]>(rule?.end_type ?? "never");
+  const [endDate, setEndDate] = useState<string | null>(rule?.date_end ?? null);
+  const [count, setCount] = useState(rule?.max_count ? String(rule.max_count) : "");
+  const [mode, setMode] = useState<Mode>(rec?.mode ?? "auto");
 
   const base = me?.currency ?? "PEN";
   // Una tarjeta: es de donde sale un gasto y adonde entra su pago (no recibe ingresos ni se transfiere desde ella)
@@ -89,7 +138,8 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
     ? [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "card", "other"].includes(a.kind)) : [];
   const accounts = all.filter((a) => a.kind !== "card" || kind === "expense");
   const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
-  const toAccount = all.find((a) => String(a.id) === toAccountId);
+  const toAccount = all.find((a) => String(a.id) === toAccountId) ?? (toAccountId === "" && rec?.to_account
+    ? all.find((a) => a.name === rec.to_account) : undefined);
   const other = kind === "expense" && payer === "other";   // lo pagó otra persona: no sale de tus cuentas
   const card = !other && account?.kind === "card";
   const currency = other ? base : card ? (cardCurrency ?? base) : account?.currency ?? base;
@@ -102,7 +152,8 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   if (!me?.currency || !overview) return <Spinner />;
   const foreign = currency !== base;
   const crossCurrency = kind === "transfer" && toAccount && toCurrency !== currency;
-  const future = date > todayISO();
+  const repeating = repeat && !editing;
+  const future = date > todayISO() && !repeating;
   // El tipo de cambio se escribe solo si nada lo da: en una transferencia que toca la moneda base, sale de los dos montos
   const needRate = foreign && !(kind === "transfer" && toCurrency === base) && !(kind === "transfer" && toAccount?.kind === "card");
   const options = (except?: number, list = accounts) =>
@@ -161,8 +212,41 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
         ? { partner_id: p.partner.id, amount: parseAmount(p.amount, lang) ?? p.amount }
         : { category_id: p.category!.id, amount: parseAmount(p.amount, lang) ?? p.amount });
     }
-    save.mutate(body, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : "/movimientos", { replace: true }) });
+    if (repeating) {
+      if (crossCurrency) return setProblem("Un cambio de moneda no se repite: el tipo de cambio es de cada día");
+      if (endType === "count" && !(Number(count) >= 1)) return setProblem("Escribe cuántas veces");
+      if (endType === "date" && !endDate) return setProblem("Elige hasta qué fecha");
+      if (freq === "other" && !(Number(every) >= 1)) return setProblem("Escribe cada cuánto");
+      const interval = freq === "other" ? unit : freq;
+      const sameStart = rule && rule.start === date && rule.interval === interval;
+      const r: RuleIn = {
+        interval,
+        every: freq === "other" ? Number(every) : 1,
+        start: date,
+        month_days: sameStart ? rule.month_days : null,
+        weekday: sameStart ? rule.weekday : null,
+        nth: sameStart ? rule.nth as RuleIn["nth"] : null,
+        end_type: endType,
+        date_end: endType === "date" ? endDate : null,
+        max_count: endType === "count" ? Number(count) : null,
+      };
+      saveRecurring.mutate({ move: { ...body, pending: false, date: null }, rule: r, mode },
+        { onSuccess: (id) => navigate(`/mas/recurrentes/${id}`, { replace: true }) });
+      return;
+    }
+    save.mutate(body, {
+      onSuccess: (d) => {
+        if (reminder) reminderDone.mutate({ id: reminder.detail.row.id, occurrence: reminder.occurrence });
+        navigate(editing ? `/movimientos/${d.summary.id}` : "/movimientos", { replace: true });
+      },
+    });
   };
+  const ruleNow = { interval: freq === "other" ? unit : freq, every: freq === "other" ? Number(every) || 1 : 1, start: date,
+    month_days: rule && rule.start === date ? rule.month_days : null, weekday: rule && rule.start === date ? rule.weekday : null,
+    nth: rule && rule.start === date ? rule.nth : null } as const;
+  const summary = repeating ? `${mode === "auto" ? "Se registra solo" : mode === "draft" ? "Se crea por confirmar" : "Te avisamos en el Inicio"}: ${ruleText(ruleNow).toLowerCase()}, desde el ${shortDate(date)}${
+    endType === "count" && count ? `, ${count} ${count === "1" ? "vez" : "veces"}` : endType === "date" && endDate ? `, hasta el ${shortDate(endDate)}` : ""}.${
+    mode === "draft" ? " Corriges el monto con el recibo; si importas el extracto, toma el monto del banco." : mode === "reminder" ? " Lo registras tú cuando lo pagues." : ""}` : "";
 
   const pickCategory = (c: Category) => {
     setParts((ps) => ps.map((p, i) => (i === sheetFor ? { ...p, category: c } : p)));
@@ -187,7 +271,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
         <button type="button" aria-label="Cerrar sin guardar" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
           <Icon name="close" className="text-[24px]" />
         </button>
-        <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
+        <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : recurring ? "Editar recurrente" : "Nuevo movimiento"}</span>
       </div>
 
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
@@ -204,7 +288,8 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
         </div>
 
         <label className="mt-5 flex flex-col gap-0.5 text-caption font-semibold">
-          {kind === "expense" ? "¿Cuánto gastaste?" : kind === "income" ? "¿Cuánto entró?" : "¿Cuánto pasas?"}
+          {repeating ? (mode === "draft" ? "¿Cuánto es, más o menos?" : "¿Cuánto es?")
+            : kind === "expense" ? "¿Cuánto gastaste?" : kind === "income" ? "¿Cuánto entró?" : "¿Cuánto pasas?"}
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
             <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
@@ -213,7 +298,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
           </span>
         </label>
 
-        {kind === "expense" && (
+        {kind === "expense" && !repeating && (
           <div className="mt-3 flex flex-col gap-3">
             <Segmented label="¿Quién pagó?" size="sm" value={payer} onChange={(v) => { setPayer(v as "me" | "other"); if (v === "other") setParts((ps) => ps.filter((p) => !p.partner)); }}
               options={[{ value: "me", label: "Yo" }, { value: "other", label: "Otra persona" }]} />
@@ -336,7 +421,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
                     className="flex items-center gap-1 font-semibold text-primary-strong">
                     <Icon name="add" />Categoría
                   </button>
-                  {kind === "expense" && !other && (
+                  {kind === "expense" && !other && !repeating && (
                     <button type="button" onClick={() => setPartFor(true)} className="flex items-center gap-1 font-semibold text-primary-strong">
                       <Icon name="person_add" />Parte de alguien
                     </button>
@@ -353,16 +438,19 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
             </div>
           )}
 
-          <div className="grid min-h-[52px] grid-cols-[auto_1fr] items-center gap-3 border-b border-border">
-            <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
-              className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-              <Icon name="event" className="text-[18px]" />
-              {dateLabel(date)}
-            </button>
+          <div className={`grid min-h-[52px] ${repeating ? "grid-cols-1" : "grid-cols-[auto_1fr]"} items-center gap-3 border-b border-border`}>
+            {!repeating && (
+              <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
+                className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
+                <Icon name="event" className="text-[18px]" />
+                {dateLabel(date)}
+              </button>
+            )}
             <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
               className="h-10 min-w-0 border-0 bg-transparent p-0" />
           </div>
-          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} />
+          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title={repeating ? "¿Desde cuándo?" : "¿Cuándo fue?"} value={date}
+            onChange={setDate} />
 
           {kind !== "transfer" && (
             <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
@@ -375,7 +463,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
                 }} />
             </label>
           )}
-          {card && kind === "expense" && !editing && (
+          {card && kind === "expense" && !editing && !repeating && (
             <>
               <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
                 <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
@@ -392,6 +480,73 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
               )}
             </>
           )}
+          {!editing && !recurring && (
+            <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
+              <Icon name="repeat" className="w-9 text-center text-muted-foreground" />
+              <span className="flex flex-1 flex-col">
+                <span>Se repite</span>
+                <span className="text-caption text-muted-foreground">El sueldo, el alquiler, Netflix: PPM lo registra cada vez</span>
+              </span>
+              <input type="checkbox" role="switch" checked={repeat} onChange={() => { setRepeat(!repeat); setInInstallments(false); setPayer("me"); }}
+                className="size-[22px] accent-primary" />
+            </label>
+          )}
+          {repeating && (
+            <div className="flex flex-col gap-4 pt-3">
+              <div role="radiogroup" aria-label="¿Cada cuánto?" className="flex flex-wrap gap-2">
+                {FREQS.map(([f, label]) => (
+                  <button key={f} type="button" role="radio" aria-checked={f === freq} onClick={() => setFreq(f)}
+                    className={`h-9 rounded-full border px-3.5 text-caption font-semibold ${f === freq ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {freq === "other" && (
+                <div className="grid grid-cols-[96px_1fr] items-end gap-3">
+                  <label className="flex flex-col gap-0.5 text-caption font-semibold">
+                    Cada
+                    <input inputMode="numeric" value={every} onChange={(e) => setEvery(e.target.value.replace(/\D/g, ""))}
+                      className="h-10 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] tabular-nums" />
+                  </label>
+                  <Segmented label="Unidad" size="sm" value={unit} onChange={(v) => setUnit(v as RuleIn["interval"])}
+                    options={[{ value: "day", label: "Días" }, { value: "week", label: "Semanas" }, { value: "month", label: "Meses" }]} />
+                </div>
+              )}
+              <button type="button" aria-haspopup="dialog" onClick={() => setDateOpen(true)}
+                className="flex flex-col items-start border-b-2 border-input-line pb-1.5 text-left">
+                <span className="text-caption font-semibold">¿Qué día?</span>
+                <span className="flex w-full items-center gap-2 text-[17px] leading-[26px]">
+                  <span className="flex-1">{ruleText(ruleNow)} · desde el {shortDate(date)}</span>
+                  <Icon name="calendar_month" className="text-[22px] text-muted-foreground" />
+                </span>
+              </button>
+              <Segmented label="¿Hasta cuándo?" size="sm" value={endType} onChange={(v) => setEndType(v as RuleIn["end_type"])}
+                options={[{ value: "never", label: "Sin fin" }, { value: "date", label: "Hasta una fecha" }, { value: "count", label: "Unas veces" }]} />
+              {endType === "date" && <DateField label="¿Hasta qué fecha?" value={endDate} onChange={setEndDate} min={date} />}
+              {endType === "count" && (
+                <label className="flex flex-col gap-0.5 text-caption font-semibold">
+                  ¿Cuántas veces?
+                  <input inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value.replace(/\D/g, ""))}
+                    className="h-10 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] tabular-nums" />
+                </label>
+              )}
+              <div role="radiogroup" aria-label="¿Cómo se registra?" className="flex flex-col gap-1">
+                <span className="text-caption font-semibold">¿Cómo se registra?</span>
+                {MODES.map(([m, hint]) => (
+                  <button key={m} type="button" role="radio" aria-checked={m === mode} onClick={() => setMode(m)}
+                    className={`flex min-h-12 items-center gap-3 rounded-md px-3 text-left ${m === mode ? "bg-muted" : ""}`}>
+                    <Icon name={m === mode ? "radio_button_checked" : "radio_button_unchecked"} fill={m === mode} className="text-[22px]" />
+                    <span className="flex flex-col">
+                      <span className="font-semibold">{m === "reminder" ? "Solo avisarme" : MODE_NAME[m]}</span>
+                      <span className="text-caption text-muted-foreground">{hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p role="status" className="rounded-md bg-muted px-3 py-2.5 text-caption">{summary}</p>
+            </div>
+          )}
+          {!repeating && (
           <label className="flex min-h-[52px] cursor-pointer items-center gap-3">
             <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
             <span className="flex flex-1 flex-col">
@@ -403,13 +558,15 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
             <input type="checkbox" role="switch" checked={pending || future} disabled={future} onChange={() => setPending(!pending)}
               className="size-[22px] accent-primary" />
           </label>
+          )}
         </div>
 
         <div className="min-h-4 flex-1" />
         <div className="flex flex-col gap-3">
-          {(problem || save.error) && <ErrorAlert>{problem ?? save.error?.message}</ErrorAlert>}
-          <PrimaryButton pending={save.isPending}>
-            {editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar"
+          {(problem || save.error || saveRecurring.error) && <ErrorAlert>{problem ?? save.error?.message ?? saveRecurring.error?.message}</ErrorAlert>}
+          <PrimaryButton pending={save.isPending || saveRecurring.isPending}>
+            {editing || recurring ? "Guardar cambios" : repeating ? (mode === "reminder" ? "Guardar recordatorio" : "Guardar recurrente")
+              : editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar"
               : card && inInstallments && kind === "expense" ? `Registrar gasto en ${installments} cuotas` : SUBMIT[kind]}
           </PrimaryButton>
         </div>

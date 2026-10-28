@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
-import { useAccounts, useHome, useMe } from "@/api/hooks";
+import { useAccounts, useHome, useMe, useRecurringPending, useReminderDone } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
@@ -31,6 +31,8 @@ export function Inicio() {
   const accounts = useAccounts().data;
   const [picking, setPicking] = useState(false);
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
+  const reminders = useRecurringPending().data?.reminders ?? [];
+  const done = useReminderDone();
 
   if (!me?.currency || home.isPending) return <Spinner />;
   if (home.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{home.error.message}</ErrorAlert></main>;
@@ -87,6 +89,27 @@ export function Inicio() {
           <Icon name="chevron_right" />
         </Link>
       )}
+
+      {reminders.map((r) => (
+        <section key={`${r.recurring_id}-${r.occurrence}`} aria-label="Recordatorio"
+          className="mt-4 flex flex-col gap-2.5 rounded-md bg-attention-soft px-3.5 py-3 text-attention">
+          <span className="flex items-start gap-2.5">
+            <Icon name="notifications" className="text-[22px]" />
+            <span className="flex flex-1 flex-col">
+              <b>{r.name} · {r.late ? `desde el ${shortDate(r.date)}` : "hoy"}</b>
+              <span className="text-caption">
+                {formatAmount(r.amount.replace("-", ""), symbolOf(r.currency), lang)} · {r.late ? "todavía no lo registras." : r.amount.startsWith("-") ? "te toca pagarlo hoy." : "te toca recibirlo hoy."}
+              </span>
+            </span>
+          </span>
+          <span className="flex gap-2">
+            <Link to={`/registrar/aviso/${r.recurring_id}/${r.occurrence}`}
+              className="flex h-10 items-center rounded-full bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground">Registrar el pago</Link>
+            <button type="button" disabled={done.isPending} onClick={() => done.mutate({ id: r.recurring_id, occurrence: r.occurrence })}
+              className="h-10 rounded-full border border-current px-3.5 text-[14px] font-semibold">Ya lo hice</button>
+          </span>
+        </section>
+      ))}
 
       {h.overdue_pending > 0 && (
         <Link to="/movimientos?pendientes=1" className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
