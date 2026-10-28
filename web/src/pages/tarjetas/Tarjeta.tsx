@@ -11,7 +11,7 @@ import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/component
 import { DateField } from "@/components/DateSheet";
 import { daysUntil } from "@/lib/cards";
 import { shortDate, todayISO } from "@/lib/dates";
-import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
+import { add, formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
 
 type Menu = null | "open" | "rename" | "edit" | "due" | "archive";
 type Item = CardDetail["cycles"][number]["items"][number];
@@ -113,7 +113,7 @@ export function Tarjeta() {
         <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
       </div>
       <span className="mt-1.5 text-caption text-muted-foreground">
-        {pct === 0 ? "Todavía no usas tu línea." : `Usas el ${pct}% de tu línea. Las cuotas que faltan también la ocupan${d.status.length > 1 ? "; los dólares cuentan al tipo de venta" : ""}.`}
+        {pct === 0 ? "Todavía no usas tu línea." : `Usas el ${pct}% de tu línea. El capital de las cuotas que faltan también la ocupa; sus intereses, recién cuando se facturan${d.status.length > 1 ? "; los dólares cuentan al tipo de venta" : ""}.`}
       </span>
 
       <section aria-label="Cuotas que faltan" className="mt-6 flex flex-col">
@@ -130,7 +130,7 @@ export function Tarjeta() {
               <span className="font-semibold">{p.name}</span>
               <span className="text-caption text-muted-foreground tabular-nums">
                 {p.opening ? "De antes de PPM" : `Facturada ${p.billed} de ${p.n_installments}`}
-                {" · "}quedan {p.n_installments - p.billed}{p.next_installment ? ` de ${money(p.next_installment, p.currency)}` : ""}
+                {" · "}quedan {p.n_installments - p.billed}{p.next_installment ? ` de ${money(add(p.next_installment, p.next_interest), p.currency)}` : ""}
               </span>
             </span>
             <span className="text-amount">{money(p.remaining, p.currency)}</span>
@@ -211,7 +211,7 @@ function ItemRow({ item: i, base, lang }: { item: Item; base: string; lang: stri
       ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "flag" }
       : { bg: `var(--cat-${i.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: i.counterpart_icon ?? "category" };
   const hint = i.kind === "installment"
-    ? `Cuota ${i.sequence} de ${i.n_installments} · compra del ${shortDate(i.date)}`
+    ? `Cuota ${i.sequence} de ${i.n_installments}${Number(i.interest ?? 0) > 0 ? ` · incluye ${formatNumber(i.interest!, lang)} de interés` : ` · compra del ${shortDate(i.date)}`}`
     : i.kind === "opening"
       ? i.sequence ? `Cuota ${i.sequence} de ${i.n_installments} · de antes de PPM` : "Lo que tocaba pagar al empezar"
       : i.kind === "payment"

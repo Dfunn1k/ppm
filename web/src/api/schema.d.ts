@@ -505,6 +505,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moves/{move_id}/installments/{sequence}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Corregir capital e interés de una cuota */
+        put: operations["set_installment_split_moves__move_id__installments__sequence__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/partners/overview": {
         parameters: {
             query?: never;
@@ -1396,6 +1413,8 @@ export interface components {
             sequence: number | null;
             /** N Installments */
             n_installments: number | null;
+            /** Interest */
+            interest: string | null;
         };
         /** CycleOut */
         CycleOut: {
@@ -1979,6 +1998,10 @@ export interface components {
             part: number | null;
             /** Parts */
             parts: number | null;
+            /** Interest */
+            interest: string | null;
+            /** Billed */
+            billed: boolean | null;
         };
         /** OpeningIn */
         OpeningIn: {
@@ -2177,6 +2200,8 @@ export interface components {
             principal: string;
             /** Billed */
             billed: boolean;
+            /** Interest */
+            interest: string;
         };
         /** PlanOut */
         PlanOut: {
@@ -2192,6 +2217,10 @@ export interface components {
             remaining: string;
             /** Lines */
             lines: components["schemas"]["PlanLineOut"][];
+            /** Installment Amount */
+            installment_amount: string | null;
+            /** Plan Id */
+            plan_id: number | null;
         };
         /** PlanRowOut */
         PlanRowOut: {
@@ -2217,6 +2246,8 @@ export interface components {
             next_closing: string | null;
             /** Opening */
             opening: boolean;
+            /** Next Interest */
+            next_interest: string;
         };
         /** PreviewRowOut */
         PreviewRowOut: {
@@ -2482,6 +2513,13 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** SplitFixIn */
+        SplitFixIn: {
+            /** Principal */
+            principal: number | string;
+            /** Interest */
+            interest: number | string;
         };
         /** SplitIn */
         SplitIn: {
@@ -3980,6 +4018,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_installment_split_moves__move_id__installments__sequence__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+                sequence: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitFixIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
+                };
             };
             /** @description Validation Error */
             422: {

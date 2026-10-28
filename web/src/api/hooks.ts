@@ -510,6 +510,22 @@ export function useDeleteMove(id: number) {
 }
 
 /** La fecha de vencimiento de una deuda: ponerla o quitarla (en una parte de cuotas, vuelve a la de la tarjeta). */
+/** Corregir capital e interés de una cuota con el «Detalle plan cuotas» del estado de cuenta. */
+export function useInstallmentSplit(moveId: number) {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async ({ sequence, principal, interest }: { sequence: number; principal: string; interest: string }) => {
+      const { data, error, response } = await api.PUT("/moves/{move_id}/installments/{sequence}", {
+        params: { path: { move_id: moveId, sequence } },
+        body: { principal, interest },
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
 export function useSetMaturity() {
   const changed = useMovesChanged();
   return useMutation({

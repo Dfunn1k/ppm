@@ -201,6 +201,15 @@ export function Persona() {
   );
 }
 
+/** «3 cuotas · 1 por cobrar · 2 por facturar · 1 cobrada»: las que faltan, por estado, y las ya cobradas. */
+function cuotaCounts(g: OpenItem[]): string {
+  const parts = g[0]!.parts!;
+  const billed = g.filter((i) => i.billed !== false).length;
+  const paid = parts - g.length;
+  return [`${parts} cuotas`, billed && `${billed} por cobrar`, g.length - billed && `${g.length - billed} por facturar`,
+    paid && `${paid} ${paid === 1 ? "cobrada" : "cobradas"}`].filter(Boolean).join(" · ");
+}
+
 /** Las deudas abiertas de un lado. Las partes de una compra en cuotas van juntas, bajo su compra. Sin
  *  encabezado cuando es el único lado: el monto grande ya dice «Te debe» y cuánto. */
 function Items({ label, header, items, paid, lang, ask }: {
@@ -230,7 +239,7 @@ function Items({ label, header, items, paid, lang, ask }: {
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-semibold">{g[0]!.ref}</span>
               <span className="text-caption text-muted-foreground">
-                {shortDate(g[0]!.date)} · {g[0]!.parts} partes{g.length < g[0]!.parts! ? ` · faltan ${g.length}` : ""}
+                {cuotaCounts(g)}
               </span>
             </span>
             <span className="text-amount">{formatAmount(g.reduce((t, i) => t + Number(i.open), 0).toFixed(2), symbolOf(g[0]!.currency), lang)}</span>
@@ -241,7 +250,10 @@ function Items({ label, header, items, paid, lang, ask }: {
               <button key={i.line_id} type="button" onClick={() => setEditing(i)} aria-label={`Parte ${i.part} de ${i.parts}: ${m?.text ?? "sin fecha"}. Cambiar la fecha`}
                 className="flex min-h-10 items-center gap-2.5 text-left">
                 <span className="grid size-6 flex-none place-items-center rounded-full bg-muted text-[12px] font-semibold">{i.part}</span>
-                <span className={`flex-1 text-caption ${m?.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>{m?.text ?? `Parte ${i.part}`}</span>
+                <span className={`flex flex-1 flex-col text-caption ${m?.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>
+                  <span>{[i.billed === false ? "Por facturar" : !m?.late && "Por cobrar", m?.text].filter(Boolean).join(" · ")}</span>
+                  {i.interest && <span className="tabular-nums">Incluye {formatAmount(i.interest, symbolOf(i.currency), lang)} de interés</span>}
+                </span>
                 <span className="text-[14px] tabular-nums">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>
               </button>
             );

@@ -5,7 +5,7 @@ Es el cuaderno de fiados de la bodega: un solo cuaderno (las cuentas Por cobrar,
 que guardo de otros) y en cada anotación el nombre de la persona."""
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import datetime as dt
 from decimal import Decimal
 import re
@@ -56,7 +56,9 @@ class OpenItem:
     maturity_manual: dt.date | None = None    # el puesto a mano
     maturity_closing: dt.date | None = None   # parte de una compra en cuotas: el corte de su cuota…
     part: int | None = None                   # …qué cuota es…
-    parts: int | None = None                  # …de cuántas
+    parts: int | None = None                  # …de cuántas…
+    interest: Decimal | None = None           # …el interés que el banco ya le cargó (dentro de amount)…
+    billed: bool | None = None                # …y si ya se facturó (por cobrar) o no (por facturar)
 
 
 @dataclass(frozen=True)
@@ -118,20 +120,51 @@ def detail(user_id: int, partner_id: int) -> PartnerDetail:
         if not rows:
             raise AccountError(404, "No encontramos a esa persona")
         items: dict[str, list[OpenItem]] = defaultdict(list)
+        cuotas: dict[tuple[int, int], OpenItem] = {}
+        # Una cuota de una compra en cuotas: su parte del capital y, ya facturada, su interés (otro
+        # asiento) van juntos, como en el cronograma
+        for _role, _interest, *item in conn.execute("""
+            SELECT a.system_role, mv.installment_plan_id IS NOT NULL, r.id, p.move_id, pm.date, pm.ref,
+                   trim(c.name), abs(r.amount_currency), abs(r.amount_residual), user_today() - pm.date,
+                   r.date_maturity, r.maturity_manual, r.maturity_closing, pl.sequence, p.n_installments,
+                   CASE WHEN mv.installment_plan_id IS NOT NULL THEN abs(r.amount_currency) END,
+                   pl.closing_date <= user_today()
+              FROM account_move_line_residual r
+              JOIN account_move mv ON mv.id = r.move_id
+              JOIN account_account a ON a.id = r.account_id
+              JOIN res_currency c ON c.id = r.currency_id
+              JOIN account_installment_plan p ON r.maturity_closing IS NOT NULL
+                                             AND (p.move_id = r.move_id OR p.id = mv.installment_plan_id)
+              JOIN account_move pm ON pm.id = p.move_id
+              JOIN account_installment_plan_line pl ON pl.plan_id = p.id AND pl.closing_date = r.maturity_closing
+             WHERE r.partner_id = %s AND r.amount_residual > 0 AND a.system_role = 'receivable'
+             ORDER BY r.maturity_closing, mv.installment_plan_id IS NOT NULL, r.id""", (partner_id,)):
+            key = (item[1], item[11])
+            it = OpenItem(*item)
+            if key in cuotas:
+                was = cuotas[key]
+                it = replace(was, amount=was.amount + it.amount, open=was.open + it.open,
+                             interest=(was.interest or ZERO) + (it.interest or ZERO))
+            cuotas[key] = it
         for role, *item in conn.execute("""
             SELECT a.system_role, r.id, r.move_id, r.date, r.ref, trim(c.name),
                    abs(r.amount_currency), abs(r.amount_residual), user_today() - r.date,
                    r.date_maturity, r.maturity_manual, r.maturity_closing, pl.sequence, p.n_installments
               FROM account_move_line_residual r
+              JOIN account_move mv ON mv.id = r.move_id
               JOIN account_account a ON a.id = r.account_id
               JOIN res_currency c ON c.id = r.currency_id
               LEFT JOIN account_installment_plan p ON p.move_id = r.move_id AND r.maturity_closing IS NOT NULL
               LEFT JOIN account_installment_plan_line pl ON pl.plan_id = p.id AND pl.closing_date = r.maturity_closing
              WHERE r.partner_id = %s AND r.amount_residual <> 0
+               AND NOT (r.maturity_closing IS NOT NULL AND a.system_role = 'receivable'
+                        AND (p.id IS NOT NULL OR mv.installment_plan_id IS NOT NULL))
                AND ((a.system_role = 'receivable' AND r.amount_residual > 0)
                  OR (a.system_role = 'payable' AND r.amount_residual < 0))
              ORDER BY coalesce(r.date_maturity, r.maturity_closing, r.date), r.date, r.id""", (partner_id,)):
             items[role].append(OpenItem(*item))
+        items["receivable"] += cuotas.values()
+        items["receivable"].sort(key=lambda i: (i.date_maturity or i.maturity_closing or i.date, i.date, i.line_id))
         since = conn.execute("""
             SELECT min(m.date) FROM account_move_line l JOIN account_move m ON m.id = l.move_id
              WHERE l.partner_id = %s AND l.account_id = system_account('custody') AND m.state = 'posted'""",

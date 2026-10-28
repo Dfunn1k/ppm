@@ -28,14 +28,49 @@ def lend(ana: Con, **body) -> dict:
 
 # --- La cuota con interés -----------------------------------------------------------------------
 
-def test_la_cuota_del_cronograma_suma_intereses(ana: Con):
+def test_la_cuota_del_cronograma_estima_el_interes_sin_cargarlo_hoy(ana: Con):
+    """S/ 1,200 en 6 cuotas de S/ 207: el gasto y la línea son el precio; S/ 7 de interés por cuota,
+    estimado, que se carga recién cuando el banco factura cada cuota."""
     card = ana.card()["account"]["id"]
     d = ana.buy(card, "1200", installments=6, installment_amount="207")
-    assert d["summary"]["amount"] == "1242.00"
-    assert [(x["category"]["name"], x["amount"]) for x in d["splits"]] == [("Hogar", "1200.00"), ("Intereses", "42.00")]
-    assert [x["principal"] for x in d["plan"]["lines"]] == ["207.00"] * 6
+    assert d["summary"]["amount"] == "1200.00"
+    assert [(x["category"]["name"], x["amount"]) for x in d["splits"]] == [("Hogar", "1200.00")]
+    assert [(x["principal"], x["interest"]) for x in d["plan"]["lines"]] == [("200.00", "7.00")] * 6
+    assert d["plan"]["installment_amount"] == "207.00"
     total, unbilled, _ = next((s["total_debt"], s["unbilled"], s["to_pay"]) for s in ana.detail(card)["status"] if s["currency"] == "PEN")
-    assert (total, unbilled) == ("1242.00", "1242.00")
+    assert (total, unbilled) == ("1200.00", "1200.00")
+
+
+def test_la_cuota_facturada_carga_su_interes_en_el_corte(ana: Con):
+    """Una compra de antes del corte: la cuota 1 ya se facturó, su interés es un gasto de ese día."""
+    card = ana.card()["account"]["id"]
+    when = (CORTE - timedelta(days=2)).isoformat()
+    d = ana.buy(card, "693", when, installments=3, installment_amount="262.02", ref="Unipiel")
+    assert [x["interest"] for x in d["plan"]["lines"]] == ["31.02", "31.02", "31.02"]
+    s = next(x for x in ana.detail(card)["status"] if x["currency"] == "PEN")
+    assert (s["total_debt"], s["unbilled"], s["to_pay"]) == ("724.02", "462.00", "262.02")
+    billed = next(c for c in ana.detail(card)["cycles"] if c["state"] == "billed")
+    cuota = next(i for i in billed["items"] if i["kind"] == "installment")
+    assert (cuota["amount"], cuota["interest"], cuota["sequence"]) == ("262.02", "31.02", 1)
+    month = ana.c.get("/moves", params={"month": CORTE.isoformat()[:7]}).json()
+    refs = [m["ref"] for day in month["days"] for m in day["moves"]]
+    assert "Unipiel · cuota 1/3" in refs
+
+
+def test_corregir_la_cuota_con_el_detalle_del_banco(ana: Con):
+    card = ana.card()["account"]["id"]
+    when = (CORTE - timedelta(days=2)).isoformat()
+    d = ana.buy(card, "693", when, installments=3, installment_amount="262.02", ref="Unipiel")
+    r = ana.c.put(f"/moves/{d['summary']['id']}/installments/1", json={"principal": "221.43", "interest": "40.59"})
+    assert r.status_code == 200, r.text
+    lines = r.json()["plan"]["lines"]
+    assert [(x["principal"], x["interest"]) for x in lines] == \
+        [("221.43", "40.59"), ("235.79", "31.02"), ("235.78", "31.02")]
+    s = next(x for x in ana.detail(card)["status"] if x["currency"] == "PEN")
+    # La cuota del banco no cambia (262.02); por facturar queda el capital que falta
+    assert (s["total_debt"], s["unbilled"], s["to_pay"]) == ("733.59", "471.57", "262.02")
+    bad = ana.c.put(f"/moves/{d['summary']['id']}/installments/3", json={"principal": "200", "interest": "0"})
+    assert bad.status_code == 400 and "La última cuota cierra el capital" in bad.json()["detail"]
 
 
 def test_sin_intereses_no_hay_linea_de_intereses(ana: Con):
@@ -71,9 +106,9 @@ def test_le_preste_mi_tarjeta_en_cuotas_con_su_interes(ana: Con):
     card, who = ana.card()["account"]["id"], luis(ana)
     d = lend(ana, account_id=card, amount="1200", partner_id=who, installments=6, installment_amount="207",
              ref="Laptop")
-    assert (d["summary"]["kind"], d["summary"]["amount"]) == ("lend", "1242.00")
+    assert (d["summary"]["kind"], d["summary"]["amount"]) == ("lend", "1200.00")
     items = owes(ana, who)
-    assert [(x["part"], x["parts"], x["open"]) for x in items] == [(k, 6, "207.00") for k in range(1, 7)]
+    assert [(x["part"], x["parts"], x["open"], x["billed"]) for x in items] == [(k, 6, "200.00", False) for k in range(1, 7)]
     assert items[0]["maturity_closing"] > CORTE.isoformat() and items[0]["date_maturity"] is None
     # Cuando escribes la fecha de pago de ese ciclo, la parte la toma
     closing = items[0]["maturity_closing"]
@@ -89,8 +124,24 @@ def test_si_el_interes_lo_pago_yo_me_debe_el_precio(ana: Con):
     d = lend(ana, account_id=card, amount="1200", partner_id=who, installments=6, installment_amount="207",
              interest_mine=True)
     assert [x["open"] for x in owes(ana, who)] == ["200.00"] * 6
-    assert any(x["category"] and x["category"]["name"] == "Intereses" for x in d["splits"])
-    assert d["plan"]["principal"] == "1242.00"
+    assert d["plan"]["principal"] == "1200.00"
+
+
+def test_la_cuota_facturada_de_otra_persona_le_suma_su_interes(ana: Con):
+    """Unipiel de una amiga: ningún gasto tuyo; la cuota 1 facturada le cobra capital + interés."""
+    card, who = ana.card()["account"]["id"], luis(ana)
+    when = (CORTE - timedelta(days=2)).isoformat()
+    d = lend(ana, account_id=card, amount="693", partner_id=who, installments=3, installment_amount="262.02",
+             ref="Unipiel", date=when)
+    items = owes(ana, who)
+    assert [(x["part"], x["open"], x["interest"], x["billed"]) for x in items] == \
+        [(1, "262.02", "31.02", True), (2, "231.00", None, False), (3, "231.00", None, False)]
+    # El banco dice 221.43 + 40.59: su cuota sigue siendo 262.02 y el capital que falta se reparte
+    r = ana.c.put(f"/moves/{d['summary']['id']}/installments/1", json={"principal": "221.43", "interest": "40.59"})
+    assert r.status_code == 200, r.text
+    assert [(x["part"], x["open"]) for x in owes(ana, who)] == [(1, "262.02"), (2, "235.79"), (3, "235.78")]
+    mine = ana.c.get("/moves", params={"month": CORTE.isoformat()[:7]}).json()
+    assert not any(m.get("category") == "Intereses" for day in mine["days"] for m in day["moves"])
 
 
 def test_desde_el_banco_no_va_en_cuotas(ana: Con):

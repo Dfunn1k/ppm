@@ -79,8 +79,6 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   const value = parseAmount(amount || "", lang);
   const cuotaValue = cuota.trim() ? parseAmount(cuota, lang) : null;
   const cuotas = isCard && inInstallments && !editing;
-  // Lo que te deberá: las cuotas (con su interés) salvo que el interés lo pagues tú
-  const lent = cuotas && cuotaValue && !interestMine ? (Number(cuotaValue) * installments).toFixed(2) : value;
   const money = (v: string) => formatAmount(v, symbolOf(currency), lang);
   const over = LIMITED.includes(kind) && who && value && Number(value) > Number(have);
   const only = LIMITED.includes(kind)
@@ -94,9 +92,9 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     const after = LIMITED.includes(kind) ? subtract(have, value) : add(have, value);
     const oldest = openDebts[0];
     switch (kind) {
-      case "lend": return [`${first} te quedará debiendo ${money(add(have, lent ?? value))}`,
+      case "lend": return [`${first} te quedará debiendo ${money(add(have, value))}`,
         `${Number(have) > 0 ? `Ya te debía ${money(have)}. ` : ""}` + (isCard
-          ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? " Cada parte vence con la fecha de pago de su corte." : ""}`
+          ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? ` Cada parte vence con la fecha de pago de su corte${cuotaValue && !interestMine ? " y se le suma su interés cuando el banco la factura" : ""}.` : ""}`
           : "No es un gasto: la plata sigue siendo tuya.")];
       case "borrow": return [`Le quedarás debiendo ${money(after)} a ${first}`, "No es un ingreso: entra a tu cuenta, pero se la debes."];
       case "collect": return [`${first} te debe ${money(have)} · quedará en ${money(after)}`,

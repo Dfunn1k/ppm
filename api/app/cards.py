@@ -38,9 +38,10 @@ class Plan:
     billed: int                  # cuántas cuotas ya se facturaron (corte hasta el último)
     principal: Decimal           # el total de la compra
     remaining: Decimal           # lo que falta facturar
-    next_installment: Decimal | None   # la próxima cuota
+    next_installment: Decimal | None   # la próxima cuota: su capital…
     next_closing: dt.date | None       # en qué corte llega
     opening: bool                # cuotas de antes de PPM (no fue un gasto en PPM)
+    next_interest: Decimal = ZERO      # …y su interés estimado
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,7 @@ class CycleItem:
     counterpart_color: int | None
     sequence: int | None = None  # cuota: cuál…
     n_installments: int | None = None   # …de cuántas
+    interest: Decimal | None = None     # cuota: su interés, ya dentro de amount (estimado si no se facturó)
 
 
 @dataclass(frozen=True)
@@ -119,7 +121,8 @@ def _plans(conn: psycopg.Connection, card_id: int, last: dt.date) -> list[Plan]:
                (array_agg(pl.principal ORDER BY pl.sequence) FILTER (WHERE pl.closing_date > %(last)s))[1],
                min(pl.closing_date) FILTER (WHERE pl.closing_date > %(last)s),
                EXISTS (SELECT 1 FROM account_move_line x WHERE x.move_id = p.move_id
-                                                         AND x.account_id = system_account('opening'))
+                                                         AND x.account_id = system_account('opening')),
+               coalesce((array_agg(pl.interest ORDER BY pl.sequence) FILTER (WHERE pl.closing_date > %(last)s))[1], 0)
           FROM account_installment_plan p
           JOIN account_move m ON m.id = p.move_id AND m.state = 'posted'
           JOIN res_currency c ON c.id = p.currency_id
@@ -157,13 +160,15 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
              WHERE x.move_id = l.move_id AND x.id <> l.id) o
          WHERE l.account_id = %(card)s
            AND NOT EXISTS (SELECT 1 FROM account_installment_plan p WHERE p.move_id = m.id)
+           AND m.installment_plan_id IS NULL          -- el interés de una cuota va con su cuota
            AND m.date > %(oldest)s
          ORDER BY m.date DESC, m.id DESC""", {"card": card_id, "oldest": oldest}):
         items[closing].append(CycleItem(*item))
     for closing, *item in conn.execute("""
         SELECT pl.closing_date, m.id, m.date, m.ref, true,
                CASE WHEN o.role = 'opening' THEN 'opening' ELSE 'installment' END,
-               trim(c.name), pl.principal, o.name, o.icon, o.color, pl.sequence, p.n_installments
+               trim(c.name), pl.principal + coalesce(i.amount, pl.interest), o.name, o.icon, o.color,
+               pl.sequence, p.n_installments, coalesce(i.amount, pl.interest)
           FROM account_installment_plan_line pl
           JOIN account_installment_plan p ON p.id = pl.plan_id
           JOIN account_move m ON m.id = p.move_id AND m.state = 'posted'
@@ -177,6 +182,11 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
               JOIN account_account a ON a.id = x.account_id
               LEFT JOIN account_account pa ON pa.id = a.parent_id
              WHERE x.move_id = m.id AND x.account_id <> p.card_account_id) o
+          LEFT JOIN LATERAL (                          -- el interés ya facturado, con su monto real
+            SELECT -sum(x.amount_currency) AS amount
+              FROM account_move im JOIN account_move_line x ON x.move_id = im.id AND x.account_id = p.card_account_id
+             WHERE im.installment_plan_id = pl.plan_id AND im.installment_sequence = pl.sequence
+               AND im.state = 'posted') i ON i.amount IS NOT NULL
          WHERE p.card_account_id = %(card)s AND pl.closing_date > %(oldest)s AND pl.closing_date <= %(next)s
          ORDER BY pl.closing_date DESC, m.date DESC""", {"card": card_id, "oldest": oldest, "next": nxt}):
         items[closing].append(CycleItem(*item))
