@@ -1,5 +1,6 @@
 // En cuotas, igual al gastar con la tarjeta y al prestarla: cuántas, de cuánto cada una (la del
-// cronograma del banco) y en qué cortes llegan. Lo que pasa del precio son intereses.
+// cronograma del banco) y en qué cortes llegan. Lo que pasa del precio son intereses: se cargan con
+// cada cuota facturada, no hoy.
 import { installmentClosings } from "@/lib/cards";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, parseAmount, symbolOf } from "@/lib/money";
@@ -7,7 +8,8 @@ import { formatAmount, parseAmount, symbolOf } from "@/lib/money";
 import { Icon } from "./ui";
 
 /** En cuotas: cuántas, de cuánto cada una (la del cronograma del banco) y en qué cortes llegan. El
- *  gasto cuenta completo el día de la compra; lo que pasa del precio son intereses y cuentan ese día. */
+ *  precio cuenta completo el día de la compra; lo que pasa del precio son intereses, que el banco
+ *  carga con cada cuota (a ti, o a la persona si es suya: `who`). */
 export function Installments({ n, setN, cuota, setCuota, total, currency, date, closingDay, category, lang, who }: {
   n: number; setN: (n: number) => void; cuota: string; setCuota: (v: string) => void; total: string | null;
   currency: string; date: string; closingDay: number | null; category: string | null; lang: string; who?: string;
@@ -17,8 +19,7 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
   const plain = Math.round(cents / n);
   const typed = cuota.trim() ? Math.round(Number(parseAmount(cuota, lang) ?? "NaN") * 100) : null;
   const each = typed && typed > 0 ? typed : plain;
-  const debt = typed && typed > 0 ? typed * n : cents;
-  const interest = debt - cents;
+  const interest = (typed && typed > 0 ? typed * n : cents) - cents;
   const last = typed ? each : cents - plain * (n - 1);
   const money = (c: number) => formatAmount((c / 100).toFixed(2), symbolOf(currency), lang);
   const closings = closingDay ? installmentClosings(date, n, closingDay) : null;
@@ -48,10 +49,11 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
         <div role="status" className="flex flex-col gap-1 rounded-md bg-muted p-3 tabular-nums">
           {interest > 0 ? (
             <>
-              <span className="font-semibold">{who ? `${who} te deberá` : "Le deberás"} {money(debt)}{who ? "" : " al banco"} · {n} cuotas de {money(each)}</span>
+              <span className="font-semibold">{n} cuotas de {money(each)} · {money(interest)} de intereses</span>
               <span className="grid grid-cols-[1fr_auto] text-caption text-muted-foreground">
-                <span>{category ?? "Lo que costó"}</span><span>{money(cents)}</span>
-                <span>Intereses · cuentan hoy</span><span>{money(interest)}</span>
+                <span>{who ? `${who} te debe hoy` : `${category ?? "Lo que costó"} · cuenta hoy`}</span><span>{money(cents)}</span>
+                <span>{who ? "Interés · se le suma con cada cuota" : "Intereses · con cada cuota facturada"}</span>
+                <span>{money(Math.round(interest / n))} c/u</span>
               </span>
             </>
           ) : interest < 0 ? (
@@ -60,7 +62,7 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
             <span className="font-semibold">{n} cuotas de {money(each)}{last !== each ? ` (la última, ${money(last)})` : ""}</span>
           )}
           <span className="text-caption text-muted-foreground">
-            {when}{who ? "" : ` El gasto cuenta completo hoy${category ? ` en ${category}` : ""}.`}
+            {when}{who ? "" : ` El precio cuenta completo hoy${category ? ` en ${category}` : ""}.`}
           </span>
         </div>
       )}

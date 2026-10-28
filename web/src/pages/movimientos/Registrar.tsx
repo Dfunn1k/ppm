@@ -98,6 +98,8 @@ export function Registrar({ editing, recurring, reminder }: {
   const [inInstallments, setInInstallments] = useState(false);
   const [installments, setInstallments] = useState(6);
   const [cuota, setCuota] = useState("");
+  const [owner, setOwner] = useState<number | null>(null);   // en cuotas, de otra persona: le prestaste la tarjeta
+  const [ofOther, setOfOther] = useState(false);
   const [toAccountId, setToAccountId] = useState<string>(editing?.to_account_id ? String(editing.to_account_id) : "");
   const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : rec ? fmt(rec.amount.replace("-", "")) : "");
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
@@ -195,6 +197,14 @@ export function Registrar({ editing, recurring, reminder }: {
       installments: card && inInstallments && kind === "expense" ? installments : null,
       installment_amount: card && inInstallments && kind === "expense" ? cuotaValue : null,
     };
+    // De otra persona: no es tu gasto, le prestaste la tarjeta en cuotas (te debe el precio y, con
+    // cada cuota facturada, su interés)
+    if (card && inInstallments && kind === "expense" && ofOther) {
+      if (!owner) return setProblem("Elige de quién es la compra");
+      save.mutate({ ...body, kind: "lend", partner_id: owner, splits: [] },
+        { onSuccess: () => navigate(`/personas/${owner}`, { replace: true }) });
+      return;
+    }
     if (kind === "transfer") {
       if (!toAccount) return setProblem("Elige adónde entra");
       body.to_account_id = toAccount.id;
@@ -475,8 +485,25 @@ export function Registrar({ editing, recurring, reminder }: {
                   className="size-[22px] accent-primary" />
               </label>
               {inInstallments && (
-                <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={total} currency={currency} date={date}
-                  closingDay={account!.card?.closing_day ?? null} category={parts[0]?.category?.name ?? null} lang={lang} />
+                <>
+                  <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={total} currency={currency} date={date}
+                    closingDay={account!.card?.closing_day ?? null} category={ofOther ? null : parts[0]?.category?.name ?? null} lang={lang}
+                    who={ofOther ? partners.find((p) => p.id === owner)?.name.split(" ")[0] ?? "La persona" : undefined} />
+                  <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${ofOther ? "" : "border-b border-border"}`}>
+                    <Icon name="person" className="w-9 text-center text-muted-foreground" />
+                    <span className="flex flex-1 flex-col">
+                      <span>Es de otra persona</span>
+                      <span className="text-caption text-muted-foreground">Le prestaste la tarjeta: no es tu gasto, te lo debe</span>
+                    </span>
+                    <input type="checkbox" role="switch" checked={ofOther} onChange={() => setOfOther(!ofOther)}
+                      className="size-[22px] accent-primary" />
+                  </label>
+                  {ofOther && (
+                    <div className="border-b border-border pb-3">
+                      <PersonPicker label="¿De quién es?" value={owner} onChange={setOwner} />
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}

@@ -55,7 +55,9 @@ class OpenItemOut(BaseModel):
     maturity_manual: dt.date | None  # el puesto a mano
     maturity_closing: dt.date | None # parte de una compra en cuotas: el corte de su cuota
     part: int | None                 # qué cuota es…
-    parts: int | None                # …de cuántas
+    parts: int | None                # …de cuántas…
+    interest: Decimal | None         # …el interés ya cargado (dentro de amount)…
+    billed: bool | None              # …y si ya se facturó
 
 
 class PartnerDetailOut(BaseModel):

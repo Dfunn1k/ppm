@@ -254,7 +254,8 @@ def _build_person(conn: psycopg.Connection, m: MoveInput, on: dt.date, base_id: 
 
 
 def _installment_total(m: MoveInput) -> tuple[Decimal, Decimal]:
-    """Lo que le deberás al banco (las cuotas) y lo que pasa del precio: el interés."""
+    """Lo que le deberás al banco con las cuotas y lo que pasa del precio: el interés estimado, que
+    se carga recién con cada cuota facturada."""
     n = m.installments or 1
     if m.installment_amount is None:
         return m.amount, Decimal(0)
@@ -272,22 +273,18 @@ def _split(amount: Decimal, n: int) -> list[Decimal]:
 
 def _lend_in_installments(conn: psycopg.Connection, m: MoveInput, money: _Acc, person: int, rate: Decimal,
                           base_id: int) -> list[Line]:
-    """Le presté la tarjeta en cuotas: una parte de la deuda por cuota contra la tarjeta. Con interés,
-    la persona te debe las cuotas; si el interés lo pagas tú, va a tus Intereses y te debe el precio."""
+    """Le presté la tarjeta en cuotas: la tarjeta sube el precio y la persona te lo debe, una parte por
+    cuota. El interés de cada cuota se le suma cuando el banco la factura (o va a tus Intereses si lo
+    pagas tú)."""
     n = m.installments or 1
-    total, interest = _installment_total(m)
-    mine = interest if m.interest_mine else Decimal(0)
-    parts = _split(total - mine, n)
-    total_base = _round(total * rate)
-    mine_base = _round(mine * rate)
+    _installment_total(m)                       # revisa la cuota
+    parts = _split(m.amount, n)
+    total_base = _round(m.amount * rate)
     bases = [_round(p * rate) for p in parts[:-1]]
-    bases.append(total_base - mine_base - sum(bases, Decimal(0)))
-    lines: list[Line] = [_side(money.id, total_base, money.currency_id, total, None, False)]  # type: ignore[arg-type]
+    bases.append(total_base - sum(bases, Decimal(0)))
+    lines: list[Line] = [_side(money.id, total_base, money.currency_id, m.amount, None, False)]  # type: ignore[arg-type]
     lines += [_side(person, b, money.currency_id, p, m.partner_id, True)  # type: ignore[arg-type]
               for p, b in zip(parts, bases, strict=True)]
-    if mine:
-        lines.append(_side(conn.execute("SELECT system_account('interest')").fetchone()[0], mine_base, base_id,
-                           mine_base, None, True))
     return lines
 
 
@@ -418,18 +415,16 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         raise AccountError(400, "Revisa las partes: con ese tipo de cambio no cuadran")
 
     out = m.kind == "expense"   # el gasto sale de la cuenta (Haber) y va a la categoría (Debe)
-    # En cuotas con interés: lo que pasa del precio va a Intereses y la tarjeta carga todas las cuotas
-    interest = Decimal(0)
+    # En cuotas con interés: hoy solo el precio; el interés se carga con cada cuota facturada
     if m.installment_amount is not None:
         if m.kind != "expense" or paid_by is not None or not card or m.installments is None:
             raise AccountError(400, "El monto de la cuota va solo en un gasto con tarjeta en cuotas")
-        interest = _installment_total(m)[1]
-    interest_base = _round(interest * rate)
+        _installment_total(m)
     if paid_by is not None:
         payable = conn.execute("SELECT system_account('payable')").fetchone()[0]
         lines = [_side(payable, total_base, base_id, m.amount, paid_by, False)]
     else:
-        lines = [_side(money.id, total_base + interest_base, cur_id, m.amount + interest, None, not out)]
+        lines = [_side(money.id, total_base, cur_id, m.amount, None, not out)]
     receivable = None
     for s, b in zip(m.splits, parts, strict=True):
         if s.partner_id is not None:
@@ -437,9 +432,6 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
             lines.append(_side(receivable, b, cur_id, s.amount, s.partner_id, True))
         else:
             lines.append(_side(s.category_id, b, base_id, b, None, out))  # type: ignore[arg-type]
-    if interest:
-        lines.append(_side(conn.execute("SELECT system_account('interest')").fetchone()[0], interest_base, base_id,
-                           interest_base, None, True))
     ref = accs[own[0].category_id].name  # type: ignore[index]
     if paid_by is not None:
         ref = f"{ref} (pagó {_first(payer)})"
@@ -523,9 +515,13 @@ def _installments(conn: psycopg.Connection, m: MoveInput, move_id: int) -> None:
     acc = _accounts(conn, [m.account_id]).get(m.account_id) if m.account_id is not None else None
     if m.kind not in ("expense", "lend") or m.paid_by_partner_id is not None or acc is None or not acc.card:
         raise AccountError(400, "En cuotas va solo un gasto o un préstamo con tarjeta")
-    plan = conn.execute("SELECT create_installment_plan(%s, %s)", (move_id, m.installments)).fetchone()[0]
+    # De otra persona, el interés de cada cuota se le cobra a ella, salvo que lo pagues tú
+    partner = m.partner_id if m.kind == "lend" and not m.interest_mine else None
+    plan = conn.execute("SELECT create_installment_plan(%s, %s, %s, %s)",
+                        (move_id, m.installments, m.installment_amount, partner)).fetchone()[0]
     if m.kind == "lend":
         conn.execute("SELECT set_plan_maturities(%s)", (plan,))
+    conn.execute("SELECT post_installment_interest()")   # de una compra vieja, el interés ya facturado
 
 
 def _has_plan(conn: psycopg.Connection, move_id: int) -> bool:
@@ -605,6 +601,26 @@ def set_maturity(user_id: int, line_id: int, on: dt.date | None) -> None:
             raise AccountError(404, "No encontramos esa deuda")
         conn.execute("UPDATE account_move_line SET date_maturity = %s WHERE id = %s", (on, line_id))
         reconcile(conn, {(row[0], row[1])})
+
+
+def set_installment_split(user_id: int, move_id: int, sequence: int, principal: Decimal, interest: Decimal) -> None:
+    """Corrige el capital y el interés de una cuota con el «Detalle plan cuotas» del estado de cuenta:
+    el capital que falta se reparte entre las que siguen; la cuota del banco no cambia."""
+    with user_transaction(user_id) as conn:
+        plan = conn.execute("SELECT id FROM account_installment_plan WHERE move_id = %s", (move_id,)).fetchone()
+        if plan is None:
+            raise AccountError(404, "Ese movimiento no es una compra en cuotas")
+        try:
+            with conn.transaction():
+                conn.execute("SELECT set_installment_split(%s, %s, %s, %s)", (plan[0], sequence, principal, interest))
+                conn.execute("SELECT post_installment_interest()")
+                pairs = _pairs(conn, move_id)
+                for (m,) in conn.execute("SELECT id FROM account_move WHERE installment_plan_id = %s",
+                                         (plan[0],)).fetchall():
+                    pairs |= _pairs(conn, m)
+                reconcile(conn, pairs)
+        except psycopg.Error as e:
+            raise _translate(e) from None
 
 
 def delete(user_id: int, move_id: int) -> None:
@@ -708,6 +724,7 @@ class PlanLine:
     closing_date: dt.date
     principal: Decimal
     billed: bool                 # ya llegó en un estado de cuenta (su corte ya pasó)
+    interest: Decimal = Decimal(0)   # estimado hasta que se corrige con el detalle del banco
 
 
 @dataclass(frozen=True)
@@ -718,6 +735,8 @@ class PlanDetail:
     principal: Decimal
     remaining: Decimal           # lo que falta facturar
     lines: list[PlanLine]
+    installment_amount: Decimal | None = None   # la cuota del banco, si se escribió
+    plan_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -995,16 +1014,17 @@ def _detail(user_id: int, move_id: int) -> MoveDetail:
 def _plan_detail(conn: psycopg.Connection, move_id: int) -> PlanDetail | None:
     head = conn.execute("""
         SELECT p.id, p.card_account_id, trim(c.name), p.n_installments, p.principal,
-               card_last_closing(p.card_account_id, user_today())
+               card_last_closing(p.card_account_id, user_today()), p.installment_amount
           FROM account_installment_plan p JOIN res_currency c ON c.id = p.currency_id
          WHERE p.move_id = %s""", (move_id,)).fetchone()
     if head is None:
         return None
-    plan_id, card, cur, n, principal, last = head
-    lines = [PlanLine(seq, closing, amount, closing <= last) for seq, closing, amount in conn.execute(
-        "SELECT sequence, closing_date, principal FROM account_installment_plan_line WHERE plan_id = %s"
-        " ORDER BY sequence", (plan_id,))]
-    return PlanDetail(card, cur, n, principal, sum((x.principal for x in lines if not x.billed), ZERO), lines)
+    plan_id, card, cur, n, principal, last, each = head
+    lines = [PlanLine(seq, closing, amount, closing <= last, interest) for seq, closing, amount, interest in
+             conn.execute("SELECT sequence, closing_date, principal, interest FROM account_installment_plan_line"
+                          " WHERE plan_id = %s ORDER BY sequence", (plan_id,))]
+    return PlanDetail(card, cur, n, principal, sum((x.principal for x in lines if not x.billed), ZERO), lines,
+                      each, plan_id)
 
 
 def _round6(v: Decimal) -> Decimal:

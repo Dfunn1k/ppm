@@ -49,6 +49,7 @@ class PlanRowOut(BaseModel):
     next_installment: Decimal | None
     next_closing: dt.date | None
     opening: bool
+    next_interest: Decimal
 
 
 class CycleItemOut(BaseModel):
@@ -64,6 +65,7 @@ class CycleItemOut(BaseModel):
     counterpart_color: int | None
     sequence: int | None
     n_installments: int | None
+    interest: Decimal | None
 
 
 class CycleAmountOut(BaseModel):

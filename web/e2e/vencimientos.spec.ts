@@ -44,13 +44,21 @@ test("un gasto en 6 cuotas de S/ 207: el precio a la categoría y S/ 42 de inter
   await page.getByRole("dialog").getByRole("radio", { name: "Hogar" }).click();
   await page.getByRole("switch", { name: /En cuotas/ }).check();
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("207");
-  await expect(page.getByText("Le deberás S/ 1,242.00 al banco · 6 cuotas de S/ 207.00")).toBeVisible();
+  await expect(page.getByText("6 cuotas de S/ 207.00 · S/ 42.00 de intereses")).toBeVisible();
   await page.getByRole("button", { name: "Registrar gasto en 6 cuotas" }).click();
 
   await expect(page).toHaveURL(/\/movimientos/);
   await page.getByRole("link", { name: /Hogar/ }).first().click();
-  await expect(page.getByText("Intereses")).toBeVisible();
   await expect(page.getByText("6 cuotas · 0 facturadas")).toBeVisible();
+  await expect(page.getByText("Capital S/ 200.00 + interés S/ 7.00").first()).toBeVisible();
+
+  // El banco dice otra cosa en la cuota 1: se corrige y el capital que falta se reparte
+  await page.getByRole("button", { name: "Cuota 1: corregir capital e interés" }).click();
+  await page.getByRole("textbox", { name: "Capital" }).fill("190");
+  await page.getByRole("textbox", { name: "Interés" }).fill("17");
+  await page.getByRole("button", { name: "Guardar la cuota" }).click();
+  await expect(page.getByText("Capital S/ 190.00 + interés S/ 17.00")).toBeVisible();
+  await expect(page.getByText("Capital S/ 202.00 + interés S/ 7.00").first()).toBeVisible();
 });
 
 test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte", async ({ page }) => {
@@ -64,11 +72,11 @@ test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte",
   await page.getByRole("button", { name: "Una cuota menos" }).click();
   await page.getByRole("button", { name: "Una cuota menos" }).click();       // 3 cuotas
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("410");
-  await expect(page.getByText("Luis te deberá S/ 1,230.00 · 3 cuotas de S/ 410.00")).toBeVisible();
+  await expect(page.getByText("3 cuotas de S/ 410.00 · S/ 30.00 de intereses")).toBeVisible();
   await page.getByRole("button", { name: "Registrar préstamo en 3 cuotas" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
-  await expect(page.getByText("3 partes")).toBeVisible();
+  await expect(page.getByText("3 cuotas · 3 por facturar")).toBeVisible();
   const primera = page.getByRole("button", { name: /^Parte 1 de 3/ });
   await expect(primera).toContainText("Vence con el pago del corte del");
 
@@ -78,6 +86,25 @@ test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte",
   expect((await page.request.put(`/api/cards/${visa}/due-date`, { data: { closing_date: corte, date_due: pago } })).status()).toBe(200);
   await page.reload();
   await expect(page.getByRole("button", { name: /^Parte 1 de 3/ })).toContainText("Vence el");
+});
+
+test("una compra en cuotas que es de otra persona: no es tu gasto, te la debe por cuotas", async ({ page }) => {
+  const visa = await readyUser(page);
+  const luis = (await (await page.request.post("/api/partners", { data: { name: "Luis Pérez" } })).json()).id;
+  await page.goto(`/registrar?cuenta=${visa}`);
+  await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("693");
+  await page.getByRole("switch", { name: /En cuotas/ }).check();
+  for (let k = 0; k < 3; k++) await page.getByRole("button", { name: "Una cuota menos" }).click();   // 3 cuotas
+  await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("262.02");
+  await page.getByRole("switch", { name: /Es de otra persona/ }).check();
+  await page.getByRole("radio", { name: /Luis/ }).click();
+  await expect(page.getByRole("status")).toContainText("Luis te debe hoy");
+  await page.getByLabel("Nota").fill("Unipiel");
+  await page.getByRole("button", { name: "Registrar gasto en 3 cuotas" }).click();
+
+  await expect(page).toHaveURL(`/personas/${luis}`);
+  await expect(page.getByText("3 cuotas · 3 por facturar")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Unipiel/ })).toContainText("S/ 693.00");
 });
 
 test("ponerle fecha de vencimiento a un préstamo y verla vencida", async ({ page }) => {
