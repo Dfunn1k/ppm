@@ -1,16 +1,27 @@
-"""El estado de cuenta de una tarjeta, con el caso de Dany (Visa Qore, ciclo que cierra el 25/10):
-subtotal S/ 1,117.82 + US$ 30.84; total facturado S/ 1,120.23 (con el desgravamen de 2.41); saldo
-de compras en cuotas según banco S/ 487.72; línea disponible del banco con Spotify US$ 0.60 de
-después del corte."""
+"""El estado de cuenta de una tarjeta, importado del PDF, con el caso de Dany (Visa Qore, ciclo del
+28/09/26 al 25/10/26): crédito disponible S/ 5,283.53 y línea utilizada S/ 1,716.47; total facturado
+S/ 1,120.23 (con el desgravamen de 2.41) + US$ 30.84; cuota 1/3 de Unipiel = 221.43 + 40.59.
 
-from datetime import timedelta
+El PDF se reemplaza por su texto extraído y anonimizado (tests/fixtures): la prueba no depende de
+pdfplumber, que se prueba aparte con el lector."""
+
+from datetime import date
+from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
+from app import card_pdf
 from tests.test_movimientos_api import borrar_usuarios_de_prueba  # noqa: F401
-from tests.test_tarjetas_api import CORTE, DESPUES, Con
+from tests.test_tarjetas_api import Con
 
-LIMITE = "7010.91"   # la línea de la prueba: con ella el banco y PPM dan la misma disponible
+TEXT = (Path(__file__).parent / "fixtures" / "bcp_visa_2026-10.txt").read_text()
+CORTE = "2026-10-25"
+
+PEN = [("2026-10-03", "22.30"), ("2026-10-04", "16.00"), ("2026-10-06", "126.00"), ("2026-10-08", "266.30"),
+       ("2026-10-07", "49.80"), ("2026-10-09", "98.60"), ("2026-10-10", "97.00"), ("2026-10-13", "19.90"),
+       ("2026-10-16", "79.90"), ("2026-10-17", "80.00")]
+USD = [("2026-10-12", "6.83"), ("2026-10-17", "24.01")]
 
 
 @pytest.fixture
@@ -18,86 +29,135 @@ def ana() -> Con:
     return Con()
 
 
-def day(n: int) -> str:
-    return (CORTE - timedelta(days=n)).isoformat()
+@pytest.fixture
+def pdf(monkeypatch: pytest.MonkeyPatch):
+    """El «PDF» que se sube es su texto: así se puede cambiar una línea en cada prueba."""
+    monkeypatch.setattr(card_pdf, "pdf_text", lambda data: data.decode())
 
 
 def qore(ana: Con) -> tuple[int, int]:
-    card = ana.card(name="Visa Qore", credit_limit=LIMITE)["account"]["id"]
-    ana.buy(card, "500.00", day(20), ref="Supermercado")
-    ana.buy(card, "355.80", day(12), ref="Farmacia")
-    unipiel = ana.buy(card, "693.00", day(8), installments=3, installment_amount="262.02", ref="Unipiel")
-    ana.buy(card, "30.84", day(5), currency="USD", rate="3.762", ref="ChatGPT")
-    ana.buy(card, "0.60", DESPUES, currency="USD", rate="3.762", ref="Spotify")      # después del corte
+    card = ana.card(name="Visa Qore", closing_day=25, credit_limit="7010.91", last4="1111")["account"]["id"]
+    for on, amount in PEN:
+        ana.buy(card, amount, on)
+    for on, amount in USD:
+        ana.buy(card, amount, on, currency="USD", rate="3.500")
+    unipiel = ana.buy(card, "693.00", "2026-10-14", installments=3, installment_amount="262.02", ref="Unipiel")
     return card, unipiel["summary"]["id"]
 
 
-def statement(ana: Con, card: int, **body) -> dict:
-    r = ana.c.put(f"/cards/{card}/statements/{CORTE.isoformat()}", json=body)
-    assert r.status_code == 200, r.text
+def upload(ana: Con, card: int, text: str = TEXT, status: int = 201) -> dict:
+    r = ana.c.post(f"/cards/{card}/statements", files={"file": ("EECC_VISA.pdf", text.encode(), "application/pdf")})
+    assert r.status_code == status, r.text
     return r.json()
 
 
-BANCO = [
-    {"date": day(20), "name": "SUPERMERCADOS PERUANOS", "amount": "500.00", "currency": "PEN"},
-    {"date": day(11), "name": "BOTICAS INKAFARMA", "amount": "355.80", "currency": "PEN"},
-    {"date": CORTE.isoformat(), "name": "UNIPIEL CUOTA 01/03", "amount": "262.02", "currency": "PEN"},
-    {"date": day(4), "name": "OPENAI *CHATGPT", "amount": "30.84", "currency": "USD"},
-    {"date": CORTE.isoformat(), "name": "SEGURO DESGRAVAMEN", "amount": "2.41", "currency": "PEN"},
-]
-
-
-def test_el_caso_qore_cuadra_y_explica_cada_diferencia(ana: Con):
+def test_el_caso_qore_toma_la_foto_del_banco_y_divide_la_cuota(ana: Con, pdf):
     card, unipiel = qore(ana)
-    r = ana.c.get(f"/cards/{card}/statements/{CORTE.isoformat()}").json()
+    assert ana.c.get(f"/cards/{card}/statements/{CORTE}").status_code == 404
+
+    r = upload(ana, card)
+    assert (r["date_from"], r["closing_date"], r["date_due"]) == ("2026-09-28", CORTE, "2026-11-23")
+    assert (r["credit_limit"], r["used"], r["available"]) == ("7000.00", "1716.47", "5283.53")
     by = {c["currency"]: c for c in r["currencies"]}
-    assert (by["PEN"]["subtotal"], by["USD"]["subtotal"]) == ("1117.82", "30.84")   # cuota 1 = 231 + 31.02
-    assert r["billed"] == "1117.82"
+    assert (by["PEN"]["bank_billed"], by["USD"]["bank_billed"], by["PEN"]["bank_installments"]) == \
+        ("1120.23", "30.84", "487.72")
+    assert (by["PEN"]["read"], by["PEN"]["subtotal"], by["USD"]["read"], by["USD"]["subtotal"]) == \
+        ("1117.82", "1117.82", "30.84", "30.84")
+    assert "Subtotal en S/: cuadra al céntimo." in r["explanations"]
+    assert "Subtotal en US$: cuadra al céntimo." in r["explanations"]
+    assert any("Cargos del banco en S/" in e and "2.41" in e for e in r["explanations"])
+    assert [(f["name"], f["amount"]) for f in r["fees"]] == [("Gasto mensual por seguro de desgravamen", "2.41")]
+    assert all(x["move_id"] is not None for x in r["lines"]) and r["unmatched"] == [] and r["unread"] == []
+    cuota = r["installments"][0]
+    assert (cuota["capital"], cuota["interest"], cuota["move_id"], cuota["mine"]) == ("221.43", "40.59", unipiel, True)
 
-    # El banco: el desgravamen no está en PPM; las cuotas, con el detalle del plan
-    r = statement(ana, card, subtotals=[{"currency": "PEN", "amount": "1117.82"}, {"currency": "USD", "amount": "30.84"}],
-                  billed="1120.23", installments="487.72", lines=BANCO)
-    text = " ".join(r["explanations"])
-    assert "Subtotal en S/: cuadra al céntimo." in text and "Subtotal en US$: cuadra al céntimo." in text
-    assert "S/ 2.41 son cargos del banco" in text
-    assert [x["name"] for x in r["lines"] if x["move_id"] is None] == ["SEGURO DESGRAVAMEN"]
-    assert r["unmatched"] == []
+    # La cuota 1/3: capital a su categoría e interés a Intereses
+    month = ana.c.get("/moves", params={"month": "2026-10"}).json()
+    m = next(m for day in month["days"] for m in day["moves"] if m["ref"] == "Unipiel · cuota 1/3")
+    assert (m["kind"], m["amount"]) == ("expense", "262.02")
+    assert sorted(c["name"] for c in m["categories"]) == ["Hogar", "Intereses"]
+    plan = ana.c.get(f"/moves/{unipiel}").json()["plan"]
+    assert [x["interest"] for x in plan["lines"]] == ["40.59", None, None]
 
-    # Se registra el desgravamen y se corrige la cuota 1 con el detalle del banco
-    ana.register(kind="expense", account_id=card, amount="2.41", date=CORTE.isoformat(), ref="Seguro de desgravamen",
-                 splits=[{"category_id": ana.cat["Seguros"], "amount": "2.41"}])
-    fix = ana.c.put(f"/moves/{unipiel}/installments/1", json={"principal": "221.43", "interest": "40.59"})
-    assert fix.status_code == 200, fix.text
-    r = ana.c.get(f"/cards/{card}/statements/{CORTE.isoformat()}").json()
-    assert (r["billed"], r["bank_charges"], r["installments"]) == ("1120.23", "2.41", "471.57")
-    assert "Total facturado: cuadra al céntimo." in r["explanations"]
-    assert any("16.15" in e and "devengó" in e for e in r["explanations"])
-    assert all(x["move_id"] is not None for x in r["lines"])
+    # La línea: la foto del banco (la línea de crédito se corrige a 7,000) y lo de después
+    d = ana.detail(card)
+    assert (d["credit_limit"], d["used"], d["available"], d["line_from"]) == ("7000.00", "1716.47", "5283.53", CORTE)
+    assert d["line_matched"] is (d["last_closing"] == CORTE)
+    assert next(c for c in d["cycles"] if c["closing_date"] == CORTE)["statement"] is True
+    rate = ana.c.put(f"/cards/{card}/rates/USD", json={"rate": "3.50"}).json()
+    ana.buy(card, "0.60", "2026-10-26", currency="USD", rate="3.500", ref="Spotify")          # después del corte
+    ana.buy(card, "300.00", "2026-10-27", installments=3, installment_amount="110", ref="Silla")   # ocupa su precio
+    d = ana.detail(card)
+    if any(x["currency"] == "USD" and x["edited"] for x in rate["rates"]):
+        assert (d["used"], d["available"]) == ("2018.57", "4981.43")    # 1,716.47 + 2.10 + 300
+    assert d["line_matched"] is False
 
-    # La línea: cuotas del banco (+16.15) y los US$ 31.44 al tipo escrito para este ciclo
-    d = ana.c.put(f"/cards/{card}/rates/USD", json={"rate": "3.80"}).json()
-    assert d["line_matched"] and [(x["currency"], x["rate"], x["edited"]) for x in d["rates"]] == [("USD", "3.800000", True)]
-    # PEN 855.80 + 693 + 40.59 + 2.41 = 1,591.80; cuotas del banco +16.15; US$ 31.44 × 3.80 = 119.47
-    assert d["used"] == "1727.42" and d["available"] == "5283.49"
-    r = statement(ana, card, available="5283.49", installments="487.72")
-    assert "Línea disponible: cuadra al céntimo." in r["explanations"]
+
+def test_importarlo_de_nuevo_lo_reemplaza(ana: Con, pdf):
+    card, _ = qore(ana)
+    upload(ana, card)
+    r = upload(ana, card)
+    assert len(r["installments"]) == 1 and len(r["lines"]) == 13
+
+
+def test_las_fechas_del_banco_mandan_sobre_el_dia_de_corte(ana: Con, pdf):
+    """El ciclo empieza el 28/09: una compra del 26/09 era del ciclo que cerró el 27/09."""
+    card, _ = qore(ana)
+    ana.buy(card, "50.00", "2026-09-26", ref="Antes del ciclo")
+    upload(ana, card)
+    cycles = {c["closing_date"]: c for c in ana.detail(card)["cycles"]}
+    assert [i["ref"] for i in cycles["2026-09-27"]["items"]] == ["Antes del ciclo"]
+    assert "Antes del ciclo" not in [i["ref"] for i in cycles[CORTE]["items"]]
+
+
+def test_una_linea_que_no_se_lee_se_muestra(ana: Con, pdf):
+    card, _ = qore(ana)
+    r = upload(ana, card, TEXT.replace("05Oct  03Oct BODEGA", "05Oct  O3Oct BODEGA"))
+    assert len(r["unread"]) == 1 and "BODEGA UNO" in r["unread"][0]
+    by = {c["currency"]: c for c in r["currencies"]}
+    assert by["PEN"]["read"] == "1095.52"
+    assert any(e.startswith("Lectura en S/") and "1,095.52" in e and "no se pudieron leer" in e
+               for e in r["explanations"])
+
+
+def test_la_cuota_de_otra_persona_no_se_divide(ana: Con, pdf):
+    card = ana.card(name="Visa Qore", closing_day=25, last4="1111")["account"]["id"]
+    who = ana.c.post("/partners", json={"name": "Damaris"}).json()["id"]
+    ana.register(kind="lend", account_id=card, amount="693.00", partner_id=who, installments=3,
+                 installment_amount="262.02", ref="Unipiel", date="2026-10-14")
+    r = upload(ana, card)
+    assert (r["installments"][0]["mine"], r["installments"][0]["move_id"] is not None) == (False, True)
+    owes = ana.c.get(f"/partners/{who}").json()["owes_me"]
+    assert [x["open"] for x in owes] == ["262.02"] * 3
+
+
+def test_el_estado_de_otra_tarjeta_no_entra(ana: Con, pdf):
+    card = ana.card(closing_day=25, last4="4417")["account"]["id"]
+    r = upload(ana, card, status=400)
+    assert r["detail"] == "Ese estado de cuenta es de la tarjeta •••• 1111, no de esta (•••• 4417)"
+
+
+def test_un_pdf_que_no_es_de_bcp(ana: Con, pdf):
+    card = ana.card(closing_day=25)["account"]["id"]
+    r = upload(ana, card, "Estado de cuenta de otro banco", status=400)
+    assert "Por ahora PPM lee los de tarjetas BCP" in r["detail"]
 
 
 def test_sin_estado_de_cuenta_la_linea_es_estimada_y_el_tc_del_ciclo_se_edita(ana: Con):
     card, _ = qore(ana)
     d = ana.detail(card)
-    assert d["line_matched"] is False
+    assert d["line_matched"] is False and d["line_from"] is None
     d = ana.c.put(f"/cards/{card}/rates/USD", json={"rate": "3.90"}).json()
     assert next(x for x in d["rates"] if x["currency"] == "USD")["rate"] == "3.900000"
     d = ana.c.put(f"/cards/{card}/rates/USD", json={"rate": None}).json()
     assert all(not x["edited"] for x in d["rates"])
 
 
-def test_el_ciclo_cerrado_guarda_su_foto(ana: Con):
-    card, _ = qore(ana)
-    r = ana.c.get(f"/cards/{card}/statements/{CORTE.isoformat()}").json()
-    first = r["used_at_closing"]
-    ana.c.put(f"/cards/{card}/rates/USD", json={"rate": "4.50"})       # el TC de hoy no toca el ciclo cerrado
-    assert ana.c.get(f"/cards/{card}/statements/{CORTE.isoformat()}").json()["used_at_closing"] == first
-    bad = ana.c.get(f"/cards/{card}/statements/{(CORTE + timedelta(days=1)).isoformat()}")
-    assert bad.status_code == 400
+def test_el_lector_bcp_lee_el_texto_del_pdf():
+    p = card_pdf.parse_text(TEXT)
+    assert (p.bank, p.last4, p.date_from, p.closing_date) == ("BCP", "1111", date(2026, 9, 28), date(2026, 10, 25))
+    moves = [x for x in p.lines if x.kind == "move"]
+    assert len(moves) == 13 and sum(x.amount for x in moves if x.currency == "USD") == Decimal("30.84")
+    assert moves[-1].name == "CUOTA DEL MES" and moves[0].name == "BODEGA UNO LIMA"
+    assert [(x.name, x.sequence, x.n_installments, x.capital, x.interest) for x in p.installments] == \
+        [("TIENDA CUOTAS", 1, 3, Decimal("221.43"), Decimal("40.59"))]

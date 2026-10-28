@@ -6,7 +6,7 @@ import datetime as dt
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 
 from app import card_statements, cards, recurring
@@ -35,6 +35,7 @@ class CardStatusOut(BaseModel):
     total_debt: Decimal
     unbilled: Decimal
     to_pay: Decimal
+    next_bill: Decimal
 
 
 class PlanRowOut(BaseModel):
@@ -49,7 +50,6 @@ class PlanRowOut(BaseModel):
     next_installment: Decimal | None
     next_closing: dt.date | None
     opening: bool
-    next_interest: Decimal
 
 
 class CycleItemOut(BaseModel):
@@ -80,6 +80,7 @@ class CycleOut(BaseModel):
     date_due: dt.date | None
     charges: list[CycleAmountOut]
     items: list[CycleItemOut]
+    statement: bool
 
 
 class CardRateOut(BaseModel):
@@ -126,6 +127,7 @@ class CardDetailOut(BaseModel):
     charges: list[BankChargeOut]
     rates: list[CardRateOut]
     line_matched: bool
+    line_from: dt.date | None
 
 
 # --- Entrada ----------------------------------------------------------------------------------
@@ -280,53 +282,49 @@ class UnmatchedOut(BaseModel):
 
 class StatementCurrencyOut(BaseModel):
     currency: str
-    debt: Decimal
-    rate: Decimal | None
-    rate_date: dt.date | None
     subtotal: Decimal
     bank_subtotal: Decimal | None
+    bank_billed: Decimal | None
+    bank_installments: Decimal | None
+    read: Decimal
+
+
+class StatementFeeOut(BaseModel):
+    name: str
+    amount: Decimal
+    currency: str
+
+
+class StatementInstallmentOut(BaseModel):
+    date: dt.date
+    name: str
+    currency: str
+    price: Decimal
+    sequence: int
+    n_installments: int
+    capital: Decimal
+    interest: Decimal
+    move_id: int | None
+    mine: bool
 
 
 class ReconciliationOut(BaseModel):
     closing_date: dt.date
-    previous_closing: dt.date
+    date_from: dt.date
+    date_due: dt.date | None
+    filename: str | None
     credit_limit: Decimal
     limit_currency: str
-    currencies: list[StatementCurrencyOut]
-    bank_charges: Decimal
-    billed: Decimal
-    bank_billed: Decimal | None
-    installments: Decimal
-    bank_installments: Decimal | None
+    used: Decimal
     available: Decimal
-    bank_available: Decimal | None
-    used_at_closing: Decimal
+    currencies: list[StatementCurrencyOut]
+    fees: list[StatementFeeOut]
+    bank_charges: Decimal
+    installments: list[StatementInstallmentOut]
     explanations: list[str]
     lines: list[StatementLineOut]
     unmatched: list[UnmatchedOut]
-
-
-Amount = Annotated[Decimal, Field(max_digits=14, decimal_places=2)]
-
-
-class StatementLineIn(BaseModel):
-    date: dt.date
-    name: str = Field(max_length=200)
-    amount: Amount
-    currency: Currency
-
-
-class SubtotalIn(BaseModel):
-    currency: Currency
-    amount: Amount | None
-
-
-class StatementIn(BaseModel):
-    subtotals: list[SubtotalIn] = []
-    billed: Amount | None = None         # total facturado
-    available: Amount | None = None      # línea disponible
-    installments: Amount | None = None   # saldo de compras en cuotas
-    lines: list[StatementLineIn] | None = None   # None = los pegados antes no cambian
+    unread: list[str]
 
 
 def _reconciliation(user_id: int, card_id: int, closing: dt.date) -> ReconciliationOut:
@@ -336,20 +334,19 @@ def _reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliat
         raise _http(e) from None
 
 
-@router.get("/cards/{card_id}/statements/{closing}", summary="Conciliar un estado de cuenta con PPM")
-def reconciliation(card_id: int, closing: dt.date,
-                   session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
+@router.post("/cards/{card_id}/statements", status_code=status.HTTP_201_CREATED,
+             summary="Importar el estado de cuenta en PDF")
+def import_statement(card_id: int, file: Annotated[UploadFile, File()],
+                     session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
+    content = file.file.read(card_statements.MAX_BYTES + 1)
+    try:
+        closing = card_statements.import_pdf(session.user_id, card_id, content, file.filename)
+    except AccountError as e:
+        raise _http(e) from None
     return _reconciliation(session.user_id, card_id, closing)
 
 
-@router.put("/cards/{card_id}/statements/{closing}", summary="Lo que dice el banco de un ciclo")
-def save_statement(card_id: int, closing: dt.date, body: StatementIn,
+@router.get("/cards/{card_id}/statements/{closing}", summary="Un estado de cuenta importado, conciliado con PPM")
+def reconciliation(card_id: int, closing: dt.date,
                    session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
-    lines = None if body.lines is None else [card_statements.StatementLine(x.date, x.name, x.amount, x.currency)
-                                             for x in body.lines]
-    try:
-        card_statements.save(session.user_id, card_id, closing, card_statements.StatementInput(
-            {x.currency: x.amount for x in body.subtotals}, body.billed, body.available, body.installments, lines))
-    except AccountError as e:
-        raise _http(e) from None
     return _reconciliation(session.user_id, card_id, closing)

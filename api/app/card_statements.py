@@ -1,8 +1,10 @@
-"""El estado de cuenta de una tarjeta: la foto de cada ciclo cerrado (lo que debías por moneda, el
-tipo de cambio y la línea usada al corte, que no se recalculan), el tipo de cambio del ciclo abierto
-(el de venta del día o el escrito a mano) y la conciliación con los totales y los movimientos que
-dice el banco. El «saldo de compras en cuotas según banco» reemplaza el cálculo de cuotas de la
-línea hasta el siguiente estado de cuenta."""
+"""El estado de cuenta de una tarjeta, importado del PDF. Su foto (línea, utilizada, disponible,
+facturado y saldo de cuotas por moneda) es lo que dice el banco y no se recalcula; sus fechas Del/Al
+mandan sobre el día de corte para ese ciclo. Del «Detalle plan cuotas» sale el capital y el interés
+de cada cuota tuya facturada. Entre cortes, la línea es la de la última foto más lo que pasó
+después (estimada): las compras y cargos la ocupan, los pagos la liberan, una compra en cuotas
+ocupa su precio y las cuotas que se facturan no la cambian. Lo que no es la moneda de la línea
+cuenta al tipo del ciclo abierto: el de venta del día o el escrito a mano."""
 
 from __future__ import annotations
 
@@ -14,6 +16,7 @@ from typing import TYPE_CHECKING
 
 import psycopg
 
+from app import card_pdf
 from app.accounts import ZERO, AccountError, TodayRate, _currency_id, _today_rates, _translate
 from app.db import user_transaction
 
@@ -21,18 +24,21 @@ if TYPE_CHECKING:
     from app.cards import CardRate
 
 MATCH_DAYS = 2   # un movimiento del banco y uno de PPM son el mismo si difieren hasta 2 días
+PLAN_DAYS = 3    # una fila del «Detalle plan cuotas» es de una compra si su fecha difiere hasta 3 días
+MAX_BYTES = 10 * 1024 * 1024
 
 
 def _cents(v: Decimal) -> Decimal:
     return v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _limit_currency(conn: psycopg.Connection, card_id: int) -> tuple[int, Decimal]:
-    row = conn.execute("SELECT limit_currency_id, credit_limit FROM account_credit_card WHERE account_id = %s",
-                       (card_id,)).fetchone()
+def _card(conn: psycopg.Connection, card_id: int) -> tuple[int, str, str | None]:
+    row = conn.execute("""
+        SELECT cc.limit_currency_id, trim(c.name), cc.last4 FROM account_credit_card cc
+          JOIN res_currency c ON c.id = cc.limit_currency_id WHERE cc.account_id = %s""", (card_id,)).fetchone()
     if row is None:
         raise AccountError(404, "No encontramos esa tarjeta")
-    return row[0], row[1]
+    return row
 
 
 # --- El tipo de cambio ------------------------------------------------------------------------
@@ -55,7 +61,7 @@ def open_rates(conn: psycopg.Connection, card_id: int, last: dt.date,
 def set_rate(user_id: int, card_id: int, currency: str, rate: Decimal | None) -> None:
     """Escribir el tipo de cambio del ciclo abierto (o volver al del día con None)."""
     with user_transaction(user_id) as conn:
-        _limit_currency(conn, card_id)
+        _card(conn, card_id)
         cid = _currency_id(conn, currency)
         if rate is None:
             conn.execute("DELETE FROM account_credit_card_rate WHERE card_account_id = %s AND currency_id = %s",
@@ -68,84 +74,140 @@ def set_rate(user_id: int, card_id: int, currency: str, rate: Decimal | None) ->
                      (card_id, cid, rate))
 
 
-def _closing_rate(conn: psycopg.Connection, card_id: int, currency_id: int, closing: dt.date,
-                  previous: dt.date) -> tuple[Decimal | None, dt.date | None]:
-    """El tipo con que se cuenta un ciclo que cerró: el escrito a mano en ese ciclo o el de venta del corte."""
-    row = conn.execute("""
-        SELECT rate, rate_date FROM account_credit_card_rate
-         WHERE card_account_id = %s AND currency_id = %s AND rate_date > %s AND rate_date <= %s""",
-                       (card_id, currency_id, previous, closing)).fetchone()
-    if row:
-        return row[0], row[1]
-    row = conn.execute("""
-        SELECT rate_sell, name FROM res_currency_rate WHERE currency_id = %s AND name <= %s
-         ORDER BY name DESC LIMIT 1""", (currency_id, closing)).fetchone()
-    return (row[0], row[1]) if row else (None, None)
+# --- La línea ---------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Line:
+    used: Decimal
+    matched: bool                # la foto del último corte, sin nada después: «Cuadrada con banco»
+    statement: dt.date | None    # el corte de la foto de donde parte
 
 
-# --- La foto del ciclo cerrado ----------------------------------------------------------------
+def line(conn: psycopg.Connection, card_id: int, limit_cur: str, last: dt.date, debts: dict[str, Decimal],
+         rates: dict[str, CardRate], book: dict[str, Decimal]) -> Line:
+    """Lo que ocupa de la línea: la última foto del banco más lo de después. Sin estado de cuenta,
+    toda la deuda (estimada)."""
+    def to_limit(cur: str, amount: Decimal) -> Decimal:
+        if cur == limit_cur:
+            return amount
+        if cur in rates:
+            return _cents(amount * rates[cur].rate)
+        return -book.get(cur, ZERO)
 
-def _previous(conn: psycopg.Connection, card_id: int, closing: dt.date) -> dt.date:
-    return conn.execute("SELECT card_last_closing(%s, %s - 1)", (card_id, closing)).fetchone()[0]
-
-
-def snapshot(conn: psycopg.Connection, card_id: int, closing: dt.date, refresh: bool = False) -> None:
-    """La foto de un ciclo cerrado: se toma una vez (al verlo por primera vez) y no se recalcula con
-    el tipo de otro día. Al guardar la conciliación se vuelve a tomar, con lo registrado hasta ahí."""
-    if not refresh and conn.execute("SELECT 1 FROM account_credit_card_statement"
-                                    " WHERE card_account_id = %s AND closing_date = %s",
-                                    (card_id, closing)).fetchone():
-        return
-    limit_cur, limit = _limit_currency(conn, card_id)
-    previous = _previous(conn, card_id, closing)
-    used = installments = ZERO
-    rows = []
-    for cid, debt, unbilled in conn.execute(
-            "SELECT currency_id, total_debt, unbilled FROM credit_card_status(%s) WHERE account_id = %s",
-            (closing, card_id)).fetchall():
-        rate, on = (None, None) if cid == limit_cur else _closing_rate(conn, card_id, cid, closing, previous)
-        factor = Decimal(1) if cid == limit_cur else rate or ZERO
-        used += _cents(debt * factor)
-        installments += _cents(unbilled * factor)
-        rows.append((cid, _cents(debt), rate, on))
-    conn.execute("""
-        INSERT INTO account_credit_card_statement (card_account_id, closing_date, credit_limit, used, installments)
-        VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (card_account_id, closing_date) DO UPDATE
-           SET credit_limit = EXCLUDED.credit_limit, used = EXCLUDED.used,
-               installments = EXCLUDED.installments, write_date = now()""",
-                 (card_id, closing, limit, used, installments))
-    for cid, debt, rate, on in rows:
-        conn.execute("""
-            INSERT INTO account_credit_card_statement_currency (card_account_id, closing_date, currency_id, debt,
-                                                                rate, rate_date)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (card_account_id, closing_date, currency_id) DO UPDATE
-               SET debt = EXCLUDED.debt, rate = EXCLUDED.rate, rate_date = EXCLUDED.rate_date""",
-                     (card_id, closing, cid, debt, rate, on))
+    st = conn.execute("""
+        SELECT closing_date, bank_used FROM account_credit_card_statement
+         WHERE card_account_id = %s AND closing_date <= user_today() ORDER BY closing_date DESC LIMIT 1""",
+                      (card_id,)).fetchone()
+    if st is None:
+        return Line(sum((to_limit(c, d) for c, d in debts.items()), ZERO), False, None)
+    closing, used = st
+    after = conn.execute("""
+        SELECT trim(c.name), sum(CASE WHEN p.id IS NULL THEN -l.amount_currency
+                                      ELSE coalesce(p.price, p.principal) END)
+          FROM account_move_line l
+          JOIN account_move m ON m.id = l.move_id AND m.state = 'posted' AND m.date > %s AND m.date <= user_today()
+          JOIN res_currency c ON c.id = l.currency_id
+          LEFT JOIN account_installment_plan p ON p.move_id = m.id
+         WHERE l.account_id = %s
+         GROUP BY c.name""", (closing, card_id)).fetchall()
+    for cur, amount in after:
+        used += to_limit(cur, amount)
+    return Line(used, not after and closing == last, closing)
 
 
-def _ppm_installments(conn: psycopg.Connection, card_id: int, closing: dt.date) -> Decimal:
-    """Las cuotas por facturar al corte según PPM, en la moneda de la línea (al tipo de la foto)."""
-    limit_cur, _ = _limit_currency(conn, card_id)
-    total = ZERO
-    for cid, unbilled, rate in conn.execute("""
-            SELECT s.currency_id, s.unbilled, sc.rate FROM credit_card_status(%s) s
-              LEFT JOIN account_credit_card_statement_currency sc
-                     ON sc.card_account_id = s.account_id AND sc.closing_date = %s AND sc.currency_id = s.currency_id
-             WHERE s.account_id = %s""", (closing, closing, card_id)).fetchall():
-        total += _cents(unbilled * (Decimal(1) if cid == limit_cur else rate or ZERO))
-    return total
+# --- Importar el PDF --------------------------------------------------------------------------
+
+def import_pdf(user_id: int, card_id: int, data: bytes, filename: str | None) -> dt.date:
+    """Guarda el estado de cuenta (reemplaza el del mismo corte) y aplica lo que trae: las fechas
+    del ciclo, la fecha de pago, la línea de crédito y el capital e interés de las cuotas. Devuelve
+    su corte."""
+    if len(data) > MAX_BYTES:
+        raise AccountError(400, "Ese PDF pesa más de 10 MB")
+    parsed = card_pdf.parse_pdf(data)
+    with user_transaction(user_id) as conn:
+        _, _, last4 = _card(conn, card_id)
+        if last4 and parsed.last4 and last4 != parsed.last4:
+            raise AccountError(400, f"Ese estado de cuenta es de la tarjeta •••• {parsed.last4}, no de esta (•••• {last4})")
+        today = conn.execute("SELECT user_today()").fetchone()[0]
+        if parsed.closing_date > today:
+            raise AccountError(400, "Ese estado de cuenta cierra después de hoy")
+        try:
+            with conn.transaction():
+                _save(conn, card_id, parsed, filename)
+        except psycopg.Error as e:
+            raise _translate(e) from None
+    return parsed.closing_date
 
 
-def installments_delta(conn: psycopg.Connection, card_id: int, closing: dt.date) -> Decimal | None:
-    """Cuánto cambia la línea usada si las cuotas son las del banco: su saldo menos el de PPM al corte.
-    None si ese estado de cuenta no tiene el saldo del banco (la línea queda «estimada»)."""
-    bank = conn.execute("SELECT bank_installments FROM account_credit_card_statement"
-                        " WHERE card_account_id = %s AND closing_date = %s", (card_id, closing)).fetchone()
-    if bank is None or bank[0] is None:
+def _currency(conn: psycopg.Connection, code: str) -> int | None:
+    try:
+        return _currency_id(conn, code)
+    except AccountError:
         return None
-    return bank[0] - _ppm_installments(conn, card_id, closing)
+
+
+def _save(conn: psycopg.Connection, card_id: int, p: card_pdf.ParsedStatement, filename: str | None) -> None:
+    key = (card_id, p.closing_date)
+    conn.execute("DELETE FROM account_credit_card_statement WHERE card_account_id = %s AND closing_date = %s", key)
+    conn.execute("""
+        INSERT INTO account_credit_card_statement (card_account_id, closing_date, date_from, date_due, credit_limit,
+                                                   bank_used, bank_available, filename, unread)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                 (*key, p.date_from, p.date_due, p.credit_limit, p.used, p.available, filename, p.unread))
+    for c in p.currencies:
+        cid = _currency(conn, c.currency)
+        if cid is None:
+            continue
+        conn.execute("""
+            INSERT INTO account_credit_card_statement_currency (card_account_id, closing_date, currency_id,
+                                                                bank_subtotal, bank_billed, bank_installments)
+            VALUES (%s, %s, %s, %s, %s, %s)""", (*key, cid, c.subtotal, c.billed, c.installments))
+    for x in p.lines:
+        cid = _currency(conn, x.currency)
+        if cid is not None and x.amount:
+            conn.execute("""
+                INSERT INTO account_credit_card_statement_line (card_account_id, closing_date, date, name, amount,
+                                                                currency_id, kind)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)""", (*key, x.date, x.name or "Movimiento", x.amount, cid, x.kind))
+
+    # Las fechas del banco: el ciclo, la fecha de pago y la línea (si es el último estado de cuenta)
+    conn.execute("SELECT realign_card_closings(%s)", (card_id,))
+    if p.date_due is not None and p.date_due > p.closing_date:
+        conn.execute("SELECT set_card_due_date(%s, %s, %s)", (*key, p.date_due))
+    conn.execute("""
+        UPDATE account_credit_card SET credit_limit = %s
+         WHERE account_id = %s AND NOT EXISTS (SELECT 1 FROM account_credit_card_statement
+                                                WHERE card_account_id = %s AND closing_date > %s)""",
+                 (p.credit_limit, card_id, card_id, p.closing_date))
+    conn.execute("SELECT post_installment_billing()")
+
+    # El «Detalle plan cuotas»: cada fila, con su compra en PPM; si es tuya, la cuota se divide
+    taken: set[int] = set()
+    for x in p.installments:
+        cid = _currency(conn, x.currency)
+        if cid is None:
+            continue
+        plan = conn.execute("""
+            SELECT pl.plan_id, p.expense_account_id IS NOT NULL
+              FROM account_installment_plan p
+              JOIN account_move m ON m.id = p.move_id AND m.state = 'posted'
+              JOIN account_installment_plan_line pl ON pl.plan_id = p.id AND pl.sequence = %(seq)s
+             WHERE p.card_account_id = %(card)s AND p.currency_id = %(cur)s AND p.n_installments = %(n)s
+               AND pl.principal = %(total)s AND abs(m.date - %(date)s) <= %(days)s AND NOT (p.id = ANY(%(taken)s))
+             ORDER BY coalesce(p.price, p.principal) = %(price)s DESC, abs(m.date - %(date)s), p.id
+             LIMIT 1""", {"seq": x.sequence, "card": card_id, "cur": cid, "n": x.n_installments, "total": x.total,
+                          "date": x.date, "days": PLAN_DAYS, "taken": list(taken), "price": x.price}).fetchone()
+        plan_id, mine = plan if plan else (None, False)
+        if plan_id is not None:
+            taken.add(plan_id)
+            if mine:
+                conn.execute("SELECT set_installment_detail(%s, %s, %s, %s)",
+                             (plan_id, x.sequence, x.capital, x.interest))
+        conn.execute("""
+            INSERT INTO account_credit_card_statement_installment (card_account_id, closing_date, date, name,
+                   currency_id, price, sequence, n_installments, capital, interest, plan_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                     (*key, x.date, x.name, cid, x.price, x.sequence, x.n_installments, x.capital, x.interest, plan_id))
 
 
 # --- La conciliación --------------------------------------------------------------------------
@@ -171,45 +233,69 @@ class Unmatched:
 @dataclass(frozen=True)
 class StatementCurrency:
     currency: str
-    debt: Decimal                # lo que debías al corte (foto)
-    rate: Decimal | None         # a cuánto se contó en la línea (foto); None = la moneda de la línea
-    rate_date: dt.date | None
     subtotal: Decimal            # compras y cuotas del ciclo según PPM (sin cargos del banco)
     bank_subtotal: Decimal | None
+    bank_billed: Decimal | None
+    bank_installments: Decimal | None
+    read: Decimal                # la suma de los movimientos que se leyeron del PDF
+
+
+@dataclass(frozen=True)
+class StatementFee:
+    name: str
+    amount: Decimal
+    currency: str
+
+
+@dataclass(frozen=True)
+class StatementInstallment:
+    date: dt.date
+    name: str
+    currency: str
+    price: Decimal
+    sequence: int
+    n_installments: int
+    capital: Decimal
+    interest: Decimal
+    move_id: int | None          # su compra en PPM
+    mine: bool                   # tuya: la cuota se dividió en capital e interés
 
 
 @dataclass(frozen=True)
 class Reconciliation:
     closing_date: dt.date
-    previous_closing: dt.date
+    date_from: dt.date
+    date_due: dt.date | None
+    filename: str | None
     credit_limit: Decimal
     limit_currency: str
+    used: Decimal                # foto: línea utilizada
+    available: Decimal           # foto: crédito disponible
     currencies: list[StatementCurrency]
+    fees: list[StatementFee]     # cargos del banco del estado de cuenta
     bank_charges: Decimal        # cargos del banco del ciclo en PPM (en la moneda de la línea)
-    billed: Decimal              # total facturado según PPM: subtotal + cargos del banco
-    bank_billed: Decimal | None
-    installments: Decimal        # cuotas por facturar al corte según PPM
-    bank_installments: Decimal | None
-    available: Decimal           # línea disponible hoy según PPM (con el saldo de cuotas del banco, si está)
-    bank_available: Decimal | None
-    used_at_closing: Decimal     # foto: la línea usada al corte
+    installments: list[StatementInstallment]
     explanations: list[str] = field(default_factory=list)
     lines: list[StatementLine] = field(default_factory=list)
     unmatched: list[Unmatched] = field(default_factory=list)   # de PPM, sin par en el banco
-
-
-def _check_closing(conn: psycopg.Connection, card_id: int, closing: dt.date) -> None:
-    ok = conn.execute("SELECT card_closing_for(%s, %s) = %s AND %s <= card_last_closing(%s, user_today())",
-                      (card_id, closing, closing, closing, card_id)).fetchone()[0]
-    if not ok:
-        raise AccountError(400, "Esa fecha no es un corte que ya cerró")
+    unread: list[str] = field(default_factory=list)            # del PDF, no se pudieron leer
 
 
 def _money(v: Decimal, symbol: str) -> str:
     return f"{symbol} {abs(v):,.2f}"
 
 
-def _match(bank: list[StatementLine], items: list) -> tuple[list[StatementLine], list]:
+@dataclass(frozen=True)
+class _Item:
+    move_id: int
+    date: dt.date
+    ref: str
+    amount: Decimal
+    currency: str
+    closing: dt.date | None      # cuota: su corte
+
+
+def _match(bank: list[StatementLine], items: list[_Item]) -> tuple[list[StatementLine], list[_Item]]:
     """Empareja por monto exacto, moneda y fecha ±2 días (la cuota, por su compra o por su corte)."""
     free = list(items)
     out = []
@@ -229,87 +315,80 @@ def _match(bank: list[StatementLine], items: list) -> tuple[list[StatementLine],
     return out, free
 
 
-@dataclass(frozen=True)
-class _Item:
-    move_id: int
-    date: dt.date
-    ref: str
-    amount: Decimal
-    currency: str
-    closing: dt.date | None      # cuota: su corte
-
-
 def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliation:
     from app import cards
     with user_transaction(user_id) as conn:
-        limit_cur_id, _ = _limit_currency(conn, card_id)
-        _check_closing(conn, card_id, closing)
-        snapshot(conn, card_id, closing)
-        d = cards._card(conn, card_id)
-        limit_cur = d[6]
-        previous = _previous(conn, card_id, closing)
+        limit_cur_id, limit_cur, _ = _card(conn, card_id)
+        st = conn.execute("""
+            SELECT date_from, date_due, filename, credit_limit, bank_used, bank_available, unread
+              FROM account_credit_card_statement WHERE card_account_id = %s AND closing_date = %s""",
+                          (card_id, closing)).fetchone()
+        if st is None:
+            raise AccountError(404, "Ese corte no tiene estado de cuenta importado")
+        date_from, date_due, filename, limit, used, available, unread = st
         last = conn.execute("SELECT card_last_closing(%s, user_today())", (card_id,)).fetchone()[0]
         nxt = conn.execute("SELECT card_closing_for(%s, %s + 1)", (card_id, last)).fetchone()[0]
         cycle = next((c for c in cards._cycles(conn, card_id, last, nxt, {}) if c.closing_date == closing), None)
-        st = conn.execute("""
-            SELECT credit_limit, used, bank_billed, bank_available, bank_installments
-              FROM account_credit_card_statement WHERE card_account_id = %s AND closing_date = %s""",
-                          (card_id, closing)).fetchone()
-        snap = {cur: (debt, rate, on, bank) for cur, debt, rate, on, bank in conn.execute("""
-            SELECT trim(c.name), sc.debt, sc.rate, sc.rate_date, sc.bank_subtotal
+        bank_cur = conn.execute("""
+            SELECT trim(c.name), sc.bank_subtotal, sc.bank_billed, sc.bank_installments
               FROM account_credit_card_statement_currency sc JOIN res_currency c ON c.id = sc.currency_id
              WHERE sc.card_account_id = %s AND sc.closing_date = %s ORDER BY sc.currency_id <> %s, c.name""",
-                                                                         (card_id, closing, limit_cur_id))}
-        bank_lines = [StatementLine(*r) for r in conn.execute("""
-            SELECT l.date, l.name, l.amount, trim(c.name) FROM account_credit_card_statement_line l
+                                (card_id, closing, limit_cur_id)).fetchall()
+        rows = conn.execute("""
+            SELECT l.date, l.name, l.amount, trim(c.name), l.kind FROM account_credit_card_statement_line l
               JOIN res_currency c ON c.id = l.currency_id
-             WHERE l.card_account_id = %s AND l.closing_date = %s ORDER BY l.date, l.id""", (card_id, closing))]
-        installments = _ppm_installments(conn, card_id, closing)
-    detail = cards.detail(user_id, card_id)
-    available = detail.available                          # la de hoy, con el saldo de cuotas del banco si está
+             WHERE l.card_account_id = %s AND l.closing_date = %s ORDER BY l.date, l.id""", (card_id, closing)).fetchall()
+        plans = [StatementInstallment(*r) for r in conn.execute("""
+            SELECT s.date, s.name, trim(c.name), s.price, s.sequence, s.n_installments, s.capital, s.interest,
+                   p.move_id, coalesce(p.expense_account_id IS NOT NULL, false)
+              FROM account_credit_card_statement_installment s
+              JOIN res_currency c ON c.id = s.currency_id
+              LEFT JOIN account_installment_plan p ON p.id = s.plan_id
+             WHERE s.card_account_id = %s AND s.closing_date = %s ORDER BY s.id""", (card_id, closing))]
+
+    fees = [StatementFee(n, a, c) for _, n, a, c, k in rows if k == "fee"]
+    bank_lines = [StatementLine(d, n, a, c) for d, n, a, c, k in rows if k == "move"]
 
     # Lo que dice PPM del ciclo: compras y cuotas (subtotal) y cargos del banco, por moneda
     subtotal: dict[str, Decimal] = defaultdict(lambda: ZERO)
     charges: dict[str, Decimal] = defaultdict(lambda: ZERO)
     items: list[_Item] = []
     for i in (cycle.items if cycle else []):
-        if not i.posted or i.kind in ("opening", "payment"):
-            if i.posted and i.kind == "payment":
-                items.append(_Item(i.move_id, i.date, i.ref, i.amount, i.currency, None))
+        if not i.posted or i.kind == "opening":
             continue
-        (charges if i.bank else subtotal)[i.currency] += i.amount
-        items.append(_Item(i.move_id, i.date, i.ref, i.amount, i.currency,
-                           closing if i.kind == "installment" else None))
-    currencies = [StatementCurrency(cur, debt, rate, on, _cents(subtotal[cur]), bank)
-                  for cur, (debt, rate, on, bank) in snap.items()]
-    for cur in subtotal:
-        if cur not in snap:
-            currencies.append(StatementCurrency(cur, ZERO, None, None, _cents(subtotal[cur]), None))
-    billed = _cents(subtotal[limit_cur] + charges[limit_cur])
+        if i.kind != "payment":
+            (charges if i.bank else subtotal)[i.currency] += i.amount
+        if not i.bank:
+            items.append(_Item(i.move_id, i.date, i.ref, i.amount, i.currency,
+                               closing if i.kind == "installment" else None))
+    read: dict[str, Decimal] = defaultdict(lambda: ZERO)
+    for b in bank_lines:
+        read[b.currency] += b.amount
+    currencies = [StatementCurrency(cur, _cents(subtotal[cur]), sub, billed, inst, read[cur])
+                  for cur, sub, billed, inst in bank_cur]
     lines, free = _match(bank_lines, items)
     unmatched = [Unmatched(i.move_id, i.date, i.ref, i.amount, i.currency) for i in free]
-
-    explain = _explain(limit_cur, currencies, lines, unmatched, billed, st[2], installments, st[4], available,
-                       st[3], detail)
-    return Reconciliation(closing, previous, st[0], limit_cur, currencies, _cents(charges[limit_cur]), billed, st[2],
-                          installments, st[4], available, st[3], st[1], explain, lines, unmatched)
+    explain = _explain(currencies, lines, unmatched, fees, charges, unread)
+    return Reconciliation(closing, date_from, date_due, filename, limit, limit_cur, used, available, currencies,
+                          fees, _cents(charges[limit_cur]), plans, explain, lines, unmatched, unread)
 
 
-def _explain(limit_cur: str, currencies: list[StatementCurrency], lines: list[StatementLine],
-             unmatched: list[Unmatched], billed: Decimal, bank_billed: Decimal | None, installments: Decimal,
-             bank_installments: Decimal | None, available: Decimal, bank_available: Decimal | None,
-             detail) -> list[str]:
-    """De dónde sale cada diferencia: movimientos sin par, cargos del banco, cuotas y tipo de cambio."""
+def _explain(currencies: list[StatementCurrency], lines: list[StatementLine], unmatched: list[Unmatched],
+             fees: list[StatementFee], charges: dict[str, Decimal], unread: list[str]) -> list[str]:
+    """La lectura del PDF y de dónde sale cada diferencia del subtotal y de los cargos del banco."""
     sym = {"PEN": "S/", "USD": "US$"}
     out: list[str] = []
-    gap_main = ZERO
+    for c in currencies:
+        s = sym.get(c.currency, c.currency)
+        if c.bank_subtotal is not None and c.read != c.bank_subtotal:
+            out.append(f"Lectura en {s}: los movimientos leídos suman {_money(c.read, s)} y el subtotal del banco "
+                       f"es {_money(c.bank_subtotal, s)}."
+                       + (" Revisa las líneas que no se pudieron leer." if unread else ""))
     for c in currencies:
         if c.bank_subtotal is None:
             continue
         s = sym.get(c.currency, c.currency)
         gap = c.bank_subtotal - c.subtotal
-        if c.currency == limit_cur:
-            gap_main = gap
         if gap == 0:
             out.append(f"Subtotal en {s}: cuadra al céntimo.")
             continue
@@ -321,88 +400,19 @@ def _explain(limit_cur: str, currencies: list[StatementCurrency], lines: list[St
         if extra:
             parts.append(f"{_money(extra, s)} de movimientos de PPM que el banco no tiene en este ciclo")
         rest = gap - missing + extra
-        if rest and lines:
+        if rest:
             parts.append(f"{_money(rest, s)} sin explicar: revisa montos o fechas")
         out.append(f"Subtotal en {s}: {'faltan' if gap > 0 else 'sobran'} {_money(gap, s)}"
-                   + (f" ({'; '.join(parts)})." if parts else ". Pega los movimientos del estado de cuenta para ver cuáles."))
-    s = sym.get(limit_cur, limit_cur)
-    if bank_billed is not None:
-        gap = bank_billed - billed
-        fees = gap - gap_main
-        if gap == 0:
-            out.append("Total facturado: cuadra al céntimo.")
-        elif fees > 0:
-            out.append(f"Total facturado: faltan {_money(gap, s)}; {_money(fees, s)} son cargos del banco "
-                       "(desgravamen, comisiones) que no están en PPM.")
-        elif fees < 0:
-            out.append(f"Total facturado: {_money(fees, s)} de cargos del banco en PPM que el banco no cobró este ciclo.")
-        else:
-            out.append(f"Total facturado: la diferencia de {_money(gap, s)} es la del subtotal.")
-    if bank_installments is not None:
-        gap = bank_installments - installments
-        if gap == 0:
-            out.append("Saldo de cuotas: cuadra.")
-        else:
-            out.append(f"Saldo de cuotas: el banco dice {_money(gap, s)} {'más' if gap > 0 else 'menos'}"
-                       f"{' (el interés que ya devengó)' if gap > 0 else ''}. La línea usa el saldo del banco hasta el próximo estado de cuenta.")
-    if bank_available is not None:
-        gap = bank_available - available
-        foreign = [(c, r) for c in detail.status if c.currency != limit_cur and c.total_debt
-                   for r in detail.rates if r.currency == c.currency]
-        if gap == 0:
-            out.append("Línea disponible: cuadra al céntimo.")
-        elif foreign:
-            st, r = foreign[0]
-            bank_rate = r.rate + gap / st.total_debt * -1
-            out.append(f"Línea disponible: {_money(gap, s)} de diferencia. Si es por el tipo de cambio de tus "
-                       f"{sym.get(st.currency, st.currency)} {st.total_debt:,.2f}, el banco los cuenta a "
-                       f"{bank_rate.quantize(Decimal('0.001'))} (PPM a {r.rate.quantize(Decimal('0.001'))}); si no, "
-                       "son movimientos de después del corte que aún no registras o redondeo.")
-        else:
-            out.append(f"Línea disponible: {_money(gap, s)} de diferencia: movimientos de después del corte que "
-                       "aún no registras o redondeo.")
+                   + (f" ({'; '.join(parts)})." if parts else "."))
+    bank_fees: dict[str, Decimal] = defaultdict(lambda: ZERO)
+    for f in fees:
+        bank_fees[f.currency] += f.amount
+    for cur in sorted(set(bank_fees) | {k for k, v in charges.items() if v}):
+        s = sym.get(cur, cur)
+        gap = bank_fees[cur] - charges[cur]
+        if gap > 0:
+            out.append(f"Cargos del banco en {s}: el banco cobró {_money(bank_fees[cur], s)} y en PPM hay "
+                       f"{_money(charges[cur], s)}. Agrega el que falta en «Cargos del banco» de la tarjeta.")
+        elif gap < 0:
+            out.append(f"Cargos del banco en {s}: en PPM hay {_money(-gap, s)} que el banco no cobró este ciclo.")
     return out
-
-
-@dataclass(frozen=True)
-class StatementInput:
-    subtotals: dict[str, Decimal | None]
-    billed: Decimal | None
-    available: Decimal | None
-    installments: Decimal | None
-    lines: list[StatementLine] | None   # None = no cambian
-
-
-def save(user_id: int, card_id: int, closing: dt.date, s: StatementInput) -> None:
-    """Lo que dice el banco del ciclo. Vuelve a tomar la foto con lo registrado hasta ahora."""
-    with user_transaction(user_id) as conn:
-        _limit_currency(conn, card_id)
-        _check_closing(conn, card_id, closing)
-        try:
-            with conn.transaction():
-                snapshot(conn, card_id, closing, refresh=True)
-                conn.execute("""
-                    UPDATE account_credit_card_statement
-                       SET bank_billed = %s, bank_available = %s, bank_installments = %s, write_date = now()
-                     WHERE card_account_id = %s AND closing_date = %s""",
-                             (s.billed, s.available, s.installments, card_id, closing))
-                for cur, amount in s.subtotals.items():
-                    cid = _currency_id(conn, cur)
-                    conn.execute("""
-                        INSERT INTO account_credit_card_statement_currency (card_account_id, closing_date, currency_id,
-                                                                            debt, bank_subtotal)
-                        VALUES (%s, %s, %s, 0, %s)
-                        ON CONFLICT (card_account_id, closing_date, currency_id) DO UPDATE
-                           SET bank_subtotal = EXCLUDED.bank_subtotal""", (card_id, closing, cid, amount))
-                if s.lines is not None:
-                    conn.execute("DELETE FROM account_credit_card_statement_line"
-                                 " WHERE card_account_id = %s AND closing_date = %s", (card_id, closing))
-                    for x in s.lines:
-                        conn.execute("""
-                            INSERT INTO account_credit_card_statement_line
-                                   (card_account_id, closing_date, date, name, amount, currency_id)
-                            VALUES (%s, %s, %s, %s, %s, %s)""",
-                                     (card_id, closing, x.date, x.name.strip() or "Movimiento", x.amount,
-                                      _currency_id(conn, x.currency)))
-        except psycopg.Error as e:
-            raise _translate(e) from None

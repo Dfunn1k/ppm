@@ -14,7 +14,7 @@ import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
-import { CURRENCY_NAME, add, formatAmount, formatNumber, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, add, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 
 const TEXT: Record<PersonKind, { ask: string; who: string; into: boolean; submit: string; role: "owes_me" | "i_owe" | "keep" }> = {
   lend: { ask: "¿Cuánto le prestaste?", who: "¿A quién?", into: false, submit: "Registrar préstamo", role: "owes_me" },
@@ -57,7 +57,6 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   const [inInstallments, setInInstallments] = useState(false);
   const [installments, setInstallments] = useState(6);
   const [cuota, setCuota] = useState("");
-  const [interestMine, setInterestMine] = useState(false);
   const detail = usePartner(LIMITED.includes(kind) && who ? who : 0).data;
 
   const base = me?.currency ?? "PEN";
@@ -79,6 +78,8 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   const value = parseAmount(amount || "", lang);
   const cuotaValue = cuota.trim() ? parseAmount(cuota, lang) : null;
   const cuotas = isCard && inInstallments && !editing;
+  // En cuotas te debe todas: la cuota del banco × cuántas (sin cuota, lo que costó)
+  const owed = cuotas && value && Number(cuotaValue) > 0 ? multiply(cuotaValue!, String(installments)) : value;
   const money = (v: string) => formatAmount(v, symbolOf(currency), lang);
   const over = LIMITED.includes(kind) && who && value && Number(value) > Number(have);
   const only = LIMITED.includes(kind)
@@ -92,9 +93,9 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     const after = LIMITED.includes(kind) ? subtract(have, value) : add(have, value);
     const oldest = openDebts[0];
     switch (kind) {
-      case "lend": return [`${first} te quedará debiendo ${money(add(have, value))}`,
+      case "lend": return [`${first} te quedará debiendo ${money(add(have, owed ?? value))}`,
         `${Number(have) > 0 ? `Ya te debía ${money(have)}. ` : ""}` + (isCard
-          ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? ` Cada parte vence con la fecha de pago de su corte${cuotaValue && !interestMine ? " y se le suma su interés cuando el banco la factura" : ""}.` : ""}`
+          ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? " Te debe todas las cuotas; cada una vence con la fecha de pago de su corte." : ""}`
           : "No es un gasto: la plata sigue siendo tuya.")];
       case "borrow": return [`Le quedarás debiendo ${money(after)} a ${first}`, "No es un ingreso: entra a tu cuenta, pero se la debes."];
       case "collect": return [`${first} te debe ${money(have)} · quedará en ${money(after)}`,
@@ -126,7 +127,6 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
       currency: isCard ? currency : null,
       installments: cuotas ? installments : null,
       installment_amount: cuotas ? cuotaValue : null,
-      interest_mine: cuotas && interestMine,
     };
     save.mutate(body, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : `/personas/${who}`, { replace: true }) });
   };
@@ -182,16 +182,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
                 <>
                   <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={value} currency={currency}
                     date={date} closingDay={account!.card?.closing_day ?? null} category={null} lang={lang}
-                    who={interestMine ? undefined : first || undefined} />
-                  <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
-                    <Icon name="percent" className="w-9 text-center text-muted-foreground" />
-                    <span className="flex flex-1 flex-col">
-                      <span>El interés lo pago yo</span>
-                      <span className="text-caption text-muted-foreground">{first || "La persona"} te devuelve solo lo que costó</span>
-                    </span>
-                    <input type="checkbox" role="switch" checked={interestMine} onChange={() => setInterestMine(!interestMine)}
-                      className="size-[22px] accent-primary" />
-                  </label>
+                    who={first || undefined} />
                 </>
               )}
             </>

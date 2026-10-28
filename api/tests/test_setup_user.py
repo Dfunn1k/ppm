@@ -31,7 +31,7 @@ def test_crea_todas_las_cuentas_de_la_plantilla(new_user, as_user):
     roles = {r[0] for r in c.execute(
         "SELECT system_role FROM account_account WHERE system_role IS NOT NULL")}
     assert roles == {"opening", "receivable", "payable", "custody", "suspense",
-                     "fx_gain", "fx_loss", "interest", "bad_debt"}
+                     "fx_gain", "fx_loss", "interest", "bad_debt", "installments"}
 
     # Efectivo en la moneda base; las de personas y Por clasificar, multimoneda y con persona
     assert c.execute("SELECT display_name FROM account_account_v WHERE name = 'Efectivo'"

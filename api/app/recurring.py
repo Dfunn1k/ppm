@@ -262,7 +262,7 @@ def run(user_id: int) -> int:
     abrir la app (GET /me) y antes de mostrar recurrentes: sin programador nocturno, para que
     ppm_admin siga sin ver a nadie; lo atrasado sale con su fecha."""
     with user_transaction(user_id) as conn:
-        return conn.execute("SELECT account_recurring_run() + post_installment_interest()").fetchone()[0]
+        return conn.execute("SELECT account_recurring_run() + post_installment_billing()").fetchone()[0]
 
 
 # --- Ver --------------------------------------------------------------------------------------
