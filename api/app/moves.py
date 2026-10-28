@@ -562,7 +562,8 @@ class MoveSummary:
     ref: str
     posted: bool
     kind: str                    # 'expense', 'income', 'transfer', 'lend', 'borrow', 'collect', 'repay',
-                                 # 'custody_in', 'custody_out', 'refund', 'offset', 'write_off' u 'other'
+                                 # 'custody_in', 'custody_out', 'refund', 'offset', 'write_off',
+                                 # 'unclassified' (en Por clasificar) u 'other'
     currency: str                # la de la cuenta de dinero (la de donde sale, en una transferencia)
     amount: Decimal              # en esa moneda, siempre positivo: el signo lo da el tipo
     base: Decimal                # en moneda base (en un gasto, ingreso o reembolso: lo que va a categorías)
@@ -573,6 +574,7 @@ class MoveSummary:
     fx: Decimal | None = None    # cambio de moneda: + ganancia, − costo del cambio (en moneda base)
     partner_id: int | None = None   # con quién, si es con otra persona
     partner: str | None = None
+    incoming: bool | None = None    # por clasificar: entró (True) o salió (False) de la cuenta
 
 
 @dataclass(frozen=True)
@@ -641,6 +643,16 @@ class PlanDetail:
 
 
 @dataclass(frozen=True)
+class BankLine:
+    """Lo que dice el banco de un movimiento importado: no cambia, aunque cambies la glosa."""
+    statement_id: int
+    statement: str               # el nombre del archivo
+    account_id: int
+    payment_ref: str
+    operation_number: str | None
+
+
+@dataclass(frozen=True)
 class MoveDetail:
     summary: MoveSummary
     account_id: int | None
@@ -654,6 +666,7 @@ class MoveDetail:
     settled: list[Settled] = field(default_factory=list)
     lines: list[LineOut] = field(default_factory=list)   # todos los apuntes (para el asiento manual)
     plan: PlanDetail | None = None                       # una compra en cuotas: su calendario
+    bank: list[BankLine] = field(default_factory=list)   # lo que dijo el banco, si vino de un extracto
 
 
 _LINES_SQL = """
@@ -680,7 +693,7 @@ def _kind(lines: list[tuple]) -> tuple[str, list[tuple], list[tuple], list[tuple
     """Qué tipo de movimiento es, y sus apuntes repartidos: dinero, personas, categorías y cambio."""
     money = [x for x in lines if x[3] in ("asset", "liability")]
     persons = [x for x in money if x[4] in PERSON_ROLES]
-    cash = [x for x in money if x[4] not in PERSON_ROLES]
+    cash = [x for x in money if x[4] not in (*PERSON_ROLES, "suspense")]
     cats = [x for x in lines if x[3] in ("income", "expense")]
     # Entre dos cuentas de dinero, la ganancia o el costo del cambio no la vuelven gasto ni ingreso
     fx = [x for x in cats if x[4] in ("fx_gain", "fx_loss")] if len(cash) == 2 and not persons else []
@@ -688,6 +701,8 @@ def _kind(lines: list[tuple]) -> tuple[str, list[tuple], list[tuple], list[tuple
     expense = bool(cats) and all(x[3] == "expense" for x in cats)
     if any(x[4] == "opening" for x in lines):
         kind = "opening"
+    elif any(x[4] == "suspense" for x in lines):
+        kind = "unclassified"                              # vino del banco y falta decir en qué fue
     elif expense and len(cash) == 1 and cash[0][8] < 0 and all(x[4] == "receivable" and x[8] > 0 for x in persons):
         kind = "expense"
     elif expense and not cash and len(persons) == 1 and persons[0][4] == "payable" and persons[0][8] < 0:
@@ -743,6 +758,9 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
     elif kind == "opening" and persons:   # saldo inicial con una persona: ya te debía o ya le debías
         s = MoveSummary(move_id, on, ref, posted, kind, who[7], abs(who[8]), abs(who[9]), pname or "", [],  # type: ignore[index]
                         partner_id=pid, partner=pname)
+    elif kind == "unclassified" and cash:
+        m = cash[0]
+        s = MoveSummary(move_id, on, ref, posted, kind, m[7], abs(m[8]), abs(m[9]), m[2], [], incoming=m[8] > 0)
     elif kind == "offset":
         r = next(x for x in persons if x[4] == "receivable")
         s = MoveSummary(move_id, on, ref, posted, kind, r[7], abs(r[8]), abs(r[9]), pname or "", [],
@@ -831,6 +849,16 @@ def month(user_id: int, ym: str, account_id: int | None = None, category_id: int
 
 
 def detail(user_id: int, move_id: int) -> MoveDetail:
+    d = _detail(user_id, move_id)
+    with user_transaction(user_id) as conn:
+        bank = [BankLine(*r) for r in conn.execute("""
+            SELECT s.id, s.name, s.account_id, b.payment_ref, b.operation_number
+              FROM account_bank_statement_line b JOIN account_bank_statement s ON s.id = b.statement_id
+             WHERE b.move_id = %s ORDER BY b.id""", (move_id,))]
+    return replace(d, bank=bank) if bank else d
+
+
+def _detail(user_id: int, move_id: int) -> MoveDetail:
     with user_transaction(user_id) as conn:
         head = conn.execute("SELECT id, date, ref, state FROM account_move WHERE id = %s", (move_id,)).fetchone()
         if head is None:

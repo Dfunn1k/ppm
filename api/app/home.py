@@ -41,6 +41,7 @@ class Home:
     custody_total: Decimal
     owe_total: Decimal
     overdue_pending: int         # por confirmar cuya fecha ya llegó
+    unclassified: int            # traídos del banco, falta decir en qué fueron
     # Del mes elegido
     month: str
     income_total: Decimal
@@ -58,6 +59,8 @@ def home(user_id: int, ym: str) -> Home:
     with user_transaction(user_id) as conn:
         overdue = conn.execute(
             "SELECT count(*) FROM account_move WHERE state = 'draft' AND date <= user_today()").fetchone()[0]
+        unclassified = conn.execute("SELECT count(DISTINCT move_id) FROM account_move_line"
+                                    " WHERE account_id = system_account('suspense')").fetchone()[0]
         # El gasto del mes por categoría principal (la hija suma a su principal)
         rows = conn.execute("""
             SELECT r.id, r.name, r.icon, r.color, sum(l.balance)
@@ -84,7 +87,7 @@ def home(user_id: int, ym: str) -> Home:
             for b in a.balances:
                 held[b.currency] += b.amount
     foreign = [Foreign(r.currency, held[r.currency], r.buy, r.date, r.stale) for r in o.rates if held.get(r.currency)]
-    return Home(o.currency, o.real_total, o.have_total, o.custody_total, o.owe_total, overdue,
+    return Home(o.currency, o.real_total, o.have_total, o.custody_total, o.owe_total, overdue, unclassified,
                 ym, m.income_total, m.expense_total, saved, _percent(max(saved, ZERO), m.income_total), top, recent,
                 foreign)
 

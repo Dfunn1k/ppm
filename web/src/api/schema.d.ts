@@ -642,6 +642,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/{account_id}/statements/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leer un extracto sin guardar nada */
+        post: operations["preview_accounts__account_id__statements_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/{account_id}/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Extractos importados a una cuenta */
+        get: operations["list__accounts__account_id__statements_get"];
+        put?: never;
+        /** Importar un extracto */
+        post: operations["create_accounts__account_id__statements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statements/{statement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Un extracto: su control de saldo y lo que trajo */
+        get: operations["detail_statements__statement_id__get"];
+        put?: never;
+        post?: never;
+        /** Deshacer una importación */
+        delete: operations["undo_statements__statement_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statements/{statement_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descargar el archivo original de un extracto */
+        get: operations["file__statements__statement_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/unclassified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Por clasificar: lo que trajiste del banco y falta decir en qué fue */
+        get: operations["unclassified_unclassified_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/unclassified/classify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Clasificar uno o varios movimientos */
+        post: operations["classify_unclassified_classify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -675,6 +779,9 @@ export interface components {
             opening: components["schemas"]["OpeningOut"] | null;
             /** Lines */
             lines: components["schemas"]["app__routes__accounts__LineOut"][];
+            /** Unclassified */
+            unclassified: number;
+            last_statement: components["schemas"]["LastStatementOut"] | null;
         };
         /** AccountPatch */
         AccountPatch: {
@@ -748,6 +855,61 @@ export interface components {
             acc_number?: string | null;
             /** Cci */
             cci?: string | null;
+        };
+        /** BankLineOut */
+        BankLineOut: {
+            /** Statement Id */
+            statement_id: number;
+            /** Statement */
+            statement: string;
+            /** Account Id */
+            account_id: number;
+            /** Payment Ref */
+            payment_ref: string;
+            /** Operation Number */
+            operation_number: string | null;
+        };
+        /** Body_create_accounts__account_id__statements_post */
+        Body_create_accounts__account_id__statements_post: {
+            /** File */
+            file: string;
+            /** Header Row */
+            header_row?: number | null;
+            /** Date Format */
+            date_format?: ("DD/MM/YYYY" | "YYYY-MM-DD" | "MM/DD/YYYY") | null;
+            /** Decimal Separator */
+            decimal_separator?: ("." | ",") | null;
+            /**
+             * Columns
+             * @description JSON {campo: encabezado}; sin él, el recordado o el adivinado
+             */
+            columns?: string | null;
+            /**
+             * Balance End
+             * @description El saldo según el banco, si el archivo no lo trae
+             */
+            balance_end?: number | string | null;
+        };
+        /** Body_preview_accounts__account_id__statements_preview_post */
+        Body_preview_accounts__account_id__statements_preview_post: {
+            /** File */
+            file: string;
+            /** Header Row */
+            header_row?: number | null;
+            /** Date Format */
+            date_format?: ("DD/MM/YYYY" | "YYYY-MM-DD" | "MM/DD/YYYY") | null;
+            /** Decimal Separator */
+            decimal_separator?: ("." | ",") | null;
+            /**
+             * Columns
+             * @description JSON {campo: encabezado}; sin él, el recordado o el adivinado
+             */
+            columns?: string | null;
+            /**
+             * Balance End
+             * @description El saldo según el banco, si el archivo no lo trae
+             */
+            balance_end?: number | string | null;
         };
         /** CardAmountOut */
         CardAmountOut: {
@@ -923,6 +1085,41 @@ export interface components {
             /** Color */
             color: number | null;
         };
+        /** CheckOut */
+        CheckOut: {
+            /** Source */
+            source: ("file" | "typed") | null;
+            /** Bank */
+            bank: string | null;
+            /** Book */
+            book: string;
+            /** Difference */
+            difference: string | null;
+        };
+        /** ClassifyIn */
+        ClassifyIn: {
+            /** Move Ids */
+            move_ids: number[];
+            /** Account Id */
+            account_id?: number | null;
+            /** Role */
+            role?: ("receivable" | "payable" | "custody") | null;
+            /** Partner Id */
+            partner_id?: number | null;
+        };
+        /** CountsOut */
+        CountsOut: {
+            /** New */
+            new: number;
+            /** Matched */
+            matched: number;
+            /** Duplicate */
+            duplicate: number;
+            /** Zero */
+            zero: number;
+            /** Problems */
+            problems: number;
+        };
         /** CurrencyStatusOut */
         CurrencyStatusOut: {
             /** Currency */
@@ -1084,6 +1281,8 @@ export interface components {
             owe_total: string;
             /** Overdue Pending */
             overdue_pending: number;
+            /** Unclassified */
+            unclassified: number;
             /** Month */
             month: string;
             /** Income Total */
@@ -1101,6 +1300,32 @@ export interface components {
             /** Foreign */
             foreign: components["schemas"]["ForeignOut"][];
         };
+        /** ImportOut */
+        ImportOut: {
+            /** File Name */
+            file_name: string;
+            /** Currency */
+            currency: string;
+            /** Headers */
+            headers: string[];
+            mapping: components["schemas"]["MappingOut"];
+            /** Remembered */
+            remembered: boolean;
+            /** Total Rows */
+            total_rows: number;
+            /** Date From */
+            date_from: string | null;
+            /** Date To */
+            date_to: string | null;
+            counts: components["schemas"]["CountsOut"];
+            check: components["schemas"]["CheckOut"];
+            /** Sample */
+            sample: components["schemas"]["PreviewRowOut"][];
+            /** Problems */
+            problems: components["schemas"]["ProblemOut"][];
+            /** Statement Id */
+            statement_id: number | null;
+        };
         /** InstallmentsIn */
         InstallmentsIn: {
             /** Currency */
@@ -1113,6 +1338,17 @@ export interface components {
             ref: string;
             /** Rate */
             rate?: number | string | null;
+        };
+        /** LastStatementOut */
+        LastStatementOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Date To */
+            date_to: string | null;
+            /** Difference */
+            difference: string | null;
         };
         /** LoginIn */
         LoginIn: {
@@ -1160,6 +1396,25 @@ export interface components {
             credit: number | string;
             /** Partner Id */
             partner_id?: number | null;
+        };
+        /** MappingOut */
+        MappingOut: {
+            /** Header Row */
+            header_row: number;
+            /**
+             * Date Format
+             * @enum {string}
+             */
+            date_format: "DD/MM/YYYY" | "YYYY-MM-DD" | "MM/DD/YYYY";
+            /**
+             * Decimal Separator
+             * @enum {string}
+             */
+            decimal_separator: "." | ",";
+            /** Columns */
+            columns: {
+                [key: string]: string;
+            };
         };
         /** MeOut */
         MeOut: {
@@ -1253,6 +1508,11 @@ export interface components {
              */
             lines: components["schemas"]["app__routes__moves__LineOut"][];
             plan?: components["schemas"]["PlanOut"] | null;
+            /**
+             * Bank
+             * @default []
+             */
+            bank: components["schemas"]["BankLineOut"][];
         };
         /** MoveIn */
         MoveIn: {
@@ -1318,7 +1578,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "opening" | "other";
+            kind: "expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "opening" | "unclassified" | "other";
             /** Currency */
             currency: string;
             /** Amount */
@@ -1339,6 +1599,8 @@ export interface components {
             partner_id: number | null;
             /** Partner */
             partner: string | null;
+            /** Incoming */
+            incoming: boolean | null;
         };
         /** MovedOut */
         MovedOut: {
@@ -1572,6 +1834,25 @@ export interface components {
             /** Opening */
             opening: boolean;
         };
+        /** PreviewRowOut */
+        PreviewRowOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Payment Ref */
+            payment_ref: string;
+            /** Amount */
+            amount: string;
+        };
+        /** ProblemOut */
+        ProblemOut: {
+            /** Row */
+            row: number;
+            /** Reason */
+            reason: string;
+        };
         /** RateDayOut */
         RateDayOut: {
             /** Currency */
@@ -1681,6 +1962,48 @@ export interface components {
             /** Partner */
             partner: string | null;
         };
+        /** StatementDetailOut */
+        StatementDetailOut: {
+            statement: components["schemas"]["StatementRowOut"];
+            /** Account Id */
+            account_id: number;
+            /** Account */
+            account: string;
+            /** Currency */
+            currency: string;
+            /** Book */
+            book: string | null;
+            /** Pending */
+            pending: number;
+            /** Classified */
+            classified: number;
+            /** Matched */
+            matched: number;
+            /** Has File */
+            has_file: boolean;
+        };
+        /** StatementRowOut */
+        StatementRowOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Date From */
+            date_from: string | null;
+            /** Date To */
+            date_to: string | null;
+            /**
+             * Create Date
+             * Format: date-time
+             */
+            create_date: string;
+            /** Lines */
+            lines: number;
+            /** Balance End */
+            balance_end: string | null;
+            /** Difference */
+            difference: string | null;
+        };
         /** TodayRateOut */
         TodayRateOut: {
             /** Currency */
@@ -1711,6 +2034,37 @@ export interface components {
             amount: string;
             /** Share */
             share: number;
+        };
+        /** UnclassifiedOut */
+        UnclassifiedOut: {
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Payment Ref */
+            payment_ref: string | null;
+            /** Operation Number */
+            operation_number: string | null;
+            /** Account Id */
+            account_id: number;
+            /** Account */
+            account: string;
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Posted */
+            posted: boolean;
+        };
+        /** UndoOut */
+        UndoOut: {
+            /** Deleted */
+            deleted: number;
         };
         /** UserRateOut */
         UserRateOut: {
@@ -2807,7 +3161,7 @@ export interface operations {
                 month: string;
                 account_id?: number | null;
                 category_id?: number | null;
-                kind?: ("expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "opening" | "other") | null;
+                kind?: ("expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "opening" | "unclassified" | "other") | null;
                 q?: string | null;
                 pending?: boolean;
             };
@@ -3365,6 +3719,278 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RateDayOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_accounts__account_id__statements_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_preview_accounts__account_id__statements_preview_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list__accounts__account_id__statements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementRowOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_accounts__account_id__statements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_accounts__account_id__statements_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_statements__statement_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statement_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_statements__statement_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statement_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UndoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file__statements__statement_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                statement_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unclassified_unclassified_get: {
+        parameters: {
+            query?: {
+                account_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnclassifiedOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    classify_unclassified_classify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassifyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

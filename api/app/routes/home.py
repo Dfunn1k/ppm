@@ -39,6 +39,7 @@ class HomeOut(BaseModel):
     custody_total: Decimal
     owe_total: Decimal
     overdue_pending: int
+    unclassified: int
     month: str
     income_total: Decimal
     expense_total: Decimal

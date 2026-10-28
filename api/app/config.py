@@ -25,6 +25,7 @@ class Settings:
     admin_emails: frozenset[str]  # quienes ven y corrigen el tipo de cambio (Z1)
     rates_import: bool          # el importador diario de SUNAT corre dentro de la API
     sunat_url: str
+    filestore_dir: str          # el almacén de adjuntos: una carpeta por persona
 
 
 @lru_cache
@@ -44,4 +45,5 @@ def get_settings() -> Settings:
         admin_emails=frozenset(e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()),
         rates_import=_bool("RATES_IMPORT", False),
         sunat_url=os.environ.get("SUNAT_URL", "https://www.sunat.gob.pe/a/txt/tipoCambio.txt"),
+        filestore_dir=os.environ.get("FILESTORE_DIR", "/var/lib/ppm/filestore"),
     )

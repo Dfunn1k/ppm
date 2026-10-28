@@ -5,7 +5,7 @@
 #   db       PostgreSQL 18; los datos quedan en el volumen pgdata (nunca se publica su puerto)
 #   migrate  dbmate aplica las migraciones pendientes y termina (como ppm, el dueño)
 #   usuario-api  le pone su contraseña a ppm_api, el usuario con que entra la API, y termina
-#   api      FastAPI (un proceso; incluye el importador diario de SUNAT)
+#   api      FastAPI (un proceso; incluye el importador diario de SUNAT); los adjuntos, en el volumen filestore
 #   web      Caddy: la web ya construida, /api/… hacia la API y HTTPS automático (puertos 80 y 443)
 #
 # Todo lo que cambia entre servidores va en .env (copia deploy/.env.example).
@@ -67,6 +67,8 @@ services:
       MAIL_FROM: ${MAIL_FROM:?Falta MAIL_FROM en .env}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       RATES_IMPORT: "true"
+    volumes:
+      - filestore:/var/lib/ppm/filestore   # los adjuntos (extractos): una carpeta por persona
     # Un solo proceso: el importador de SUNAT corre dentro de él (con más, correría varias veces)
     command: ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
               "--proxy-headers", "--forwarded-allow-ips", "*"]
@@ -91,5 +93,6 @@ services:
 
 volumes:
   pgdata:
+  filestore:     # los adjuntos: va en el respaldo junto con la base
   caddy_data:
   caddy_config:
