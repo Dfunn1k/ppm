@@ -487,6 +487,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/move-lines/{line_id}/maturity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Poner o quitar la fecha de vencimiento de una deuda */
+        put: operations["set_maturity_move_lines__line_id__maturity_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/partners/overview": {
         parameters: {
             query?: never;
@@ -1416,6 +1433,11 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** MaturityIn */
+        MaturityIn: {
+            /** Date */
+            date: string | null;
+        };
         /** MeOut */
         MeOut: {
             /** Id */
@@ -1560,6 +1582,10 @@ export interface components {
             currency?: string | null;
             /** Installments */
             installments?: number | null;
+            /** Installment Amount */
+            installment_amount?: number | string | null;
+            /** Interest Mine */
+            interest_mine?: boolean | null;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
@@ -1628,6 +1654,16 @@ export interface components {
             open: string;
             /** Days */
             days: number;
+            /** Date Maturity */
+            date_maturity: string | null;
+            /** Maturity Manual */
+            maturity_manual: string | null;
+            /** Maturity Closing */
+            maturity_closing: string | null;
+            /** Part */
+            part: number | null;
+            /** Parts */
+            parts: number | null;
         };
         /** OpeningIn */
         OpeningIn: {
@@ -2168,6 +2204,14 @@ export interface components {
             partner_id: number | null;
             /** Partner */
             partner: string | null;
+            /** Line Id */
+            line_id?: number | null;
+            /** Date Maturity */
+            date_maturity?: string | null;
+            /** Maturity Manual */
+            maturity_manual?: string | null;
+            /** Maturity Closing */
+            maturity_closing?: string | null;
         };
     };
     responses: never;
@@ -3354,6 +3398,41 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MoveDetailOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_maturity_move_lines__line_id__maturity_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaturityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

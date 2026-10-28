@@ -131,7 +131,7 @@ def test_una_compra_en_cuotas_no_se_edita_pero_se_borra(ana: Con):
 def test_en_cuotas_solo_un_gasto_con_tarjeta(ana: Con):
     msg = ana.fails(kind="expense", account_id=ana.bcp, amount="100", installments=3,
                     splits=[{"category_id": ana.cat["Hogar"], "amount": "100"}])
-    assert msg == "En cuotas va solo un gasto con tarjeta"
+    assert msg == "En cuotas va solo un gasto o un préstamo con tarjeta"
 
 
 def test_pagar_la_tarjeta_un_bolsillo_a_la_vez(ana: Con):
@@ -173,8 +173,8 @@ def test_lo_que_no_va_con_una_tarjeta(ana: Con):
     assert ana.fails(kind="income", account_id=card, amount="10",
                      splits=[{"category_id": ana.cat["Venta"], "amount": "10"}]).startswith("Una tarjeta no recibe ingresos")
     sandra = ana.c.post("/partners", json={"name": "Sandra"}).json()["id"]
-    assert ana.fails(kind="lend", account_id=card, amount="10", partner_id=sandra) == \
-        "Con una tarjeta se registran gastos, devoluciones y su pago"
+    assert ana.fails(kind="borrow", account_id=card, amount="10", partner_id=sandra) == \
+        "Con una tarjeta se registran gastos, devoluciones y su pago"   # prestarla sí: «Le presté»
     assert ana.fails(kind="transfer", account_id=card, to_account_id=ana.bcp, amount="10") == \
         "Con una tarjeta se registran gastos, devoluciones y su pago"
 

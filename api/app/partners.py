@@ -52,6 +52,11 @@ class OpenItem:
     amount: Decimal              # lo que era, en positivo
     open: Decimal                # lo que falta, en positivo
     days: int                    # cuántos días tiene
+    date_maturity: dt.date | None = None      # vence: el de a mano o la fecha de pago del ciclo de su corte
+    maturity_manual: dt.date | None = None    # el puesto a mano
+    maturity_closing: dt.date | None = None   # parte de una compra en cuotas: el corte de su cuota…
+    part: int | None = None                   # …qué cuota es…
+    parts: int | None = None                  # …de cuántas
 
 
 @dataclass(frozen=True)
@@ -115,14 +120,17 @@ def detail(user_id: int, partner_id: int) -> PartnerDetail:
         items: dict[str, list[OpenItem]] = defaultdict(list)
         for role, *item in conn.execute("""
             SELECT a.system_role, r.id, r.move_id, r.date, r.ref, trim(c.name),
-                   abs(r.amount_currency), abs(r.amount_residual), user_today() - r.date
+                   abs(r.amount_currency), abs(r.amount_residual), user_today() - r.date,
+                   r.date_maturity, r.maturity_manual, r.maturity_closing, pl.sequence, p.n_installments
               FROM account_move_line_residual r
               JOIN account_account a ON a.id = r.account_id
               JOIN res_currency c ON c.id = r.currency_id
+              LEFT JOIN account_installment_plan p ON p.move_id = r.move_id AND r.maturity_closing IS NOT NULL
+              LEFT JOIN account_installment_plan_line pl ON pl.plan_id = p.id AND pl.closing_date = r.maturity_closing
              WHERE r.partner_id = %s AND r.amount_residual <> 0
                AND ((a.system_role = 'receivable' AND r.amount_residual > 0)
                  OR (a.system_role = 'payable' AND r.amount_residual < 0))
-             ORDER BY r.date, r.id""", (partner_id,)):
+             ORDER BY coalesce(r.date_maturity, r.maturity_closing, r.date), r.date, r.id""", (partner_id,)):
             items[role].append(OpenItem(*item))
         since = conn.execute("""
             SELECT min(m.date) FROM account_move_line l JOIN account_move m ON m.id = l.move_id
