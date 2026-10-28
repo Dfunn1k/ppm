@@ -20,6 +20,7 @@ export const KIND_NAME: Record<Kind, string> = {
   offset: "Compensación",
   write_off: "Deuda perdida",
   opening: "Saldo inicial",
+  unclassified: "Por clasificar",
   other: "Asiento manual",
 };
 

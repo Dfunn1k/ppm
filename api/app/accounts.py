@@ -122,12 +122,23 @@ class Line:
 
 
 @dataclass(frozen=True)
+class LastStatement:
+    """El último extracto importado a la cuenta y si su saldo cuadra."""
+    id: int
+    name: str
+    date_to: date | None
+    difference: Decimal | None   # banco − PPM; None si no se dio el saldo del banco
+
+
+@dataclass(frozen=True)
 class AccountDetail:
     account: AccountRow
     system_role: str | None
     bank: BankInfo | None
     opening: Opening | None
     lines: list[Line] = field(default_factory=list)
+    unclassified: int = 0                    # movimientos de esta cuenta que siguen en Por clasificar
+    last_statement: LastStatement | None = None
 
 
 ROLE_KIND = {"receivable": "receivable", "payable": "payable", "suspense": "suspense"}
@@ -327,7 +338,16 @@ def detail(user_id: int, account_id: int, limit: int = 200) -> AccountDetail:
                  ORDER BY r.date DESC, r.move_id DESC, r.id DESC
                  LIMIT %s""", (account_id, limit))
         ]
-    return AccountDetail(row, role, bank, opening, lines)
+        unclassified = conn.execute("""
+            SELECT count(DISTINCT s.move_id) FROM account_move_line s
+              JOIN account_move_line x ON x.move_id = s.move_id AND x.account_id = %s
+             WHERE s.account_id = system_account('suspense')""", (account_id,)).fetchone()[0]
+        last = conn.execute("""
+            SELECT s.id, s.name, s.date_to, ch.difference FROM account_bank_statement s
+              LEFT JOIN account_bank_statement_check ch ON ch.id = s.id
+             WHERE s.account_id = %s ORDER BY s.date_to DESC NULLS LAST, s.id DESC LIMIT 1""",
+                            (account_id,)).fetchone()
+    return AccountDetail(row, role, bank, opening, lines, unclassified, LastStatement(*last) if last else None)
 
 
 # --- Altas y correcciones ---------------------------------------------------------------------

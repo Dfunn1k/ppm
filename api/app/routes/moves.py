@@ -27,7 +27,7 @@ def _http(e: AccountError) -> HTTPException:
 InputKind = Literal["expense", "income", "transfer", "lend", "borrow", "collect", "repay",
                     "custody_in", "custody_out", "refund", "manual"]
 Kind = Literal["expense", "income", "transfer", "lend", "borrow", "collect", "repay", "custody_in",
-               "custody_out", "refund", "offset", "write_off", "opening", "other"]
+               "custody_out", "refund", "offset", "write_off", "opening", "unclassified", "other"]
 Amount = Annotated[Decimal, Field(ge=0, max_digits=14, decimal_places=2)]
 
 
@@ -100,6 +100,7 @@ class MoveSummaryOut(BaseModel):
     fx: Decimal | None               # cambio de moneda: + ganancia, − costo del cambio
     partner_id: int | None
     partner: str | None
+    incoming: bool | None            # por clasificar: entró (True) o salió (False) de la cuenta
 
 
 class DayOut(BaseModel):
@@ -159,6 +160,14 @@ class PlanOut(BaseModel):
     lines: list[PlanLineOut]
 
 
+class BankLineOut(BaseModel):
+    statement_id: int
+    statement: str
+    account_id: int
+    payment_ref: str                 # lo que dice el banco: no cambia
+    operation_number: str | None
+
+
 class MoveDetailOut(BaseModel):
     summary: MoveSummaryOut
     account_id: int | None
@@ -172,6 +181,7 @@ class MoveDetailOut(BaseModel):
     settled: list[SettledOut] = []   # las deudas que cancela (o los pagos que la cancelan)
     lines: list[LineOut] = []        # todos los apuntes, para el asiento manual
     plan: PlanOut | None = None      # una compra en cuotas: su calendario
+    bank: list[BankLineOut] = []     # si vino de un extracto: lo que dijo el banco
 
 
 class ManualAccountOut(BaseModel):

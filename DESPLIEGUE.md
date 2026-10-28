@@ -8,7 +8,7 @@ Esta guía lleva PPM a producción en un servidor propio con Docker. Está escri
 | `web/Dockerfile` · `web/Caddyfile` | la web ya construida, servida por Caddy, que además saca el certificado HTTPS y reenvía `/api/…` a la API |
 | `api/Dockerfile` | la API (FastAPI) |
 | `deploy/.env.example` | la configuración que cambia entre servidores; se copia como `.env` |
-| `deploy/respaldo.sh` | el respaldo diario de la base |
+| `deploy/respaldo.sh` | el respaldo diario de la base y de los adjuntos |
 
 `docker-compose.yml` (sin `.prod`) es solo para desarrollo: tiene Mailpit, recarga en caliente y contraseñas de prueba. **Nunca se usa en el servidor.**
 
@@ -115,7 +115,7 @@ Luego, en el navegador:
 
 ## 6. Respaldos (obligatorio)
 
-`deploy/respaldo.sh` hace un `pg_dump` comprimido en `/var/backups/ppm` y guarda los últimos 14 días. Prográmalo con cron (como root):
+`deploy/respaldo.sh` hace un `pg_dump` comprimido de la base y un `.tar.gz` de los adjuntos (los extractos importados, en el volumen `filestore`) en `/var/backups/ppm`, y guarda los últimos 14 días. Los dos van juntos: una ficha de adjunto en la base sin su archivo no sirve. Prográmalo con cron (como root):
 
 ```bash
 crontab -e
@@ -133,6 +133,8 @@ Pruébalo una vez a mano: `/opt/ppm/deploy/respaldo.sh`.
 cd /opt/ppm
 docker compose stop api web
 docker compose exec -T db pg_restore -U ppm -d ppm --clean --if-exists < /var/backups/ppm/ppm-AAAA-MM-DD_HHMM.dump
+docker compose run --rm --no-deps -T api sh -c 'rm -rf /var/lib/ppm/filestore && tar xzf - -C /var/lib/ppm' \
+  < /var/backups/ppm/ppm-adjuntos-AAAA-MM-DD_HHMM.tar.gz      # los adjuntos del mismo día
 docker compose start api web
 ```
 
@@ -175,7 +177,7 @@ El importador de SUNAT escribe en los logs de `api` solo cuando falla («Importa
 
 ## Lo que nunca se hace
 
-- **`docker compose down -v`**: el `-v` borra el volumen `pgdata`, es decir, **todos los datos**. Para detener, `docker compose down` (sin `-v`) o `stop`.
+- **`docker compose down -v`**: el `-v` borra los volúmenes `pgdata` y `filestore`, es decir, **todos los datos y los adjuntos**. Para detener, `docker compose down` (sin `-v`) o `stop`.
 - Publicar el puerto 5432 de la base o el 8000 de la API.
 - Usar `docker-compose.yml` (el de desarrollo) en el servidor.
 - Editar una migración que ya está en `main` o tocar la base a mano para «arreglar» datos sin respaldo.

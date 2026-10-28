@@ -124,12 +124,21 @@ class LineOut(BaseModel):
     counterpart_role: str | None
 
 
+class LastStatementOut(BaseModel):
+    id: int
+    name: str
+    date_to: dt.date | None
+    difference: Decimal | None       # banco − PPM; None si no se dio el saldo del banco
+
+
 class AccountDetailOut(BaseModel):
     account: AccountRowOut
     system_role: str | None
     bank: BankOut | None
     opening: OpeningOut | None
     lines: list[LineOut]
+    unclassified: int                # movimientos de esta cuenta en Por clasificar
+    last_statement: LastStatementOut | None
 
 
 class PartnerOut(BaseModel):
