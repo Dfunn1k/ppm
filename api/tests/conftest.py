@@ -20,6 +20,16 @@ def owner_url() -> str:
     return os.environ.get("PPM_OWNER_URL") or get_settings().database_url
 
 
+@pytest.fixture(autouse=True, scope="session")
+def filestore_temporal(tmp_path_factory):
+    """Los adjuntos de las pruebas van a una carpeta temporal: en GitHub Actions no se puede escribir
+    en la del servidor (/var/lib/ppm/filestore), y así nada queda en el almacén de verdad."""
+    os.environ["FILESTORE_DIR"] = str(tmp_path_factory.mktemp("filestore"))
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
 @pytest.fixture
 def conn():
     """Una conexión como dueño de la base; todo se deshace al terminar la prueba."""

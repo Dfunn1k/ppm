@@ -137,7 +137,6 @@ services:
       DATABASE_URL: postgresql://ppm_api:ppm_api@db:5432/ppm   # la API, como en producción
       PPM_OWNER_URL: postgresql://ppm:ppm@db:5432/ppm           # el dueño, para preparar datos
       UV_PROJECT_ENVIRONMENT: /tmp/venv
-      FILESTORE_DIR: /tmp/filestore                             # los adjuntos de las pruebas
     volumes:
       - ./api:/src:ro
     command: ["sh", "-c", "cp -r /src /w && cd /w && rm -rf .venv && uv sync --locked -q && uv run pytest -W error"]
