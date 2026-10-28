@@ -409,7 +409,8 @@ export interface paths {
         /** Categorías para elegir al registrar */
         get: operations["categories_categories_get"];
         put?: never;
-        post?: never;
+        /** Crear una categoría */
+        post: operations["create_category_categories_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1086,10 +1087,30 @@ export interface components {
             id: number | null;
             /** Name */
             name: string;
+            /** Icon */
+            icon: string | null;
             /** Color */
             color: number | null;
             /** Children */
             children: components["schemas"]["CategoryOut"][];
+        };
+        /** CategoryIn */
+        CategoryIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "expense" | "income";
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Group */
+            group?: string | null;
+            /** Icon */
+            icon?: string | null;
+            /** Color */
+            color?: number | null;
         };
         /** CategoryOut */
         CategoryOut: {
@@ -3155,6 +3176,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CategoriesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_category_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"];
                 };
             };
             /** @description Validation Error */
