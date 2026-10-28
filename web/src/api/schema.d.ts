@@ -764,6 +764,162 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recurring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las recurrentes y lo que viene en 30 días */
+        get: operations["overview_recurring_get"];
+        put?: never;
+        /** Crear una recurrente («Se repite») */
+        post: operations["create_recurring_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recurring/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que el Inicio avisa: recordatorios y por confirmar */
+        get: operations["pending_recurring_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recurring/{recurring_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Una recurrente: su regla, lo que viene y lo registrado */
+        get: operations["detail_recurring__recurring_id__get"];
+        /** Cambiarla desde la próxima fecha */
+        put: operations["update_recurring__recurring_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recurring/{recurring_id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pausar, reanudar o terminar */
+        post: operations["set_state_recurring__recurring_id__state_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recurring/{recurring_id}/occurrences/{occurrence}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Solo esta vez */
+        put: operations["set_occurrence_recurring__recurring_id__occurrences__occurrence__put"];
+        post?: never;
+        /** Dejarlo como siempre */
+        delete: operations["reset_occurrence_recurring__recurring_id__occurrences__occurrence__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recurring/{recurring_id}/occurrences/{occurrence}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recordatorio: «Ya lo hice» */
+        post: operations["reminder_done_recurring__recurring_id__occurrences__occurrence__done_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crear un préstamo de banco */
+        post: operations["create_loan_loans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/loans/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Un préstamo: lo que debes, la próxima cuota y las pagadas */
+        get: operations["loan_loans__account_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/loans/{account_id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pagar la cuota */
+        post: operations["pay_loans__account_id__pay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -829,7 +985,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cash" | "bank" | "card" | "receivable" | "payable" | "suspense" | "other";
+            kind: "cash" | "bank" | "card" | "loan" | "receivable" | "payable" | "suspense" | "other";
             /** Currency */
             currency: string | null;
             /** Icon */
@@ -1158,6 +1314,11 @@ export interface components {
             /** Problems */
             problems: number;
         };
+        /** CreatedOut */
+        CreatedOut: {
+            /** Id */
+            id: number;
+        };
         /** CurrencyStatusOut */
         CurrencyStatusOut: {
             /** Currency */
@@ -1267,6 +1428,27 @@ export interface components {
             /** Moves */
             moves: components["schemas"]["MoveSummaryOut"][];
         };
+        /** DoneOut */
+        DoneOut: {
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Occurrence
+             * Format: date
+             */
+            occurrence: string;
+            /** Posted */
+            posted: boolean;
+            /** Amount */
+            amount: string;
+            /** From Bank */
+            from_bank: boolean;
+        };
         /** DueDateIn */
         DueDateIn: {
             /**
@@ -1364,6 +1546,27 @@ export interface components {
             /** Statement Id */
             statement_id: number | null;
         };
+        /** InstallmentOut */
+        InstallmentOut: {
+            /** Move Id */
+            move_id: number | null;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Occurrence
+             * Format: date
+             */
+            occurrence: string;
+            /** Posted */
+            posted: boolean;
+            /** Total */
+            total: string;
+            /** Parts */
+            parts: components["schemas"]["PartOut"][];
+        };
         /** InstallmentsIn */
         InstallmentsIn: {
             /** Currency */
@@ -1387,6 +1590,64 @@ export interface components {
             date_to: string | null;
             /** Difference */
             difference: string | null;
+        };
+        /** LoanIn */
+        LoanIn: {
+            /** Name */
+            name: string;
+            /** Bank Id */
+            bank_id: number;
+            /** Currency */
+            currency: string;
+            /** Fresh */
+            fresh: boolean;
+            /** Amount */
+            amount: number | string;
+            /** Pay Account Id */
+            pay_account_id: number;
+            /** Day */
+            day: number;
+            /** Left */
+            left: number;
+            /** Capital */
+            capital: number | string;
+            /** Interest */
+            interest: number | string;
+            /**
+             * Insurance
+             * @default 0.00
+             */
+            insurance: number | string;
+        };
+        /** LoanOut */
+        LoanOut: {
+            /** Account Id */
+            account_id: number;
+            /** Name */
+            name: string;
+            /** Bank */
+            bank: string;
+            /** Currency */
+            currency: string;
+            /** Debt */
+            debt: string;
+            /** Start Debt */
+            start_debt: string;
+            /** Paid Count */
+            paid_count: number;
+            /** Left Count */
+            left_count: number;
+            /** Recurring Id */
+            recurring_id: number | null;
+            /** Pay Account Id */
+            pay_account_id: number | null;
+            /** Pay Account */
+            pay_account: string | null;
+            next: components["schemas"]["InstallmentOut"] | null;
+            /** Paid */
+            paid: components["schemas"]["InstallmentOut"][];
+            /** Active */
+            active: boolean;
         };
         /** LoginIn */
         LoginIn: {
@@ -1654,6 +1915,39 @@ export interface components {
             /** Move Id */
             move_id: number;
         };
+        /** NextOut */
+        NextOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Occurrence
+             * Format: date
+             */
+            occurrence: string;
+            /** Amount */
+            amount: string;
+            /** Skipped */
+            skipped: boolean;
+            /** Moved */
+            moved: boolean;
+            /** Changed */
+            changed: boolean;
+        };
+        /** OccurrenceIn */
+        OccurrenceIn: {
+            /**
+             * Skip
+             * @default false
+             */
+            skip: boolean;
+            /** Date */
+            date?: string | null;
+            /** Total */
+            total?: number | string | null;
+        };
         /** OpenItemOut */
         OpenItemOut: {
             /** Line Id */
@@ -1737,6 +2031,16 @@ export interface components {
             owe: components["schemas"]["AccountRowOut"][];
             /** Rates */
             rates: components["schemas"]["TodayRateOut"][];
+        };
+        /** PartOut */
+        PartOut: {
+            /**
+             * Name
+             * @enum {string}
+             */
+            name: "Capital" | "Interés" | "Seguro";
+            /** Amount */
+            amount: string;
         };
         /** PartnerDetailOut */
         PartnerDetailOut: {
@@ -1832,10 +2136,33 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** PayIn */
+        PayIn: {
+            /** Date */
+            date?: string | null;
+            /** Account Id */
+            account_id: number;
+            /** Capital */
+            capital: number | string;
+            /** Interest */
+            interest: number | string;
+            /**
+             * Insurance
+             * @default 0.00
+             */
+            insurance: number | string;
+        };
         /** PendingIn */
         PendingIn: {
             /** Pending */
             pending: boolean;
+        };
+        /** PendingOut */
+        PendingOut: {
+            /** Reminders */
+            reminders: components["schemas"]["ReminderOut"][];
+            /** Drafts Due */
+            drafts_due: number;
         };
         /** PlanLineOut */
         PlanLineOut: {
@@ -1943,6 +2270,101 @@ export interface components {
             /** Sell */
             sell: number | string;
         };
+        /** RecurringDetailOut */
+        RecurringDetailOut: {
+            row: components["schemas"]["RecurringRowOut"];
+            rule: components["schemas"]["RuleOut"];
+            /** Categories */
+            categories: components["schemas"]["CategoryOut"][];
+            /** Splits */
+            splits: string[];
+            /** Next */
+            next: components["schemas"]["NextOut"][];
+            /** Done */
+            done: components["schemas"]["DoneOut"][];
+            /** Pending Reminder */
+            pending_reminder: string | null;
+        };
+        /** RecurringIn */
+        RecurringIn: {
+            move: components["schemas"]["MoveIn"];
+            rule: components["schemas"]["RuleIn"];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "auto" | "draft" | "reminder";
+        };
+        /** RecurringListOut */
+        RecurringListOut: {
+            /** Currency */
+            currency: string;
+            /** Incoming */
+            incoming: string;
+            /** Outgoing */
+            outgoing: string;
+            /** Rows */
+            rows: components["schemas"]["RecurringRowOut"][];
+        };
+        /** RecurringRowOut */
+        RecurringRowOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "expense" | "income" | "transfer";
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "auto" | "draft" | "reminder";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "active" | "paused" | "done";
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Account Id */
+            account_id: number;
+            /** Account */
+            account: string;
+            /** To Account */
+            to_account: string | null;
+            category: components["schemas"]["CategoryOut"] | null;
+            next: components["schemas"]["NextOut"] | null;
+            /** Loan Account Id */
+            loan_account_id: number | null;
+        };
+        /** ReminderOut */
+        ReminderOut: {
+            /** Recurring Id */
+            recurring_id: number;
+            /** Name */
+            name: string;
+            /**
+             * Occurrence
+             * Format: date
+             */
+            occurrence: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            /** Late */
+            late: boolean;
+        };
         /** ResetConfirmIn */
         ResetConfirmIn: {
             /** Token */
@@ -1957,6 +2379,67 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** RuleIn */
+        RuleIn: {
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "day" | "week" | "month" | "year";
+            /** Start */
+            start?: string | null;
+            /**
+             * Every
+             * @default 1
+             */
+            every: number;
+            /** Month Days */
+            month_days?: number[] | null;
+            /** Weekday */
+            weekday?: number | null;
+            /** Nth */
+            nth?: (1 | 2 | 3 | 4 | -1) | null;
+            /**
+             * End Type
+             * @default never
+             * @enum {string}
+             */
+            end_type: "never" | "date" | "count";
+            /** Date End */
+            date_end?: string | null;
+            /** Max Count */
+            max_count?: number | null;
+        };
+        /** RuleOut */
+        RuleOut: {
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "day" | "week" | "month" | "year";
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /** Every */
+            every: number;
+            /** Month Days */
+            month_days: number[] | null;
+            /** Weekday */
+            weekday: number | null;
+            /** Nth */
+            nth: number | null;
+            /**
+             * End Type
+             * @enum {string}
+             */
+            end_type: "never" | "date" | "count";
+            /** Date End */
+            date_end: string | null;
+            /** Max Count */
+            max_count: number | null;
         };
         /** SettledOut */
         SettledOut: {
@@ -2018,6 +2501,14 @@ export interface components {
             partner_id: number | null;
             /** Partner */
             partner: string | null;
+        };
+        /** StateIn */
+        StateIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "pause" | "resume" | "end";
         };
         /** StatementDetailOut */
         StatementDetailOut: {
@@ -4126,6 +4617,421 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_recurring_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_recurring_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pending_recurring_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_recurring__recurring_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_recurring__recurring_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_state_recurring__recurring_id__state_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_occurrence_recurring__recurring_id__occurrences__occurrence__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: number;
+                occurrence: string;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OccurrenceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_occurrence_recurring__recurring_id__occurrences__occurrence__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: number;
+                occurrence: string;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reminder_done_recurring__recurring_id__occurrences__occurrence__done_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: number;
+                occurrence: string;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_loan_loans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    loan_loans__account_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pay_loans__account_id__pay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOut"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app import users
+from app import recurring, users
 from app.routes.deps import CurrentSession, current_session
 
 router = APIRouter(tags=["persona"])
@@ -64,7 +64,10 @@ class CatalogOut(BaseModel):
 
 @router.get("/me", summary="Quién está conectado")
 def me(session: CurrentSession = Depends(current_session)) -> MeOut:
-    return MeOut.of(users.get_me(session.user_id))
+    found = users.get_me(session.user_id)
+    if found.configured:
+        recurring.run(session.user_id)   # al abrir la app se registran las recurrentes que ya tocan
+    return MeOut.of(found)
 
 
 @router.patch("/me", summary="Cambiar tu nombre, el tema o el acento")

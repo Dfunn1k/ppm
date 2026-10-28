@@ -58,7 +58,7 @@ class CardBrief:
 class AccountRow:
     id: int
     name: str
-    kind: str                    # 'cash', 'bank', 'card', 'receivable', 'payable', 'suspense' u 'other'
+    kind: str                    # 'cash', 'bank', 'card', 'loan', 'receivable', 'payable', 'suspense' u 'other'
     currency: str | None         # None = multimoneda
     icon: str | None
     subtitle: str | None         # 'Ahorros en soles'
@@ -184,7 +184,8 @@ def _balances(conn: psycopg.Connection, account_ids: list[int],
 
 _ACCOUNTS_SQL = """
 SELECT a.id, a.name, a.account_type, a.system_role, coalesce(a.icon, p.icon), trim(cur.name),
-       b.acc_kind, bk.name, cc.account_id IS NOT NULL, cc.brand, cc.last4, cbk.name
+       b.acc_kind, bk.name, cc.account_id IS NOT NULL, cc.brand, cc.last4, cbk.name,
+       lo.account_id IS NOT NULL, lbk.name
   FROM account_account a
   LEFT JOIN account_account p ON p.id = a.parent_id
   LEFT JOIN res_currency cur  ON cur.id = a.currency_id
@@ -192,6 +193,8 @@ SELECT a.id, a.name, a.account_type, a.system_role, coalesce(a.icon, p.icon), tr
   LEFT JOIN res_bank bk        ON bk.id = b.bank_id
   LEFT JOIN account_credit_card cc ON cc.account_id = a.id
   LEFT JOIN res_bank cbk       ON cbk.id = cc.bank_id
+  LEFT JOIN account_loan lo    ON lo.account_id = a.id
+  LEFT JOIN res_bank lbk       ON lbk.id = lo.bank_id
 """
 
 
@@ -202,11 +205,14 @@ def card_subtitle(bank: str | None, brand: str | None, last4: str | None) -> str
 
 
 def _row(r: tuple, balances: list[Money]) -> AccountRow:
-    acc_id, name, _type, role, icon, currency, acc_kind, bank_name, is_card, brand, last4, card_bank = r
+    acc_id, name, _type, role, icon, currency, acc_kind, bank_name, is_card, brand, last4, card_bank, \
+        is_loan, loan_bank = r
     if role in ROLE_KIND:
         kind = ROLE_KIND[role]
     elif is_card:
         kind = "card"
+    elif is_loan:
+        kind = "loan"
     elif acc_kind:
         kind = "bank"
     elif _type == "asset":
@@ -220,6 +226,8 @@ def _row(r: tuple, balances: list[Money]) -> AccountRow:
         subtitle = f"En {CURRENCY_NAMES.get(currency, currency)}"
     elif kind == "card":
         subtitle = card_subtitle(card_bank, brand, last4)
+    elif kind == "loan":
+        subtitle = f"Préstamo en {CURRENCY_NAMES.get(currency or '', currency)} · {loan_bank}"
     return AccountRow(acc_id, name, kind, currency, icon or ("account_balance" if kind == "bank" else "payments"),
                       subtitle, balances, sum((m.base for m in balances), ZERO))
 
@@ -236,7 +244,7 @@ def overview(user_id: int) -> Overview:
         accounts = [_row(r, balances.get(r[0], [])) for r in rows]
         # Las de sistema (Por cobrar, Por pagar, Por clasificar) solo aparecen si tienen algo
         accounts = [a for a in accounts
-                    if a.kind in ("cash", "bank", "card", "other") or any(m.amount for m in a.balances)]
+                    if a.kind in ("cash", "bank", "card", "loan", "other") or any(m.amount for m in a.balances)]
         briefs = card_briefs(conn)
         accounts = [replace(a, card=briefs.get(a.id)) if a.kind == "card" else a for a in accounts]
         counts = dict(conn.execute(
@@ -261,7 +269,7 @@ def overview(user_id: int) -> Overview:
             custody[pid].append(Money(cur, amount, _today(amount, bal, rates.get(cur), False), bal))
 
     have = [a for a in accounts if a.kind in ("cash", "bank", "receivable", "suspense")]   # activos
-    owe = [a for a in accounts if a.kind in ("card", "payable", "other")]                 # pasivos
+    owe = [a for a in accounts if a.kind in ("card", "loan", "payable", "other")]               # pasivos
     keep = [CustodyRow(pid, names[pid], ms, sum((m.base for m in ms), ZERO)) for pid, ms in custody.items()]
     have_total = sum((a.base_total for a in have), ZERO)
     owe_total = -sum((a.base_total for a in owe), ZERO)
