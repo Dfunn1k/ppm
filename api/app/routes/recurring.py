@@ -158,6 +158,8 @@ class ReminderOut(BaseModel):
 class PendingOut(BaseModel):
     reminders: list[ReminderOut]
     drafts_due: int
+    bank_charges: int
+    bank_charge_move_id: int | None
 
 
 class PartOut(BaseModel):

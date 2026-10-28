@@ -93,7 +93,7 @@ def _save_lines(conn: psycopg.Connection, rec_id: int, lines: list[tuple]) -> No
     conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
 
 
-def create(user_id: int, m: moves.MoveInput, rule: Rule, mode: str) -> int:
+def create(user_id: int, m: moves.MoveInput, rule: Rule, mode: str, bank_charge: bool = False) -> int:
     if mode not in MODES:
         raise AccountError(400, "Elige cómo se registra")
     with user_transaction(user_id) as conn:
@@ -104,15 +104,52 @@ def create(user_id: int, m: moves.MoveInput, rule: Rule, mode: str) -> int:
                 rec_id = conn.execute("""
                     INSERT INTO account_recurring (name, currency_id, interval_type, interval_count,
                            month_day_mode, month_days, weekday, nth, date_start, end_type, date_end, max_count,
-                           amount_type, post_mode)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                           amount_type, post_mode, bank_charge)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
                     (name, currency, *_rule_values(rule, today),
-                     "variable" if mode == "draft" else "fixed", mode)).fetchone()[0]
+                     "variable" if mode == "draft" else "fixed", mode, bank_charge)).fetchone()[0]
                 _save_lines(conn, rec_id, lines)
                 conn.execute("SELECT account_recurring_run()")
                 return rec_id
         except psycopg.Error as e:
             raise _translate(e) from None
+
+
+# Los cargos del banco de una tarjeta: su nombre, su categoría (en Gastos financieros) y su regla
+CHARGE_KINDS = {
+    "insurance": ("Seguro de desgravamen", "Seguros"),        # cada corte
+    "membership": ("Membresía anual", "Comisiones bancarias"),  # cada año, en su fecha
+    "other": (None, "Comisiones bancarias"),                    # cada corte
+}
+
+
+def create_bank_charge(user_id: int, card_id: int, kind: str, amount: Decimal, on: dt.date | None = None,
+                       name: str | None = None) -> int:
+    """Un cargo del banco que se repite: el desgravamen el día de cada corte, la membresía cada año.
+    Nace por confirmar y cada vez sugiere el monto del último que confirmaste."""
+    if kind not in CHARGE_KINDS:
+        raise AccountError(400, "Elige qué cargo es")
+    default, category = CHARGE_KINDS[kind]
+    name = " ".join((name or "").split()) or default
+    if not name:
+        raise AccountError(400, "Escribe cómo se llama el cargo")
+    if kind == "membership" and on is None:
+        raise AccountError(400, "Elige cuándo te la cobran")
+    with user_transaction(user_id) as conn:
+        card = conn.execute("SELECT closing_day, card_closing_for(account_id, user_today())"
+                            "  FROM account_credit_card WHERE account_id = %s", (card_id,)).fetchone()
+        if card is None:
+            raise AccountError(404, "No encontramos esa tarjeta")
+        cat = conn.execute("""
+            SELECT a.id FROM account_account a JOIN account_account g ON g.id = a.parent_id
+             WHERE a.name = %s AND g.name = 'Gastos financieros' AND a.active""", (category,)).fetchone()
+        if cat is None:
+            raise AccountError(404, f"No encontramos la categoría «{category}» en Gastos financieros")
+    rule = (Rule("year", on) if kind == "membership"
+            else Rule("month", card[1], month_days=[card[0]]))
+    m = moves.MoveInput(kind="expense", account_id=card_id, amount=amount, ref=name,
+                        splits=[moves.Split(cat[0], amount)])
+    return create(user_id, m, rule, "draft", bank_charge=True)
 
 
 def update(user_id: int, rec_id: int, m: moves.MoveInput, rule: Rule, mode: str) -> None:
@@ -400,7 +437,9 @@ class Reminder:
 @dataclass(frozen=True)
 class Pending:
     reminders: list[Reminder]
-    drafts_due: int              # recurrentes por confirmar que ya llegaron a su día
+    drafts_due: int              # recurrentes por confirmar que ya llegaron a su día…
+    bank_charges: int = 0        # …de ellas, cargos del banco
+    bank_charge_move_id: int | None = None   # el primero, para abrirlo
 
 
 def pending(user_id: int) -> Pending:
@@ -419,4 +458,7 @@ def pending(user_id: int) -> Pending:
              ORDER BY v.date, v.recurring_id""").fetchall()
         drafts = conn.execute("SELECT count(*) FROM account_move WHERE recurring_id IS NOT NULL AND state = 'draft'"
                               " AND date <= user_today()").fetchone()[0]
-    return Pending([Reminder(*x) for x in rows], drafts)
+        bank, first = conn.execute("""
+            SELECT count(*), min(m.id) FROM account_move m JOIN account_recurring r ON r.id = m.recurring_id
+             WHERE r.bank_charge AND m.state = 'draft' AND m.date <= user_today()""").fetchone()
+    return Pending([Reminder(*x) for x in rows], drafts, bank, first)
