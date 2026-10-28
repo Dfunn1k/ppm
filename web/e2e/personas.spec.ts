@@ -2,6 +2,8 @@
 // persona, compensar, dividir un gasto con alguien, el gasto que pagó otra persona y el asiento manual.
 import { expect, type Page, test } from "@playwright/test";
 
+import { pickDate } from "./fechas";
+
 async function readyUser(page: Page) {
   await page.goto("/crear-cuenta");
   await page.getByLabel("¿Cómo te llamamos?").fill("Ana");
@@ -124,7 +126,7 @@ test("lo que una persona ya me debía antes de PPM queda como deuda abierta con 
   await expect(page.getByRole("heading", { name: "De antes de PPM" })).toBeVisible();
   await page.getByRole("textbox", { name: "¿Cuánto te debía?" }).fill("300");
   const hace = new Date(Date.now() - 140 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Lima" });
-  await page.getByLabel("¿Desde cuándo?").fill(hace);
+  await pickDate(page, /¿Desde cuándo\?/, hace);
   await page.getByLabel("Nota (opcional)").fill("Lo del celular");
   await page.getByRole("button", { name: "Anotar lo que me debía" }).click();
 

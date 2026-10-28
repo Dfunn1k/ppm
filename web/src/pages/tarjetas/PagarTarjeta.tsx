@@ -6,8 +6,9 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { useAccounts, useCard, useMe, useSaveMove } from "@/api/hooks";
 import { SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
-import { longDate, shortDate, todayISO } from "@/lib/dates";
+import { ErrorAlert, Icon, PrimaryButton, Screen, Spinner } from "@/components/ui";
+import { DateSheet, dateLabel } from "@/components/DateSheet";
+import { shortDate, todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
 
 export function PagarTarjeta() {
@@ -137,14 +138,10 @@ export function PagarTarjeta() {
             <div className="mt-3 flex">
               <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
                 className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-                <Icon name="event" className="text-[18px]" />{date === todayISO() ? "Hoy" : longDate(date)}
+                <Icon name="event" className="text-[18px]" />{dateLabel(date)}
               </button>
             </div>
-            {dateOpen && (
-              <div className="mt-3">
-                <LineField label="Fecha del pago" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
-              </div>
-            )}
+            <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo pagaste?" value={date} onChange={setDate} max={todayISO()} />
           </>
         )}
 

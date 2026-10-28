@@ -8,8 +8,9 @@ import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { MasHeader } from "@/components/MasTipos";
 import { RateField, useRateInput } from "@/components/RateField";
 import { SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
-import { longDate, todayISO } from "@/lib/dates";
+import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
+import { DateSheet, dateLabel } from "@/components/DateSheet";
+import { todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
 
 export function Reembolso({ editing }: { editing?: MoveDetail }) {
@@ -84,12 +85,12 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
           <div className="grid min-h-[52px] grid-cols-[auto_1fr] items-center gap-3 border-b border-border">
             <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
               className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-              <Icon name="event" className="text-[18px]" />{date === todayISO() ? "Hoy" : longDate(date)}
+              <Icon name="event" className="text-[18px]" />{dateLabel(date)}
             </button>
             <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
               className="h-10 min-w-0 border-0 bg-transparent p-0" />
           </div>
-          {dateOpen && <div className="py-3"><LineField label="Fecha" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value || todayISO())} /></div>}
+          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} max={todayISO()} />
         </div>
         {category && (
           <div className="mt-3 flex flex-col gap-1 rounded-[12px] border border-border bg-card px-3.5 py-3">

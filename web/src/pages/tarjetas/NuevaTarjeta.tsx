@@ -8,6 +8,7 @@ import { type CardIn, useCatalog, useCreateCard, useMe } from "@/api/hooks";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Segmented, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
+import { DateField } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, multiply, parseAmount, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
@@ -109,7 +110,7 @@ export function NuevaTarjeta() {
             <LineField label={`Y en ${other === "USD" ? "dólares" : other} (${symbolOf(other)})`} inputMode="decimal" placeholder="0.00"
               value={usd} onChange={(e) => setUsd(e.target.value)} className="tabular-nums" />
           )}
-          <LineField label="Pagar hasta (opcional)" type="date" min={corte ?? undefined} value={due} onChange={(e) => setDue(e.target.value)} />
+          <DateField label="Pagar hasta (opcional)" min={corte ?? undefined} value={due || null} onChange={setDue} placeholder="Sin fecha" />
         </div>
         {other && hasUsd && (
           <div className="mt-3">

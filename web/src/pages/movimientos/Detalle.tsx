@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
+import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
@@ -32,6 +33,7 @@ export function DetalleMovimiento() {
   const remove = useDeleteMove(id);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [classifying, setClassifying] = useState(false);
+  const [dating, setDating] = useState<(Maturity & { owesMe: boolean }) | null>(null);
   if (move.isPending || !me) return <Spinner />;
   if (move.isError) {
     return (
@@ -48,6 +50,9 @@ export function DetalleMovimiento() {
   const f = flow(s.kind, s.incoming);
   const unclassified = s.kind === "unclassified";
   const bank = d.bank ?? [];
+  // Las deudas que nacen con este movimiento (no los pagos): cada una puede tener su vencimiento
+  const debts = ["lend", "borrow", "opening", "expense"].includes(s.kind)
+    ? d.lines.filter((l) => l.partner_id && l.line_id) : [];
   const sign = f === "in" ? "+ " : f === "out" ? "− " : "";
   const tone = f === "none" ? "" : toneOf(s.kind);
   const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || s.kind === "opening" || d.paid_by_partner_id;
@@ -172,6 +177,27 @@ export function DetalleMovimiento() {
         </div>
       </div>
 
+      {debts.length > 0 && (
+        <section aria-label="Vencimiento" className="mt-1 flex flex-col">
+          {debts.map((l, k) => {
+            const m = maturityText(l);
+            const owesMe = Number(l.debit) > 0;
+            return (
+              <button key={l.line_id} type="button"
+                onClick={() => setDating({ line_id: l.line_id!, date_maturity: l.date_maturity, maturity_manual: l.maturity_manual, maturity_closing: l.maturity_closing, owesMe })}
+                className="flex min-h-[52px] items-center gap-3 border-b border-border text-left">
+                <Icon name={m?.late ? "schedule" : "event_available"} className={`w-9 text-center ${m?.late ? "text-attention" : "text-muted-foreground"}`} />
+                <span className="flex flex-1 flex-col">
+                  <span className="text-caption text-muted-foreground">{debts.length > 1 ? `Parte ${k + 1} · ${formatAmount(l.amount.replace("-", ""), symbolOf(l.currency), lang)}` : "Vence"}</span>
+                  <span className={`font-semibold ${m?.late ? "text-attention" : ""}`}>{m?.text ?? "Sin fecha de vencimiento"}</span>
+                </span>
+                <span className="text-caption font-semibold text-primary-strong">{m ? "Cambiar" : "Poner"}</span>
+              </button>
+            );
+          })}
+        </section>
+      )}
+
       {bank.length > 0 && (
         <>
           <section aria-label="Lo que dice el banco" className="mt-4 flex flex-col gap-2 rounded-[12px] bg-muted px-3.5 py-3">
@@ -265,6 +291,11 @@ export function DetalleMovimiento() {
           move_id: s.id, title: bank[0]?.payment_ref ?? s.ref, caption: `${shortDate(s.date)} · ${s.account}`,
           account_id: d.account_id ?? 0, currency: s.currency, amount: f === "out" ? `-${s.amount}` : s.amount,
         }]} />
+      )}
+
+      {dating && (
+        <MaturitySheet key={dating.line_id} open onClose={() => setDating(null)} item={dating}
+          title={dating.owesMe ? `¿Hasta cuándo te paga${s.partner ? ` ${s.partner.split(" ")[0]}` : ""}?` : `¿Hasta cuándo le pagas${s.partner ? ` a ${s.partner.split(" ")[0]}` : ""}?`} />
       )}
 
       <Sheet title="¿Borrar este movimiento?" open={confirmDelete} onClose={() => setConfirmDelete(false)}>

@@ -12,9 +12,10 @@ import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
-import { installmentClosings } from "@/lib/cards";
-import { longDate, shortDate, todayISO } from "@/lib/dates";
+import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
+import { DateSheet, dateLabel } from "@/components/DateSheet";
+import { Installments } from "@/components/Installments";
+import { shortDate, todayISO } from "@/lib/dates";
 import { isPersonKind } from "@/lib/kinds";
 import { CURRENCY_NAME, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 import { PersonaSheet } from "@/pages/personas/PersonaForm";
@@ -59,6 +60,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
   const [cardCurrency, setCardCurrency] = useState<string | null>(editing?.summary.currency ?? null);
   const [inInstallments, setInInstallments] = useState(false);
   const [installments, setInstallments] = useState(6);
+  const [cuota, setCuota] = useState("");
   const [toAccountId, setToAccountId] = useState<string>(editing?.to_account_id ? String(editing.to_account_id) : "");
   const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : "");
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
@@ -123,6 +125,8 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
     if (total === null || Number(total) <= 0) return setProblem("Escribe un monto mayor que cero");
     if (needRate && !(Number(rate.value) > 0))
       return setProblem("Escribe el tipo de cambio, como 3.443");
+    const cuotaValue = cuota.trim() ? parseAmount(cuota, lang) : null;
+    if (cuota.trim() && !(Number(cuotaValue) > 0)) return setProblem("Escribe la cuota como 207.00");
     const body: MoveIn = {
       lines: [],
       kind,
@@ -138,6 +142,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
       paid_by_partner_id: other ? paidBy : null,
       currency: card ? currency : null,
       installments: card && inInstallments && kind === "expense" ? installments : null,
+      installment_amount: card && inInstallments && kind === "expense" ? cuotaValue : null,
     };
     if (kind === "transfer") {
       if (!toAccount) return setProblem("Elige adónde entra");
@@ -352,16 +357,12 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
             <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
               className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
               <Icon name="event" className="text-[18px]" />
-              {date === todayISO() ? "Hoy" : longDate(date)}
+              {dateLabel(date)}
             </button>
             <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
               className="h-10 min-w-0 border-0 bg-transparent p-0" />
           </div>
-          {dateOpen && (
-            <div className="py-3">
-              <LineField label="Fecha" type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
-            </div>
-          )}
+          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} />
 
           {kind !== "transfer" && (
             <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
@@ -386,7 +387,7 @@ export function Registrar({ editing }: { editing?: MoveDetail }) {
                   className="size-[22px] accent-primary" />
               </label>
               {inInstallments && (
-                <Installments n={installments} setN={setInstallments} total={total} currency={currency} date={date}
+                <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={total} currency={currency} date={date}
                   closingDay={account!.card?.closing_day ?? null} category={parts[0]?.category?.name ?? null} lang={lang} />
               )}
             </>
@@ -462,40 +463,6 @@ function FxPreview({ account, out, into, base, lang }: {
         Esos {formatAmount(out, symbolOf(account!.currency), lang)} te costaron {money(cost)} (a {avg} en promedio) y recibes {money(into)}.
       </span>
     </section>
-  );
-}
-
-/** En cuotas: cuántas, y en qué cortes llegan. El gasto cuenta completo el día de la compra. */
-function Installments({ n, setN, total, currency, date, closingDay, category, lang }: {
-  n: number; setN: (n: number) => void; total: string | null; currency: string; date: string;
-  closingDay: number | null; category: string | null; lang: string;
-}) {
-  const step = "grid size-9 place-items-center rounded-full border border-border";
-  const cents = total ? Math.round(Number(total) * 100) : 0;
-  const each = Math.round(cents / n);
-  const last = cents - each * (n - 1);
-  const money = (c: number) => formatAmount((c / 100).toFixed(2), symbolOf(currency), lang);
-  const closings = closingDay ? installmentClosings(date, n, closingDay) : null;
-  return (
-    <div className="flex flex-col gap-2.5 border-b border-border pt-1 pb-3.5">
-      <div className="flex items-center gap-3">
-        <span id="cuantas" className="flex-1 font-semibold">¿En cuántas cuotas?</span>
-        <div role="group" aria-labelledby="cuantas" className="flex items-center gap-3">
-          <button type="button" aria-label="Una cuota menos" onClick={() => setN(Math.max(2, n - 1))} className={step}><Icon name="remove" /></button>
-          <span className="min-w-7 text-center text-[20px] leading-7 font-semibold tabular-nums">{n}</span>
-          <button type="button" aria-label="Una cuota más" onClick={() => setN(Math.min(60, n + 1))} className={step}><Icon name="add" /></button>
-        </div>
-      </div>
-      {cents > 0 && (
-        <div role="status" className="flex flex-col gap-0.5 rounded-md bg-muted p-3 tabular-nums">
-          <span className="font-semibold">{n} cuotas de {money(each)}{last !== each ? ` (la última, ${money(last)})` : ""}</span>
-          <span className="text-caption text-muted-foreground">
-            {closings ? `La primera llega en el corte del ${shortDate(closings[0]!)}; la última, el ${shortDate(closings.at(-1)!)}. ` : ""}
-            El gasto cuenta completo hoy{category ? ` en ${category}` : ""}.
-          </span>
-        </div>
-      )}
-    </div>
   );
 }
 

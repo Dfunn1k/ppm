@@ -15,6 +15,7 @@ import {
 import { RateField, useRateInput } from "@/components/RateField";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { DateField } from "@/components/DateSheet";
 import { copyText } from "@/lib/clipboard";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
@@ -254,7 +255,7 @@ function OpeningSheet({ open, onClose, detail, base, lang }: {
             : "Esta cuenta no tiene saldo inicial. Escribe con cuánto empezó."}
         </p>
         <AmountField label="Saldo inicial" symbol={symbolOf(currency)} value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <LineField label="Al día" type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} />
+        <DateField label="Al día" max={todayISO()} value={date} onChange={setDate} />
         {foreign && <RateField input={rate} currency={currency} side={side} />}
         {(problem || set.error) && <ErrorAlert>{problem ?? set.error?.message}</ErrorAlert>}
         <PrimaryButton pending={set.isPending}>Guardar saldo</PrimaryButton>

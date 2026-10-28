@@ -2,6 +2,8 @@
 // costo del cambio, el Inicio con los dólares al tipo de hoy y Z1 solo para el administrador.
 import { expect, type Page, test } from "@playwright/test";
 
+import { pickDate } from "./fechas";
+
 const PASSWORD = "pan-para-mayo-2026";
 
 /** Perú con dólares: Efectivo S/ 500 y BBVA US$ 200 comprados a 3.70 (costaron S/ 740). */
@@ -99,7 +101,7 @@ test("Z1: solo el administrador ve el tipo de cambio y lo carga a mano", async (
 
   await page.getByRole("button", { name: "Cargar a mano" }).click();
   const hoja = page.getByRole("dialog");
-  await hoja.getByLabel("Día").fill("2000-12-28");
+  await pickDate(page, /^Día/, "2000-12-28");
   await hoja.getByLabel("Compra").fill("3.52");
   await hoja.getByLabel("Venta").fill("3.51");
   await hoja.getByRole("button", { name: "Guardar tipo de cambio" }).click();

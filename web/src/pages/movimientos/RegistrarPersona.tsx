@@ -7,12 +7,14 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { type AccountRow, type MoveDetail, type MoveIn, type PartnerRow, useAccounts, useMe, usePartner, usePartnersOverview, useSaveMove } from "@/api/hooks";
 import { MasHeader } from "@/components/MasTipos";
 import { PersonPicker } from "@/components/PersonPicker";
+import { Installments } from "@/components/Installments";
 import { RateField, useRateInput } from "@/components/RateField";
-import { OptionList, Sheet, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
-import { longDate, shortDate, todayISO } from "@/lib/dates";
+import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
+import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
+import { DateSheet, dateLabel } from "@/components/DateSheet";
+import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
-import { add, formatAmount, formatNumber, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, add, formatAmount, formatNumber, parseAmount, subtract, symbolOf } from "@/lib/money";
 
 const TEXT: Record<PersonKind, { ask: string; who: string; into: boolean; submit: string; role: "owes_me" | "i_owe" | "keep" }> = {
   lend: { ask: "¿Cuánto le prestaste?", who: "¿A quién?", into: false, submit: "Registrar préstamo", role: "owes_me" },
@@ -51,13 +53,21 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   const [debt, setDebt] = useState<{ id: number; ref: string } | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [cardCurrency, setCardCurrency] = useState(editing?.summary.currency ?? "");
+  const [inInstallments, setInInstallments] = useState(false);
+  const [installments, setInstallments] = useState(6);
+  const [cuota, setCuota] = useState("");
+  const [interestMine, setInterestMine] = useState(false);
   const detail = usePartner(LIMITED.includes(kind) && who ? who : 0).data;
 
   const base = me?.currency ?? "PEN";
-  const accounts: AccountRow[] = overview ? [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "other"].includes(a.kind)) : [];
+  // Prestar la tarjeta: la persona compra con ella; el banco te cobra a ti y ella te debe a ti
+  const kinds = kind === "lend" ? ["cash", "bank", "other", "card"] : ["cash", "bank", "other"];
+  const accounts: AccountRow[] = overview ? [...overview.have, ...overview.owe].filter((a) => kinds.includes(a.kind)) : [];
   const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
-  const currency = account?.currency ?? base;
-  const rate = useRateInput(currency, base, date, account?.kind === "other" ? "sell" : "buy", editing?.rate ? Number(editing.rate).toFixed(3) : null);
+  const isCard = account?.kind === "card";
+  const currency = isCard ? cardCurrency || base : account?.currency ?? base;
+  const rate = useRateInput(currency, base, date, account?.kind === "other" || isCard ? "sell" : "buy", editing?.rate ? Number(editing.rate).toFixed(3) : null);
   if (!me?.currency || !overview || !people) return <Spinner />;
 
   const person: PartnerRow | undefined = people.people.find((p) => p.id === who);
@@ -67,6 +77,10 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   const mine = editing && editing.summary.currency === currency && who === editing.partner_id ? editing.summary.amount : "0.00";
   const have = LIMITED.includes(kind) ? add(had, mine) : subtract(had, kind === editing?.summary.kind ? mine : "0.00");
   const value = parseAmount(amount || "", lang);
+  const cuotaValue = cuota.trim() ? parseAmount(cuota, lang) : null;
+  const cuotas = isCard && inInstallments && !editing;
+  // Lo que te deberá: las cuotas (con su interés) salvo que el interés lo pagues tú
+  const lent = cuotas && cuotaValue && !interestMine ? (Number(cuotaValue) * installments).toFixed(2) : value;
   const money = (v: string) => formatAmount(v, symbolOf(currency), lang);
   const over = LIMITED.includes(kind) && who && value && Number(value) > Number(have);
   const only = LIMITED.includes(kind)
@@ -80,8 +94,10 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     const after = LIMITED.includes(kind) ? subtract(have, value) : add(have, value);
     const oldest = openDebts[0];
     switch (kind) {
-      case "lend": return [`${first} te quedará debiendo ${money(after)}`,
-        `${Number(have) > 0 ? `Ya te debía ${money(have)}. ` : ""}No es un gasto: la plata sigue siendo tuya.`];
+      case "lend": return [`${first} te quedará debiendo ${money(add(have, lent ?? value))}`,
+        `${Number(have) > 0 ? `Ya te debía ${money(have)}. ` : ""}` + (isCard
+          ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? " Cada parte vence con la fecha de pago de su corte." : ""}`
+          : "No es un gasto: la plata sigue siendo tuya.")];
       case "borrow": return [`Le quedarás debiendo ${money(after)} a ${first}`, "No es un ingreso: entra a tu cuenta, pero se la debes."];
       case "collect": return [`${first} te debe ${money(have)} · quedará en ${money(after)}`,
         debt ? `Se descuenta primero de «${debt.ref}».` : oldest ? `Se descuenta de la deuda más antigua: «${oldest.ref}».` : ""];
@@ -105,9 +121,14 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     if (!value || Number(value) <= 0) return setProblem("Escribe un monto mayor que cero");
     if (over) return setProblem(overText);
     if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
+    if (cuotas && cuota.trim() && !(Number(cuotaValue) > 0)) return setProblem("Escribe la cuota como 207.00");
     const body: MoveIn = {
       kind, account_id: account.id, amount: value, date, ref: note.trim() || null, pending,
       rate: foreign ? rate.value.trim() : null, partner_id: who, debt_line_id: debt?.id ?? null, splits: [], lines: [],
+      currency: isCard ? currency : null,
+      installments: cuotas ? installments : null,
+      installment_amount: cuotas ? cuotaValue : null,
+      interest_mine: cuotas && interestMine,
     };
     save.mutate(body, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : `/personas/${who}`, { replace: true }) });
   };
@@ -141,16 +162,51 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
             value={account ? String(account.id) : ""} onChange={setAccountId}
             options={accounts.map((a) => ({ value: String(a.id), label: a.name,
               hint: [a.subtitle, formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang)].filter(Boolean).join(" · ") }))} />
-          {foreign && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} /></div>}
+          {isCard && me.currencies.length > 1 && (
+            <div className="mt-3">
+              <Segmented label="¿En qué moneda?" size="sm" value={currency} onChange={setCardCurrency}
+                options={me.currencies.map((c) => ({ value: c, label: `${(CURRENCY_NAME[c] ?? c).replace(/^./, (x) => x.toUpperCase())} · ${symbolOf(c)}` }))} />
+            </div>
+          )}
+          {foreign && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} side={isCard ? "sell" : undefined} /></div>}
+          {isCard && !editing && (
+            <>
+              <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
+                <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
+                <span className="flex flex-1 flex-col">
+                  <span>En cuotas</span>
+                  <span className="text-caption text-muted-foreground">El banco te lo cobra en varios cortes</span>
+                </span>
+                <input type="checkbox" role="switch" checked={inInstallments} onChange={() => setInInstallments(!inInstallments)}
+                  className="size-[22px] accent-primary" />
+              </label>
+              {inInstallments && (
+                <>
+                  <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={value} currency={currency}
+                    date={date} closingDay={account!.card?.closing_day ?? null} category={null} lang={lang}
+                    who={interestMine ? undefined : first || undefined} />
+                  <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
+                    <Icon name="percent" className="w-9 text-center text-muted-foreground" />
+                    <span className="flex flex-1 flex-col">
+                      <span>El interés lo pago yo</span>
+                      <span className="text-caption text-muted-foreground">{first || "La persona"} te devuelve solo lo que costó</span>
+                    </span>
+                    <input type="checkbox" role="switch" checked={interestMine} onChange={() => setInterestMine(!interestMine)}
+                      className="size-[22px] accent-primary" />
+                  </label>
+                </>
+              )}
+            </>
+          )}
           <div className="grid min-h-[52px] grid-cols-[auto_1fr] items-center gap-3 border-b border-border">
             <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
               className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-              <Icon name="event" className="text-[18px]" />{date === todayISO() ? "Hoy" : longDate(date)}
+              <Icon name="event" className="text-[18px]" />{dateLabel(date)}
             </button>
             <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
               className="h-10 min-w-0 border-0 bg-transparent p-0" />
           </div>
-          {dateOpen && <div className="py-3"><LineField label="Fecha" type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} /></div>}
+          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} />
           <label className="flex min-h-[52px] cursor-pointer items-center gap-3">
             <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
             <span className="flex flex-1 flex-col">
@@ -183,7 +239,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
         <div className="flex flex-col gap-3">
           {(problem || save.error) && !over && <ErrorAlert>{problem ?? save.error?.message}</ErrorAlert>}
           <PrimaryButton pending={save.isPending} disabled={!!over}>
-            {editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar" : t.submit}
+            {editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar" : cuotas ? `${t.submit} en ${installments} cuotas` : t.submit}
           </PrimaryButton>
         </div>
       </form>
