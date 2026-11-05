@@ -27,7 +27,7 @@ class Notice:
     key: str                     # la llave para posponerlo
     kind: str                    # maturity, card_due, draft, suspense o recurring
     date: dt.date                # vence, se paga o llegó su día (el más antiguo si son varios)
-    late: bool                   # la fecha ya pasó
+    late: bool                   # la fecha ya pasó (por confirmar y por clasificar no vencen)
     amounts: list[Amount] = field(default_factory=list)
     count: int = 1               # por confirmar y por clasificar: cuántos
     partner_id: int | None = None
@@ -103,7 +103,8 @@ def _notices(conn: psycopg.Connection, today: dt.date) -> list[Notice]:
         (_, kind, date, _, _, count, partner_id, partner, account_id, account, rec_id, occurrence, name,
          snooze) = group[0]
         amounts = [Amount(cur, amount) for _, _, _, cur, amount, *_ in group if cur is not None]
-        out.append(Notice(key, kind, date, date < today, amounts, count, partner_id, partner, account_id, account,
+        late = date < today and kind not in ("draft", "suspense")   # esos no vencen: se revisan cuando puedas
+        out.append(Notice(key, kind, date, late, amounts, count, partner_id, partner, account_id, account,
                           rec_id, occurrence, name, single.get(kind) if count == 1 else None,
                           bank_charges if kind == "draft" else 0, snooze))
     out.sort(key=lambda n: (n.date, n.key))

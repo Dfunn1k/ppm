@@ -1,11 +1,12 @@
-// I1 · Inicio: lo que realmente tengo hoy (los dólares al tipo de hoy), «para mayo» del mes (en trigo,
-// el sello de PPM), en qué se va la plata, mis cuentas y los últimos movimientos.
+// I1 · Inicio: lo que realmente tengo hoy (los dólares al tipo de hoy), lo más urgente de Pendientes,
+// «para mayo» del mes (en trigo, el sello de PPM), en qué se va la plata, mis cuentas y los últimos movimientos.
 import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
-import { useAccounts, useHome, useMe, useRecurringPending, useReminderDone } from "@/api/hooks";
+import { useAccounts, useHome, useMe, usePending } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
+import { activityCaption, noticeView, sectionOf } from "@/components/Pending";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
@@ -31,9 +32,6 @@ export function Inicio() {
   const accounts = useAccounts().data;
   const [picking, setPicking] = useState(false);
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
-  const pending = useRecurringPending().data;
-  const reminders = pending?.reminders ?? [];
-  const done = useReminderDone();
 
   if (!me?.currency || home.isPending) return <Spinner />;
   if (home.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{home.error.message}</ErrorAlert></main>;
@@ -81,57 +79,7 @@ export function Inicio() {
         </div>
       ))}
 
-      {h.unclassified > 0 && (
-        <Link to="/por-clasificar" className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
-          <Icon name="inbox" />
-          <span className="flex-1">
-            {h.unclassified === 1 ? "1 movimiento del banco por clasificar" : `${h.unclassified} movimientos del banco por clasificar`}
-          </span>
-          <Icon name="chevron_right" />
-        </Link>
-      )}
-
-      {reminders.map((r) => (
-        <section key={`${r.recurring_id}-${r.occurrence}`} aria-label="Recordatorio"
-          className="mt-4 flex flex-col gap-2.5 rounded-md bg-attention-soft px-3.5 py-3 text-attention">
-          <span className="flex items-start gap-2.5">
-            <Icon name="notifications" className="text-[22px]" />
-            <span className="flex flex-1 flex-col">
-              <b>{r.name} · {r.late ? `desde el ${shortDate(r.date)}` : "hoy"}</b>
-              <span className="text-caption">
-                {formatAmount(r.amount.replace("-", ""), symbolOf(r.currency), lang)} · {r.late ? "todavía no lo registras." : r.amount.startsWith("-") ? "te toca pagarlo hoy." : "te toca recibirlo hoy."}
-              </span>
-            </span>
-          </span>
-          <span className="flex gap-2">
-            <Link to={`/registrar/aviso/${r.recurring_id}/${r.occurrence}`}
-              className="flex h-10 items-center rounded-full bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground">Registrar el pago</Link>
-            <button type="button" disabled={done.isPending} onClick={() => done.mutate({ id: r.recurring_id, occurrence: r.occurrence })}
-              className="h-10 rounded-full border border-current px-3.5 text-[14px] font-semibold">Ya lo hice</button>
-          </span>
-        </section>
-      ))}
-
-      {(pending?.bank_charges ?? 0) > 0 && (
-        <Link to={pending!.bank_charges === 1 ? `/movimientos/${pending!.bank_charge_move_id}` : "/movimientos?pendientes=1"}
-          className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
-          <Icon name="account_balance" />
-          <span className="flex-1">
-            {pending!.bank_charges === 1 ? "Tienes 1 cargo del banco por confirmar" : `Tienes ${pending!.bank_charges} cargos del banco por confirmar`}
-          </span>
-          <Icon name="chevron_right" />
-        </Link>
-      )}
-
-      {h.overdue_pending > 0 && (
-        <Link to="/movimientos?pendientes=1" className="mt-4 flex min-h-12 items-center gap-2.5 rounded-md bg-attention-soft px-3 font-semibold text-attention">
-          <Icon name="schedule" />
-          <span className="flex-1">
-            {h.overdue_pending === 1 ? "1 movimiento por confirmar ya llegó a su día" : `${h.overdue_pending} movimientos por confirmar ya llegaron a su día`}
-          </span>
-          <Icon name="chevron_right" />
-        </Link>
-      )}
+      <PendingCard lang={lang} />
 
       <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4">
         <div className="flex items-baseline justify-between">
@@ -227,6 +175,44 @@ export function Inicio() {
           }} />
       </Sheet>
     </main>
+  );
+}
+
+const ORDER = { late: 0, today: 1, soon: 2 } as const;
+
+/** Pendientes en el Inicio: cuántos hay, cuántos vencidos y los 3 más urgentes. Sin nada, no aparece. */
+function PendingCard({ lang }: { lang: string }) {
+  const box = usePending().data;
+  if (!box) return null;
+  const items = [
+    ...box.notices.map((n) => {
+      const v = noticeView(n, box.today, lang);
+      return { key: n.key, to: v.to, title: v.title, caption: v.caption, late: n.late, date: n.date, section: sectionOf(n, box.today) };
+    }),
+    ...box.activities.map((a) => ({
+      key: `a${a.id}`, to: "/pendientes", title: a.summary, caption: activityCaption(a, box.today), late: a.late, date: a.date,
+      section: sectionOf(a, box.today),
+    })),
+  ].sort((x, y) => ORDER[x.section] - ORDER[y.section] || x.date.localeCompare(y.date));
+  if (items.length === 0) return null;
+  return (
+    <section aria-label="Pendientes" className="mt-5 flex flex-col rounded-lg border border-border bg-card px-4 pt-3 pb-1">
+      <span className="text-label text-muted-foreground">
+        Pendientes · {items.length}{box.late > 0 && <span className="text-attention"> · {box.late === 1 ? "1 vencido" : `${box.late} vencidos`}</span>}
+      </span>
+      {items.slice(0, 3).map((i) => (
+        <Link key={i.key} to={i.to} className="flex min-h-[52px] items-center gap-2.5 border-b border-border">
+          <span aria-hidden="true" className={`size-2 flex-none rounded-full ${i.late ? "bg-attention" : "bg-muted-foreground"}`} />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-semibold">{i.title}</span>
+            <span className={`truncate text-caption ${i.late ? "text-attention" : "text-muted-foreground"}`}>{i.caption}</span>
+          </span>
+        </Link>
+      ))}
+      <Link to="/pendientes" className="flex min-h-12 items-center justify-between font-semibold">
+        Ver todo<Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
+    </section>
   );
 }
 

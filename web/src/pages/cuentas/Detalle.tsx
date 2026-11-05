@@ -12,6 +12,7 @@ import {
   useSetOpening,
   useUpdateAccount,
 } from "@/api/hooks";
+import { Activities } from "@/components/Pending";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
@@ -96,6 +97,8 @@ export function Detalle() {
       )}
 
       {d.bank && <StatementCard detail={d} lang={lang} />}
+
+      <Activities target={{ account_id: d.account.id }} />
 
       <section aria-label="Movimientos" className="mt-5 flex flex-col">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">

@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction } from "@/api/hooks";
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
+import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
@@ -168,6 +169,8 @@ export function Persona() {
           </Link>
         </div>
       </div>
+
+      <Activities target={{ partner_id: p.id }} />
 
       <Sheet title="¿Qué pasó?" open={hoja === "pago"} onClose={() => setHoja(null)}>
         <div className="flex flex-col gap-2 px-1">

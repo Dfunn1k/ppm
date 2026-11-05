@@ -59,7 +59,7 @@ test("se repite: Netflix cada mes, saltar una vez y pausar", async ({ page }) =>
   await expect(page.getByRole("link", { name: /Netflix/ })).toContainText("Pausada");
 });
 
-test("un recordatorio se ve en el Inicio hasta que lo haces", async ({ page }) => {
+test("un recordatorio se ve en el Inicio y en Pendientes hasta que lo haces", async ({ page }) => {
   const bcp = await readyUser(page);
   const r = await page.request.post("/api/recurring", {
     data: {
@@ -70,10 +70,12 @@ test("un recordatorio se ve en el Inicio hasta que lo haces", async ({ page }) =
   });
   expect(r.status()).toBe(201);
   await page.goto("/inicio");
-  const aviso = page.getByRole("region", { name: "Recordatorio" });
-  await expect(aviso).toContainText("Alquiler · hoy");
-  await aviso.getByRole("button", { name: "Ya lo hice" }).click();
-  await expect(aviso).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Pendientes" })).toContainText("Alquiler · S/ 1,200.00");
+  await page.goto("/pendientes");
+  const hoy = page.getByRole("region", { name: "Hoy" });
+  await expect(hoy).toContainText("Te toca pagarlo hoy");
+  await hoy.getByRole("button", { name: "Ya lo hice" }).click();
+  await expect(page.getByText("Nada te espera por ahora.")).toBeVisible();
 });
 
 test("un préstamo que ya venía pagando: crearlo y pagar la cuota con la boleta", async ({ page }) => {

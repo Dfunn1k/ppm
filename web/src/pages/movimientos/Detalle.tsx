@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
+import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
 import { Sheet } from "@/components/Sheet";
@@ -278,6 +279,8 @@ export function DetalleMovimiento() {
           </dl>
         </section>
       )}
+
+      <Activities target={{ move_id: s.id }} />
 
       <div className="min-h-6 flex-1" />
       <div className="flex flex-col gap-2">
