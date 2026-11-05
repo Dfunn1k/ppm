@@ -48,7 +48,7 @@ test("crear cuenta, los 3 pasos y llegar al inicio", async ({ page }) => {
   await expect(page.getByText("S/ 1,284.90")).toBeVisible();
   await page.getByRole("button", { name: /^Idioma y formato/ }).click();
   await page.getByRole("radio", { name: /Español \(España\)/ }).click();
-  await expect(page.getByText("S/ 1.284,90")).toBeVisible();
+  await expect(page.locator("main").getByText("S/ 1.284,90")).toBeVisible();   // no la hoja que se está cerrando
   await page.getByRole("button", { name: /^Idioma y formato/ }).click();
   await page.getByRole("radio", { name: /Español \(Perú\)/ }).click();
   await page.getByRole("button", { name: "Siguiente" }).click();

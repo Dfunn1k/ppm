@@ -1,7 +1,7 @@
 // C6 · Una persona: lo que queda entre ustedes, cada deuda abierta con su antigüedad y lo ya pagado,
 // lo que guardas suyo, y las acciones: registrar un pago, compensar, devolver y dar por perdido.
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useParams } from "react-router";
 
 import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction } from "@/api/hooks";
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
@@ -10,6 +10,7 @@ import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
+import { useBack } from "@/lib/transitions";
 
 import { PersonaSheet } from "./PersonaForm";
 import { joinMoney } from "./Personas";
@@ -31,7 +32,7 @@ function offsetOf(p: PartnerRow) {
 
 export function Persona() {
   const id = Number(useParams().id);
-  const navigate = useNavigate();
+  const back = useBack();
   const me = useMe().data;
   const detail = usePartner(id);
   const offset = usePartnerAction(id, "offset");
@@ -75,7 +76,7 @@ export function Persona() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Volver" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
         <button type="button" aria-label="Editar persona" onClick={() => setHoja("editar")} className="grid size-11 place-items-center rounded-full">

@@ -33,7 +33,7 @@ export function MasTipos({ open, onClose }: { open: boolean; onClose: () => void
         <div key={label} className="flex flex-col">
           <span className="mx-1 mt-3 mb-0.5 text-label text-muted-foreground">{label}</span>
           {kinds.map((k) => (
-            <Link key={k} to={MAS[k].to} replace onClick={onClose} className="flex min-h-14 items-center gap-3 rounded-md px-2">
+            <Link key={k} to={MAS[k].to} replace data-replace="true" onClick={onClose} className="flex min-h-14 items-center gap-3 rounded-md px-2">
               <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
                 <Icon name={MAS[k].icon} />
               </span>
@@ -60,9 +60,9 @@ export function MasHeader({ kind, locked }: { kind: MasKind; locked?: boolean })
     <>
       {!locked && (
         <div role="radiogroup" aria-label="Tipo de movimiento" className="mt-2 grid grid-cols-4 gap-1 rounded-md bg-muted p-[3px]">
-          <Link to="/registrar" replace role="radio" aria-checked="false" className={tab}>Gasto</Link>
-          <Link to="/registrar?tipo=income" replace role="radio" aria-checked="false" className={tab}>Ingreso</Link>
-          <Link to="/registrar?tipo=transfer" replace role="radio" aria-checked="false" className={tab}>Transferir</Link>
+          <Link to="/registrar" replace data-replace="true" role="radio" aria-checked="false" className={tab}>Gasto</Link>
+          <Link to="/registrar?tipo=income" replace data-replace="true" role="radio" aria-checked="false" className={tab}>Ingreso</Link>
+          <Link to="/registrar?tipo=transfer" replace data-replace="true" role="radio" aria-checked="false" className={tab}>Transferir</Link>
           <button type="button" role="radio" aria-checked="true" onClick={() => setOpen(true)} className={`${tab} bg-card shadow-sm`}>Más</button>
         </div>
       )}

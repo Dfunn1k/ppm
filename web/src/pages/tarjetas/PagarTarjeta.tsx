@@ -10,10 +10,12 @@ import { ErrorAlert, Icon, PrimaryButton, Screen, Spinner } from "@/components/u
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
+import { useBack } from "@/lib/transitions";
 
 export function PagarTarjeta() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
+  const back = useBack();
   const me = useMe().data;
   const card = useCard(id);
   const overview = useAccounts().data;
@@ -71,7 +73,7 @@ export function PagarTarjeta() {
   return (
     <Screen className="pt-4">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin pagar" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Cerrar sin pagar" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="close" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">Pagar tarjeta</span>

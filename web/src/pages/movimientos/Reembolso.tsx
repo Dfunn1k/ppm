@@ -12,9 +12,11 @@ import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
+import { useBack } from "@/lib/transitions";
 
 export function Reembolso({ editing }: { editing?: MoveDetail }) {
   const navigate = useNavigate();
+  const back = useBack();
   const me = useMe().data;
   const overview = useAccounts().data;
   const save = useSaveMove(editing?.summary.id);
@@ -53,7 +55,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin guardar" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Cerrar sin guardar" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="close" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>

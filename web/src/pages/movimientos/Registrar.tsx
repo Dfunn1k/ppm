@@ -24,6 +24,7 @@ import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
 import { CURRENCY_NAME, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 import { PersonaSheet } from "@/pages/personas/PersonaForm";
+import { useBack } from "@/lib/transitions";
 
 import { AsientoManual } from "./AsientoManual";
 import { Reembolso } from "./Reembolso";
@@ -78,6 +79,7 @@ export function Registrar({ editing, recurring, reminder }: {
   reminder?: { detail: RecurringDetail; occurrence: string };
 }) {
   const navigate = useNavigate();
+  const back = useBack();
   const me = useMe().data;
   const overview = useAccounts().data;
   const save = useSaveMove(editing?.summary.id);
@@ -287,7 +289,7 @@ export function Registrar({ editing, recurring, reminder }: {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin guardar" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Cerrar sin guardar" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="close" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : recurring ? "Editar recurrente" : "Nuevo movimiento"}</span>

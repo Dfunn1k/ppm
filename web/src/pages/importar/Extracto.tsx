@@ -9,10 +9,12 @@ import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
+import { useBack } from "@/lib/transitions";
 
 export function Extracto() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
+  const back = useBack();
   const me = useMe().data;
   const st = useStatement(id);
   const undo = useUndoStatement(id);
@@ -46,7 +48,7 @@ export function Extracto() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Volver" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
         <span className="truncate pr-2.5 text-label text-muted-foreground uppercase">{d.account}</span>

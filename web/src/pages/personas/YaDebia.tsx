@@ -14,6 +14,7 @@ import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, parseAmount, symbolOf } from "@/lib/money";
 import { AmountField } from "@/pages/cuentas/CuentaForm";
+import { useBack } from "@/lib/transitions";
 
 type Side = "owes_me" | "i_owe";
 
@@ -22,6 +23,7 @@ export function YaDebia() {
   const [chosen, setChosen] = useState<number | null>(null);
   const id = fixed || chosen || 0;
   const navigate = useNavigate();
+  const back = useBack();
   const [search] = useSearchParams();
   const me = useMe().data;
   const person = usePartner(id);
@@ -53,7 +55,7 @@ export function YaDebia() {
   return (
     <Screen className="pt-4">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Volver" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">Saldo inicial</span>
