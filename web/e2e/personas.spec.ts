@@ -27,8 +27,9 @@ async function chooseAccount(page: Page, label: "Sale de" | "Entra a", name: str
 }
 
 async function newPerson(page: Page, name: string) {
-  await page.getByRole("button", { name: "Nueva persona" }).click();
-  await page.getByRole("dialog").getByLabel("¿Cómo se llama?").fill(name);
+  await page.getByRole("combobox").last().fill(name);
+  await page.getByRole("option", { name: `Nueva persona «${name}»` }).click();
+  await expect(page.getByRole("dialog").getByLabel("¿Cómo se llama?")).toHaveValue(name);
   await page.getByRole("button", { name: "Guardar persona" }).click();
 }
 
@@ -60,8 +61,8 @@ test("prestar desde Más, cobrar sin pasarse y verlo en Personas", async ({ page
   await expect(page.getByRole("link", { name: /Préstamo a Sandra/ })).toContainText("era S/ 59.00, te pagó S/ 20.00");
   await page.goto("/cuentas");
   await page.getByRole("link", { name: /Me deben.*1 persona/ }).click();
-  await expect(page).toHaveURL("/personas");
-  await expect(page.getByRole("link", { name: /Sandra Machado/ })).toContainText("Te debe");
+  await expect(page).toHaveURL("/personas?ver=me-deben");
+  await expect(page.getByRole("region", { name: "Me deben" }).getByRole("link", { name: /Sandra Machado/ })).toContainText("S/ 39.00");
 });
 
 test("un gasto dividido con alguien y uno que pagó otra persona se compensan", async ({ page }) => {
@@ -86,7 +87,8 @@ test("un gasto dividido con alguien y uno que pagó otra persona se compensan", 
   await page.goto("/registrar");
   await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("30");
   await page.getByRole("radio", { name: "Otra persona" }).click();
-  await page.getByRole("radio", { name: /Luis/ }).click();
+  await page.getByRole("combobox", { name: /pagó por ti/ }).fill("luis");      // sin tilde ni mayúscula
+  await page.getByRole("option", { name: /Luis Pérez/ }).click();
   await page.getByRole("button", { name: /En qué/ }).click();
   await page.getByRole("dialog").getByRole("radio", { name: "Cafés y bares" }).click();
   await page.getByRole("button", { name: "Registrar gasto" }).click();
@@ -157,4 +159,11 @@ test("sin deudas todavía, Personas se abre desde Cuentas y el saldo inicial se 
   await expect(page.getByText("S/ 80.00").first()).toBeVisible();
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /Debo a personas/ })).toContainText("S/ 80.00");
+
+  // Cada fila abre Personas ya filtrada
+  await page.getByRole("link", { name: /Debo a personas/ }).click();
+  await expect(page).toHaveURL("/personas?ver=debo");
+  await expect(page.getByRole("region", { name: "Les debo" })).toContainText("Rosa Díaz");
+  await page.getByRole("button", { name: /^Me deben/ }).click();
+  await expect(page.getByRole("region", { name: "Me deben" })).toContainText("Nadie por ahora.");
 });

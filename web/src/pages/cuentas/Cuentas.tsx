@@ -46,7 +46,7 @@ function Row({ to, icon, letter, name, subtitle, amount, negative, attention }: 
   return to ? <Link to={to} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
-/** Por cobrar y Por pagar se leen como «Me deben» y «Debo a personas», y llevan a Personas. */
+/** Por cobrar y Por pagar se leen como «Me deben» y «Debo a personas», y llevan a Personas ya filtrada. */
 function people(n: number | null | undefined, to: boolean) {
   const count = n ?? 0;
   return `${to ? "A " : ""}${count} ${count === 1 ? "persona" : "personas"}`;
@@ -55,11 +55,11 @@ function people(n: number | null | undefined, to: boolean) {
 function accountRow(a: AccountRow, base: string, lang: string, negative?: boolean) {
   const { amount, subtitle } = rowAmount(a, base, lang);
   if (a.kind === "receivable") {
-    return <Row key={a.id} to="/personas" icon="group" name="Me deben" subtitle={people(a.partners, false)}
+    return <Row key={a.id} to="/personas?ver=me-deben" icon="group" name="Me deben" subtitle={people(a.partners, false)}
       amount={formatAmount(a.base_total, symbolOf(base), lang)} />;
   }
   if (a.kind === "payable") {
-    return <Row key={a.id} to="/personas" icon="group" name="Debo a personas" subtitle={people(a.partners, true)}
+    return <Row key={a.id} to="/personas?ver=debo" icon="group" name="Debo a personas" subtitle={people(a.partners, true)}
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
   }
   if (a.kind === "installments") {   // lo que ya le debes al banco por compras en cuotas: cada cuota es gasto en su corte

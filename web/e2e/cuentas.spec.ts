@@ -136,6 +136,12 @@ test("el detalle: copiar el CCI, renombrar, corregir el saldo y archivar", async
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByRole("heading", { name: "Cuenta sueldo Interbank" })).toBeVisible();
 
+  // El + de la barra registra con la cuenta que estás mirando
+  await page.getByRole("link", { name: "Registrar un movimiento" }).click();
+  await expect(page).toHaveURL(/\/registrar\?cuenta=\d+$/);
+  await expect(page.getByRole("button", { name: /^Sale de/ })).toContainText("Cuenta sueldo Interbank");
+  await page.goBack();
+
   // Con saldo no se archiva
   await page.getByRole("button", { name: "Más opciones de la cuenta" }).click();
   await page.getByRole("button", { name: "Archivar cuenta" }).click();
