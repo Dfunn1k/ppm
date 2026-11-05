@@ -26,6 +26,7 @@ class Me:
     ui_accent: str
     currencies: list[str]     # todas las que usa, la base primero
     is_admin: bool = False    # está en ADMIN_EMAILS: ve y corrige el tipo de cambio (Z1)
+    notice_days: int = 3      # Pendientes: con cuántos días avisan el pago de tarjeta y los vencimientos
 
 
 def get_me(user_id: int) -> Me:
@@ -35,21 +36,25 @@ def get_me(user_id: int) -> Me:
                    u.tz, u.ui_theme, u.ui_accent,
                    coalesce((SELECT array_agg(trim(c.name) ORDER BY c.id <> u.currency_id, c.name)
                                FROM res_users_currency uc JOIN res_currency c ON c.id = uc.currency_id),
-                            '{}')
+                            '{}'),
+                   u.notice_days
               FROM res_users u
               LEFT JOIN res_country co  ON co.id = u.country_id
               LEFT JOIN res_currency cur ON cur.id = u.currency_id
               LEFT JOIN res_lang l      ON l.id = u.lang_id
         """).fetchone()
-    return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails)
+    return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails,
+              notice_days=row[11])
 
 
-def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None) -> Me:
-    """Lo que la persona cambia de sí misma: su nombre y cómo se ve PPM."""
+def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None,
+           notice_days: int | None = None) -> Me:
+    """Lo que la persona cambia de sí misma: su nombre, cómo se ve PPM y con cuánto aviso."""
     with user_transaction(user_id) as conn:
         conn.execute(
             "UPDATE res_users SET name = coalesce(%s, name), ui_theme = coalesce(%s, ui_theme),"
-            " ui_accent = coalesce(%s, ui_accent)", (name.strip() if name else None, ui_theme, ui_accent))
+            " ui_accent = coalesce(%s, ui_accent), notice_days = coalesce(%s, notice_days)",
+            (name.strip() if name else None, ui_theme, ui_accent, notice_days))
     return get_me(user_id)
 
 

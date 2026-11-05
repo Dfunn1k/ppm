@@ -137,7 +137,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Cambiar tu nombre, el tema o el acento */
+        /** Cambiar tu nombre, el tema, el acento o con cuánto aviso */
         patch: operations["update_me_patch"];
         trace?: never;
     };
@@ -988,6 +988,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La bandeja: avisos, recordatorios y lo pospuesto */
+        get: operations["inbox_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pending/snooze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Posponer un aviso hasta una fecha */
+        post: operations["snooze_pending_snooze_post"];
+        /** Que un aviso pospuesto vuelva ya */
+        delete: operations["unsnooze_pending_snooze_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los recordatorios de un movimiento, una persona o una cuenta (o los sueltos) */
+        get: operations["activities_activities_get"];
+        put?: never;
+        /** Escribir un recordatorio */
+        post: operations["create_activity_activities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activities/{activity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Cambiar el texto o la fecha (posponerlo) */
+        put: operations["update_activity_activities__activity_id__put"];
+        post?: never;
+        /** Borrar un recordatorio */
+        delete: operations["delete_activity_activities__activity_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activities/{activity_id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcarlo hecho (o deshacerlo) */
+        post: operations["set_done_activities__activity_id__done_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1068,12 +1156,73 @@ export interface components {
             partners?: number | null;
             card?: components["schemas"]["CardBriefOut"] | null;
         };
+        /** ActivityIn */
+        ActivityIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Summary */
+            summary: string;
+            /** Move Id */
+            move_id?: number | null;
+            /** Partner Id */
+            partner_id?: number | null;
+            /** Account Id */
+            account_id?: number | null;
+        };
+        /** ActivityOut */
+        ActivityOut: {
+            /** Id */
+            id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Summary */
+            summary: string;
+            /** Late */
+            late: boolean;
+            /** Done Date */
+            done_date: string | null;
+            /** Move Id */
+            move_id: number | null;
+            /** Move */
+            move: string | null;
+            /** Partner Id */
+            partner_id: number | null;
+            /** Partner */
+            partner: string | null;
+            /** Account Id */
+            account_id: number | null;
+            /** Account */
+            account: string | null;
+        };
+        /** ActivityPatch */
+        ActivityPatch: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Summary */
+            summary: string;
+        };
         /** AdminRatesOut */
         AdminRatesOut: {
             /** Currencies */
             currencies: components["schemas"]["CurrencyStatusOut"][];
             /** History */
             history: components["schemas"]["RateDayOut"][];
+        };
+        /** AmountOut */
+        AmountOut: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
         };
         /** BankChargeIn */
         BankChargeIn: {
@@ -1567,6 +1716,14 @@ export interface components {
             /** Moves */
             moves: components["schemas"]["MoveSummaryOut"][];
         };
+        /** DoneIn */
+        DoneIn: {
+            /**
+             * Done
+             * @default true
+             */
+            done: boolean;
+        };
         /** DoneOut */
         DoneOut: {
             /** Move Id */
@@ -1684,6 +1841,24 @@ export interface components {
             problems: components["schemas"]["ProblemOut"][];
             /** Statement Id */
             statement_id: number | null;
+        };
+        /** InboxOut */
+        InboxOut: {
+            /**
+             * Today
+             * Format: date
+             */
+            today: string;
+            /** Notice Days */
+            notice_days: number;
+            /** Notices */
+            notices: components["schemas"]["NoticeOut"][];
+            /** Activities */
+            activities: components["schemas"]["ActivityOut"][];
+            /** Snoozed */
+            snoozed: components["schemas"]["NoticeOut"][];
+            /** Late */
+            late: number;
         };
         /** InstallmentOut */
         InstallmentOut: {
@@ -1885,6 +2060,8 @@ export interface components {
             currencies: string[];
             /** Is Admin */
             is_admin: boolean;
+            /** Notice Days */
+            notice_days: number;
         };
         /** MePatch */
         MePatch: {
@@ -1894,6 +2071,8 @@ export interface components {
             ui_theme?: ("system" | "light" | "dark") | null;
             /** Ui Accent */
             ui_accent?: ("tinta" | "trigo" | "morado" | "azul") | null;
+            /** Notice Days */
+            notice_days?: number | null;
         };
         /** MoneyOut */
         MoneyOut: {
@@ -2072,6 +2251,47 @@ export interface components {
             moved: boolean;
             /** Changed */
             changed: boolean;
+        };
+        /** NoticeOut */
+        NoticeOut: {
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "maturity" | "card_due" | "draft" | "suspense" | "recurring";
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Late */
+            late: boolean;
+            /** Amounts */
+            amounts: components["schemas"]["AmountOut"][];
+            /** Count */
+            count: number;
+            /** Partner Id */
+            partner_id: number | null;
+            /** Partner */
+            partner: string | null;
+            /** Account Id */
+            account_id: number | null;
+            /** Account */
+            account: string | null;
+            /** Recurring Id */
+            recurring_id: number | null;
+            /** Occurrence */
+            occurrence: string | null;
+            /** Name */
+            name: string | null;
+            /** Move Id */
+            move_id: number | null;
+            /** Bank Charges */
+            bank_charges: number;
+            /** Snooze Until */
+            snooze_until: string | null;
         };
         /** OccurrenceIn */
         OccurrenceIn: {
@@ -2678,6 +2898,16 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** SnoozeIn */
+        SnoozeIn: {
+            /** Key */
+            key: string;
+            /**
+             * Until
+             * Format: date
+             */
+            until: string;
         };
         /** SplitIn */
         SplitIn: {
@@ -5455,6 +5685,282 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreatedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inbox_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    snooze_pending_snooze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnoozeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsnooze_pending_snooze_delete: {
+        parameters: {
+            query: {
+                key: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activities_activities_get: {
+        parameters: {
+            query?: {
+                move_id?: number | null;
+                partner_id?: number | null;
+                account_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_activity_activities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_activity_activities__activity_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_activity_activities__activity_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_done_activities__activity_id__done_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoneIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
