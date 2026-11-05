@@ -1,4 +1,5 @@
-// La barra de abajo del diseño final: Inicio, Movimientos, el + para registrar, Cuentas y Más.
+// La barra de abajo del diseño final: Inicio, Movimientos, el + para registrar (con la cuenta que estás
+// mirando), Cuentas y Más.
 import { Link, NavLink, useLocation } from "react-router";
 
 import { Icon } from "./ui";
@@ -46,13 +47,20 @@ function Tab({ item }: { item: Item }) {
   );
 }
 
+/** El + registra con la cuenta o tarjeta que estás mirando; en otra pantalla, sin cuenta elegida. */
+function registerLink(path: string) {
+  const id = /^\/(?:cuentas|tarjetas)\/(\d+)/.exec(path)?.[1];
+  return id ? `/registrar?cuenta=${id}` : "/registrar";
+}
+
 export function AppNav() {
+  const path = useLocation().pathname;
   return (
     <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card">
       <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
         <Tab item={ITEMS[1]!} />
-        <Link to="/registrar" aria-label="Registrar un movimiento"
+        <Link to={registerLink(path)} aria-label="Registrar un movimiento"
           className="-mt-7 grid size-14 place-items-center justify-self-center rounded-full bg-primary text-primary-foreground shadow-lg">
           <Icon name="add" className="text-[28px]" />
         </Link>

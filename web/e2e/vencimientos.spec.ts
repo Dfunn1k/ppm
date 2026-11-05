@@ -95,7 +95,8 @@ test("una compra en cuotas que es de otra persona: no es tu gasto, te debe todas
   for (let k = 0; k < 3; k++) await page.getByRole("button", { name: "Una cuota menos" }).click();   // 3 cuotas
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("262.02");
   await page.getByRole("switch", { name: /Es de otra persona/ }).check();
-  await page.getByRole("radio", { name: /Luis/ }).click();
+  await page.getByRole("combobox", { name: "¿De quién es?" }).fill("Lu");
+  await page.getByRole("option", { name: /Luis/ }).click();
   await expect(page.getByRole("status")).toContainText("Luis te debe todas las cuotas desde hoy");
   await page.getByLabel("Nota").fill("Unipiel");
   await page.getByRole("button", { name: "Registrar gasto en 3 cuotas" }).click();

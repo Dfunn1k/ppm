@@ -5,15 +5,16 @@ import { type PartnerRow, useCreatePartner, useUpdatePartner } from "@/api/hooks
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, LineField, PrimaryButton } from "@/components/ui";
 
-export function PersonaSheet({ open, onClose, editing, onCreated }: {
+export function PersonaSheet({ open, onClose, editing, onCreated, initialName = "" }: {
   open: boolean;
   onClose: () => void;
   editing?: PartnerRow;
   onCreated?: (id: number, name: string) => void;
+  initialName?: string;               // lo que ya escribiste al buscarla
 }) {
   const create = useCreatePartner();
   const update = useUpdatePartner(editing?.id ?? 0);
-  const [name, setName] = useState(editing?.name ?? "");
+  const [name, setName] = useState(editing?.name ?? initialName);
   const [phone, setPhone] = useState(editing?.phone ?? "");
   const [email, setEmail] = useState(editing?.email ?? "");
   const [problem, setProblem] = useState<string | null>(null);

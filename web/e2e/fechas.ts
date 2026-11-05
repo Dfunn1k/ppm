@@ -13,7 +13,8 @@ export async function pickDate(page: Page, label: string | RegExp, iso: string) 
 export async function pickInOpenCalendar(page: Page, iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
   const hoja = page.getByRole("dialog").last();
-  await hoja.getByRole("combobox").nth(1).selectOption(String(y));
-  await hoja.getByRole("combobox").nth(0).selectOption(String(m! - 1));
+  await hoja.getByRole("button", { name: /^Elegir el año/ }).click();
+  await hoja.getByRole("group", { name: "Años" }).getByRole("button", { name: String(y), exact: true }).click();
+  await hoja.getByRole("group", { name: /^Meses de/ }).getByRole("button").nth(m! - 1).click();
   await hoja.getByRole("grid").getByRole("button", { name: new RegExp(`(^|\\D)${d} de ${MESES[m! - 1]}`) }).click();
 }

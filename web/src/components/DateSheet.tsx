@@ -1,6 +1,7 @@
 // Elegir una fecha: el calendario de shadcn/ui (react-day-picker) en una hoja desde abajo, con atajos
 // («Hoy», «Ayer» o los que pida la pantalla). Igual en todos los celulares y con los colores de PPM;
-// nunca el calendario del navegador. Al elegir un día, la hoja se cierra.
+// nunca el calendario del navegador. Tocar el mes abre los 12 meses y tocar el año, los años: vistas
+// propias, sin el selector del navegador. Al elegir un día, la hoja se cierra.
 import { type ReactNode, useId, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { es } from "react-day-picker/locale";
@@ -16,6 +17,9 @@ const toDate = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y!, m! - 1, d!);
 };
+const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre",
+  "Noviembre", "Diciembre"];
+const FIRST_YEAR = 1990;
 const toISO = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -46,11 +50,25 @@ export function DateSheet({ open, onClose, title, value, onChange, min, max, sho
   children?: ReactNode;               // lo que va debajo: «Quitar la fecha», una nota
 }) {
   const [month, setMonth] = useState<Date>(toDate(value ?? todayISO()));
+  const [view, setView] = useState<"days" | "months" | "years">("days");
   const pick = (iso: string) => { onChange(iso); onClose(); };
   const disabled = [...(min ? [{ before: toDate(min) }] : []), ...(max ? [{ after: toDate(max) }] : [])];
+  const year = month.getFullYear();
+  const lastYear = new Date().getFullYear() + 5;
+  const fromYear = Math.max(FIRST_YEAR, min ? toDate(min).getFullYear() : FIRST_YEAR);
+  const toYear = Math.min(lastYear, max ? toDate(max).getFullYear() : lastYear);
+  // Un mes se puede elegir si algún día suyo está dentro de min..max
+  const monthOk = (y: number, m: number) =>
+    (!min || toISO(new Date(y, m + 1, 0)) >= min) && (!max || toISO(new Date(y, m, 1)) <= max);
+  const step = (n: number) => {
+    const next = view === "days" ? new Date(year, month.getMonth() + n, 1) : new Date(year + n, month.getMonth(), 1);
+    if (next.getFullYear() >= fromYear && next.getFullYear() <= toYear) setMonth(next);
+  };
+  const cell = (on: boolean) =>
+    `h-12 rounded-full text-[15px] font-semibold disabled:opacity-35 ${on ? "bg-primary text-primary-foreground" : ""}`;
   return (
     <Sheet title={title} open={open} onClose={onClose}>
-      {shortcuts.length > 0 && (
+      {shortcuts.length > 0 && view === "days" && (
         <div className="mx-3 flex flex-wrap gap-2">
           {shortcuts.map((s) => {
             const on = s.value === value;
@@ -63,44 +81,76 @@ export function DateSheet({ open, onClose, title, value, onChange, min, max, sho
           })}
         </div>
       )}
-      <DayPicker
-        mode="single"
-        locale={es}
-        weekStartsOn={1}
-        month={month}
-        onMonthChange={setMonth}
-        selected={value ? toDate(value) : undefined}
-        onSelect={(d) => d && pick(toISO(d))}
-        disabled={disabled}
-        showOutsideDays={false}
-        captionLayout="dropdown"
-        startMonth={new Date(1990, 0)}
-        endMonth={new Date(new Date().getFullYear() + 5, 11)}
-        classNames={{
-          root: "mx-1 mt-3",
-          months: "relative",
-          month_caption: "flex h-10 items-center justify-center font-semibold capitalize",
-          dropdowns: "flex items-center gap-3",
-          dropdown_root: "relative inline-flex items-center",
-          dropdown: "absolute inset-0 cursor-pointer opacity-0",
-          caption_label: "flex items-center gap-0.5 font-semibold capitalize [&>svg]:hidden",
-          nav: "absolute inset-x-0 top-0 flex h-10 items-center justify-between",
-          button_previous: "grid size-10 place-items-center rounded-full disabled:opacity-30",
-          button_next: "grid size-10 place-items-center rounded-full disabled:opacity-30",
-          month_grid: "mt-1 w-full border-collapse",
-          weekdays: "h-7",
-          weekday: "text-[12px] font-semibold text-muted-foreground uppercase",
-          day: "p-0.5 text-center",
-          day_button: "mx-auto grid size-11 place-items-center rounded-full text-[15px] tabular-nums disabled:opacity-35",
-          selected: "[&>button]:bg-primary [&>button]:font-semibold [&>button]:text-primary-foreground",
-          today: "[&>button]:font-semibold [&>button]:ring-[1.5px] [&>button]:ring-foreground [&>button]:ring-inset",
-          outside: "invisible",
-          hidden: "invisible",
-        }}
-        components={{
-          Chevron: ({ orientation }) => <Icon name={orientation === "left" ? "chevron_left" : "chevron_right"} className="text-[22px]" />,
-        }}
-      />
+      <div className="mx-1 mt-3 flex h-10 items-center justify-between">
+        {view !== "years" ? (
+          <button type="button" aria-label={view === "days" ? "Mes anterior" : "Año anterior"} onClick={() => step(-1)}
+            className="grid size-10 place-items-center rounded-full"><Icon name="chevron_left" className="text-[22px]" /></button>
+        ) : <span className="size-10" />}
+        <span className="flex items-center gap-1">
+          {view === "days" && (
+            <button type="button" aria-label={`Elegir el mes: ${MONTHS[month.getMonth()]}`} onClick={() => setView("months")}
+              className="flex h-10 items-center gap-0.5 rounded-full px-2 font-semibold">
+              {MONTHS[month.getMonth()]}<Icon name="expand_more" className="text-[20px] text-muted-foreground" />
+            </button>
+          )}
+          <button type="button" aria-label={`Elegir el año: ${year}`} onClick={() => setView(view === "years" ? "days" : "years")}
+            className="flex h-10 items-center gap-0.5 rounded-full px-2 font-semibold tabular-nums">
+            {year}<Icon name={view === "years" ? "expand_less" : "expand_more"} className="text-[20px] text-muted-foreground" />
+          </button>
+        </span>
+        {view !== "years" ? (
+          <button type="button" aria-label={view === "days" ? "Mes siguiente" : "Año siguiente"} onClick={() => step(1)}
+            className="grid size-10 place-items-center rounded-full"><Icon name="chevron_right" className="text-[22px]" /></button>
+        ) : <span className="size-10" />}
+      </div>
+      {view === "months" && (
+        <div role="group" aria-label={`Meses de ${year}`} className="mx-2 mt-2 grid grid-cols-3 gap-2">
+          {MONTHS.map((name, m) => (
+            <button key={name} type="button" aria-pressed={m === month.getMonth()} disabled={!monthOk(year, m)}
+              onClick={() => { setMonth(new Date(year, m, 1)); setView("days"); }} className={cell(m === month.getMonth())}>
+              {name.slice(0, 3)}
+            </button>
+          ))}
+        </div>
+      )}
+      {view === "years" && (
+        <div role="group" aria-label="Años" className="mx-2 mt-2 grid max-h-72 grid-cols-4 gap-2 overflow-y-auto">
+          {Array.from({ length: toYear - fromYear + 1 }, (_, i) => toYear - i).map((y) => (
+            <button key={y} type="button" aria-pressed={y === year} className={`${cell(y === year)} tabular-nums`}
+              ref={(el) => { if (el && y === year) el.scrollIntoView({ block: "center" }); }}
+              onClick={() => { setMonth(new Date(y, month.getMonth(), 1)); setView("months"); }}>
+              {y}
+            </button>
+          ))}
+        </div>
+      )}
+      {view === "days" && (
+        <DayPicker
+          mode="single"
+          locale={es}
+          weekStartsOn={1}
+          month={month}
+          onMonthChange={setMonth}
+          selected={value ? toDate(value) : undefined}
+          onSelect={(d) => d && pick(toISO(d))}
+          disabled={disabled}
+          showOutsideDays={false}
+          hideNavigation
+          classNames={{
+            root: "mx-1",
+            month_caption: "sr-only",
+            month_grid: "mt-1 w-full border-collapse",
+            weekdays: "h-7",
+            weekday: "text-[12px] font-semibold text-muted-foreground uppercase",
+            day: "p-0.5 text-center",
+            day_button: "mx-auto grid size-11 place-items-center rounded-full text-[15px] tabular-nums disabled:opacity-35",
+            selected: "[&>button]:bg-primary [&>button]:font-semibold [&>button]:text-primary-foreground",
+            today: "[&>button]:font-semibold [&>button]:ring-[1.5px] [&>button]:ring-foreground [&>button]:ring-inset",
+            outside: "invisible",
+            hidden: "invisible",
+          }}
+        />
+      )}
       {children}
     </Sheet>
   );
