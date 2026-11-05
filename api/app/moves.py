@@ -80,6 +80,7 @@ class MoveInput:
     currency: str | None = None                          # con una tarjeta (multimoneda): en qué moneda; None = la base
     installments: int | None = None                      # gasto o préstamo con tarjeta: en cuántas cuotas
     installment_amount: Decimal | None = None            # cada cuota, del cronograma del banco; None = sin intereses
+    later: bool = False                                  # gasto o ingreso: «Lo clasifico después» (a Por clasificar)
 
 
 @dataclass(frozen=True)
@@ -320,6 +321,8 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
     """Los apuntes del movimiento y su glosa por defecto. Lanza AccountError si algo no cuadra."""
     if m.kind not in INPUT_KINDS:
         raise AccountError(400, "Elige qué tipo de movimiento es")
+    if m.later and m.kind not in ("expense", "income"):
+        raise AccountError(400, "«Lo clasifico después» va solo en un gasto o un ingreso")
     base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
     if m.kind == "manual":
         return _build_manual(conn, m, base_id)
@@ -379,6 +382,15 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         money = _money_account(accs, m.account_id, what, _use_currency(conn, m.currency, base_id) if card else None)
         cur_id = money.currency_id  # type: ignore[assignment]
         rate = _rate(conn, money, base_id, on, m.rate)
+    if m.later:   # «Lo clasifico después»: a Por clasificar, como lo traído del banco; no es gasto ni ingreso aún
+        if m.kind not in ("expense", "income") or paid_by is not None or m.splits or m.installments is not None:
+            raise AccountError(400, "«Lo clasifico después» va en un gasto o un ingreso entero: sin dividir, sin cuotas"
+                                    " y pagado por ti")
+        suspense = conn.execute("SELECT system_account('suspense')").fetchone()[0]
+        total_base = _round(m.amount * rate)
+        out = m.kind == "expense"
+        return "Por clasificar", [_side(money.id, total_base, cur_id, m.amount, None, not out),
+                                  _side(suspense, total_base, cur_id, m.amount, None, out)]
     if not m.splits:
         raise AccountError(400, "Elige de qué es el ingreso" if m.kind == "income" else "Elige en qué")
     wanted = "income" if m.kind == "income" else "expense"

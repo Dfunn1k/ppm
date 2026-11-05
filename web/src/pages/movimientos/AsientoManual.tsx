@@ -51,7 +51,7 @@ export function AsientoManual({ editing }: { editing?: MoveDetail }) {
     e.preventDefault();
     if (!balanced) return;
     save.mutate({
-      kind: "manual", date, ref: note.trim() || null, pending: false, splits: [],
+      kind: "manual", date, ref: note.trim() || null, pending: false, later: false, splits: [],
       lines: rows.filter((l) => l.account).map((l) => ({
         account_id: l.account!.id, partner_id: l.partner,
         debit: parseAmount(l.debit || "0", lang) ?? "0", credit: parseAmount(l.credit || "0", lang) ?? "0",

@@ -2184,6 +2184,11 @@ export interface components {
             installments?: number | null;
             /** Installment Amount */
             installment_amount?: number | string | null;
+            /**
+             * Later
+             * @default false
+             */
+            later: boolean;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {

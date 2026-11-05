@@ -122,7 +122,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
     if (cuotas && cuota.trim() && !(Number(cuotaValue) > 0)) return setProblem("Escribe la cuota como 207.00");
     const body: MoveIn = {
-      kind, account_id: account.id, amount: value, date, ref: note.trim() || null, pending,
+      kind, account_id: account.id, amount: value, date, ref: note.trim() || null, pending, later: false,
       rate: foreign ? rate.value.trim() : null, partner_id: who, debt_line_id: debt?.id ?? null, splits: [], lines: [],
       currency: isCard ? currency : null,
       installments: cuotas ? installments : null,

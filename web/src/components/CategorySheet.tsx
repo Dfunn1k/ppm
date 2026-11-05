@@ -1,5 +1,6 @@
 // La hoja para elegir categoría: buscar, las que más usas y la lista por grupo con su color.
-// En Movimientos (filtro) también se puede elegir un grupo entero.
+// En Movimientos (filtro) también se puede elegir un grupo entero. En Registrar, arriba, «Lo clasifico
+// después» (con `onLater`): a Por clasificar, sin categoría todavía.
 import { useState } from "react";
 
 import { type Category, useCategories } from "@/api/hooks";
@@ -18,13 +19,15 @@ export function CategoryChip({ category, size = 36 }: { category: Pick<Category,
   );
 }
 
-export function CategorySheet({ kind, open, onClose, onPick, selected, allowGroups }: {
+export function CategorySheet({ kind, open, onClose, onPick, selected, allowGroups, onLater, later }: {
   kind: "expense" | "income";
   open: boolean;
   onClose: () => void;
   onPick: (c: Category) => void;
   selected?: number | null;
   allowGroups?: boolean;
+  onLater?: () => void;               // «Lo clasifico después»
+  later?: boolean;                    // ya está elegido
 }) {
   const data = useCategories(kind).data;
   const [q, setQ] = useState("");
@@ -49,6 +52,20 @@ export function CategorySheet({ kind, open, onClose, onPick, selected, allowGrou
           className="min-w-0 flex-1 border-0 bg-transparent focus:outline-none"
         />
       </label>
+
+      {onLater && !needle && (
+        <button type="button" role="radio" aria-checked={!!later} onClick={() => { setQ(""); onLater(); }}
+          className={`mx-1 mt-3 flex min-h-[60px] items-center gap-3 rounded-lg border-[1.5px] border-dashed border-input-line px-3 text-left ${later ? "bg-muted" : ""}`}>
+          <span className="grid size-9 flex-none place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="inbox" /></span>
+          <span className="flex flex-1 flex-col">
+            <span className="font-semibold">Lo clasifico después</span>
+            <span className="text-caption text-muted-foreground">
+              Queda en Por clasificar: no cuenta como {kind === "income" ? "ingreso" : "gasto"} hasta que elijas
+            </span>
+          </span>
+          {later && <Icon name="check_circle" fill className="text-[22px]" />}
+        </button>
+      )}
 
       {!needle && data && data.frequent.length > 0 && (
         <>
