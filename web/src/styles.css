@@ -354,3 +354,31 @@
 :root[data-theme="dark"] .swatch-trigo { background: #e3a83e; color: #2a1d05; }
 :root[data-theme="dark"] .swatch-morado { background: #b794e6; color: #1d1028; }
 :root[data-theme="dark"] .swatch-azul { background: #8fb0ff; color: #0b1530; }
+
+/* Transiciones (lib/transitions.tsx): entrar desliza desde la derecha y lo de atrás se corre un poco;
+   volver, al revés; entre pestañas, un fundido corto. La barra de abajo queda quieta. Las hojas suben y
+   el fondo se oscurece de a poco. Con «reducir movimiento», nada se anima. */
+.app-nav { view-transition-name: app-nav; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 180ms; }
+:root[data-nav="forward"]::view-transition-old(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-out-left; }
+:root[data-nav="forward"]::view-transition-new(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-in-right; }
+:root[data-nav="back"]::view-transition-old(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-out-right; z-index: 1; }
+:root[data-nav="back"]::view-transition-new(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-in-left; }
+@keyframes vt-in-right { from { transform: translateX(100%); } }
+@keyframes vt-out-left { to { transform: translateX(-25%); } }
+@keyframes vt-in-left { from { transform: translateX(-25%); } }
+@keyframes vt-out-right { to { transform: translateX(100%); } }
+
+.sheet-backdrop { animation: sheet-fade-in 180ms ease both; }
+.sheet-panel { animation: sheet-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sheet-leaving .sheet-backdrop { animation: sheet-fade-out 180ms ease both; }
+.sheet-leaving .sheet-panel { animation: sheet-down 200ms ease-in both; }
+@keyframes sheet-fade-in { from { opacity: 0; } }
+@keyframes sheet-fade-out { to { opacity: 0; } }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes sheet-down { to { transform: translateY(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+  .sheet-backdrop, .sheet-panel { animation: none !important; }
+}

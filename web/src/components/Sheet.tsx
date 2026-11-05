@@ -1,4 +1,5 @@
-// La hoja que sube desde abajo, y el campo que la abre para elegir de una lista.
+// La hoja que sube desde abajo (y baja al cerrarse, con el fondo que se aclara), y el campo que la
+// abre para elegir de una lista.
 // Regla del sistema de diseño: nunca el selector del navegador, sin logos ni iniciales de marcas.
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -15,6 +16,18 @@ export function Sheet({ title, open, onClose, children }: {
   const close = useRef(onClose);
   close.current = onClose;
   const titleId = useId();
+  // Al cerrarse sigue montada un momento, mientras baja
+  const [leaving, setLeaving] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setLeaving(!open);
+  }
+  useEffect(() => {
+    if (!leaving) return;
+    const t = setTimeout(() => setLeaving(false), 200);
+    return () => clearTimeout(t);
+  }, [leaving]);
 
   useEffect(() => {
     if (!open) return;
@@ -30,18 +43,19 @@ export function Sheet({ title, open, onClose, children }: {
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open && !leaving) return null;
   // Fuera del árbol de la pantalla: una hoja con su propio formulario no queda dentro de otro
   return createPortal(
-    <div className="fixed inset-0 z-50">
-      <button type="button" aria-label="Cerrar" onClick={onClose} className="absolute inset-0 bg-black/40" />
+    <div className={`fixed inset-0 z-50 ${leaving ? "sheet-leaving pointer-events-none" : ""}`}
+      aria-hidden={leaving || undefined} inert={leaving || undefined}>
+      <button type="button" aria-label="Cerrar" onClick={onClose} className="sheet-backdrop absolute inset-0 bg-black/40" />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby={titleId}
-        className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-lg bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none"
+        className="sheet-panel absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-lg bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none"
       >
         <span aria-hidden="true" className="h-1 w-9 self-center rounded-full bg-border" />
         <h2 id={titleId} className="mx-3 mt-4 mb-2 text-title-2">

@@ -15,6 +15,7 @@ import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
 import { divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
+import { useBack } from "@/lib/transitions";
 
 const FX_GROUP = { gain: "Ingresos", loss: "Gastos financieros" } as const;
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
@@ -28,6 +29,7 @@ function fullDate(iso: string) {
 export function DetalleMovimiento() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
+  const back = useBack();
   const me = useMe().data;
   const move = useMove(id);
   const state = useSetMoveState(id);
@@ -75,7 +77,7 @@ export function DetalleMovimiento() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Volver" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">

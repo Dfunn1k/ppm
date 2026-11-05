@@ -15,6 +15,7 @@ import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
 import { CURRENCY_NAME, add, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { useBack } from "@/lib/transitions";
 
 const TEXT: Record<PersonKind, { ask: string; who: string; into: boolean; submit: string; role: "owes_me" | "i_owe" | "keep" }> = {
   lend: { ask: "¿Cuánto le prestaste?", who: "¿A quién?", into: false, submit: "Registrar préstamo", role: "owes_me" },
@@ -36,6 +37,7 @@ export function RegistrarPersona({ editing }: { editing?: MoveDetail }) {
 
 function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: MoveDetail; initialPerson: number | null }) {
   const navigate = useNavigate();
+  const back = useBack();
   const me = useMe().data;
   const overview = useAccounts().data;
   const people = usePartnersOverview().data;
@@ -134,7 +136,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin guardar" onClick={() => navigate(-1)} className="grid size-11 place-items-center rounded-full">
+        <button type="button" aria-label="Cerrar sin guardar" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="close" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
