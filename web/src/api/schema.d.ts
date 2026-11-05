@@ -1146,6 +1146,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El índice de Reportes: la cifra de cada reporte en un mes */
+        get: operations["summary_reports_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/expenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Gastos por grupo y categoría, contra el periodo anterior */
+        get: operations["expenses_reports_expenses_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/income": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ingresos por categoría, contra el periodo anterior */
+        get: operations["income_reports_income_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/flow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** De dónde entró la plata, a dónde fue y cuánto guardaste */
+        get: operations["flow_reports_flow_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/net-worth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que realmente tengo: 12 cierres, cómo está repartido y la diferencia de cambio */
+        get: operations["net_worth_reports_net_worth_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quién te debe, a quién debes y desde cuándo */
+        get: operations["people_reports_people_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1641,6 +1743,23 @@ export interface components {
             /** Color */
             color?: number | null;
         };
+        /** CategoryLineOut */
+        CategoryLineOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+            /** Amount */
+            amount: string;
+            /** Previous */
+            previous: string;
+            /** Refunded */
+            refunded: string;
+        };
         /** CategoryOut */
         CategoryOut: {
             /** Id */
@@ -1651,6 +1770,35 @@ export interface components {
             icon: string | null;
             /** Color */
             color: number | null;
+        };
+        /** CategoryReportOut */
+        CategoryReportOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "expense" | "income";
+            /** Period */
+            period: string;
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Total */
+            total: string;
+            /** Previous */
+            previous: string;
+            /** Groups */
+            groups: components["schemas"]["GroupLineOut"][];
+            /** Months */
+            months: components["schemas"]["MonthAmountsOut"][];
+            unclassified: components["schemas"]["ReportUnclassifiedOut"];
         };
         /** CheckOut */
         CheckOut: {
@@ -1691,6 +1839,17 @@ export interface components {
         CreatedOut: {
             /** Id */
             id: number;
+        };
+        /** CreditorOut */
+        CreditorOut: {
+            /** Partner Id */
+            partner_id: number;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+            /** Oldest Days */
+            oldest_days: number;
         };
         /** CurrencyStatusOut */
         CurrencyStatusOut: {
@@ -1807,6 +1966,21 @@ export interface components {
             /** Moves */
             moves: components["schemas"]["MoveSummaryOut"][];
         };
+        /** DebtorOut */
+        DebtorOut: {
+            /** Partner Id */
+            partner_id: number;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+            /** Oldest Days */
+            oldest_days: number;
+            /** Overdue */
+            overdue: boolean;
+            /** Next Due */
+            next_due: string | null;
+        };
         /** DoneIn */
         DoneIn: {
             /**
@@ -1846,6 +2020,49 @@ export interface components {
             /** Date Due */
             date_due: string | null;
         };
+        /** FlowNodeOut */
+        FlowNodeOut: {
+            /** Id */
+            id: number | null;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+            /** Amount */
+            amount: string;
+        };
+        /** FlowReportOut */
+        FlowReportOut: {
+            /** Period */
+            period: string;
+            /** Income */
+            income: string;
+            /** Expense */
+            expense: string;
+            /** Saved */
+            saved: string;
+            /** Sources */
+            sources: components["schemas"]["FlowNodeOut"][];
+            /** Uses */
+            uses: components["schemas"]["FlowNodeOut"][];
+            /** Savings */
+            savings: components["schemas"]["SavingMonthOut"][];
+        };
+        /** ForeignGainOut */
+        ForeignGainOut: {
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Book */
+            book: string;
+            /** Today */
+            today: string;
+            /** Rate */
+            rate: string;
+        };
         /** ForeignOut */
         ForeignOut: {
             /** Currency */
@@ -1861,6 +2078,23 @@ export interface components {
             rate_date: string;
             /** Stale */
             stale: boolean;
+        };
+        /** GroupLineOut */
+        GroupLineOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+            /** Amount */
+            amount: string;
+            /** Previous */
+            previous: string;
+            /** Children */
+            children: components["schemas"]["CategoryLineOut"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2235,6 +2469,15 @@ export interface components {
             /** Book */
             book: string;
         };
+        /** MonthAmountsOut */
+        MonthAmountsOut: {
+            /** Month */
+            month: string;
+            /** Total */
+            total: string;
+            /** Groups */
+            groups: string[];
+        };
         /** MonthOut */
         MonthOut: {
             /** Month */
@@ -2385,6 +2628,43 @@ export interface components {
         MovedOut: {
             /** Move Id */
             move_id: number;
+        };
+        /** NetPointOut */
+        NetPointOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Amount */
+            amount: string;
+        };
+        /** NetWorthPartOut */
+        NetWorthPartOut: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "bank" | "foreign" | "receivable" | "cash" | "other";
+            /** Amount */
+            amount: string;
+        };
+        /** NetWorthReportOut */
+        NetWorthReportOut: {
+            /** Currency */
+            currency: string;
+            /** Today */
+            today: string;
+            /** Months */
+            months: components["schemas"]["NetPointOut"][];
+            /** Have */
+            have: components["schemas"]["NetWorthPartOut"][];
+            /** Owe */
+            owe: string;
+            /** Foreign */
+            foreign: components["schemas"]["ForeignGainOut"][];
+            /** Realized */
+            realized: string;
         };
         /** NextOut */
         NextOut: {
@@ -2684,6 +2964,23 @@ export interface components {
             /** Bank Charge Move Id */
             bank_charge_move_id: number | null;
         };
+        /** PeopleReportOut */
+        PeopleReportOut: {
+            /** Currency */
+            currency: string;
+            /** Owes Me */
+            owes_me: string;
+            /** I Owe */
+            i_owe: string;
+            /** Keep */
+            keep: string;
+            /** Ages */
+            ages: string[];
+            /** Debtors */
+            debtors: components["schemas"]["DebtorOut"][];
+            /** Creditors */
+            creditors: components["schemas"]["CreditorOut"][];
+        };
         /** PlanLineOut */
         PlanLineOut: {
             /** Sequence */
@@ -2936,6 +3233,13 @@ export interface components {
             /** Late */
             late: boolean;
         };
+        /** ReportUnclassifiedOut */
+        ReportUnclassifiedOut: {
+            /** Count */
+            count: number;
+            /** Amount */
+            amount: string;
+        };
         /** ResetConfirmIn */
         ResetConfirmIn: {
             /** Token */
@@ -3011,6 +3315,17 @@ export interface components {
             date_end: string | null;
             /** Max Count */
             max_count: number | null;
+        };
+        /** SavingMonthOut */
+        SavingMonthOut: {
+            /** Month */
+            month: string;
+            /** Income */
+            income: string;
+            /** Expense */
+            expense: string;
+            /** Percent */
+            percent: number | null;
         };
         /** SettledOut */
         SettledOut: {
@@ -3198,6 +3513,37 @@ export interface components {
             balance_end: string | null;
             /** Difference */
             difference: string | null;
+        };
+        /** SummaryOut */
+        SummaryOut: {
+            /** Month */
+            month: string;
+            /** Currency */
+            currency: string;
+            /** Expense */
+            expense: string;
+            /** Expense Previous */
+            expense_previous: string;
+            /** Expense Groups */
+            expense_groups: components["schemas"]["FlowNodeOut"][];
+            /** Income */
+            income: string;
+            /** Income Previous */
+            income_previous: string;
+            /** Saved */
+            saved: string;
+            /** Saved Percent */
+            saved_percent: number | null;
+            /** Net Worth */
+            net_worth: string;
+            /** Net Worth Year Ago */
+            net_worth_year_ago: string;
+            /** Net Worth Months */
+            net_worth_months: string[];
+            /** Owes Me */
+            owes_me: string;
+            /** Owed Over 90 */
+            owed_over_90: string;
         };
         /** TodayRateOut */
         TodayRateOut: {
@@ -6320,6 +6666,203 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_reports_summary_get: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    expenses_reports_expenses_get: {
+        parameters: {
+            query: {
+                /** @description Un mes (2026-10) o un año (2026) */
+                period: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    income_reports_income_get: {
+        parameters: {
+            query: {
+                /** @description Un mes (2026-10) o un año (2026) */
+                period: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flow_reports_flow_get: {
+        parameters: {
+            query: {
+                /** @description Un mes (2026-10) o un año (2026) */
+                period: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlowReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    net_worth_reports_net_worth_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetWorthReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    people_reports_people_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReportOut"];
                 };
             };
             /** @description Validation Error */
