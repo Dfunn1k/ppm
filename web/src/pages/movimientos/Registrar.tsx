@@ -8,8 +8,9 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 
 import {
   type AccountRow, type Category, type MoveDetail, type MoveIn, type RecurringDetail, type RuleIn, useAccounts, useMe, useMove,
-  usePartners, useRecurring, useReminderDone, useSaveMove, useSaveRecurring,
+  usePartners, useRecurring, useReminderDone, useSaveMove, useSaveRecurring, useUploadAttachment,
 } from "@/api/hooks";
+import { PendingFiles } from "@/components/Attachments";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { MasTipos } from "@/components/MasTipos";
 import { Avatar } from "@/components/MoveBits";
@@ -126,6 +127,8 @@ export function Registrar({ editing, recurring, reminder }: {
   const [partFor, setPartFor] = useState(false);
   const [adding, setAdding] = useState(false);
   const [later, setLater] = useState(false);   // «Lo clasifico después»: a Por clasificar
+  const [files, setFiles] = useState<File[]>([]);   // adjuntos: se suben al guardar
+  const upload = useUploadAttachment();
   const partners = usePartners().data ?? [];
   const rule = recurring?.rule;
   const [repeat, setRepeat] = useState(!!recurring || search.get("repite") === "1");
@@ -254,8 +257,14 @@ export function Registrar({ editing, recurring, reminder }: {
       return;
     }
     save.mutate(body, {
-      onSuccess: (d) => {
+      onSuccess: async (d) => {
         if (reminder) reminderDone.mutate({ id: reminder.detail.row.id, occurrence: reminder.occurrence });
+        try {
+          for (const file of files) await upload.mutateAsync({ moveId: d.summary.id, file });
+        } catch {
+          // El movimiento ya quedó: el detalle deja volver a adjuntar lo que faltó
+          return navigate(`/movimientos/${d.summary.id}`, { replace: true });
+        }
         navigate(editing ? `/movimientos/${d.summary.id}` : "/movimientos", { replace: true });
       },
     });
@@ -483,6 +492,7 @@ export function Registrar({ editing, recurring, reminder }: {
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title={repeating ? "¿Desde cuándo?" : "¿Cuándo fue?"} value={date}
             onChange={setDate} />
+          {!editing && !repeating && <PendingFiles files={files} onChange={setFiles} />}
 
           {kind !== "transfer" && (
             <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
@@ -613,7 +623,7 @@ export function Registrar({ editing, recurring, reminder }: {
         <div className="min-h-4 flex-1" />
         <div className="flex flex-col gap-3">
           {(problem || save.error || saveRecurring.error) && <ErrorAlert>{problem ?? save.error?.message ?? saveRecurring.error?.message}</ErrorAlert>}
-          <PrimaryButton pending={save.isPending || saveRecurring.isPending}>
+          <PrimaryButton pending={save.isPending || saveRecurring.isPending || upload.isPending}>
             {editing || recurring ? "Guardar cambios" : repeating ? (mode === "reminder" ? "Guardar recordatorio" : "Guardar recurrente")
               : editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar"
               : card && inInstallments && kind === "expense" ? `Registrar gasto en ${installments} cuotas` : SUBMIT[kind]}

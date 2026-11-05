@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
+import { MoveAttachments } from "@/components/Attachments";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
 import { Activities } from "@/components/Pending";
@@ -282,6 +283,7 @@ export function DetalleMovimiento() {
         </section>
       )}
 
+      <MoveAttachments moveId={s.id} />
       <Activities target={{ move_id: s.id }} />
 
       <div className="min-h-6 flex-1" />
