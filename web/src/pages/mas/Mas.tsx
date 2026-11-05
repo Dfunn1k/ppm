@@ -1,4 +1,4 @@
-// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Inicio, Apariencia, Recurrentes (X1), Categorías (X3) y, para el
+// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Inicio, Reportes (X2), Apariencia, Recurrentes (X1), Categorías (X3) y, para el
 // administrador, Tipo de cambio (Z1);
 // lo demás llega con su rebanada.
 import { Link } from "react-router";
@@ -7,7 +7,6 @@ import { useMe, usePending } from "@/api/hooks";
 import { Icon } from "@/components/ui";
 
 const SOON = [
-  ["bar_chart", "Reportes", "En qué se va la plata, mes a mes"],
   ["lock_clock", "Cierre de periodo", "Que los meses revisados no cambien"],
   ["tune", "Monedas, idioma y formato", "Agregar monedas y cambiar cómo se ven"],
 ] as const;
@@ -55,6 +54,14 @@ export function Mas() {
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">Apariencia</span>
           <span className="text-caption text-muted-foreground">Tema y color de acento</span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
+      <Link to="/mas/reportes" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="bar_chart" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Reportes</span>
+          <span className="text-caption text-muted-foreground">En qué se va la plata, flujo, patrimonio y personas</span>
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
