@@ -1,9 +1,10 @@
 // I1 · Inicio: lo que realmente tengo hoy (los dólares al tipo de hoy), lo más urgente de Pendientes,
-// «para mayo» del mes (en trigo, el sello de PPM), en qué se va la plata, mis cuentas y los últimos movimientos.
+// «para mayo» del mes (en trigo, el sello de PPM), en qué se va la plata, mis cuentas (las elegidas en
+// Más › Inicio, en su orden) y los últimos movimientos. El ojo esconde todos los montos (modo privado).
 import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
-import { useAccounts, useHome, useMe, usePending } from "@/api/hooks";
+import { useHome, useMe, usePending, useUpdateMe } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { activityCaption, noticeView, sectionOf } from "@/components/Pending";
@@ -29,7 +30,7 @@ export function Inicio() {
   const [params, setParams] = useSearchParams();
   const month = params.get("mes") ?? todayISO().slice(0, 7);
   const home = useHome(month);
-  const accounts = useAccounts().data;
+  const update = useUpdateMe();
   const [picking, setPicking] = useState(false);
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
@@ -37,21 +38,28 @@ export function Inicio() {
   if (home.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{home.error.message}</ErrorAlert></main>;
   const h = home.data;
   const lang = me.lang ?? "es-PE";
-  const money = (v: string) => formatAmount(v, symbolOf(h.currency), lang);
+  const hidden = me.ui_private;
+  const amount = (v: string, cur: string) => (hidden ? `${symbolOf(cur)} ••••` : formatAmount(v, symbolOf(cur), lang));
+  const money = (v: string) => amount(v, h.currency);
   const percent = h.saved_percent ?? 0;
   const negative = isNegative(h.saved);
-  const today = [
+  const today = hidden ? "Montos escondidos · toca el ojo para verlos" : [
     `Tienes ${money(h.have_total)}`,
     !isZero(h.custody_total) && `guardas ${money(h.custody_total)}`,
     isZero(h.owe_total) ? "no debes nada" : `debes ${money(h.owe_total)}`,
   ].filter(Boolean).join(" · ");
-  const cards = (accounts?.have ?? []).filter((a) => a.kind === "cash" || a.kind === "bank");
+  const cards = h.accounts;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-7 pb-28">
-      <div className="flex items-center justify-between">
-        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex items-center gap-0.5 text-title-2">
+      <div className="flex items-center gap-2">
+        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex flex-1 items-center gap-0.5 text-title-2">
           {monthName(month)}<Icon name="expand_more" className="text-[22px] text-muted-foreground" />
+        </button>
+        <button type="button" aria-pressed={hidden} aria-label={hidden ? "Mostrar los montos" : "Esconder los montos"}
+          onClick={() => update.mutate({ ui_private: !hidden })}
+          className={`grid size-10 place-items-center rounded-full ${hidden ? "bg-secondary text-secondary-foreground" : ""}`}>
+          <Icon name={hidden ? "visibility_off" : "visibility"} className="text-[22px]" />
         </button>
         <Link to="/mas/cuenta" aria-label={`Mi cuenta: ${me.name}`}
           className="grid size-10 place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground">
@@ -65,7 +73,7 @@ export function Inicio() {
       <span className="mt-1 text-caption text-muted-foreground tabular-nums">{today}</span>
       {h.foreign.map((f) => (
         <span key={f.currency} className="text-caption text-muted-foreground tabular-nums">
-          Tus {formatAmount(f.amount, symbolOf(f.currency), lang)} cuentan a {rateText(f.rate)}
+          Tus {amount(f.amount, f.currency)} cuentan a {rateText(f.rate)}
           {f.rate_date === todayISO() ? ", el tipo de compra de hoy." : `, el último que hay (${shortDate(f.rate_date)}).`}
         </span>
       ))}
@@ -79,14 +87,14 @@ export function Inicio() {
         </div>
       ))}
 
-      <PendingCard lang={lang} />
+      <PendingCard lang={lang} hidden={hidden} />
 
       <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-label text-muted-foreground">Para mayo · {monthOnly(month)}</span>
-          <span className="text-caption text-muted-foreground tabular-nums">{h.saved_percent === null ? "" : `${percent} % de lo que entró`}</span>
+          <span className="text-caption text-muted-foreground tabular-nums">{h.saved_percent === null ? "" : `${hidden ? "••" : percent} % de lo que entró`}</span>
         </div>
-        <div role="img" aria-label={negative || percent === 0 ? "Este mes no hubo ahorro" : `Guardaste el ${percent} % de lo que entró`}
+        <div role="img" aria-label={hidden ? "Barra de ahorro del mes" : negative || percent === 0 ? "Este mes no hubo ahorro" : `Guardaste el ${percent} % de lo que entró`}
           className="h-3.5 overflow-hidden rounded-full bg-muted">
           <div className="h-3.5 rounded-full bg-trigo" style={{ width: `${Math.min(percent, 100)}%` }} />
         </div>
@@ -132,16 +140,16 @@ export function Inicio() {
 
       {cards.length > 0 && (
         <section aria-label="Mis cuentas" className="mt-6 flex flex-col gap-2">
-          <Heading label="Mis cuentas" to="/cuentas" link="Ver todas" />
+          <Heading label="Mis cuentas" to="/mas/inicio" link="Elegir cuáles" />
           <div className="-mr-6 flex gap-2 overflow-x-auto pr-6 pb-1">
             {cards.map((a) => (
               <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-[150px] flex-none flex-col gap-2 rounded-lg border border-border bg-card p-3">
                 <span className="grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name={a.icon ?? "payments"} className="text-[18px]" /></span>
                 <span className="truncate text-caption text-muted-foreground">{a.name}</span>
                 <span className="flex flex-col">
-                  <span className="font-semibold tabular-nums">{formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? h.currency), lang)}</span>
-                  {a.currency && a.currency !== h.currency && a.balances[0] && (
-                    <span className="text-caption text-muted-foreground tabular-nums">{money(a.balances[0].base)} hoy</span>
+                  <span className="font-semibold tabular-nums">{amount(a.amount, a.currency)}</span>
+                  {a.currency !== h.currency && (
+                    <span className="text-caption text-muted-foreground tabular-nums">{money(a.base)} hoy</span>
                   )}
                 </span>
               </Link>
@@ -162,7 +170,7 @@ export function Inicio() {
                 {x.date === todayISO() ? "Hoy" : shortDate(x.date)} · {moveCaption(x, lang)}
               </span>
             </span>
-            <MoveAmount move={x} base={h.currency} lang={lang} />
+            {hidden ? <span className="text-amount text-muted-foreground">••••</span> : <MoveAmount move={x} base={h.currency} lang={lang} />}
           </Link>
         ))}
       </section>
@@ -181,13 +189,16 @@ export function Inicio() {
 const ORDER = { late: 0, today: 1, soon: 2 } as const;
 
 /** Pendientes en el Inicio: cuántos hay, cuántos vencidos y los 3 más urgentes. Sin nada, no aparece. */
-function PendingCard({ lang }: { lang: string }) {
+/** En modo privado, «S/ 50.00» → «S/ ••••» en los textos de los avisos. */
+const AMOUNT = /(S\/|US\$|€)\s?[\d.,]+/g;
+
+function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
   const box = usePending().data;
   if (!box) return null;
   const items = [
     ...box.notices.map((n) => {
       const v = noticeView(n, box.today, lang);
-      return { key: n.key, to: v.to, title: v.title, caption: v.caption, late: n.late, date: n.date, section: sectionOf(n, box.today) };
+      return { key: n.key, to: v.to, title: hidden ? v.title.replace(AMOUNT, "$1 ••••") : v.title, caption: v.caption, late: n.late, date: n.date, section: sectionOf(n, box.today) };
     }),
     ...box.activities.map((a) => ({
       key: `a${a.id}`, to: "/pendientes", title: a.summary, caption: activityCaption(a, box.today), late: a.late, date: a.date,

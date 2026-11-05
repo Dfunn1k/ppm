@@ -1,4 +1,4 @@
-// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Apariencia, Recurrentes (X1), Categorías (X3) y, para el
+// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Inicio, Apariencia, Recurrentes (X1), Categorías (X3) y, para el
 // administrador, Tipo de cambio (Z1);
 // lo demás llega con su rebanada.
 import { Link } from "react-router";
@@ -40,6 +40,14 @@ export function Mas() {
             {count}
           </span>
         )}
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
+      <Link to="/mas/inicio" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="home" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Inicio</span>
+          <span className="text-caption text-muted-foreground">Qué cuentas se ven y con cuál registras</span>
+        </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
       <Link to="/mas/apariencia" className="flex min-h-16 items-center gap-3.5 border-b border-border">

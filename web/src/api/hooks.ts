@@ -831,6 +831,49 @@ export function useHome(month: string) {
   });
 }
 
+export type HomeSetup = components["schemas"]["HomeSetupOut"];
+type HomeSetupIn = components["schemas"]["HomeSetupIn"];
+
+/** Más › Inicio: las cuentas del Inicio, su orden y la cuenta del +. */
+export function useHomeSetup() {
+  return useQuery({
+    queryKey: ["home-setup"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/home/setup");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Guarda todo Más › Inicio de una vez; se ve al instante. */
+export function useSaveHomeSetup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: HomeSetupIn) => {
+      const { data, error, response } = await api.PUT("/home/setup", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onMutate: (body) => {
+      const before = qc.getQueryData<HomeSetup>(["home-setup"]);
+      if (before) {
+        const byId = new Map(before.accounts.map((a) => [a.id, a]));
+        qc.setQueryData<HomeSetup>(["home-setup"], {
+          account_id: body.account_id ?? null,
+          accounts: body.order.map((id) => ({ ...byId.get(id)!, shown: !(body.hidden ?? []).includes(id) })),
+        });
+      }
+      return { before };
+    },
+    onError: (_e, _body, ctx) => ctx?.before && qc.setQueryData(["home-setup"], ctx.before),
+    onSuccess: (data) => {
+      qc.setQueryData(["home-setup"], data);
+      return Promise.all([qc.invalidateQueries({ queryKey: ["home"] }), qc.invalidateQueries({ queryKey: ME })]);
+    },
+  });
+}
+
 /** Cambiar nombre, tema o acento: se ve al instante y se guarda en la cuenta. */
 export function useUpdateMe() {
   const qc = useQueryClient();
