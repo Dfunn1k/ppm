@@ -186,7 +186,7 @@ def test_el_extracto_guarda_su_archivo_y_se_puede_deshacer(ana: Con):
 def test_en_movimientos_sale_como_por_clasificar(ana: Con):
     ana.send(ana.bcp, bcp_xlsx(), save=True)
     moves = [m for d in ana.c.get("/moves", params={"month": MES, "kind": "unclassified"}).json()["days"]
-             for m in d["moves"]] if D[2].strftime("%Y-%m") == MES else []
+             for m in d["moves"]] if D[4].strftime("%Y-%m") == MES else []
     if moves:
         plin = by_ref(moves, "PLIN-MARIA LOPEZ")
         assert (plin["kind"], plin["incoming"], plin["account"], plin["amount"]) == ("unclassified", True, "BCP", "120.00")
