@@ -24,6 +24,11 @@ import { Categorias, NuevaCategoria } from "./pages/mas/Categorias";
 import { InicioAjustes } from "./pages/mas/InicioAjustes";
 import { NuevoPrestamo, PagarCuota, Prestamo } from "./pages/prestamos/Prestamos";
 import { Recurrente, Recurrentes } from "./pages/recurrentes/Recurrentes";
+import { ReporteCategorias } from "./pages/reportes/Categorias";
+import { ReporteFlujo } from "./pages/reportes/Flujo";
+import { ReportePatrimonio } from "./pages/reportes/Patrimonio";
+import { ReportePersonas } from "./pages/reportes/Personas";
+import { Reportes } from "./pages/reportes/Reportes";
 import { Mas } from "./pages/mas/Mas";
 import { MiCuenta } from "./pages/mas/MiCuenta";
 import { TipoCambio } from "./pages/mas/TipoCambio";
@@ -120,6 +125,7 @@ export function App() {
           <Route path="/por-clasificar" element={<PorClasificar />} />
           <Route path="/mas" element={<Mas />} />
           <Route path="/pendientes" element={<Pendientes />} />
+          <Route path="/mas/reportes" element={<Reportes />} />
           <Route path="/mas/categorias" element={<Categorias />} />
           <Route path="/mas/recurrentes" element={<Recurrentes />} />
           <Route path="/prestamos/:id" element={<Prestamo />} />
@@ -127,6 +133,11 @@ export function App() {
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
         <Route path="/mas/inicio" element={<InicioAjustes />} />
+        <Route path="/mas/reportes/gastos" element={<ReporteCategorias kind="expense" />} />
+        <Route path="/mas/reportes/ingresos" element={<ReporteCategorias kind="income" />} />
+        <Route path="/mas/reportes/flujo" element={<ReporteFlujo />} />
+        <Route path="/mas/reportes/patrimonio" element={<ReportePatrimonio />} />
+        <Route path="/mas/reportes/personas" element={<ReportePersonas />} />
         <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />
         <Route path="/mas/recurrentes/:id" element={<Recurrente />} />
         <Route path="/mas/recurrentes/:id/editar" element={<EditarRecurrente />} />

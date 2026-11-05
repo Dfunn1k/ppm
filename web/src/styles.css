@@ -355,6 +355,14 @@
 :root[data-theme="dark"] .swatch-morado { background: #b794e6; color: #1d1028; }
 :root[data-theme="dark"] .swatch-azul { background: #8fb0ff; color: #0b1530; }
 
+/* Antigüedad de lo que te deben (Reportes › Personas): un solo tono, de 0–30 días a +90 días; en
+   oscuro lo más antiguo es lo más claro, para que siempre resalte lo que más espera */
+:root { --age-0: #ecdcb4; --age-1: #d9b46a; --age-2: #b07c1e; --age-3: #6e4708; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --age-0: #4a3a1c; --age-1: #8a6526; --age-2: #c8902f; --age-3: #f3c56a; }
+}
+:root[data-theme="dark"] { --age-0: #4a3a1c; --age-1: #8a6526; --age-2: #c8902f; --age-3: #f3c56a; }
+
 /* Transiciones (lib/transitions.tsx): entrar desliza desde la derecha y lo de atrás se corre un poco;
    volver, al revés; entre pestañas, un fundido corto. La barra de abajo queda quieta. Las hojas suben y
    el fondo se oscurece de a poco. Con «reducir movimiento», nada se anima. */
