@@ -1268,3 +1268,74 @@ export function useDeleteAttachment(moveId: number) {
     onSuccess: () => qc.invalidateQueries({ queryKey: [...MOVES, moveId, "attachments"] }),
   });
 }
+
+// --- Reportes ------------------------------------------------------------------------------------
+
+export type ReportSummary = components["schemas"]["SummaryOut"];
+export type CategoryReport = components["schemas"]["CategoryReportOut"];
+export type FlowReport = components["schemas"]["FlowReportOut"];
+export type NetWorthReport = components["schemas"]["NetWorthReportOut"];
+export type PeopleReport = components["schemas"]["PeopleReportOut"];
+
+/** Los reportes se recalculan cuando cambia un movimiento (comparten la llave de Movimientos). */
+const REPORTS = [...MOVES, "reports"] as const;
+
+export function useReportSummary(month: string) {
+  return useQuery({
+    queryKey: [...REPORTS, "summary", month],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/reports/summary", { params: { query: { month } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useCategoryReport(kind: "expense" | "income", period: string) {
+  return useQuery({
+    queryKey: [...REPORTS, kind, period],
+    queryFn: async () => {
+      const { data, error, response } = kind === "expense"
+        ? await api.GET("/reports/expenses", { params: { query: { period } } })
+        : await api.GET("/reports/income", { params: { query: { period } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useFlowReport(period: string) {
+  return useQuery({
+    queryKey: [...REPORTS, "flow", period],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/reports/flow", { params: { query: { period } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useNetWorthReport() {
+  return useQuery({
+    queryKey: [...REPORTS, "net-worth"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/reports/net-worth");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function usePeopleReport() {
+  return useQuery({
+    queryKey: [...REPORTS, "people"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/reports/people");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
