@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from app import rates as rates_logic
 from app.config import get_settings
 from app.db import close_pool, get_pool
-from app.routes import accounts, attachments, auth, cards, home, me, moves, partners, pending, rates, recurring, statements
+from app.routes import (accounts, attachments, auth, cards, home, me, moves, partners, pending, rates, recurring, reports,
+                        statements)
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ app.include_router(statements.router)
 app.include_router(recurring.router)
 app.include_router(pending.router)
 app.include_router(attachments.router)
+app.include_router(reports.router)
 
 
 class HealthOut(BaseModel):
