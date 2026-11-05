@@ -1218,3 +1218,53 @@ export function useDeleteActivity() {
     onSuccess: () => changed(),
   });
 }
+
+// --- Adjuntos ------------------------------------------------------------------------------------
+
+export type Attachment = components["schemas"]["AttachmentOut"];
+
+/** Para mostrar el adjunto (inline) o descargarlo. */
+export function attachmentUrl(id: number, download = false) {
+  return `${window.location.origin}/api/attachments/${id}/file${download ? "?download=true" : ""}`;
+}
+
+export function useAttachments(moveId: number) {
+  return useQuery({
+    queryKey: [...MOVES, moveId, "attachments"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/moves/{move_id}/attachments", { params: { path: { move_id: moveId } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Adjuntar una foto o un PDF a un movimiento (el id va al llamar: en Registrar se conoce al guardar). */
+export function useUploadAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ moveId, file }: { moveId: number; file: File }) => {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      const { data, error, response } = await api.POST("/moves/{move_id}/attachments", {
+        params: { path: { move_id: moveId } },
+        body: form as never,
+        bodySerializer: (b) => b as unknown as FormData,
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (_d, { moveId }) => qc.invalidateQueries({ queryKey: [...MOVES, moveId, "attachments"] }),
+  });
+}
+
+export function useDeleteAttachment(moveId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error, response } = await api.DELETE("/attachments/{attachment_id}", { params: { path: { attachment_id: id } } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...MOVES, moveId, "attachments"] }),
+  });
+}

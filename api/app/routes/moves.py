@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
-from app import moves
+from app import moves, statements
 from app.accounts import AccountError
 from app.routes.deps import CurrentSession, current_session
 
@@ -325,4 +325,5 @@ def delete(move_id: int, session: CurrentSession = Depends(current_session)) -> 
         moves.delete(session.user_id, move_id)
     except AccountError as e:
         raise _http(e) from None
+    statements.collect(session.user_id)   # sus adjuntos ya no tienen ficha: sus archivos se van si nadie más los usa
     return Response(status_code=status.HTTP_204_NO_CONTENT)
