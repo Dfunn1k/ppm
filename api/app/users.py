@@ -27,6 +27,8 @@ class Me:
     currencies: list[str]     # todas las que usa, la base primero
     is_admin: bool = False    # está en ADMIN_EMAILS: ve y corrige el tipo de cambio (Z1)
     notice_days: int = 3      # Pendientes: con cuántos días avisan el pago de tarjeta y los vencimientos
+    ui_private: bool = False  # modo privado: los montos del Inicio escondidos
+    home_account_id: int | None = None   # la cuenta con que arranca el + del Inicio; None = elegirla cada vez
 
 
 def get_me(user_id: int) -> Me:
@@ -37,24 +39,26 @@ def get_me(user_id: int) -> Me:
                    coalesce((SELECT array_agg(trim(c.name) ORDER BY c.id <> u.currency_id, c.name)
                                FROM res_users_currency uc JOIN res_currency c ON c.id = uc.currency_id),
                             '{}'),
-                   u.notice_days
+                   u.notice_days, u.ui_private,
+                   (SELECT a.id FROM account_account a WHERE a.id = u.home_account_id AND a.active)
               FROM res_users u
               LEFT JOIN res_country co  ON co.id = u.country_id
               LEFT JOIN res_currency cur ON cur.id = u.currency_id
               LEFT JOIN res_lang l      ON l.id = u.lang_id
         """).fetchone()
     return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails,
-              notice_days=row[11])
+              notice_days=row[11], ui_private=row[12], home_account_id=row[13])
 
 
 def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None,
-           notice_days: int | None = None) -> Me:
+           notice_days: int | None = None, ui_private: bool | None = None) -> Me:
     """Lo que la persona cambia de sí misma: su nombre, cómo se ve PPM y con cuánto aviso."""
     with user_transaction(user_id) as conn:
         conn.execute(
             "UPDATE res_users SET name = coalesce(%s, name), ui_theme = coalesce(%s, ui_theme),"
-            " ui_accent = coalesce(%s, ui_accent), notice_days = coalesce(%s, notice_days)",
-            (name.strip() if name else None, ui_theme, ui_accent, notice_days))
+            " ui_accent = coalesce(%s, ui_accent), notice_days = coalesce(%s, notice_days),"
+            " ui_private = coalesce(%s, ui_private)",
+            (name.strip() if name else None, ui_theme, ui_accent, notice_days, ui_private))
     return get_me(user_id)
 
 

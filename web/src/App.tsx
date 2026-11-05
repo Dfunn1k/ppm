@@ -21,6 +21,7 @@ import { Inicio } from "./pages/Inicio";
 import { Pendientes } from "./pages/Pendientes";
 import { Apariencia } from "./pages/mas/Apariencia";
 import { Categorias, NuevaCategoria } from "./pages/mas/Categorias";
+import { InicioAjustes } from "./pages/mas/InicioAjustes";
 import { NuevoPrestamo, PagarCuota, Prestamo } from "./pages/prestamos/Prestamos";
 import { Recurrente, Recurrentes } from "./pages/recurrentes/Recurrentes";
 import { Mas } from "./pages/mas/Mas";
@@ -125,6 +126,7 @@ export function App() {
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
+        <Route path="/mas/inicio" element={<InicioAjustes />} />
         <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />
         <Route path="/mas/recurrentes/:id" element={<Recurrente />} />
         <Route path="/mas/recurrentes/:id/editar" element={<EditarRecurrente />} />

@@ -2,6 +2,8 @@
 // mirando), Cuentas y Más.
 import { Link, NavLink, useLocation } from "react-router";
 
+import { useMe } from "@/api/hooks";
+
 import { Icon } from "./ui";
 
 type Item = { to?: string; label: string; icon: string };
@@ -47,20 +49,22 @@ function Tab({ item }: { item: Item }) {
   );
 }
 
-/** El + registra con la cuenta o tarjeta que estás mirando; en otra pantalla, sin cuenta elegida. */
-function registerLink(path: string) {
-  const id = /^\/(?:cuentas|tarjetas)\/(\d+)/.exec(path)?.[1];
+/** El + registra con la cuenta o tarjeta que estás mirando; en el Inicio, con la elegida en Más › Inicio;
+ *  en otra pantalla, sin cuenta elegida. */
+function registerLink(path: string, homeAccount: number | null | undefined) {
+  const id = /^\/(?:cuentas|tarjetas)\/(\d+)/.exec(path)?.[1] ?? (path === "/inicio" && homeAccount ? String(homeAccount) : null);
   return id ? `/registrar?cuenta=${id}` : "/registrar";
 }
 
 export function AppNav() {
   const path = useLocation().pathname;
+  const homeAccount = useMe().data?.home_account_id;
   return (
     <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card">
       <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
         <Tab item={ITEMS[1]!} />
-        <Link to={registerLink(path)} aria-label="Registrar un movimiento"
+        <Link to={registerLink(path, homeAccount)} aria-label="Registrar un movimiento"
           className="-mt-7 grid size-14 place-items-center justify-self-center rounded-full bg-primary text-primary-foreground shadow-lg">
           <Icon name="add" className="text-[28px]" />
         </Link>

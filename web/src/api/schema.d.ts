@@ -676,6 +676,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/home/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Más › Inicio: las cuentas del Inicio, su orden y la cuenta del + */
+        get: operations["setup_home_setup_get"];
+        /** Guardar Más › Inicio */
+        put: operations["save_setup_home_setup_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rates": {
         parameters: {
             query?: never;
@@ -1783,6 +1801,21 @@ export interface components {
             /** Postgres */
             postgres: string;
         };
+        /** HomeAccountOut */
+        HomeAccountOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: string;
+            /** Base */
+            base: string;
+        };
         /** HomeOut */
         HomeOut: {
             /** Currency */
@@ -1815,6 +1848,44 @@ export interface components {
             recent: components["schemas"]["MoveSummaryOut"][];
             /** Foreign */
             foreign: components["schemas"]["ForeignOut"][];
+            /** Accounts */
+            accounts: components["schemas"]["HomeAccountOut"][];
+        };
+        /** HomeSetupAccountOut */
+        HomeSetupAccountOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Subtitle */
+            subtitle: string | null;
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            /** Shown */
+            shown: boolean;
+        };
+        /** HomeSetupIn */
+        HomeSetupIn: {
+            /** Order */
+            order: number[];
+            /**
+             * Hidden
+             * @default []
+             */
+            hidden: number[];
+            /** Account Id */
+            account_id?: number | null;
+        };
+        /** HomeSetupOut */
+        HomeSetupOut: {
+            /** Accounts */
+            accounts: components["schemas"]["HomeSetupAccountOut"][];
+            /** Account Id */
+            account_id: number | null;
         };
         /** ImportOut */
         ImportOut: {
@@ -2062,6 +2133,10 @@ export interface components {
             is_admin: boolean;
             /** Notice Days */
             notice_days: number;
+            /** Ui Private */
+            ui_private: boolean;
+            /** Home Account Id */
+            home_account_id: number | null;
         };
         /** MePatch */
         MePatch: {
@@ -2073,6 +2148,8 @@ export interface components {
             ui_accent?: ("tinta" | "trigo" | "morado" | "azul") | null;
             /** Notice Days */
             notice_days?: number | null;
+            /** Ui Private */
+            ui_private?: boolean | null;
         };
         /** MoneyOut */
         MoneyOut: {
@@ -4873,6 +4950,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    setup_home_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSetupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_setup_home_setup_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeSetupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSetupOut"];
                 };
             };
             /** @description Validation Error */

@@ -26,6 +26,8 @@ class MeOut(BaseModel):
     currencies: list[str]
     is_admin: bool
     notice_days: int
+    ui_private: bool
+    home_account_id: int | None
 
     @classmethod
     def of(cls, me: users.Me) -> "MeOut":
@@ -44,6 +46,7 @@ class MePatch(BaseModel):
     ui_theme: Literal["system", "light", "dark"] | None = None
     ui_accent: Literal["tinta", "trigo", "morado", "azul"] | None = None
     notice_days: Annotated[int, Field(ge=0, le=60)] | None = None   # Pendientes: avisarme N días antes
+    ui_private: bool | None = None       # modo privado: los montos del Inicio escondidos
 
 
 class OptionOut(BaseModel):
@@ -74,7 +77,8 @@ def me(session: CurrentSession = Depends(current_session)) -> MeOut:
 
 @router.patch("/me", summary="Cambiar tu nombre, el tema, el acento o con cuánto aviso")
 def update(body: MePatch, session: CurrentSession = Depends(current_session)) -> MeOut:
-    return MeOut.of(users.update(session.user_id, body.name, body.ui_theme, body.ui_accent, body.notice_days))
+    return MeOut.of(users.update(session.user_id, body.name, body.ui_theme, body.ui_accent, body.notice_days,
+                                  body.ui_private))
 
 
 @router.post("/me/setup", summary="Configuración inicial (los 3 pasos)")
