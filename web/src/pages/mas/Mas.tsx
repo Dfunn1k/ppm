@@ -1,8 +1,9 @@
-// X0 · Más (mínimo): Mi cuenta, Apariencia, Recurrentes (X1), Categorías (X3) y, para el administrador, Tipo de cambio (Z1);
+// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Apariencia, Recurrentes (X1), Categorías (X3) y, para el
+// administrador, Tipo de cambio (Z1);
 // lo demás llega con su rebanada.
 import { Link } from "react-router";
 
-import { useMe } from "@/api/hooks";
+import { useMe, usePending } from "@/api/hooks";
 import { Icon } from "@/components/ui";
 
 const SOON = [
@@ -13,6 +14,8 @@ const SOON = [
 
 export function Mas() {
   const me = useMe().data;
+  const box = usePending().data;
+  const count = box ? box.notices.length + box.activities.length : 0;
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
       <h1 className="text-label text-muted-foreground">Más</h1>
@@ -24,6 +27,19 @@ export function Mas() {
           <span className="truncate font-display text-[22px] leading-7 font-bold">{me?.name}</span>
           <span className="truncate text-caption text-muted-foreground">{me?.email} · Mi cuenta</span>
         </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
+      <Link to="/pendientes" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="notifications" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Pendientes</span>
+          <span className="text-caption text-muted-foreground">Avisos de PPM y tus recordatorios</span>
+        </span>
+        {count > 0 && (
+          <span aria-label={`${count} pendientes`} className={`grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[13px] font-semibold tabular-nums ${box!.late > 0 ? "bg-attention-soft text-attention" : "bg-secondary text-secondary-foreground"}`}>
+            {count}
+          </span>
+        )}
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
       <Link to="/mas/apariencia" className="flex min-h-16 items-center gap-3.5 border-b border-border">

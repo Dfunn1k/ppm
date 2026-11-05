@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useCardRate, useMe, useUpdateCard } from "@/api/hooks";
+import { Activities } from "@/components/Pending";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { ImportStatement } from "@/pages/tarjetas/Conciliar";
@@ -197,6 +198,8 @@ export function Tarjeta() {
           <Icon name="add" />Agregar cargo del banco
         </button>
       </section>
+
+      <Activities target={{ account_id: id }} />
 
       <div className="mt-3 flex flex-col gap-4">
         {d.cycles.map((c) => (

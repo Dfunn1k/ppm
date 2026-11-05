@@ -57,13 +57,13 @@ test("el Inicio: para mayo, en qué se va la plata y los últimos movimientos", 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("S/ 2,500.00");
 });
 
-test("el aviso de los por confirmar lleva a Movimientos", async ({ page }) => {
+test("el aviso de los por confirmar lleva al movimiento", async ({ page }) => {
   await readyUser(page);
   await record(page, { kind: "expense", ref: "Luz", pending: true }, "Servicios", "80");
   await page.reload();
-  await page.getByRole("link", { name: "1 movimiento por confirmar ya llegó a su día" }).click();
-  await expect(page).toHaveURL(/pendientes=1/);
-  await expect(page.getByRole("link", { name: /Luz/ })).toBeVisible();
+  await page.getByRole("region", { name: "Pendientes" }).getByRole("link", { name: /1 movimiento por confirmar/ }).click();
+  await expect(page).toHaveURL(/\/movimientos\/\d+$/);
+  await expect(page.getByText("Luz").first()).toBeVisible();
 });
 
 test("Apariencia: el tema y el acento se ven al instante y quedan guardados", async ({ page }) => {

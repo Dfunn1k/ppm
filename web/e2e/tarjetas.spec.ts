@@ -150,7 +150,9 @@ test("el desgravamen de cada corte nace por confirmar y avisa en el Inicio", asy
   await expect(page.getByText("Por confirmar", { exact: true })).toBeVisible();     // en el ciclo, distinto
 
   await page.goto("/inicio");
-  await page.getByRole("link", { name: "Tienes 1 cargo del banco por confirmar" }).click();
+  const pending = page.getByRole("region", { name: "Pendientes" });
+  await expect(pending).toContainText("es un cargo del banco");
+  await pending.getByRole("link", { name: /1 movimiento por confirmar/ }).click();
   await expect(page).toHaveURL(/\/movimientos\/\d+$/);
 });
 

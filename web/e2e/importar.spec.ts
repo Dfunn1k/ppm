@@ -91,7 +91,7 @@ test("el Inicio avisa, el detalle dice lo que dijo el banco y deshacer borra lo 
   await importCsv(page, bank);
 
   await page.goto("/inicio");
-  await page.getByRole("link", { name: "3 movimientos del banco por clasificar" }).click();
+  await page.getByRole("region", { name: "Pendientes" }).getByRole("link", { name: /3 movimientos por clasificar/ }).click();
   await expect(page).toHaveURL("/por-clasificar");
 
   await page.getByRole("link", { name: "YAPE A JUAN PER" }).click();

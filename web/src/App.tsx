@@ -18,6 +18,7 @@ import { Entrar } from "./pages/Entrar";
 import { Extracto } from "./pages/importar/Extracto";
 import { Importar } from "./pages/importar/Importar";
 import { Inicio } from "./pages/Inicio";
+import { Pendientes } from "./pages/Pendientes";
 import { Apariencia } from "./pages/mas/Apariencia";
 import { Categorias, NuevaCategoria } from "./pages/mas/Categorias";
 import { NuevoPrestamo, PagarCuota, Prestamo } from "./pages/prestamos/Prestamos";
@@ -117,6 +118,7 @@ export function App() {
           <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
           <Route path="/por-clasificar" element={<PorClasificar />} />
           <Route path="/mas" element={<Mas />} />
+          <Route path="/pendientes" element={<Pendientes />} />
           <Route path="/mas/categorias" element={<Categorias />} />
           <Route path="/mas/recurrentes" element={<Recurrentes />} />
           <Route path="/prestamos/:id" element={<Prestamo />} />

@@ -461,6 +461,7 @@ function useMovesChanged() {
       qc.invalidateQueries({ queryKey: ["partners"] }),
       qc.invalidateQueries({ queryKey: ["home"] }),
       qc.invalidateQueries({ queryKey: ["cards"] }),
+      qc.invalidateQueries({ queryKey: PENDING }),
     ]);
   };
 }
@@ -554,6 +555,7 @@ function useCardChanged() {
       qc.invalidateQueries({ queryKey: ACCOUNTS }),
       qc.invalidateQueries({ queryKey: MOVES }),
       qc.invalidateQueries({ queryKey: ["home"] }),
+      qc.invalidateQueries({ queryKey: PENDING }),
     ]);
   };
 }
@@ -844,7 +846,10 @@ export function useUpdateMe() {
       return { before };
     },
     onError: (_e, _body, ctx) => ctx?.before && qc.setQueryData(ME, ctx.before),
-    onSuccess: (me) => qc.setQueryData(ME, me),
+    onSuccess: (me, body) => {
+      qc.setQueryData(ME, me);
+      if (body.notice_days != null) return qc.invalidateQueries({ queryKey: PENDING });   // cambia qué avisos llegan
+    },
   });
 }
 
@@ -1074,6 +1079,98 @@ export function usePayLoan(id: number) {
       const { data, error, response } = await api.POST("/loans/{account_id}/pay", { params: { path: { account_id: id } }, body });
       if (!data) fail(response, error);
       return data.id;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+// --- Pendientes ----------------------------------------------------------------------------------
+
+export type Inbox = components["schemas"]["InboxOut"];
+export type Notice = components["schemas"]["NoticeOut"];
+export type Activity = components["schemas"]["ActivityOut"];
+/** De qué cuelga un recordatorio: un movimiento, una persona, una cuenta o nada. */
+export type ActivityTarget = { move_id?: number; partner_id?: number; account_id?: number };
+
+const PENDING = ["pending"] as const;
+const ACTIVITIES = ["activities"] as const;
+
+/** La bandeja: los avisos que calcula PPM, tus recordatorios y lo pospuesto. */
+export function usePending() {
+  return useQuery({
+    queryKey: PENDING,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/pending");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Los recordatorios de un movimiento, una persona o una cuenta: los pendientes y los hechos. */
+export function useActivities(target: ActivityTarget) {
+  return useQuery({
+    queryKey: [...ACTIVITIES, target],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/activities", { params: { query: target } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+function usePendingChanged() {
+  const qc = useQueryClient();
+  return () => Promise.all([qc.invalidateQueries({ queryKey: PENDING }), qc.invalidateQueries({ queryKey: ACTIVITIES })]);
+}
+
+/** Posponer un aviso hasta una fecha (`until`), o traerlo de vuelta ya (`until: null`). */
+export function useSnooze() {
+  const changed = usePendingChanged();
+  return useMutation({
+    mutationFn: async ({ key, until }: { key: string; until: string | null }) => {
+      const { error, response } = until
+        ? await api.POST("/pending/snooze", { body: { key, until } })
+        : await api.DELETE("/pending/snooze", { params: { query: { key } } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+/** Escribir un recordatorio (sin `id`) o cambiarle el texto y la fecha. */
+export function useSaveActivity() {
+  const changed = usePendingChanged();
+  return useMutation({
+    mutationFn: async ({ id, date, summary, target }: { id?: number; date: string; summary: string; target?: ActivityTarget }) => {
+      const { error, response } = id
+        ? await api.PUT("/activities/{activity_id}", { params: { path: { activity_id: id } }, body: { date, summary } })
+        : await api.POST("/activities", { body: { date, summary, ...target } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function useActivityDone() {
+  const changed = usePendingChanged();
+  return useMutation({
+    mutationFn: async ({ id, done }: { id: number; done: boolean }) => {
+      const { error, response } = await api.POST("/activities/{activity_id}/done", {
+        params: { path: { activity_id: id } }, body: { done },
+      });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function useDeleteActivity() {
+  const changed = usePendingChanged();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error, response } = await api.DELETE("/activities/{activity_id}", { params: { path: { activity_id: id } } });
+      if (!response.ok) fail(response, error);
     },
     onSuccess: () => changed(),
   });
