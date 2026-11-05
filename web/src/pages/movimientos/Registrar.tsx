@@ -123,6 +123,7 @@ export function Registrar({ editing, recurring, reminder }: {
   const [mas, setMas] = useState(false);
   const [partFor, setPartFor] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [later, setLater] = useState(false);   // «Lo clasifico después»: a Por clasificar
   const partners = usePartners().data ?? [];
   const rule = recurring?.rule;
   const [repeat, setRepeat] = useState(!!recurring || search.get("repite") === "1");
@@ -155,6 +156,9 @@ export function Registrar({ editing, recurring, reminder }: {
   const foreign = currency !== base;
   const crossCurrency = kind === "transfer" && toAccount && toCurrency !== currency;
   const repeating = repeat && !editing;
+  // «Lo clasifico después» va en un gasto o ingreso entero, pagado por ti, sin cuotas y sin repetir
+  const canLater = (kind === "expense" || kind === "income") && !split && !other && !(card && inInstallments) && !repeating && !editing;
+  const isLater = later && canLater;
   const future = date > todayISO() && !repeating;
   // El tipo de cambio se escribe solo si nada lo da: en una transferencia que toca la moneda base, sale de los dos montos
   const needRate = foreign && !(kind === "transfer" && toCurrency === base) && !(kind === "transfer" && toAccount?.kind === "card");
@@ -194,6 +198,7 @@ export function Registrar({ editing, recurring, reminder }: {
       to_amount: null,
       paid_by_partner_id: other ? paidBy : null,
       currency: card ? currency : null,
+      later: false,
       installments: card && inInstallments && kind === "expense" ? installments : null,
       installment_amount: card && inInstallments && kind === "expense" ? cuotaValue : null,
     };
@@ -213,6 +218,8 @@ export function Registrar({ editing, recurring, reminder }: {
         if (!t || Number(t) <= 0) return setProblem(`Escribe cuánto entró en ${symbolOf(toCurrency)}`);
         body.to_amount = t;
       }
+    } else if (isLater) {
+      body.later = true;
     } else {
       const chosen = split ? parts : [{ ...parts[0]!, amount: total }];
       if (chosen.some((p) => !p.category && !p.partner)) return setProblem(kind === "expense" ? "Elige en qué gastaste" : "Elige de qué es el ingreso");
@@ -260,11 +267,13 @@ export function Registrar({ editing, recurring, reminder }: {
 
   const pickCategory = (c: Category) => {
     setParts((ps) => ps.map((p, i) => (i === sheetFor ? { ...p, category: c } : p)));
+    setLater(false);
     setSheetFor(null);
   };
   const changeKind = (k: Kind) => {
     if (k === kind) return;
     setKind(k);
+    setLater(false);
     setParts([{ category: null, amount: "" }]);
     setSplit(false);
     setPayer("me");
@@ -381,15 +390,26 @@ export function Registrar({ editing, recurring, reminder }: {
           {kind !== "transfer" && !split && (
             <button type="button" aria-haspopup="dialog" onClick={() => setSheetFor(0)}
               className="flex min-h-[60px] items-center gap-3 border-b border-border text-left">
-              {parts[0]?.category ? <CategoryChip category={parts[0].category} /> : (
+              {isLater ? (
+                <span className="grid size-9 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="inbox" /></span>
+              ) : parts[0]?.category ? <CategoryChip category={parts[0].category} /> : (
                 <span className="grid size-9 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="category" /></span>
               )}
               <span className="flex flex-1 flex-col">
                 <span className="text-caption text-muted-foreground">{kind === "income" ? "De qué" : "En qué"}</span>
-                <span className="font-semibold">{parts[0]?.category?.name ?? "Elige una categoría"}</span>
+                <span className="font-semibold">{isLater ? "Lo clasifico después" : parts[0]?.category?.name ?? "Elige una categoría"}</span>
               </span>
               <Icon name="expand_more" className="text-[22px] text-muted-foreground" />
             </button>
+          )}
+          {kind !== "transfer" && !split && (isLater || parts[0]?.category?.name === "Ajuste") && (
+            <span className="pt-2 text-caption text-muted-foreground">
+              {isLater
+                ? kind === "income"
+                  ? "Entra a tu cuenta, pero no cuenta como ingreso del mes hasta que elijas de qué es. Lo verás en Pendientes y en Por clasificar."
+                  : "Baja tu cuenta, pero no cuenta como gasto del mes hasta que elijas la categoría. Lo verás en Pendientes y en Por clasificar."
+                : "Es gasto desde ya y no vuelve a preguntar. Úsalo cuando nunca sabrás en qué fue o para cuadrar un descuadre."}
+            </span>
           )}
 
           {kind !== "transfer" && split && (
@@ -614,7 +634,8 @@ export function Registrar({ editing, recurring, reminder }: {
       <MasTipos open={mas} onClose={() => setMas(false)} />
       {kind !== "transfer" && (
         <CategorySheet kind={kind} open={sheetFor !== null} onClose={() => setSheetFor(null)} onPick={pickCategory}
-          selected={sheetFor !== null ? parts[sheetFor]?.category?.id : null} />
+          selected={sheetFor !== null && !isLater ? parts[sheetFor]?.category?.id : null}
+          later={isLater} onLater={canLater && sheetFor === 0 ? () => { setLater(true); setSheetFor(null); } : undefined} />
       )}
     </main>
   );

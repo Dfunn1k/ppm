@@ -45,7 +45,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
     if (!category) return setProblem("Elige de qué gasto es el reembolso");
     if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
     save.mutate({
-      kind: "refund", account_id: account.id, amount: value, date, ref: note.trim() || null, pending: false,
+      kind: "refund", account_id: account.id, amount: value, date, ref: note.trim() || null, pending: false, later: false,
       rate: foreign ? rate.value.trim() : null, splits: [{ category_id: category.id, amount: value }], lines: [],
     }, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : "/movimientos", { replace: true }) });
   };

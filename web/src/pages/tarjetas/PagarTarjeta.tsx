@@ -63,7 +63,7 @@ export function PagarTarjeta() {
     if (!value || Number(value) <= 0) return setProblem("Escribe un monto mayor que cero");
     save.mutate(
       { kind: "transfer", account_id: source.id, to_account_id: id, amount: value, date, currency: cur, ref: null, pending: false,
-        lines: [], splits: [] },
+        lines: [], splits: [], later: false },
       { onSuccess: () => navigate(`/tarjetas/${id}`, { replace: true }) },
     );
   };

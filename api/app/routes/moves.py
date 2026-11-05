@@ -62,6 +62,7 @@ class MoveIn(BaseModel):
     currency: Annotated[str, Field(min_length=3, max_length=3)] | None = None   # con tarjeta: en qué moneda
     installments: Annotated[int, Field(ge=2, le=60)] | None = None             # gasto o préstamo con tarjeta en cuotas
     installment_amount: Positive | None = None   # cada cuota, del cronograma del banco; sin ella, sin intereses
+    later: bool = False                  # gasto o ingreso: «Lo clasifico después» (va a Por clasificar)
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
@@ -69,7 +70,7 @@ class MoveIn(BaseModel):
             self.rate, [moves.Split(s.category_id, s.amount, s.partner_id) for s in self.splits],
             self.to_account_id, self.to_amount, self.partner_id, self.debt_line_id, self.paid_by_partner_id,
             [moves.ManualLine(x.account_id, x.debit, x.credit, x.partner_id) for x in self.lines],
-            self.currency, self.installments, self.installment_amount)
+            self.currency, self.installments, self.installment_amount, self.later)
 
 
 class PendingIn(BaseModel):
