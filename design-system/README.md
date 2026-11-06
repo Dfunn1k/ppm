@@ -23,8 +23,9 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 - Para texto o enlaces en el acento usa `primary-strong`; `secondary` es el acento suave para la pestaña activa, los avatares y el fondo de los íconos de cuenta.
 - `trigo` es el **sello de PPM**, fijo para todos y sea cual sea el acento. Va solo en dos lugares: la palabra «mayo» del refrán en la portada de acceso y la barra «para mayo» del ahorro. Siempre como relleno, con el texto en `on-trigo`; nunca en botones, enlaces ni texto pequeño. Así significa siempre lo mismo: «esto es para mayo». La tinta (el acento) es con lo que se actúa; el trigo, la marca.
 - `attention` señala lo que pide una acción: movimientos por clasificar, tipo de cambio desactualizado, una tarjeta por vencer. Es ámbar, fijo para todos, y no cambia con el acento. Como es pariente del trigo, se distingue por la forma: siempre con ícono y una frase («3 movimientos por clasificar»), como texto o fondo suave (`attention` sobre su fondo tenue), nunca como botón relleno. Un relleno de trigo es la marca (o una acción, si la persona eligió el acento trigo); un texto ámbar con ícono es un aviso.
-- `destructive` es solo para borrar, archivar y errores.
+- `destructive` es solo para borrar, archivar y errores. `destructive-soft` y `attention-soft` son sus fondos tenues: la tarjeta de un error o de un aviso, con el texto en su color.
 - `cat-0` a `cat-11` son los 12 colores de categoría, el índice de `account_account.color`. Se usan solo como fondo del chip de categoría, con el ícono en `on-category`.
+- `age-0` a `age-3` son los tramos de antigüedad de lo que te deben (0–30, 31–60, 61–90 y más de 90 días): un solo tono que se intensifica con los días. Van siempre con la etiqueta del tramo; el tramo vencido se marca además con `attention` e ícono.
 - Los grises son neutros, sin tinte: el color lo ponen el acento, los montos, las categorías y el trigo, nunca el fondo.
 - Hay un tema claro y uno oscuro con los mismos tokens; el oscuro no es el claro invertido. Comprueba cada combinación en los dos.
 
