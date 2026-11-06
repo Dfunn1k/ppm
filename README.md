@@ -20,7 +20,7 @@ El diseño de PPM vive en claude.ai. Dos de esos artefactos tienen una copia en 
 | PPM — Modelo contable y base de datos | [`docs/modelo-contable.md`](docs/modelo-contable.md) | <https://claude.ai/artifact/NGkKr1NvteSf7cUBRwN3dH> |
 | Sistema de diseño «PPM» (tokens, voz, componentes) | [`design-system/`](design-system/README.md) | <https://claude.ai/artifact/KQXtCjxNsoonM9d9uob6oM> |
 | Libro de PPM: simulador de partida doble | — | <https://claude.ai/artifact/A26CRpbuQbk6AWK6bMWTEe> |
-| Pantallas de PPM | — | <https://claude.ai/code/artifact/efc649c0-03df-476b-add8-1971b188b447> |
+| Pantallas de PPM | — | <https://claude.ai/artifact/WcHcG4APSNSqSFM2KngD6E> |
 
 Las copias son una foto del 6 de noviembre de 2026. Si una copia y su original no coinciden, manda el original; vuelve a copiarlo cuando cambie.
 
