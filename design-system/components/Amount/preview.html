@@ -1,0 +1,22 @@
+<!-- @dsCard group="Datos" height=200 subtitle="Entra, sale y transferencia" -->
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Amount</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..700&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500;600&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0..1,0&display=block">
+<style>body{margin:0;padding:16px;background:var(--card);color:var(--foreground);font-family:var(--font-sans)}.ms{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-variation-settings:"FILL" 0,"wght" 400,"opsz" 20}
+.list{display:grid;gap:4px;max-width:420px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--radius-md)}
+.row:hover{background:var(--accent)}
+.who{min-width:0}.who .caption{color:var(--muted-foreground)}
+.amt{display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.amt .ms{font-size:18px}
+.in{color:var(--income)}.out{color:var(--expense)}.tr{color:var(--transfer)}
+.hero{font-variant-numeric:tabular-nums;margin:0 0 8px 12px}
+.hero-l{margin:0 0 2px 12px;color:var(--muted-foreground)}
+</style></head><body>
+<p class="caption hero-l">Lo que realmente tengo</p>
+<p class="amount-hero hero">S/ 12,480.50</p>
+<div class="list">
+ <div class="row"><div class="who"><div class="body-strong">Sueldo de octubre</div><div class="caption">31 oct · Cuenta digital BCP</div></div><div class="amt amount in"><span class="ms" aria-hidden="true">south_west</span>+ S/ 4,200.00</div></div>
+ <div class="row"><div class="who"><div class="body-strong">Almuerzo</div><div class="caption">Hoy · Visa BBVA</div></div><div class="amt amount out"><span class="ms" aria-hidden="true">north_east</span>− S/ 35.50</div></div>
+ <div class="row"><div class="who"><div class="body-strong">Cambio de dólares</div><div class="caption">24 oct · Ahorros USD → BCP</div></div><div class="amt amount tr"><span class="ms" aria-hidden="true">sync_alt</span>US$ 300.00</div></div>
+</div>
+</body></html>

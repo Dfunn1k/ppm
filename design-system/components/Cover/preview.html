@@ -1,0 +1,48 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>PPM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=IBM+Plex+Sans:wght@400&display=swap">
+<style>
+html,body{margin:0;height:288px;background:var(--background)}
+.cover{position:relative;width:960px;height:288px;overflow:hidden;background:var(--background)}
+svg{position:absolute;inset:0}
+.primary{fill:var(--acento-tinta)} .trigo{fill:var(--trigo)} .ink{fill:var(--acento-morado)} .income{fill:var(--acento-azul)} .soft{fill:var(--acento-trigo)}
+.r-lg{rx:var(--radius-lg)} .coin{rx:8px}
+.text{position:absolute;left:48px;bottom:40px;max-width:440px}
+.name{margin:0;font-family:var(--font-display);font-weight:700;font-size:120px;line-height:.92;letter-spacing:-0.02em;color:var(--foreground)}
+.tag{margin:12px 0 0;font-family:var(--font-sans);font-size:14px;line-height:20px;color:var(--muted-foreground)}
+</style></head><body>
+<div class="cover">
+  <svg viewBox="0 0 960 288" width="960" height="288" aria-hidden="true">
+    <!--
+      blocks: acento-tinta 224×320 slab, acento-trigo 256×160 bleeding top-right, acento-morado 112×144 and acento-azul 112×56 satellites (radius-lg): the closed accent palette
+      arrangement: one tall slab with satellites, everything right of x = 480, bleeding off the top, right and bottom edges
+      pattern: discs and pills (README: friendly radii; the motif is coins saved for later, "pan para mayo"): three growing stacks of trigo coins on the tinta slab
+      scales: coins 56×16 (space-4 tall), pitch 20 (space-4 + space-1), stack gap space-3; corners radius-lg, coin rx half the short side
+    -->
+    <rect class="primary r-lg" x="480" y="-16" width="224" height="320"/>
+    <rect class="soft r-lg" x="720" y="-16" width="256" height="160"/>
+    <rect class="ink r-lg" x="720" y="160" width="112" height="144"/>
+    <rect class="income r-lg" x="848" y="160" width="112" height="56"/>
+    <rect class="trigo coin" x="496" y="248" width="56" height="16"/>
+    <rect class="trigo coin" x="496" y="228" width="56" height="16"/>
+    <rect class="trigo coin" x="496" y="208" width="56" height="16"/>
+    <rect class="trigo coin" x="564" y="248" width="56" height="16"/>
+    <rect class="trigo coin" x="564" y="228" width="56" height="16"/>
+    <rect class="trigo coin" x="564" y="208" width="56" height="16"/>
+    <rect class="trigo coin" x="564" y="188" width="56" height="16"/>
+    <rect class="trigo coin" x="564" y="168" width="56" height="16"/>
+    <rect class="trigo coin" x="632" y="248" width="56" height="16"/>
+    <rect class="trigo coin" x="632" y="228" width="56" height="16"/>
+    <rect class="trigo coin" x="632" y="208" width="56" height="16"/>
+    <rect class="trigo coin" x="632" y="188" width="56" height="16"/>
+    <rect class="trigo coin" x="632" y="168" width="56" height="16"/>
+    <rect class="trigo coin" x="632" y="148" width="56" height="16"/>
+    <rect class="trigo coin" x="632" y="128" width="56" height="16"/>
+  </svg>
+  <div class="text">
+    <p class="name">PPM</p>
+    <p class="tag">Pan para mayo: tus cuentas claras, sin saber contabilidad.</p>
+  </div>
+</div>
+</body></html>
