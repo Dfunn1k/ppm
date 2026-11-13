@@ -1,11 +1,13 @@
 // M2 · Detalle de un movimiento: los datos, lo dividido, el costo del cambio (o la ganancia) al cambiar
 // de moneda, con quién (y qué deudas cancela), las líneas de un asiento manual, editar, confirmar o
-// pasar a por confirmar, y borrar. Una compra en cuotas muestra su calendario y no se edita.
+// pasar a por confirmar, y borrar. Una compra en cuotas muestra su calendario y no se edita; si es
+// tuya, se pueden cancelar las cuotas que faltan (y borrar esa cancelación la deshace).
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { MoveAttachments } from "@/components/Attachments";
+import { CancelPlanSheet } from "@/components/CancelPlanSheet";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
 import { Activities } from "@/components/Pending";
@@ -36,6 +38,8 @@ export function DetalleMovimiento() {
   const state = useSetMoveState(id);
   const remove = useDeleteMove(id);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const undoCancel = useDeleteMove(move.data?.plan?.canceled?.move_id ?? 0);
   const [classifying, setClassifying] = useState(false);
   const [dating, setDating] = useState<(Maturity & { owesMe: boolean }) | null>(null);
   if (move.isPending || !me) return <Spinner />;
@@ -62,7 +66,11 @@ export function DetalleMovimiento() {
   const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || s.kind === "opening" || d.paid_by_partner_id;
   const partnerId = d.partner_id ?? d.paid_by_partner_id ?? s.partner_id;
   const plan = d.plan;
-  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan;
+  const cancels = d.cancels;
+  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan && !cancels;
+  const canceled = plan?.canceled;
+  // Solo una compra tuya (con su categoría) que aún tiene cuotas por facturar
+  const cancelable = !!plan && transfer && !!plan.category && !canceled && Number(plan.remaining) > 0 && s.posted;
   // Saldo inicial con una persona: lo que ya había antes de PPM (te debía, o le debías)
   const opening = s.kind === "opening" && s.partner
     ? d.lines.some((l) => l.partner_id && Number(l.debit) > 0) ? `${s.partner} ya te debía esto cuando empezaste a usar PPM.` : `Ya le debías esto a ${s.partner} cuando empezaste a usar PPM.`
@@ -92,6 +100,13 @@ export function DetalleMovimiento() {
         </div>
       )}
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
+      {cancels && (
+        <Link to={`/movimientos/${cancels.move_id}`} className="mt-3 flex items-center gap-2.5 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
+          <Icon name="event_busy" />
+          <span className="flex-1 text-[14px]">Cancela las cuotas que faltaban de «{cancels.ref}». Para deshacerla, bórrala.</span>
+          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        </Link>
+      )}
       {unclassified && (
         <div className="mt-4 flex items-center gap-2.5 rounded-[12px] bg-attention-soft py-2.5 pr-2.5 pl-3.5 text-attention">
           <Icon name="inbox" />
@@ -231,7 +246,10 @@ export function DetalleMovimiento() {
       {plan && (
         <section aria-label="Cuotas" className="mt-4 flex flex-col">
           <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-            <span>{plan.n_installments} cuotas · {billedText(plan.lines.filter((x) => x.billed).length)}</span>
+            <span>
+              {plan.n_installments} cuotas · {billedText(plan.lines.filter((x) => x.billed).length)}
+              {canceled ? ` · ${plan.lines.filter((x) => x.canceled).length} canceladas` : ""}
+            </span>
             <span>Quedan {formatAmount(plan.remaining, symbolOf(plan.currency), lang)}</span>
           </div>
           {plan.lines.map((x) => (
@@ -239,7 +257,7 @@ export function DetalleMovimiento() {
               <span className={`grid size-[26px] flex-none place-items-center rounded-full text-[12px] font-semibold ${x.billed ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                 {x.sequence}
               </span>
-              <span className="flex flex-1 flex-col">
+              <span className={`flex flex-1 flex-col ${x.canceled ? "text-muted-foreground" : ""}`}>
                 <span>Corte del {shortDate(x.closing_date)}</span>
                 {x.interest != null && (
                   <span className="text-caption text-muted-foreground tabular-nums">
@@ -248,7 +266,8 @@ export function DetalleMovimiento() {
                 )}
               </span>
               {x.billed && <span className="text-caption font-semibold text-income">Facturada</span>}
-              <span className="w-24 text-right font-medium tabular-nums">{formatAmount(x.principal, symbolOf(plan.currency), lang)}</span>
+              {x.canceled && <span className="text-caption font-semibold text-muted-foreground">Cancelada</span>}
+              <span className={`w-24 text-right font-medium tabular-nums ${x.canceled ? "text-muted-foreground line-through" : ""}`}>{formatAmount(x.principal, symbolOf(plan.currency), lang)}</span>
             </div>
           ))}
           <p className="mt-3 text-caption text-muted-foreground">
@@ -258,6 +277,25 @@ export function DetalleMovimiento() {
               ? "No es tu gasto: te debe todas las cuotas y cada una vence con su corte."
               : "Una compra de antes de PPM: no es un gasto de este mes. Si te equivocaste, bórrala y vuelve a anotarla desde la tarjeta."}
           </p>
+          {canceled && (
+            <div className="mt-3 flex flex-col gap-1 rounded-xl bg-muted p-3.5">
+              <span className="font-semibold">
+                {canceled.kind === "returned" ? "Lo devolviste" : "Pagaste lo que faltaba"} el {shortDate(canceled.date)}
+              </span>
+              <span className="text-caption text-muted-foreground">
+                {canceled.kind === "returned"
+                  ? `Las cuotas que faltaban (${formatAmount(canceled.amount, symbolOf(plan.currency), lang)}) salieron de la tarjeta. No es gasto tuyo.`
+                  : `El banco te cobró ${formatAmount(canceled.charged ?? "0", symbolOf(plan.currency), lang)}, que van a ${plan.category ?? "su categoría"}.`
+                    + (Number(subtract(canceled.amount, canceled.charged ?? canceled.amount)) > 0
+                      ? ` Te ahorraste ${formatAmount(subtract(canceled.amount, canceled.charged ?? canceled.amount), symbolOf(plan.currency), lang)} de interés.` : "")}
+              </span>
+              {undoCancel.error && <ErrorAlert>{undoCancel.error.message}</ErrorAlert>}
+              <button type="button" disabled={undoCancel.isPending} onClick={() => undoCancel.mutate()}
+                className="mt-1 min-h-11 self-start text-[14px] font-semibold underline">
+                Deshacer
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -289,6 +327,15 @@ export function DetalleMovimiento() {
       <div className="min-h-6 flex-1" />
       <div className="flex flex-col gap-2">
         {(state.error || remove.error) && <ErrorAlert>{(state.error ?? remove.error)?.message}</ErrorAlert>}
+        {cancelable && (
+          <>
+            <button type="button" onClick={() => setCanceling(true)}
+              className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+              <Icon name="event_busy" />Cancelar las cuotas que faltan
+            </button>
+            <p className="text-caption text-muted-foreground">Si lo devolviste o pagaste lo que faltaba. Las cuotas ya facturadas se quedan donde están.</p>
+          </>
+        )}
         {editable && (
           <Link to={`/movimientos/${s.id}/editar`}
             className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground">
@@ -304,9 +351,11 @@ export function DetalleMovimiento() {
         )}
         <button type="button" onClick={() => setConfirmDelete(true)}
           className="flex h-11 items-center justify-center gap-1.5 text-[14px] font-semibold text-destructive">
-          <Icon name="delete" />{plan ? "Borrar la compra y sus cuotas" : "Borrar movimiento"}
+          <Icon name={cancels ? "undo" : "delete"} />{plan ? "Borrar la compra y sus cuotas" : cancels ? "Deshacer la cancelación" : "Borrar movimiento"}
         </button>
       </div>
+
+      {plan && cancelable && <CancelPlanSheet plan={plan} title={s.ref} open={canceling} onClose={() => setCanceling(false)} />}
 
       {unclassified && classifying && (
         <ClassifySheet open onClose={() => setClassifying(false)} items={[{
@@ -320,16 +369,18 @@ export function DetalleMovimiento() {
           title={dating.owesMe ? `¿Hasta cuándo te paga${s.partner ? ` ${s.partner.split(" ")[0]}` : ""}?` : `¿Hasta cuándo le pagas${s.partner ? ` a ${s.partner.split(" ")[0]}` : ""}?`} />
       )}
 
-      <Sheet title="¿Borrar este movimiento?" open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+      <Sheet title={cancels ? "¿Deshacer la cancelación?" : "¿Borrar este movimiento?"} open={confirmDelete} onClose={() => setConfirmDelete(false)}>
         <div className="flex flex-col gap-4 px-3">
           <p className="text-muted-foreground">
-            «{s.ref}» desaparece de tus movimientos{plan ? ", con sus cuotas," : ""} y sus montos vuelven a las cuentas. No se puede deshacer.
+            {cancels
+              ? `Las cuotas que faltaban de «${cancels.ref}» vuelven a su calendario y a la tarjeta.`
+              : `«${s.ref}» desaparece de tus movimientos${plan ? ", con sus cuotas," : ""} y sus montos vuelven a las cuentas. No se puede deshacer.`}
             {bank.length > 0 && " Si vuelves a importar el extracto, regresa: el banco dice que pasó."}
           </p>
           <button type="button" disabled={remove.isPending}
-            onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : "/movimientos", { replace: true }) })}
+            onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : cancels ? `/movimientos/${cancels.move_id}` : "/movimientos", { replace: true }) })}
             className="flex h-14 items-center justify-center gap-2 rounded-xl bg-destructive font-semibold text-destructive-foreground">
-            <Icon name="delete" />Borrar movimiento
+            <Icon name={cancels ? "undo" : "delete"} />{cancels ? "Deshacer la cancelación" : "Borrar movimiento"}
           </button>
           <button type="button" onClick={() => setConfirmDelete(false)} className="h-11 text-caption font-semibold text-primary-strong underline">
             Cancelar

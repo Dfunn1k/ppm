@@ -169,6 +169,20 @@ class PlanLineOut(BaseModel):
     principal: Decimal
     billed: bool
     interest: Decimal | None             # del estado de cuenta; None = sin dato
+    canceled: bool = False               # salió del calendario al cancelar las cuotas que faltaban
+
+
+class PlanCancelOut(BaseModel):
+    kind: Literal["returned", "prepaid"]   # lo devolví | pagué lo que faltaba
+    date: dt.date
+    move_id: int                         # su asiento: borrarlo la deshace
+    amount: Decimal                      # lo que faltaba facturar
+    charged: Decimal | None              # pagada por adelantado: lo que cobró el banco
+
+
+class CancelOfOut(BaseModel):
+    move_id: int
+    ref: str
 
 
 class PlanOut(BaseModel):
@@ -182,6 +196,7 @@ class PlanOut(BaseModel):
     plan_id: int | None
     price: Decimal | None
     category: str | None
+    canceled: PlanCancelOut | None = None
 
 
 class BankLineOut(BaseModel):
@@ -206,6 +221,7 @@ class MoveDetailOut(BaseModel):
     lines: list[LineOut] = []        # todos los apuntes, para el asiento manual
     plan: PlanOut | None = None      # una compra en cuotas: su calendario
     bank: list[BankLineOut] = []     # si vino de un extracto: lo que dijo el banco
+    cancels: CancelOfOut | None = None   # cancela las cuotas que faltaban de esta compra
 
 
 class ManualAccountOut(BaseModel):
@@ -317,6 +333,22 @@ def set_maturity(line_id: int, body: MaturityIn, session: CurrentSession = Depen
 
 
 
+
+
+class CancelPlanIn(BaseModel):
+    kind: Literal["returned", "prepaid"]   # lo devolví | pagué lo que faltaba
+    date: dt.date | None = None            # None = hoy
+    charged: Positive | None = None        # pagada por adelantado: lo que cobró el banco
+    account_id: int | None = None          # y de qué cuenta se pagó; None = todavía no se paga
+
+
+@router.post("/plans/{plan_id}/cancel", summary="Cancelar las cuotas que faltan: lo devolví o pagué lo que faltaba")
+def cancel_plan(plan_id: int, body: CancelPlanIn, session: CurrentSession = Depends(current_session)) -> MoveDetailOut:
+    try:
+        purchase = moves.cancel_plan(session.user_id, plan_id, body.kind, body.date, body.charged, body.account_id)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, purchase)
 
 
 @router.delete("/moves/{move_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Borrar un movimiento")

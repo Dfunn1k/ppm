@@ -495,6 +495,19 @@ export function useSetMoveState(id: number) {
   });
 }
 
+/** Cancelar las cuotas que faltan de una compra: lo devolví, o pagué lo que faltaba (y desde qué cuenta). */
+export function useCancelPlan(planId: number) {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (body: components["schemas"]["CancelPlanIn"]) => {
+      const { data, error, response } = await api.POST("/plans/{plan_id}/cancel", { params: { path: { plan_id: planId } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (d) => changed(d),
+  });
+}
+
 export function useDeleteMove(id: number) {
   const qc = useQueryClient();
   const changed = useMovesChanged();

@@ -573,6 +573,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plans/{plan_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancelar las cuotas que faltan: lo devolví o pagué lo que faltaba */
+        post: operations["cancel_plan_plans__plan_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/partners/overview": {
         parameters: {
             query?: never;
@@ -1530,6 +1547,27 @@ export interface components {
              * @description El saldo según el banco, si el archivo no lo trae
              */
             balance_end?: number | string | null;
+        };
+        /** CancelOfOut */
+        CancelOfOut: {
+            /** Move Id */
+            move_id: number;
+            /** Ref */
+            ref: string;
+        };
+        /** CancelPlanIn */
+        CancelPlanIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "returned" | "prepaid";
+            /** Date */
+            date?: string | null;
+            /** Charged */
+            charged?: number | string | null;
+            /** Account Id */
+            account_id?: number | null;
         };
         /** CardAmountOut */
         CardAmountOut: {
@@ -2528,6 +2566,7 @@ export interface components {
              * @default []
              */
             bank: components["schemas"]["BankLineOut"][];
+            cancels?: components["schemas"]["CancelOfOut"] | null;
         };
         /** MoveIn */
         MoveIn: {
@@ -2981,6 +3020,25 @@ export interface components {
             /** Creditors */
             creditors: components["schemas"]["CreditorOut"][];
         };
+        /** PlanCancelOut */
+        PlanCancelOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "returned" | "prepaid";
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Move Id */
+            move_id: number;
+            /** Amount */
+            amount: string;
+            /** Charged */
+            charged: string | null;
+        };
         /** PlanLineOut */
         PlanLineOut: {
             /** Sequence */
@@ -2996,6 +3054,11 @@ export interface components {
             billed: boolean;
             /** Interest */
             interest: string | null;
+            /**
+             * Canceled
+             * @default false
+             */
+            canceled: boolean;
         };
         /** PlanOut */
         PlanOut: {
@@ -3019,6 +3082,7 @@ export interface components {
             price: string | null;
             /** Category */
             category: string | null;
+            canceled?: components["schemas"]["PlanCancelOut"] | null;
         };
         /** PlanRowOut */
         PlanRowOut: {
@@ -5135,6 +5199,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_plan_plans__plan_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
+                };
             };
             /** @description Validation Error */
             422: {
