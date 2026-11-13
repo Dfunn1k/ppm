@@ -2634,7 +2634,7 @@ Orden de las rebanadas:
 
 ## Decisiones y preguntas abiertas
 
-Doscientas doce decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
+Doscientas trece decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
 
 | Decisión | Elegido | Alternativa descartada | Por qué |
 | --- | --- | --- | --- |
@@ -2850,6 +2850,7 @@ Doscientas doce decisiones sostienen la fase 1; cada una puede revisarse antes d
 | Adjuntos antes de Reportes | Adjuntar una boleta o foto a un movimiento y verla o borrarla en su detalle, después de estos ajustes y antes de Reportes; las etiquetas quedan para después | Adjuntos y etiquetas juntos; adjuntos después de Reportes | El almacén de archivos ya existe; Dany lo necesita ya |
 | Reportes: cuáles | Cinco reportes con Recharts (gráficos de shadcn): Gastos (dona por grupo y lista que se despliega con las hijas; en año, barras apiladas por mes), Ingresos (barras), Flujo (Sankey de lo que entró a lo que salió más lo guardado, y la línea del % guardado en 12 meses), Patrimonio (área de 12 meses al tipo de cada fin de mes, composición de hoy y diferencia de cambio no realizada) y Personas (totales y antigüedad de lo que te deben por tramos). Por etiqueta llega con las etiquetas; el presupuesto sigue fuera de alcance; el libro mayor ya está en el detalle de cada cuenta | Las cuatro pestañas del boceto gris; sin Flujo | Sale de REP-01, 02, 05 y CON-01 y del Sankey por el que se eligió Recharts; el boceto gris era solo orientativo. Elegido por Dany |
 | Reportes: cómo se navegan | Más › Reportes abre un índice con una tarjeta por reporte (su cifra del mes y un mini gráfico); cada reporte tiene Mes / Año con ‹ ›. Una categoría principal se despliega ahí mismo con sus hijas; una hija abre Movimientos filtrado por ella y el periodo. Cada monto se compara con el periodo anterior. El patrimonio de cada mes va al tipo de cambio de su fin de mes. No entran transferencias, pagos de tarjeta ni lo por clasificar (se avisa cuántos); los reembolsos restan y se marcan; las cuotas cuentan en el mes que se facturan | Pestañas deslizables; solo mes o rango libre; comparar con el promedio de 3 meses; todo al tipo de hoy | Se ve el resumen de todo de un vistazo y la comparación se lee fácil. Elegido por Dany |
+| Copias de los artefactos en el repositorio | Este documento y el sistema de diseño tienen una copia en el repo (docs/modelo-contable.md y design-system/). Para leer se usan las copias; las decisiones se escriben en el original de claude.ai y la copia se refresca en el mismo PR. Si no coinciden, manda el original. Los tokens que nacen en el código (age-0 a age-3, attention-soft, destructive-soft) se registran también en el sistema de diseño | Solo los originales en claude.ai; copias que se refrescan cuando alguien se acuerda | Claude Code los lee sin salir del repo y con grep, sin que la copia se vuelva un plano viejo. Elegido por Dany |
 
 Preguntas para las siguientes sesiones:
 
@@ -2875,6 +2876,7 @@ Preguntas para las siguientes sesiones:
 
 | Fecha | Cambio |
 | --- | --- |
+| 2026-11-06 | Copias en el repo (#60): docs/modelo-contable.md y design-system/, con la tabla de artefactos en el README. Se sincronizan: el sistema de diseño recibe destructive-soft, attention-soft y age-0 a age-3, que ya usaba el código; CLAUDE.md dice leer las copias y escribir en el original |
 | 2026-11-05 | Reportes terminado: #57 API (/reports/expenses, income, flow, net-worth, people y summary; sin migración, todo sale de account\_move\_line) y #58 web, llevada a main con #59 porque #58 se fusionó primero en la rama de la API. Recharts 3.10.1: dona y barras apiladas en Gastos, barras en Ingresos, Sankey y línea del % guardado en Flujo, área de 12 cierres en Patrimonio y tramos de antigüedad en Personas. La paleta de categorías no separa bien colores vecinos (validador de gráficos): el color va siempre con ícono y nombre |
 | 2026-11-05 | Ajustes antes de Reportes terminados (Dany autorizó a Claude a hacer el merge; solo revisó los diseños): #52 + desde la cuenta, Personas filtrada, calendario y selector de persona; #53 «Lo clasifico después» y la categoría Ajuste (0023); #54 Inicio a tu medida y modo privado (0024); #55 transiciones con View Transitions y hojas animadas; #56 adjuntos a movimientos (ir\_attachment 'account.move', foto o PDF de hasta 5 MB). Los bocetos de la propuesta se rehicieron sobre los bocetos finales del lienzo; regla: toda pantalla pasa por el lienzo antes del código |
 | 2026-11-05 | Pendientes terminado (#49 base, #50 API, #51 web). Ajustes pedidos por Dany antes de Reportes: gasto sin clasificar y categoría Ajuste; Inicio a tu medida con modo privado; + desde una cuenta; Personas filtrada; calendario de mes y año propio; selector de persona con búsqueda; transiciones suaves; y adjuntos a movimientos |
