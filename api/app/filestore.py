@@ -5,6 +5,7 @@ SHA-1 (ab/ab12…): la misma foto subida dos veces ocupa un solo lugar. La base 
 (ir_attachment); aquí solo van los bytes. Pasar a S3 sería cambiar este módulo, no la lógica."""
 
 import hashlib
+from collections.abc import Callable
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,8 +42,23 @@ def read(user_id: int, store_fname: str) -> bytes | None:
     return path.read_bytes() if path.is_file() else None
 
 
+def derived(user_id: int, checksum: str, kind: str, build: Callable[[], bytes]) -> bytes:
+    """Algo que sale de un archivo (su miniatura, una página de un PDF), guardado junto a él en
+    derived/<huella>.<kind> la primera vez que se pide. Si el archivo se va, el recolector lo borra."""
+    path = _folder(user_id) / "derived" / f"{checksum}.{kind}"
+    if path.is_file():
+        return path.read_bytes()
+    content = build()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_bytes(content)
+    os.replace(tmp, path)
+    return content
+
+
 def collect(user_id: int, in_use: set[str]) -> int:
-    """Borra de la carpeta de la persona los archivos que ya ninguna ficha usa. Devuelve cuántos."""
+    """Borra de la carpeta de la persona los archivos que ya ninguna ficha usa, y lo que salía de
+    ellos (miniaturas, páginas). Devuelve cuántos archivos borró."""
     folder = _folder(user_id)
     if not folder.is_dir():
         return 0
@@ -51,4 +67,8 @@ def collect(user_id: int, in_use: set[str]) -> int:
         if path.is_file() and f"{path.parent.name}/{path.name}" not in in_use:
             path.unlink()
             n += 1
+    alive = {f.rsplit("/", 1)[-1] for f in in_use}
+    for path in folder.glob("derived/*"):
+        if path.is_file() and path.name.split(".", 1)[0] not in alive:
+            path.unlink()
     return n

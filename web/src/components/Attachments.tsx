@@ -1,20 +1,20 @@
 // Adjuntos de un movimiento: la boleta, el voucher o el recibo, en foto o PDF de hasta 5 MB.
 // En Registrar se eligen antes de guardar y se suben al guardar; en el detalle se ven en miniaturas,
-// se abren a pantalla completa y se descargan o borran (pide confirmar).
+// se abren en el visor (AttachmentViewer) y se descargan o borran (pide confirmar).
 import { useRef, useState } from "react";
-import { createPortal } from "react-dom";
 
-import { type Attachment, attachmentUrl, useAttachments, useDeleteAttachment, useUploadAttachment } from "@/api/hooks";
+import { type Attachment, useAttachments, useDeleteAttachment, useUploadAttachment } from "@/api/hooks";
 
+import { shortDate } from "@/lib/dates";
+
+import { AttachmentViewer, fileSize, kindOf, Thumb } from "./AttachmentViewer";
 import { Sheet } from "./Sheet";
 import { ErrorAlert, Icon } from "./ui";
 
 const MAX = 5 * 1024 * 1024;
 const OK = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/;
 
-export function fileSize(bytes: number) {
-  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
+export { fileSize };
 
 /** Lo que no se puede adjuntar, dicho para la persona; null si se puede. */
 export function fileProblem(f: File) {
@@ -90,85 +90,57 @@ export function PendingFiles({ files, onChange }: { files: File[]; onChange: (fi
   );
 }
 
-/** En el detalle de un movimiento: miniaturas, «Adjuntar» y el visor a pantalla completa. */
-export function MoveAttachments({ moveId }: { moveId: number }) {
+/** En el detalle de un movimiento: la tira de miniaturas (la más reciente primero), «Adjuntar» y el visor. */
+export function MoveAttachments({ moveId, caption }: { moveId: number; caption?: string }) {
   const list = useAttachments(moveId).data ?? [];
   const upload = useUploadAttachment();
   const remove = useDeleteAttachment(moveId);
   const [open, setOpen] = useState(false);
-  const [viewing, setViewing] = useState<Attachment | null>(null);
-  const [confirm, setConfirm] = useState(false);
+  const [viewing, setViewing] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const [broken, setBroken] = useState<number[]>([]);   // imágenes que el navegador no puede mostrar: ícono y nombre
   const add = async (files: File[]) => {
     setProblem(files.map(fileProblem).find(Boolean) ?? null);
     for (const file of files.filter((f) => !fileProblem(f))) {
       await upload.mutateAsync({ moveId, file }).catch((e: Error) => setProblem(e.message));
     }
   };
-  const close = () => { setViewing(null); setConfirm(false); };
+  const del = (a: Attachment) => remove.mutate(a.id, {
+    onSuccess: () => setViewing((i) => (list.length <= 1 || i === null ? null : Math.min(i, list.length - 2))),
+  });
 
   return (
     <section aria-label="Adjuntos" className="mt-6 flex flex-col">
-      <span className="border-b border-border pb-1 text-label text-muted-foreground">Adjuntos</span>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {list.map((a) => (
-          <button key={a.id} type="button" aria-label={`Ver ${a.name}`} onClick={() => setViewing(a)}
-            className="flex aspect-[3/4] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-[12px] border border-border bg-card p-0 text-[12px] leading-4 text-muted-foreground">
-            {a.mimetype.startsWith("image/") && a.mimetype !== "image/heic" && !broken.includes(a.id) ? (
-              <img src={attachmentUrl(a.id)} alt="" loading="lazy" className="size-full object-cover"
-                onError={() => setBroken((b) => [...b, a.id])} />
-            ) : (
-              <>
-                <Icon name={a.mimetype === "application/pdf" ? "picture_as_pdf" : "image"} className="text-[32px]" />
-                <span className="max-w-full truncate px-2">{a.name}</span>
-              </>
-            )}
-          </button>
-        ))}
+      <div className="flex items-baseline justify-between border-b border-border pb-1">
+        <span className="text-label text-muted-foreground">Adjuntos{list.length ? ` · ${list.length}` : ""}</span>
+        {list.length > 1 && <span className="text-caption text-muted-foreground">del más reciente al más antiguo</span>}
+      </div>
+      <div className="-mx-6 mt-3 flex gap-3 overflow-x-auto px-6 pb-1">
         <button type="button" aria-haspopup="dialog" onClick={() => setOpen(true)} disabled={upload.isPending}
-          className="flex aspect-[3/4] flex-col items-center justify-center gap-1.5 rounded-[12px] border-[1.5px] border-dashed border-input-line text-[13px] font-semibold disabled:opacity-60">
+          className="flex h-[148px] w-28 flex-none flex-col items-center justify-center gap-1.5 rounded-[12px] border-[1.5px] border-dashed border-input-line text-[13px] font-semibold disabled:opacity-60">
           <Icon name={upload.isPending ? "progress_activity" : "add_a_photo"} className={`text-[26px] ${upload.isPending ? "animate-spin" : ""}`} />
           {upload.isPending ? "Subiendo…" : "Adjuntar"}
         </button>
+        {list.map((a, i) => (
+          <button key={a.id} type="button" aria-label={`Ver ${a.name}`} onClick={() => setViewing(i)}
+            className="flex w-28 flex-none flex-col gap-1.5 text-left">
+            <span className="relative h-[148px] w-28 overflow-hidden rounded-[12px] border border-border">
+              <Thumb a={a} className="size-full" />
+              <span className="absolute bottom-1.5 left-1.5 rounded-md bg-[#171717]/80 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                {kindOf(a) === "PDF" ? "PDF" : "FOTO"}
+              </span>
+            </span>
+            <span className="truncate text-[13px] leading-[18px] font-semibold">{a.name}</span>
+            <span className="-mt-1.5 text-[12px] leading-4 text-muted-foreground">{shortDate(a.create_date.slice(0, 10))}</span>
+          </button>
+        ))}
       </div>
       <span className="mt-2 text-caption text-muted-foreground">Foto o PDF de hasta 5 MB. Se guardan en tu carpeta, con el respaldo diario.</span>
       {problem && <div className="mt-2"><ErrorAlert>{problem}</ErrorAlert></div>}
       <AttachSheet open={open} onClose={() => setOpen(false)} onFiles={add} />
 
-      {viewing && createPortal(
-        <div role="dialog" aria-modal="true" aria-label={viewing.name} className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] px-4 pt-4 pb-6 text-[#fafafa]">
-          <div className="flex items-center gap-2">
-            <button type="button" aria-label="Cerrar" onClick={close} className="grid size-11 place-items-center rounded-full">
-              <Icon name="close" className="text-[24px]" />
-            </button>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-semibold">{viewing.name}</span>
-              <span className="text-caption text-[#a3a3a3]">{fileSize(viewing.file_size)} · {viewing.mimetype === "application/pdf" ? "PDF" : "foto"}</span>
-            </span>
-          </div>
-          <div className="my-4 flex min-h-0 flex-1 items-center justify-center overflow-auto">
-            {viewing.mimetype === "application/pdf" ? (
-              <iframe title={viewing.name} src={attachmentUrl(viewing.id)} className="size-full rounded-md bg-white" />
-            ) : (
-              <img src={attachmentUrl(viewing.id)} alt={viewing.name} className="max-h-full max-w-full object-contain" />
-            )}
-          </div>
-          {confirm && <span className="mb-2.5 text-center text-[#d4d4d4]">¿Borrar este adjunto? El movimiento queda igual.</span>}
-          {remove.error && <div className="mb-2"><ErrorAlert>{remove.error.message}</ErrorAlert></div>}
-          <div className="grid grid-cols-2 gap-2">
-            <a href={attachmentUrl(viewing.id, true)} download={viewing.name}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-[14px] border border-[#525252] font-semibold">
-              <Icon name="download" className="text-[20px]" />Descargar
-            </a>
-            <button type="button" disabled={remove.isPending}
-              onClick={() => (confirm ? remove.mutate(viewing.id, { onSuccess: close }) : setConfirm(true))}
-              className={`flex h-12 items-center justify-center gap-1.5 rounded-[14px] font-semibold ${confirm ? "bg-[#b42318]" : "bg-[#262626]"}`}>
-              <Icon name="delete" className="text-[20px]" />{confirm ? "Sí, borrar" : "Borrar"}
-            </button>
-          </div>
-        </div>,
-        document.body,
+      {viewing !== null && list[viewing] && (
+        <AttachmentViewer list={list} index={viewing} onIndex={setViewing} onClose={() => setViewing(null)} caption={caption}
+          onDelete={del} deleting={remove.isPending} error={remove.error?.message} onAdd={() => setOpen(true)} />
       )}
     </section>
   );

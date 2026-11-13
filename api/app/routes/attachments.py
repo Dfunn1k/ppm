@@ -25,6 +25,7 @@ class AttachmentOut(BaseModel):
     mimetype: str
     file_size: int
     create_date: dt.datetime
+    page_count: int | None = None        # un PDF: cuántas páginas muestra el visor
 
 
 @router.get("/moves/{move_id}/attachments", summary="Los adjuntos de un movimiento")
@@ -59,6 +60,29 @@ def file_(attachment_id: int, download: bool = False, session: CurrentSession = 
         "Cache-Control": "private, max-age=86400",
         "X-Content-Type-Options": "nosniff",
     })
+
+
+# Un adjunto no cambia nunca (otro archivo es otro adjunto): lo que sale de él se guarda en el navegador
+_FOREVER = {"Cache-Control": "private, max-age=31536000, immutable"}
+
+
+@router.get("/attachments/{attachment_id}/thumb", summary="La miniatura de un adjunto (WebP)",
+            response_class=Response, responses={200: {"content": {"image/webp": {}}}})
+def thumb(attachment_id: int, session: CurrentSession = Depends(current_session)) -> Response:
+    try:
+        return Response(attachments.thumbnail(session.user_id, attachment_id), media_type="image/webp", headers=_FOREVER)
+    except AccountError as e:
+        raise _http(e) from None
+
+
+@router.get("/attachments/{attachment_id}/view", summary="Lo que muestra el visor: la foto o una página del PDF",
+            response_class=Response, responses={200: {"content": {"image/webp": {}}}})
+def view(attachment_id: int, page: int = 1, session: CurrentSession = Depends(current_session)) -> Response:
+    try:
+        content, mimetype = attachments.view(session.user_id, attachment_id, page)
+    except AccountError as e:
+        raise _http(e) from None
+    return Response(content, media_type=mimetype, headers=_FOREVER)
 
 
 @router.delete("/attachments/{attachment_id}", summary="Borrar un adjunto (el movimiento queda igual)")

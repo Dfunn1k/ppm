@@ -1,0 +1,57 @@
+"""Lo que el navegador muestra de un adjunto, livianito y siempre igual de rápido:
+
+- la miniatura: WebP de 360 px (la foto, o la primera página del PDF), para la tira y el visor;
+- la vista: la foto tal cual si el navegador la sabe mostrar (JPG, PNG, WEBP), o en WebP de hasta
+  2000 px si no (HEIC del iPhone); en un PDF, cada página como imagen, porque el celular no muestra
+  PDFs dentro de la página.
+
+Se generan la primera vez que se piden y se guardan en el almacén junto al archivo (ver filestore),
+así que después salen del disco. Una foto se gira según su EXIF, como la tomó la cámara."""
+
+import io
+
+import pypdfium2 as pdfium
+from PIL import Image, ImageOps
+from pillow_heif import register_heif_opener
+
+register_heif_opener()
+
+THUMB = 360           # px del lado mayor de la miniatura (112 px en pantalla, ×3 para pantallas densas)
+VIEW = 2000           # px del lado mayor de una foto convertida o de una página de PDF
+SHOWABLE = {"image/jpeg", "image/png", "image/webp"}
+
+
+def _webp(img: Image.Image, size: int, quality: int) -> bytes:
+    img = ImageOps.exif_transpose(img)
+    if img.mode not in ("RGB", "RGBA"):
+        img = img.convert("RGB")
+    img.thumbnail((size, size))
+    out = io.BytesIO()
+    img.save(out, "WEBP", quality=quality, method=4)
+    return out.getvalue()
+
+
+def _pdf_page(content: bytes, page: int, size: int) -> Image.Image:
+    pdf = pdfium.PdfDocument(content)
+    p = pdf[page - 1]
+    w, h = p.get_size()
+    return p.render(scale=size / max(w, h)).to_pil()
+
+
+def page_count(content: bytes) -> int:
+    return len(pdfium.PdfDocument(content))
+
+
+def thumbnail(content: bytes, mimetype: str) -> bytes:
+    if mimetype == "application/pdf":
+        return _webp(_pdf_page(content, 1, THUMB * 2), THUMB, 70)
+    return _webp(Image.open(io.BytesIO(content)), THUMB, 70)
+
+
+def view(content: bytes, mimetype: str, page: int = 1) -> tuple[bytes, str]:
+    """La imagen que muestra el visor y su tipo. Una foto que el navegador ya sabe mostrar va tal cual."""
+    if mimetype == "application/pdf":
+        return _webp(_pdf_page(content, page, VIEW), VIEW, 80), "image/webp"
+    if mimetype in SHOWABLE:
+        return content, mimetype
+    return _webp(Image.open(io.BytesIO(content)), VIEW, 82), "image/webp"

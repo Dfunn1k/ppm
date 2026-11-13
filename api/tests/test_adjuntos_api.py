@@ -1,5 +1,6 @@
 """Adjuntos de un movimiento: la boleta en foto o PDF, verla, descargarla y borrarla."""
 
+import io
 from pathlib import Path
 
 import pytest
@@ -37,7 +38,7 @@ def test_adjuntar_ver_y_borrar(ana: Ana):
     foto = subir(ana, m, JPG, "boleta-plaza-vea.jpg")
     pdf = subir(ana, m, PDF, "comprobante.pdf")
     assert [(a["name"], a["mimetype"]) for a in ana.c.get(f"/moves/{m}/attachments").json()] == \
-        [("boleta-plaza-vea.jpg", "image/jpeg"), ("comprobante.pdf", "application/pdf")]
+        [("comprobante.pdf", "application/pdf"), ("boleta-plaza-vea.jpg", "image/jpeg")]   # el más reciente primero
     assert foto["file_size"] == len(JPG)
 
     r = ana.c.get(f"/attachments/{foto['id']}/file")
@@ -77,3 +78,90 @@ def test_los_adjuntos_son_de_quien_los_sube(ana: Ana):
     assert otra.c.get(f"/attachments/{foto['id']}/file").status_code == 404
     assert otra.c.get(f"/moves/{m}/attachments").status_code == 404
     assert otra.c.post(f"/moves/{m}/attachments", files={"file": ("x.jpg", JPG)}).status_code == 404
+
+
+# --- Miniaturas y visor (0030) ----------------------------------------------------------------
+
+def _foto(fmt: str, size=(1200, 1600), exif_rotate=False) -> bytes:
+    from PIL import Image
+    img = Image.new("RGB", size, (232, 176, 75))
+    out = io.BytesIO()
+    if fmt == "HEIF":
+        from pillow_heif import from_pillow
+        from_pillow(img).save(out, format="HEIF")
+    elif exif_rotate:
+        exif = Image.Exif()
+        exif[0x0112] = 6                                       # la cámara la tomó girada 90°
+        img.save(out, fmt, exif=exif)
+    else:
+        img.save(out, fmt)
+    return out.getvalue()
+
+
+def _pdf(pages: int) -> bytes:
+    from PIL import Image
+    imgs = [Image.new("RGB", (600, 800), (255, 255, 255)) for _ in range(pages)]
+    out = io.BytesIO()
+    imgs[0].save(out, "PDF", save_all=True, append_images=imgs[1:])
+    return out.getvalue()
+
+
+def _size(content: bytes) -> tuple[int, int]:
+    from PIL import Image
+    return Image.open(io.BytesIO(content)).size
+
+
+def test_la_miniatura_es_un_webp_liviano_y_se_guarda(ana: Ana):
+    m = gasto(ana)
+    foto = subir(ana, m, _foto("JPEG", exif_rotate=True), "boleta.jpg")
+    r = ana.c.get(f"/attachments/{foto['id']}/thumb")
+    assert (r.status_code, r.headers["content-type"]) == (200, "image/webp")
+    assert "immutable" in r.headers["cache-control"]
+    assert _size(r.content) == (360, 270)                       # girada según su EXIF, 360 px de lado mayor
+    assert len(r.content) < 20_000
+    uid = ana.c.get("/me").json()["id"]
+    assert len(list((Path(get_settings().filestore_dir) / str(uid)).glob("derived/*.thumb.webp"))) == 1
+
+
+def test_una_foto_heic_se_ve(ana: Ana):
+    m = gasto(ana)
+    heic = subir(ana, m, _foto("HEIF"), "IMG_0001.HEIC")
+    assert heic["mimetype"] == "image/heic"
+    assert ana.c.get(f"/attachments/{heic['id']}/thumb").headers["content-type"] == "image/webp"
+    r = ana.c.get(f"/attachments/{heic['id']}/view")
+    assert (r.headers["content-type"], _size(r.content)) == ("image/webp", (1200, 1600))
+
+
+def test_una_foto_que_el_navegador_muestra_va_tal_cual(ana: Ana):
+    m = gasto(ana)
+    png = _foto("PNG")
+    a = subir(ana, m, png, "captura.png")
+    r = ana.c.get(f"/attachments/{a['id']}/view")
+    assert (r.headers["content-type"], r.content) == ("image/png", png)
+
+
+def test_un_pdf_se_ve_pagina_por_pagina(ana: Ana):
+    m = gasto(ana)
+    pdf = subir(ana, m, _pdf(3), "estado.pdf")
+    assert pdf["page_count"] == 3
+    r = ana.c.get(f"/attachments/{pdf['id']}/view", params={"page": 2})
+    assert (r.status_code, r.headers["content-type"]) == (200, "image/webp")
+    assert max(_size(r.content)) == 2000
+    assert ana.c.get(f"/attachments/{pdf['id']}/view", params={"page": 4}).status_code == 404
+    assert _size(ana.c.get(f"/attachments/{pdf['id']}/thumb").content)[1] == 360
+
+
+def test_un_archivo_que_no_se_puede_leer_se_descarga_igual(ana: Ana):
+    m = gasto(ana)
+    a = subir(ana, m, JPG, "rota.jpg")
+    assert ana.c.get(f"/attachments/{a['id']}/thumb").status_code == 415
+    assert ana.c.get(f"/attachments/{a['id']}/file").status_code == 200
+
+
+def test_borrar_el_adjunto_se_lleva_su_miniatura(ana: Ana):
+    m = gasto(ana)
+    a = subir(ana, m, _foto("JPEG"), "boleta.jpg")
+    ana.c.get(f"/attachments/{a['id']}/thumb")
+    assert ana.c.delete(f"/attachments/{a['id']}").status_code == 204
+    uid = ana.c.get("/me").json()["id"]
+    assert list((Path(get_settings().filestore_dir) / str(uid)).glob("derived/*")) == []
