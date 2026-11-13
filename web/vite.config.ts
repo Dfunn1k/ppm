@@ -3,14 +3,24 @@ import { fileURLToPath } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { readFileSync } from "node:fs";
+
+import { defineConfig, type Plugin } from "vite";
+
+import { iconFontUrl } from "./src/lib/iconFontUrl";
 
 // La web y la API parecen «la misma casa»: el navegador llama a /api/… y Vite lo reenvía
 // a la API sin el prefijo. Así la cookie de sesión funciona sola, sin CORS.
 const apiTarget = process.env.API_TARGET ?? "http://localhost:8000";
 
+// La fuente de íconos a la medida: solo los que usa la interfaz (src/data/ui-icons.json)
+function iconFont(): Plugin {
+  const icons = JSON.parse(readFileSync(new URL("./src/data/ui-icons.json", import.meta.url), "utf8")) as string[];
+  return { name: "ppm-icon-font", transformIndexHtml: (html) => html.replace("%PPM_ICON_FONT%", iconFontUrl(icons)) };
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), iconFont()],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },

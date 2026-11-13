@@ -1,7 +1,7 @@
 // X3 · Categorías: las de gasto por grupo y las de ingreso, y crear una nueva. Una de gasto va
 // dentro de un grupo, o nace con un grupo nuevo (nunca hay grupos vacíos); las de ingreso, sueltas.
 // Cambiar, archivar, mover y fusionar llegan después.
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { ApiError, useCategories, useCreateCategory } from "@/api/hooks";
@@ -12,6 +12,7 @@ import { ErrorAlert, Icon, LineField, PrimaryButton, Screen } from "@/components
 type Kind = "expense" | "income";
 const KINDS = [{ value: "expense", label: "De gasto" }, { value: "income", label: "De ingreso" }];
 const NEW_GROUP = "new";
+const AllIcons = lazy(() => import("@/components/AllIcons"));   // el catálogo completo, solo si se abre
 const COLORS = ["gris", "rojo", "naranja", "mostaza", "turquesa", "morado", "marrón", "verde azulado", "azul", "frambuesa", "verde", "índigo"];
 
 // Íconos de Material Symbols con palabras para buscarlos
@@ -103,6 +104,7 @@ export function NuevaCategoria() {
   const [groupName, setGroupName] = useState("");
   const [q, setQ] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [all, setAll] = useState(false);
   const [color, setColor] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -190,6 +192,23 @@ export function NuevaCategoria() {
               ))}
               {icons.length === 0 && <span className="col-span-7 py-2 text-caption text-muted-foreground">No hay íconos con «{q}».</span>}
             </div>
+            {icon && !ICONS.some(([n]) => n === icon) && (
+              <span className="flex items-center gap-2 text-caption text-muted-foreground">
+                Elegiste <span className="grid size-8 place-items-center rounded-md" style={{ background: `var(--cat-${shown.color})`, color: "var(--on-category)" }}>
+                  <Icon name={icon} className="text-[20px]" /></span> del catálogo completo
+              </span>
+            )}
+            {all ? (
+              <Suspense fallback={<span className="py-2 text-caption text-muted-foreground">Cargando los íconos…</span>}>
+                <span className="mt-2 text-caption font-semibold">Todos los íconos</span>
+                <AllIcons value={icon} onPick={setIcon} tint={shown.color} />
+              </Suspense>
+            ) : (
+              <button type="button" onClick={() => setAll(true)}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-border text-caption font-semibold">
+                <Icon name="apps" className="text-[18px]" />Ver todos los íconos
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">

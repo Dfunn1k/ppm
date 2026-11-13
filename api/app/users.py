@@ -1,7 +1,7 @@
 """Lógica de la persona: sus datos y la configuración inicial (los 3 pasos)."""
 
 import datetime as dt
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import psycopg
 
@@ -31,6 +31,7 @@ class Me:
     ui_private: bool = False  # modo privado: los montos del Inicio escondidos
     home_account_id: int | None = None   # la cuenta con que arranca el + del Inicio; None = elegirla cada vez
     lock_date: dt.date | None = None     # cierre de periodo: nada con fecha hasta ese día se toca
+    icons: list[str] = field(default_factory=list)   # los íconos de sus categorías y cuentas (la fuente a la medida)
 
 
 def get_me(user_id: int) -> Me:
@@ -43,14 +44,17 @@ def get_me(user_id: int) -> Me:
                             '{}'),
                    u.notice_days, u.ui_private,
                    (SELECT a.id FROM account_account a WHERE a.id = u.home_account_id AND a.active),
-                   u.lock_date
+                   u.lock_date,
+                   coalesce((SELECT array_agg(DISTINCT a.icon ORDER BY a.icon) FROM account_account a
+                              WHERE a.icon IS NOT NULL), '{}')
               FROM res_users u
               LEFT JOIN res_country co  ON co.id = u.country_id
               LEFT JOIN res_currency cur ON cur.id = u.currency_id
               LEFT JOIN res_lang l      ON l.id = u.lang_id
         """).fetchone()
     return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails,
-              notice_days=row[11], ui_private=row[12], home_account_id=row[13], lock_date=row[14])
+              notice_days=row[11], ui_private=row[12], home_account_id=row[13], lock_date=row[14],
+              icons=list(row[15]))
 
 
 def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None,

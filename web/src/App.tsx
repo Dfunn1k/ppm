@@ -1,55 +1,68 @@
-import { type ReactNode, useEffect } from "react";
+import { lazy, type ReactNode, Suspense, useEffect } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 
 import { type Me, useMe } from "./api/hooks";
+import { applyIconsOf } from "./lib/iconFont";
 import { AppNav } from "./components/AppNav";
 import { Spinner } from "./components/ui";
 import { WizardProvider } from "./pages/bienvenida/wizard";
-import { Paso1 } from "./pages/bienvenida/Paso1";
-import { Paso2 } from "./pages/bienvenida/Paso2";
-import { Paso3, Paso3Banco } from "./pages/bienvenida/Paso3";
-import { CrearCuenta } from "./pages/CrearCuenta";
-import { Cuentas } from "./pages/cuentas/Cuentas";
-import { Detalle } from "./pages/cuentas/Detalle";
-import { EditarBanco } from "./pages/cuentas/EditarBanco";
-import { NuevaGuardo } from "./pages/cuentas/Guardo";
-import { NuevaCuenta, NuevaCuentaForm } from "./pages/cuentas/Nueva";
 import { Entrar } from "./pages/Entrar";
-import { Extracto } from "./pages/importar/Extracto";
-import { Importar } from "./pages/importar/Importar";
 import { Inicio } from "./pages/Inicio";
-import { Pendientes } from "./pages/Pendientes";
-import { Apariencia } from "./pages/mas/Apariencia";
-import { Categorias, NuevaCategoria } from "./pages/mas/Categorias";
-import { Cierre } from "./pages/mas/Cierre";
-import { InicioAjustes } from "./pages/mas/InicioAjustes";
-import { NuevoPrestamo, PagarCuota, Prestamo } from "./pages/prestamos/Prestamos";
-import { Recurrente, Recurrentes } from "./pages/recurrentes/Recurrentes";
-import { ReporteCategorias } from "./pages/reportes/Categorias";
-import { ReporteFlujo } from "./pages/reportes/Flujo";
-import { ReportePatrimonio } from "./pages/reportes/Patrimonio";
-import { ReportePersonas } from "./pages/reportes/Personas";
-import { Reportes } from "./pages/reportes/Reportes";
-import { Mas } from "./pages/mas/Mas";
-import { MiCuenta } from "./pages/mas/MiCuenta";
-import { TipoCambio } from "./pages/mas/TipoCambio";
-import { DetalleMovimiento } from "./pages/movimientos/Detalle";
-import { Movimientos } from "./pages/movimientos/Movimientos";
-import { PorClasificar } from "./pages/movimientos/PorClasificar";
-import { AsientoManual } from "./pages/movimientos/AsientoManual";
-import { Reembolso } from "./pages/movimientos/Reembolso";
-import { EditarMovimiento, EditarRecurrente, Registrar, RegistrarAviso } from "./pages/movimientos/Registrar";
-import { RegistrarPersona } from "./pages/movimientos/RegistrarPersona";
-import { Persona } from "./pages/personas/Persona";
-import { Personas } from "./pages/personas/Personas";
-import { YaDebia } from "./pages/personas/YaDebia";
-import { Recuperar } from "./pages/Recuperar";
-import { Restablecer } from "./pages/Restablecer";
-import { Conciliar } from "./pages/tarjetas/Conciliar";
-import { CuotasAntes } from "./pages/tarjetas/CuotasAntes";
-import { NuevaTarjeta } from "./pages/tarjetas/NuevaTarjeta";
-import { PagarTarjeta } from "./pages/tarjetas/PagarTarjeta";
-import { Tarjeta } from "./pages/tarjetas/Tarjeta";
+
+// Cada pantalla es un archivo aparte que se descarga al abrirla: así la primera carga trae solo lo
+// necesario (Reportes con sus gráficos, el importador o el calendario no viajan con el Inicio)
+const Paso1 = lazy(() => import("./pages/bienvenida/Paso1").then((m) => ({ default: m.Paso1 })));
+const Paso2 = lazy(() => import("./pages/bienvenida/Paso2").then((m) => ({ default: m.Paso2 })));
+const Paso3 = lazy(() => import("./pages/bienvenida/Paso3").then((m) => ({ default: m.Paso3 })));
+const Paso3Banco = lazy(() => import("./pages/bienvenida/Paso3").then((m) => ({ default: m.Paso3Banco })));
+const CrearCuenta = lazy(() => import("./pages/CrearCuenta").then((m) => ({ default: m.CrearCuenta })));
+const Cuentas = lazy(() => import("./pages/cuentas/Cuentas").then((m) => ({ default: m.Cuentas })));
+const Detalle = lazy(() => import("./pages/cuentas/Detalle").then((m) => ({ default: m.Detalle })));
+const EditarBanco = lazy(() => import("./pages/cuentas/EditarBanco").then((m) => ({ default: m.EditarBanco })));
+const NuevaGuardo = lazy(() => import("./pages/cuentas/Guardo").then((m) => ({ default: m.NuevaGuardo })));
+const NuevaCuenta = lazy(() => import("./pages/cuentas/Nueva").then((m) => ({ default: m.NuevaCuenta })));
+const NuevaCuentaForm = lazy(() => import("./pages/cuentas/Nueva").then((m) => ({ default: m.NuevaCuentaForm })));
+const Extracto = lazy(() => import("./pages/importar/Extracto").then((m) => ({ default: m.Extracto })));
+const Importar = lazy(() => import("./pages/importar/Importar").then((m) => ({ default: m.Importar })));
+const Pendientes = lazy(() => import("./pages/Pendientes").then((m) => ({ default: m.Pendientes })));
+const Apariencia = lazy(() => import("./pages/mas/Apariencia").then((m) => ({ default: m.Apariencia })));
+const Categorias = lazy(() => import("./pages/mas/Categorias").then((m) => ({ default: m.Categorias })));
+const NuevaCategoria = lazy(() => import("./pages/mas/Categorias").then((m) => ({ default: m.NuevaCategoria })));
+const Cierre = lazy(() => import("./pages/mas/Cierre").then((m) => ({ default: m.Cierre })));
+const InicioAjustes = lazy(() => import("./pages/mas/InicioAjustes").then((m) => ({ default: m.InicioAjustes })));
+const NuevoPrestamo = lazy(() => import("./pages/prestamos/Prestamos").then((m) => ({ default: m.NuevoPrestamo })));
+const PagarCuota = lazy(() => import("./pages/prestamos/Prestamos").then((m) => ({ default: m.PagarCuota })));
+const Prestamo = lazy(() => import("./pages/prestamos/Prestamos").then((m) => ({ default: m.Prestamo })));
+const Recurrente = lazy(() => import("./pages/recurrentes/Recurrentes").then((m) => ({ default: m.Recurrente })));
+const Recurrentes = lazy(() => import("./pages/recurrentes/Recurrentes").then((m) => ({ default: m.Recurrentes })));
+const ReporteCategorias = lazy(() => import("./pages/reportes/Categorias").then((m) => ({ default: m.ReporteCategorias })));
+const ReporteFlujo = lazy(() => import("./pages/reportes/Flujo").then((m) => ({ default: m.ReporteFlujo })));
+const ReportePatrimonio = lazy(() => import("./pages/reportes/Patrimonio").then((m) => ({ default: m.ReportePatrimonio })));
+const ReportePersonas = lazy(() => import("./pages/reportes/Personas").then((m) => ({ default: m.ReportePersonas })));
+const Reportes = lazy(() => import("./pages/reportes/Reportes").then((m) => ({ default: m.Reportes })));
+const Mas = lazy(() => import("./pages/mas/Mas").then((m) => ({ default: m.Mas })));
+const MiCuenta = lazy(() => import("./pages/mas/MiCuenta").then((m) => ({ default: m.MiCuenta })));
+const TipoCambio = lazy(() => import("./pages/mas/TipoCambio").then((m) => ({ default: m.TipoCambio })));
+const DetalleMovimiento = lazy(() => import("./pages/movimientos/Detalle").then((m) => ({ default: m.DetalleMovimiento })));
+const Movimientos = lazy(() => import("./pages/movimientos/Movimientos").then((m) => ({ default: m.Movimientos })));
+const PorClasificar = lazy(() => import("./pages/movimientos/PorClasificar").then((m) => ({ default: m.PorClasificar })));
+const AsientoManual = lazy(() => import("./pages/movimientos/AsientoManual").then((m) => ({ default: m.AsientoManual })));
+const Reembolso = lazy(() => import("./pages/movimientos/Reembolso").then((m) => ({ default: m.Reembolso })));
+const EditarMovimiento = lazy(() => import("./pages/movimientos/Registrar").then((m) => ({ default: m.EditarMovimiento })));
+const EditarRecurrente = lazy(() => import("./pages/movimientos/Registrar").then((m) => ({ default: m.EditarRecurrente })));
+const Registrar = lazy(() => import("./pages/movimientos/Registrar").then((m) => ({ default: m.Registrar })));
+const RegistrarAviso = lazy(() => import("./pages/movimientos/Registrar").then((m) => ({ default: m.RegistrarAviso })));
+const RegistrarPersona = lazy(() => import("./pages/movimientos/RegistrarPersona").then((m) => ({ default: m.RegistrarPersona })));
+const Persona = lazy(() => import("./pages/personas/Persona").then((m) => ({ default: m.Persona })));
+const Personas = lazy(() => import("./pages/personas/Personas").then((m) => ({ default: m.Personas })));
+const YaDebia = lazy(() => import("./pages/personas/YaDebia").then((m) => ({ default: m.YaDebia })));
+const Recuperar = lazy(() => import("./pages/Recuperar").then((m) => ({ default: m.Recuperar })));
+const Restablecer = lazy(() => import("./pages/Restablecer").then((m) => ({ default: m.Restablecer })));
+const Conciliar = lazy(() => import("./pages/tarjetas/Conciliar").then((m) => ({ default: m.Conciliar })));
+const CuotasAntes = lazy(() => import("./pages/tarjetas/CuotasAntes").then((m) => ({ default: m.CuotasAntes })));
+const NuevaTarjeta = lazy(() => import("./pages/tarjetas/NuevaTarjeta").then((m) => ({ default: m.NuevaTarjeta })));
+const PagarTarjeta = lazy(() => import("./pages/tarjetas/PagarTarjeta").then((m) => ({ default: m.PagarTarjeta })));
+const Tarjeta = lazy(() => import("./pages/tarjetas/Tarjeta").then((m) => ({ default: m.Tarjeta })));
 
 /** Adónde va cada quien: sin sesión → entrar; sin configurar → los 3 pasos; si no, al Inicio. */
 function home(me: Me | null | undefined) {
@@ -90,8 +103,10 @@ function useTheme(me: Me | null | undefined) {
 export function App() {
   const me = useMe();
   useTheme(me.data);
+  useEffect(() => applyIconsOf(me.data?.icons), [me.data]);
 
   return (
+    <Suspense fallback={<Spinner />}>
     <Routes>
       <Route element={<Guard allow={(m) => m === null} />}>
         <Route path="/entrar" element={<Entrar />} />
@@ -169,5 +184,6 @@ export function App() {
       </Route>
       <Route path="*" element={me.isPending ? <Spinner /> : <Navigate to={home(me.data)} replace />} />
     </Routes>
+    </Suspense>
   );
 }

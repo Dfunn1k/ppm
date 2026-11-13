@@ -30,6 +30,7 @@ class MeOut(BaseModel):
     ui_private: bool
     home_account_id: int | None
     lock_date: dt.date | None = None     # cierre de periodo
+    icons: list[str] = []                # los íconos de sus categorías y cuentas
 
     @classmethod
     def of(cls, me: users.Me) -> "MeOut":
