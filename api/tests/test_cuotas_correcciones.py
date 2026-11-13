@@ -78,8 +78,9 @@ def cuadra_cuotas_por_venir(c) -> None:
             "                  AND x.installment_sequence = pl.sequence AND x.state = 'posted')", (plan,)).fetchone()[0]
         billed_base = c.execute(
             "SELECT coalesce(sum(l.credit), 0) FROM account_move_line l JOIN account_move x ON x.id = l.move_id"
-            " WHERE x.installment_plan_id = %s AND x.state = 'posted'"
-            "   AND l.account_id = system_account('installments')", (plan,)).fetchone()[0]
+            " WHERE (x.installment_plan_id = %s"
+            "        OR x.id = (SELECT cancel_move_id FROM account_installment_plan WHERE id = %s))"
+            "   AND x.state = 'posted' AND l.account_id = system_account('installments')", (plan, plan)).fetchone()[0]
         w = want.setdefault(cid, [Decimal(0), Decimal(0)])
         w[0] += unbilled
         w[1] += total - billed_base

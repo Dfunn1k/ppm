@@ -511,20 +511,24 @@ def create(user_id: int, m: MoveInput) -> int:
     with user_transaction(user_id) as conn:
         try:
             with conn.transaction():
-                on, state = _state(conn, m)
-                default_ref, lines = _build(conn, m, on)
-                move_id = conn.execute(
-                    "INSERT INTO account_move (date, ref, state) VALUES (%s, %s, %s) RETURNING id",
-                    (on, (m.ref or "").strip() or default_ref, state)).fetchone()[0]
-                _write(conn, move_id, lines)
-                if m.installments is not None:
-                    _installments(conn, m, move_id)
-                if m.debt_line_id is not None and m.kind in ("collect", "repay"):
-                    _settle_first(conn, move_id, m.debt_line_id)
-                reconcile(conn, _pairs(conn, move_id))
-                return move_id
+                return _create(conn, m)
         except psycopg.Error as e:
             raise _translate(e) from None
+
+
+def _create(conn: psycopg.Connection, m: MoveInput) -> int:
+    on, state = _state(conn, m)
+    default_ref, lines = _build(conn, m, on)
+    move_id = conn.execute(
+        "INSERT INTO account_move (date, ref, state) VALUES (%s, %s, %s) RETURNING id",
+        (on, (m.ref or "").strip() or default_ref, state)).fetchone()[0]
+    _write(conn, move_id, lines)
+    if m.installments is not None:
+        _installments(conn, m, move_id)
+    if m.debt_line_id is not None and m.kind in ("collect", "repay"):
+        _settle_first(conn, move_id, m.debt_line_id)
+    reconcile(conn, _pairs(conn, move_id))
+    return move_id
 
 
 def _installments(conn: psycopg.Connection, m: MoveInput, move_id: int) -> None:
@@ -546,6 +550,7 @@ def _has_plan(conn: psycopg.Connection, move_id: int) -> bool:
 
 
 PLAN_NOT_EDITABLE = "Una compra en cuotas no se edita: bórrala y regístrala de nuevo"
+CANCEL_NOT_EDITABLE = "Una cancelación de cuotas no se edita: bórrala para deshacerla y vuelve a cancelar"
 
 NOT_EDITABLE = {"opening": "Un saldo inicial no se edita aquí: corrígelo desde su cuenta o, si es con una persona, bórralo y vuelve a anotarlo",
                 "offset": "Una compensación no se edita: bórrala y vuelve a compensar",
@@ -559,6 +564,8 @@ def update(user_id: int, move_id: int, m: MoveInput) -> None:
         kind = _kind_of(conn, move_id)
         if _has_plan(conn, move_id):
             raise AccountError(400, PLAN_NOT_EDITABLE)
+        if _canceled_plan_of(conn, move_id) is not None:
+            raise AccountError(400, CANCEL_NOT_EDITABLE)
         if kind in NOT_EDITABLE:
             raise AccountError(400, NOT_EDITABLE[kind])
         try:
@@ -722,6 +729,23 @@ class PlanLine:
     principal: Decimal
     billed: bool                 # ya llegó en un estado de cuenta (su corte ya pasó)
     interest: Decimal | None = None  # del «Detalle plan cuotas» del estado de cuenta; None = sin dato
+    canceled: bool = False       # salió del calendario al cancelar las cuotas que faltaban
+
+
+@dataclass(frozen=True)
+class CancelOf:
+    move_id: int                 # la compra en cuotas
+    ref: str
+
+
+@dataclass(frozen=True)
+class PlanCancel:
+    """Las cuotas que faltaban se cancelaron: devuelta, o pagada por adelantado."""
+    kind: str                    # 'returned' | 'prepaid'
+    date: dt.date
+    move_id: int                 # su asiento: borrarlo la deshace
+    amount: Decimal              # lo que faltaba facturar, en la moneda de la compra
+    charged: Decimal | None      # pagada por adelantado: lo que cobró el banco
 
 
 @dataclass(frozen=True)
@@ -736,6 +760,7 @@ class PlanDetail:
     plan_id: int | None = None
     price: Decimal | None = None                # el precio (lo que ocupa de la línea)
     category: str | None = None                 # tuya: adónde va cada cuota
+    canceled: PlanCancel | None = None          # las cuotas que faltaban, canceladas
 
 
 @dataclass(frozen=True)
@@ -763,6 +788,7 @@ class MoveDetail:
     lines: list[LineOut] = field(default_factory=list)   # todos los apuntes (para el asiento manual)
     plan: PlanDetail | None = None                       # una compra en cuotas: su calendario
     bank: list[BankLine] = field(default_factory=list)   # lo que dijo el banco, si vino de un extracto
+    cancels: CancelOf | None = None                      # cancela las cuotas que faltaban de esta compra
 
 
 _LINES_SQL = """
@@ -957,6 +983,9 @@ def detail(user_id: int, move_id: int) -> MoveDetail:
             SELECT s.id, s.name, s.account_id, b.payment_ref, b.operation_number
               FROM account_bank_statement_line b JOIN account_bank_statement s ON s.id = b.statement_id
              WHERE b.move_id = %s ORDER BY b.id""", (move_id,))]
+        of = _canceled_plan_of(conn, move_id)
+    if of is not None:
+        d = replace(d, cancels=CancelOf(*of))
     return replace(d, bank=bank) if bank else d
 
 
@@ -1023,8 +1052,55 @@ def _plan_detail(conn: psycopg.Connection, move_id: int) -> PlanDetail | None:
     lines = [PlanLine(seq, closing, amount, closing <= last, interest) for seq, closing, amount, interest in
              conn.execute("SELECT sequence, closing_date, principal, interest FROM account_installment_plan_line"
                           " WHERE plan_id = %s ORDER BY sequence", (plan_id,))]
-    return PlanDetail(card, cur, n, principal, sum((x.principal for x in lines if not x.billed), ZERO), lines,
-                      each, plan_id, price, category)
+    canceled = None
+    row = conn.execute("""
+        SELECT p.cancel_kind, m.date, m.id, p.canceled_lines,
+               (SELECT -l.amount_currency FROM account_move_line l
+                 WHERE l.move_id = m.id AND l.account_id = system_account('installments')),
+               (SELECT l.amount_currency FROM account_move_line l
+                 WHERE l.move_id = m.id AND l.account_id = p.card_account_id)
+          FROM account_installment_plan p JOIN account_move m ON m.id = p.cancel_move_id
+         WHERE p.id = %s""", (plan_id,)).fetchone()
+    if row is not None:
+        kind, on, cancel_id, gone, amount, card_back = row
+        charged = (amount - (card_back if kind == "prepaid" and card_back else ZERO)) if kind == "prepaid" else None
+        canceled = PlanCancel(kind, on, cancel_id, amount, charged)
+        lines = sorted(lines + [PlanLine(x["sequence"], dt.date.fromisoformat(x["closing_date"]), Decimal(str(x["principal"])),
+                                         False, None if x["interest"] is None else Decimal(str(x["interest"])), True)
+                                for x in gone or []], key=lambda x: x.sequence)
+    remaining = sum((x.principal for x in lines if not x.billed and not x.canceled), ZERO)
+    return PlanDetail(card, cur, n, principal, remaining, lines, each, plan_id, price, category, canceled)
+
+
+def _canceled_plan_of(conn: psycopg.Connection, move_id: int) -> tuple[int, str] | None:
+    """Si el movimiento es la cancelación de unas cuotas: la compra (su id y su nota)."""
+    return conn.execute("SELECT m.id, m.ref FROM account_installment_plan p JOIN account_move m ON m.id = p.move_id"
+                        " WHERE p.cancel_move_id = %s", (move_id,)).fetchone()
+
+
+def cancel_plan(user_id: int, plan_id: int, kind: str, on: dt.date | None, charged: Decimal | None,
+                account_id: int | None) -> int:
+    """Cancelar las cuotas que faltan: «Lo devolví» o «Pagué lo que faltaba». Al pagar lo que faltaba
+    desde una cuenta, se registra también el pago de la tarjeta. Devuelve la compra."""
+    if kind == "returned" and (charged is not None or account_id is not None):
+        raise AccountError(400, "Si lo devolviste, no hay nada que pagar")
+    with user_transaction(user_id) as conn:
+        row = conn.execute("SELECT move_id, card_account_id, trim(c.name) FROM account_installment_plan p"
+                           " JOIN res_currency c ON c.id = p.currency_id WHERE p.id = %s", (plan_id,)).fetchone()
+        if row is None:
+            raise AccountError(404, "No encontramos esa compra en cuotas")
+        purchase, card, currency = row
+        try:
+            with conn.transaction():
+                when = on or conn.execute("SELECT user_today()").fetchone()[0]
+                conn.execute("SELECT cancel_installment_plan(%s, %s, %s, %s)", (plan_id, kind, when, charged))
+                if account_id is not None:
+                    _create(conn, MoveInput("transfer", account_id, charged, when, None, to_account_id=card,  # type: ignore[arg-type]
+                                            currency=currency))
+                conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        except psycopg.Error as e:
+            raise _translate(e) from None
+        return purchase
 
 
 def _round6(v: Decimal) -> Decimal:
