@@ -268,28 +268,36 @@ class NetWorthReport:
     realized: Decimal            # lo ganado (o perdido) este año al cambiar moneda
 
 
+def month_values(conn: psycopg.Connection, dates: list[dt.date]) -> dict[dt.date, Decimal]:
+    """Lo que realmente tenía al cierre de cada fecha: cada saldo al tipo de ese día (lo que tengo a la
+    compra, lo que debo a la venta)."""
+    return dict(conn.execute("""
+        SELECT d.d, coalesce(sum(CASE WHEN b.currency_id = u.currency_id THEN b.bal
+                                      ELSE coalesce(round(b.amt * r.rate, 2), b.bal) END), 0)
+          FROM unnest(%s::date[]) AS d(d)
+          CROSS JOIN res_users u
+          LEFT JOIN LATERAL (
+            SELECT l.account_id, l.currency_id, sum(l.amount_currency) AS amt, sum(l.balance) AS bal,
+                   a.system_role IS NOT DISTINCT FROM 'installments' AS deferred
+              FROM account_move_line l
+              JOIN account_move m ON m.id = l.move_id AND m.state = 'posted' AND m.date <= d.d
+              JOIN account_account a ON a.id = l.account_id AND a.account_type IN ('asset', 'liability')
+             GROUP BY l.account_id, l.currency_id, a.system_role) b ON true
+          LEFT JOIN LATERAL (
+            -- «Cuotas por venir» va a la venta, como la tarjeta que la compensa
+            SELECT CASE WHEN b.amt > 0 AND NOT b.deferred THEN rate_buy ELSE rate_sell END AS rate
+              FROM res_currency_rate WHERE currency_id = b.currency_id AND name <= d.d
+             ORDER BY name DESC LIMIT 1) r ON true
+         GROUP BY d.d""", (dates,)).fetchall())
+
+
 def net_worth(user_id: int) -> NetWorthReport:
     o = accounts.overview(user_id)
     with user_transaction(user_id) as conn:
         today = conn.execute("SELECT user_today()").fetchone()[0]
         month0 = today.replace(day=1)
         dates = [_add_months(month0, i - 10) - dt.timedelta(days=1) for i in range(11)] + [today]
-        values = dict(conn.execute("""
-            SELECT d.d, coalesce(sum(CASE WHEN b.currency_id = u.currency_id THEN b.bal
-                                          ELSE coalesce(round(b.amt * r.rate, 2), b.bal) END), 0)
-              FROM unnest(%s::date[]) AS d(d)
-              CROSS JOIN res_users u
-              LEFT JOIN LATERAL (
-                SELECT l.account_id, l.currency_id, sum(l.amount_currency) AS amt, sum(l.balance) AS bal
-                  FROM account_move_line l
-                  JOIN account_move m ON m.id = l.move_id AND m.state = 'posted' AND m.date <= d.d
-                  JOIN account_account a ON a.id = l.account_id AND a.account_type IN ('asset', 'liability')
-                 GROUP BY l.account_id, l.currency_id) b ON true
-              LEFT JOIN LATERAL (
-                SELECT CASE WHEN b.amt > 0 THEN rate_buy ELSE rate_sell END AS rate
-                  FROM res_currency_rate WHERE currency_id = b.currency_id AND name <= d.d
-                 ORDER BY name DESC LIMIT 1) r ON true
-             GROUP BY d.d""", (dates[:-1],)).fetchall())
+        values = month_values(conn, dates[:-1])
         realized = conn.execute("""
             SELECT coalesce(-sum(l.balance), 0) FROM account_move_line l
               JOIN account_move m ON m.id = l.move_id AND m.state = 'posted'

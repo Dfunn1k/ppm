@@ -173,7 +173,10 @@ def _balances(conn: psycopg.Connection, account_ids: list[int],
         return out
     rates = _today_rates(conn) if rates is None else rates
     for acc, cur, amount, book, owed in conn.execute(
-        "SELECT b.account_id, trim(c.name), b.amount_currency, b.balance, a.account_type = 'liability'"
+        # «Cuotas por venir» va al tipo de venta, como la tarjeta que la compensa: si no, una compra en
+        # cuotas en dólares bajaría el patrimonio por la diferencia entre compra y venta
+        "SELECT b.account_id, trim(c.name), b.amount_currency, b.balance,"
+        "       a.account_type = 'liability' OR a.system_role IS NOT DISTINCT FROM 'installments'"
         "  FROM account_balance b JOIN res_currency c ON c.id = b.currency_id"
         "  JOIN account_account a ON a.id = b.account_id"
         " WHERE b.account_id = ANY(%s) ORDER BY c.name",
