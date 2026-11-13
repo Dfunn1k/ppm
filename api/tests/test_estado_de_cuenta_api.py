@@ -221,3 +221,22 @@ def test_tras_usar_la_del_banco_el_ciclo_cuadra(ana: Con, pdf):
     r = ana.c.post(f"/cards/{card}/statements/{CORTE}/installments/{inst['id']}/use-bank").json()
     assert "Subtotal en S/: cuadra al céntimo." in r["explanations"]
     assert not [x for x in r["lines"] if x["move_id"] is None]
+
+
+# --- Cierre de periodo (0028) -----------------------------------------------------------------
+
+def test_un_pdf_que_llega_despues_del_cierre_no_divide_la_cuota(ana: Con, pdf):
+    """Se cerró octubre antes de importar el corte del 25 oct: la foto queda y la cuota de Unipiel no
+    se divide; la conciliación dice qué hacer."""
+    card, unipiel = qore(ana)
+    r = ana.c.put("/closing", json={"lock_date": "2026-10-31"})
+    assert r.status_code == 200, r.text
+    r = upload(ana, card)
+    assert r["used"] == "1716.47"
+    assert r["installments"][0]["not_split"] is True
+    assert any("cae en un periodo cerrado y no se dividió" in e for e in r["explanations"])
+    assert ana.c.get(f"/moves/{unipiel}").json()["plan"]["lines"][0]["interest"] is None
+
+    assert ana.c.put("/closing", json={"lock_date": None}).status_code == 200
+    r = upload(ana, card)
+    assert r["installments"][0]["not_split"] is False

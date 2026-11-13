@@ -1373,3 +1373,33 @@ export function usePeopleReport() {
     },
   });
 }
+
+// --- X4 · Cierre de periodo ----------------------------------------------------------------------
+
+export type Closing = components["schemas"]["ClosingOut"];
+
+/** El cierre y qué impide cerrar hasta una fecha (sin fecha: el fin del mes pasado). */
+export function useClosing(date?: string) {
+  return useQuery({
+    queryKey: ["closing", date ?? "suggested"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/closing", { params: { query: date ? { date } : {} } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Cerrar hasta una fecha, moverla (atrás reabre) o reabrir todo (null). */
+export function useSetLock() {
+  const qc = useQueryClient();
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (lock_date: string | null) => {
+      const { data, error, response } = await api.PUT("/closing", { body: { lock_date } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ["closing"] }), qc.invalidateQueries({ queryKey: ["me"] }), changed()]),
+  });
+}

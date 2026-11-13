@@ -200,7 +200,11 @@ def _save(conn: psycopg.Connection, card_id: int, p: card_pdf.ParsedStatement, f
         plan_id, mine = plan if plan else (None, False)
         if plan_id is not None:
             taken.add(plan_id)
-            if mine:
+            # Una cuota facturada en un periodo cerrado no se divide: queda la foto y se avisa
+            if mine and not conn.execute("""
+                    SELECT 1 FROM account_move m JOIN res_users u ON u.id = m.user_id
+                     WHERE m.installment_plan_id = %s AND m.installment_sequence = %s AND m.date <= u.lock_date""",
+                                         (plan_id, x.sequence)).fetchone():
                 conn.execute("SELECT set_installment_detail(%s, %s, %s, %s)",
                              (plan_id, x.sequence, x.capital, x.interest))
         conn.execute("""
@@ -261,6 +265,7 @@ class StatementInstallment:
     mine: bool                   # tuya: la cuota se dividió en capital e interés
     id: int = 0                  # la fila del «Detalle plan cuotas»
     differs: InstallmentGuess | None = None   # sin par: una compra tuya que casi es, con otra cuota
+    not_split: bool = False      # tuya, pero en un periodo cerrado: no se dividió en capital e interés
 
 
 @dataclass(frozen=True)
@@ -354,10 +359,12 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
         for r in conn.execute("""
             SELECT s.date, s.name, trim(c.name), s.price, s.sequence, s.n_installments, s.capital, s.interest,
                    p.move_id, coalesce(p.expense_account_id IS NOT NULL, false), s.id, s.currency_id,
-                   s.rejected_plan_ids, s.plan_id
+                   s.rejected_plan_ids, s.plan_id,
+                   p.expense_account_id IS NOT NULL AND pl.interest IS NULL AND s.interest > 0
               FROM account_credit_card_statement_installment s
               JOIN res_currency c ON c.id = s.currency_id
               LEFT JOIN account_installment_plan p ON p.id = s.plan_id
+              LEFT JOIN account_installment_plan_line pl ON pl.plan_id = s.plan_id AND pl.sequence = s.sequence
              WHERE s.card_account_id = %s AND s.closing_date = %s ORDER BY s.id""", (card_id, closing)).fetchall():
             if r[13] is not None:
                 taken.add(r[13])
@@ -367,7 +374,7 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
             guess = None if r[13] is not None else _guess(conn, card_id, r, taken)
             if guess is not None:
                 taken.add(guess.plan_id)
-            out.append(StatementInstallment(*r[:10], r[10], guess))
+            out.append(StatementInstallment(*r[:10], r[10], guess, bool(r[14])))
         plans = out
 
     fees = [StatementFee(n, a, c) for _, n, a, c, k in rows if k == "fee"]
@@ -393,6 +400,9 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
     lines, free = _match(bank_lines, items)
     unmatched = [Unmatched(i.move_id, i.date, i.ref, i.amount, i.currency) for i in free]
     explain = _explain(currencies, lines, unmatched, fees, charges, unread)
+    explain += [f"{x.name} · cuota {x.sequence}/{x.n_installments}: cae en un periodo cerrado y no se dividió en capital e "
+                "interés. Reabre el periodo y vuelve a importar el PDF para dividirla."
+                for x in plans if x.not_split]
     return Reconciliation(closing, date_from, date_due, filename, limit, limit_cur, used, available, currencies,
                           fees, _cents(charges[limit_cur]), plans, explain, lines, unmatched, unread)
 

@@ -637,8 +637,12 @@ def delete(user_id: int, move_id: int) -> None:
         if kind == "opening" and not _pairs(conn, move_id) and not on_card:
             raise AccountError(400, "Un saldo inicial se corrige desde su cuenta")
         pairs = _pairs(conn, move_id)
-        conn.execute("DELETE FROM account_move WHERE id = %s", (move_id,))
-        reconcile(conn, pairs)
+        try:
+            with conn.transaction():
+                conn.execute("DELETE FROM account_move WHERE id = %s", (move_id,))
+                reconcile(conn, pairs)
+        except psycopg.Error as e:
+            raise _translate(e) from None
 
 
 # --- Lo que sale ------------------------------------------------------------------------------
@@ -791,6 +795,7 @@ class MoveDetail:
     plan: PlanDetail | None = None                       # una compra en cuotas: su calendario
     bank: list[BankLine] = field(default_factory=list)   # lo que dijo el banco, si vino de un extracto
     cancels: CancelOf | None = None                      # cancela las cuotas que faltaban de esta compra
+    locked: bool = False                                 # en un periodo cerrado: no se cambia ni se borra
 
 
 _LINES_SQL = """
@@ -986,6 +991,10 @@ def detail(user_id: int, move_id: int) -> MoveDetail:
               FROM account_bank_statement_line b JOIN account_bank_statement s ON s.id = b.statement_id
              WHERE b.move_id = %s ORDER BY b.id""", (move_id,))]
         of = _canceled_plan_of(conn, move_id)
+        locked = conn.execute("SELECT m.date <= u.lock_date FROM account_move m JOIN res_users u ON u.id = m.user_id"
+                              " WHERE m.id = %s", (move_id,)).fetchone()
+    if locked and locked[0]:
+        d = replace(d, locked=True)
     if of is not None:
         d = replace(d, cancels=CancelOf(*of))
     return replace(d, bank=bank) if bank else d

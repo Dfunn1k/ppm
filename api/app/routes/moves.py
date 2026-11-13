@@ -222,6 +222,7 @@ class MoveDetailOut(BaseModel):
     plan: PlanOut | None = None      # una compra en cuotas: su calendario
     bank: list[BankLineOut] = []     # si vino de un extracto: lo que dijo el banco
     cancels: CancelOfOut | None = None   # cancela las cuotas que faltaban de esta compra
+    locked: bool = False                 # en un periodo cerrado: no se cambia ni se borra
 
 
 class ManualAccountOut(BaseModel):
