@@ -141,9 +141,47 @@ def test_realinear_otra_vez_no_mueve_nada(ana):
     assert cortes(ana, plan) == before
 
 
-def test_un_corte_lejos_de_los_del_banco_se_calcula(ana):
-    """Sin estado de cuenta cerca, el corte es el del día de la tarjeta."""
-    assert ana.execute("SELECT card_closing_near(%s, '2026-12-20')", (visa(ana),)).fetchone()[0] == date(2026, 12, 20)
+def test_una_compra_despues_del_corte_del_banco_va_al_siguiente(ana):
+    """Compra el 19 sep; el banco cortó el 18: la cuota 1 no puede caer antes de la compra."""
+    card = visa(ana)
+    plan = en_cuotas(ana, card, "200.00", 3, "2026-09-19")
+    estado_de_cuenta(ana, card, "2026-08-19", "2026-09-18")
+    assert cortes(ana, plan) == [date(2026, 10, 20), date(2026, 11, 20), date(2026, 12, 20)]
+
+
+def test_una_compra_antes_del_corte_del_banco_entra_en_ese_ciclo(ana):
+    """Compra el 21 sep; el banco cortó el 22: la cuota 1 se factura el 22 sep, no en octubre."""
+    card = visa(ana)
+    plan = en_cuotas(ana, card, "200.00", 3, "2026-09-21")
+    estado_de_cuenta(ana, card, "2026-08-23", "2026-09-22")
+    assert cortes(ana, plan) == [date(2026, 9, 22), date(2026, 10, 20), date(2026, 11, 20)]
+
+
+def test_las_cuotas_de_antes_de_ppm_empiezan_despues_del_ultimo_corte(ana):
+    """Su asiento lleva la fecha del último corte (20 sep); con el banco cortando el 18, la primera
+    cuota es la del siguiente corte, no la del 18."""
+    card = visa(ana)
+    m = ana.execute("SELECT post_card_installments_opening(%s, %s, 250, 3, 'Laptop', 1, '2026-09-25')",
+                    (card, cur(ana, "PEN"))).fetchone()[0]
+    plan = ana.execute("SELECT id FROM account_installment_plan WHERE move_id = %s", (m,)).fetchone()[0]
+    estado_de_cuenta(ana, card, "2026-08-19", "2026-09-18")
+    assert cortes(ana, plan) == [date(2026, 10, 20), date(2026, 11, 20), date(2026, 12, 20)]
+
+
+def test_las_partes_de_otra_persona_siguen_a_su_cuota(ana):
+    """Prestar la tarjeta en cuotas: cada parte por cobrar vence con el corte de su cuota."""
+    card = visa(ana)
+    pen = cur(ana, "PEN")
+    luis = ana.execute("INSERT INTO res_partner (name) VALUES ('Luis') RETURNING id").fetchone()[0]
+    rec = role(ana, "receivable")
+    m = move(ana, [(rec, 100, 0, pen, 100, luis), (rec, 100, 0, pen, 100, luis), (rec, 100, 0, pen, 100, luis),
+                   (card, 0, 300, pen, -300)], date="2026-08-25")
+    plan = ana.execute("SELECT create_installment_plan(%s, 3)", (m,)).fetchone()[0]
+    ana.execute("SELECT set_plan_maturities(%s)", (plan,))
+    estado_de_cuenta(ana, card, "2026-08-19", "2026-09-18")
+    parts = [d for (d,) in ana.execute("SELECT maturity_closing FROM account_move_line WHERE move_id = %s"
+                                       " AND account_id = %s ORDER BY id", (m, rec)).fetchall()]
+    assert parts == cortes(ana, plan) == [date(2026, 9, 18), date(2026, 10, 20), date(2026, 11, 20)]
 
 
 # --- El céntimo -------------------------------------------------------------------------------

@@ -3,40 +3,49 @@
 --
 -- 1) Realinear los cortes con el estado de cuenta. 0021 pasaba cada corte viejo por card_closing_for:
 --    si el banco cortaba ANTES del día de la tarjeta (el 18 en vez del 20), la cuota del 20 caía en el
---    corte del mes siguiente y ese mes quedaba con dos cuotas. Ahora cada corte va al corte del banco
---    más cercano (su «Al», o el día antes de su «Del», que cierra el ciclo anterior) si está a 10 días
---    o menos; si no hay ninguno cerca, se calcula como antes.
+--    corte del mes siguiente y ese mes quedaba con dos cuotas; y una compra entre el día de la tarjeta
+--    y un corte del banco más tardío (el 21, con corte el 22) no entraba en ese ciclo. Ahora el
+--    calendario se rehace desde la fecha de la compra con los cortes que se conocen.
 -- 2) El céntimo de las cuotas en otra moneda: cada cuota se pasaba a soles redondeando sola y la
 --    suma no daba lo que la compra dejó en «Cuotas por venir». La última se lleva el residuo.
 
--- El corte del banco que corresponde a un corte calculado (o ya realineado)
-CREATE FUNCTION card_closing_near(p_card bigint, p_closing date) RETURNS date
-LANGUAGE sql STABLE AS $$
-  SELECT coalesce(
-    (SELECT k.d
-       FROM (SELECT closing_date AS d FROM account_credit_card_statement WHERE card_account_id = p_card
-             UNION
-             SELECT date_from - 1 FROM account_credit_card_statement WHERE card_account_id = p_card) k
-      WHERE abs(k.d - p_closing) <= 10
-      ORDER BY abs(k.d - p_closing), k.d
-      LIMIT 1),
-    card_closing_for(p_card, p_closing))
-$$;
-
+-- Al importar un estado de cuenta: el calendario de cada compra en cuotas se rehace desde su fecha,
+-- con los cortes que ahora se conocen (card_closing_for ya da prioridad a los del banco). Una compra
+-- entre el corte real y el día de la tarjeta cae así en el ciclo que le toca. Las cuotas de antes de
+-- PPM parten del día siguiente a su asiento, que lleva la fecha del último corte. Las partes por
+-- cobrar de otra persona siguen a su cuota y los asientos de cuota ya facturados, a su corte
 CREATE OR REPLACE FUNCTION realign_card_closings(p_card bigint) RETURNS void
 LANGUAGE plpgsql AS $$
+DECLARE
+  r       record;
+  v_close date;
 BEGIN
-  UPDATE account_move_line l SET maturity_closing = card_closing_near(p_card, l.maturity_closing)
-    FROM account_installment_plan p
-   WHERE p.card_account_id = p_card AND l.move_id = p.move_id AND l.maturity_closing IS NOT NULL
-     AND card_closing_near(p_card, l.maturity_closing) <> l.maturity_closing;
-  UPDATE account_installment_plan_line pl SET closing_date = card_closing_near(p_card, pl.closing_date)
-    FROM account_installment_plan p
-   WHERE p.id = pl.plan_id AND p.card_account_id = p_card
-     AND card_closing_near(p_card, pl.closing_date) <> pl.closing_date;
+  FOR r IN
+    SELECT pl.id, pl.n_installments, m.date
+           + CASE WHEN EXISTS (SELECT 1 FROM account_move_line o
+                                WHERE o.move_id = m.id AND o.account_id = system_account('opening'))
+                  THEN 1 ELSE 0 END AS anchor,
+           (SELECT count(*) FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+             WHERE l.move_id = m.id AND a.partner_required) = pl.n_installments AS parts
+      FROM account_installment_plan pl
+      JOIN account_move m ON m.id = pl.move_id
+     WHERE pl.card_account_id = p_card
+  LOOP
+    v_close := card_closing_for(p_card, r.anchor);
+    FOR k IN 1..r.n_installments LOOP
+      UPDATE account_installment_plan_line SET closing_date = v_close
+       WHERE plan_id = r.id AND sequence = k AND closing_date <> v_close;
+      v_close := card_closing_for(p_card, v_close + 1);
+    END LOOP;
+    IF r.parts THEN
+      PERFORM set_plan_maturities(r.id);
+    END IF;
+  END LOOP;
   UPDATE account_move m SET date = pl.closing_date
     FROM account_installment_plan_line pl
-   WHERE m.installment_plan_id = pl.plan_id AND m.installment_sequence = pl.sequence
+    JOIN account_installment_plan p ON p.id = pl.plan_id
+   WHERE p.card_account_id = p_card
+     AND m.installment_plan_id = pl.plan_id AND m.installment_sequence = pl.sequence
      AND m.date <> pl.closing_date
      AND pl.closing_date > coalesce((SELECT lock_date FROM res_users WHERE id = current_user_id()), '-infinity');
 END $$;
@@ -143,4 +152,3 @@ BEGIN
      AND pl.closing_date > coalesce((SELECT lock_date FROM res_users WHERE id = current_user_id()), '-infinity');
 END $$;
 
-DROP FUNCTION card_closing_near(bigint, date);
