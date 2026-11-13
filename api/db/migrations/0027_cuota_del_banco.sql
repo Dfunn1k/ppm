@@ -55,6 +55,25 @@ BEGIN
   END LOOP;
 END $$;
 
+-- El asiento de una cancelación de cuotas no pasa a por confirmar: la tarjeta volvería a deber las
+-- cuotas mientras siguen fuera del calendario. Para deshacerla, se borra
+CREATE FUNCTION check_cancel_move_posted() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.state = 'draft' AND OLD.state = 'posted'
+     AND EXISTS (SELECT 1 FROM account_installment_plan WHERE cancel_move_id = OLD.id) THEN
+    RAISE EXCEPTION 'Una cancelación de cuotas no pasa a por confirmar: bórrala para deshacerla'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER trg_cancel_move_posted
+  BEFORE UPDATE OF state ON account_move
+  FOR EACH ROW EXECUTE FUNCTION check_cancel_move_posted();
+
 -- migrate:down
+DROP TRIGGER IF EXISTS trg_cancel_move_posted ON account_move;
+DROP FUNCTION IF EXISTS check_cancel_move_posted();
 DROP FUNCTION set_installment_amount(bigint, numeric);
 ALTER TABLE account_credit_card_statement_installment DROP COLUMN rejected_plan_ids;

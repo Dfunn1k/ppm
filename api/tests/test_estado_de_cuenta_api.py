@@ -204,3 +204,20 @@ def test_no_es_esta_compra(ana: Con, pdf):
 def test_si_la_cuota_cuadra_no_hay_aviso(ana: Con, pdf):
     card, _ = qore(ana)
     assert upload(ana, card)["installments"][0]["differs"] is None
+
+
+def test_tras_usar_la_del_banco_el_ciclo_cuadra(ana: Con, pdf):
+    """El caso Qore completo, pero con Unipiel registrada sin cuota: tras «Usar la del banco», el
+    subtotal en soles cuadra al céntimo y la cuota queda emparejada."""
+    card = ana.card(name="Visa Qore", closing_day=25, credit_limit="7010.91", last4="1111")["account"]["id"]
+    for on, amount in PEN:
+        ana.buy(card, amount, on)
+    for on, amount in USD:
+        ana.buy(card, amount, on, currency="USD", rate="3.500")
+    ana.buy(card, "693.00", "2026-10-14", installments=3, ref="Unipiel")
+    r = upload(ana, card)
+    assert "Subtotal en S/: cuadra al céntimo." not in r["explanations"]
+    inst = r["installments"][0]
+    r = ana.c.post(f"/cards/{card}/statements/{CORTE}/installments/{inst['id']}/use-bank").json()
+    assert "Subtotal en S/: cuadra al céntimo." in r["explanations"]
+    assert not [x for x in r["lines"] if x["move_id"] is None]

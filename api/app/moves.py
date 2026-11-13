@@ -588,6 +588,8 @@ def set_pending(user_id: int, move_id: int, pending: bool) -> None:
     with user_transaction(user_id) as conn:
         if conn.execute("SELECT 1 FROM account_move WHERE id = %s", (move_id,)).fetchone() is None:
             raise AccountError(404, "No encontramos ese movimiento")
+        if pending and _canceled_plan_of(conn, move_id) is not None:
+            raise AccountError(400, "Una cancelación de cuotas no pasa a por confirmar: bórrala para deshacerla")
         try:
             with conn.transaction():
                 if not pending and _kind_of(conn, move_id) in ("collect", "repay", "custody_out"):

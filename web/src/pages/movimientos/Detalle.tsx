@@ -342,7 +342,7 @@ export function DetalleMovimiento() {
             <span>Editar</span><Icon name="edit" className="text-[22px]" />
           </Link>
         )}
-        {!(plan && s.posted) && (
+        {!((plan || cancels) && s.posted) && (
           <button type="button" disabled={state.isPending} onClick={() => state.mutate(s.posted)}
             className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
             <Icon name={s.posted ? "schedule" : "check"} />

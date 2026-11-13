@@ -226,3 +226,10 @@ def test_la_cuota_no_puede_quedar_debajo_del_precio(ana):
     _, plan = televisor(ana)
     with pytest.raises(psycopg.errors.CheckViolation, match="no llegan a lo que costó"):
         ana.execute("SELECT set_installment_amount(%s, 150)", (plan,))
+
+
+def test_la_cancelacion_no_pasa_a_por_confirmar(ana):
+    _, plan = televisor(ana)
+    m = cancelar(ana, plan, "returned")
+    with pytest.raises(psycopg.errors.CheckViolation, match="no pasa a por confirmar"):
+        ana.execute("UPDATE account_move SET state = 'draft' WHERE id = %s", (m,))
