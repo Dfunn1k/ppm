@@ -752,6 +752,7 @@ class PlanCancel:
     move_id: int                 # su asiento: borrarlo la deshace
     amount: Decimal              # lo que faltaba facturar, en la moneda de la compra
     charged: Decimal | None      # pagada por adelantado: lo que cobró el banco
+    payment_move_id: int | None = None   # el pago de la tarjeta que se registró con ella: deshacer lo borra
 
 
 @dataclass(frozen=True)
@@ -1065,7 +1066,7 @@ def _plan_detail(conn: psycopg.Connection, move_id: int) -> PlanDetail | None:
                           " WHERE plan_id = %s ORDER BY sequence", (plan_id,))]
     canceled = None
     row = conn.execute("""
-        SELECT p.cancel_kind, m.date, m.id, p.canceled_lines,
+        SELECT p.cancel_kind, m.date, m.id, p.canceled_lines, p.cancel_payment_move_id,
                (SELECT -l.amount_currency FROM account_move_line l
                  WHERE l.move_id = m.id AND l.account_id = system_account('installments')),
                (SELECT l.amount_currency FROM account_move_line l
@@ -1073,9 +1074,9 @@ def _plan_detail(conn: psycopg.Connection, move_id: int) -> PlanDetail | None:
           FROM account_installment_plan p JOIN account_move m ON m.id = p.cancel_move_id
          WHERE p.id = %s""", (plan_id,)).fetchone()
     if row is not None:
-        kind, on, cancel_id, gone, amount, card_back = row
+        kind, on, cancel_id, gone, payment, amount, card_back = row
         charged = (amount - (card_back if kind == "prepaid" and card_back else ZERO)) if kind == "prepaid" else None
-        canceled = PlanCancel(kind, on, cancel_id, amount, charged)
+        canceled = PlanCancel(kind, on, cancel_id, amount, charged, payment)
         lines = sorted(lines + [PlanLine(x["sequence"], dt.date.fromisoformat(x["closing_date"]), Decimal(str(x["principal"])),
                                          False, None if x["interest"] is None else Decimal(str(x["interest"])), True)
                                 for x in gone or []], key=lambda x: x.sequence)
@@ -1106,8 +1107,10 @@ def cancel_plan(user_id: int, plan_id: int, kind: str, on: dt.date | None, charg
                 when = on or conn.execute("SELECT user_today()").fetchone()[0]
                 conn.execute("SELECT cancel_installment_plan(%s, %s, %s, %s)", (plan_id, kind, when, charged))
                 if account_id is not None:
-                    _create(conn, MoveInput("transfer", account_id, charged, when, None, to_account_id=card,  # type: ignore[arg-type]
-                                            currency=currency))
+                    pay = _create(conn, MoveInput("transfer", account_id, charged, when, None, to_account_id=card,  # type: ignore[arg-type]
+                                                  currency=currency))
+                    conn.execute("UPDATE account_installment_plan SET cancel_payment_move_id = %s WHERE id = %s",
+                                 (pay, plan_id))
                 conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
         except psycopg.Error as e:
             raise _translate(e) from None

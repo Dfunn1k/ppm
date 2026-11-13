@@ -57,3 +57,26 @@ test("cerrar el mes pasado, el candado en un movimiento y reabrir", async ({ pag
   await page.goto(`/movimientos/${id}`);
   await expect(page.getByRole("button", { name: "Borrar movimiento" })).toBeVisible();
 });
+
+test("con el mes cerrado, las cuotas que faltan de una compra de ese mes se pueden cancelar", async ({ page }) => {
+  await readyUser(page);
+  const card = await page.request.post("/api/cards", {
+    data: { name: "Visa BBVA", closing_day: Number(lima(-3).slice(8)), credit_limit: "5000", brand: "Visa", last4: "4417", to_pay: [] },
+  });
+  const cardId = (await card.json()).account.id as number;
+  const groups = (await (await page.request.get("/api/categories?kind=expense")).json()).groups as { children: { id: number; name: string }[] }[];
+  const hogar = groups.flatMap((g) => g.children).find((k) => k.name === "Hogar")!.id;
+  const r = await page.request.post("/api/moves", {
+    data: { kind: "expense", account_id: cardId, amount: "1200.00", date: lima(-70), ref: "Televisor",
+            installments: 6, installment_amount: "215.00", splits: [{ category_id: hogar, amount: "1200.00" }] },
+  });
+  const id = (await r.json()).summary.id as number;
+  expect((await page.request.put("/api/closing", { data: { lock_date: FIN_MES_PASADO } })).status()).toBe(200);
+
+  await page.goto(`/movimientos/${id}`);
+  await expect(page.getByText(/Periodo cerrado hasta el/)).toBeVisible();
+  await page.getByRole("button", { name: "Cancelar las cuotas que faltan" }).click();
+  const hoja = page.getByRole("dialog", { name: "Cancelar las cuotas que faltan" });
+  await hoja.getByRole("button", { name: /^Cancelar (la cuota|las \d+ cuotas)$/ }).click();
+  await expect(page.getByText(/Lo devolviste el/)).toBeVisible();
+});

@@ -3134,6 +3134,8 @@ export interface components {
             amount: string;
             /** Charged */
             charged: string | null;
+            /** Payment Move Id */
+            payment_move_id?: number | null;
         };
         /** PlanLineOut */
         PlanLineOut: {

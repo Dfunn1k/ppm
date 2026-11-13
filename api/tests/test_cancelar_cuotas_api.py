@@ -71,6 +71,12 @@ def test_pague_lo_que_faltaba_desde_el_bcp(ana: Con):
     billed = sum(Decimal(x["principal"]) for x in plan["lines"] if x["billed"])
     assert Decimal(ana.detail(card)["status"][0]["total_debt"]) == billed      # lo que cobró, ya pagado
 
+    # Deshacer se lleva también el pago: el BCP vuelve a como estaba
+    assert d["plan"]["canceled"]["payment_move_id"] is not None
+    assert ana.c.delete(f"/moves/{d['plan']['canceled']['move_id']}").status_code == 204
+    assert Decimal(ana.balance(ana.bcp)) == before
+    assert ana.c.get(f"/moves/{d['plan']['canceled']['payment_move_id']}").status_code == 404
+
 
 def test_pague_lo_que_faltaba_sin_pagar_todavia(ana: Con):
     card, m = televisor(ana)

@@ -63,9 +63,13 @@ test("pagué lo que faltaba desde el BCP, y deshacerlo", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Cancelar las cuotas que faltan" })).toHaveCount(0);
   await page.screenshot({ path: "test-results/cancelar-hecho.png", fullPage: true });
 
+  await expect(page.getByText("Deshacer también borra el pago de la tarjeta", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Deshacer", exact: true }).click();
   await expect(page.getByRole("button", { name: "Cancelar las cuotas que faltan" })).toBeVisible();
   await expect(page.getByText("Cancelada", { exact: true })).toHaveCount(0);
+  // El pago al BCP también se deshizo
+  const have = (await (await page.request.get("/api/accounts")).json()).have as { name: string; balances: { amount: string }[] }[];
+  expect(have.find((a) => a.name === "BCP")!.balances[0]!.amount).toBe("3000.00");
 });
 
 test("lo devolví: la tarjeta baja por lo que faltaba", async ({ page }) => {
