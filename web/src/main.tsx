@@ -1,4 +1,5 @@
 import "./styles.css";
+import "./lib/install";   // escucha desde el arranque si el navegador permite instalar PPM
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
