@@ -2635,7 +2635,7 @@ Orden de las rebanadas:
 
 ## Decisiones y preguntas abiertas
 
-Doscientas veinticinco decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
+Doscientas veintisiete decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
 
 | Decisión | Elegido | Alternativa descartada | Por qué |
 | --- | --- | --- | --- |
@@ -2864,6 +2864,8 @@ Doscientas veinticinco decisiones sostienen la fase 1; cada una puede revisarse 
 | Arranque de una tarjeta en un mes cerrado | El alta con deuda, las cuotas de antes de PPM y corregir lo que tocaba pagar siguen fechados en el último corte; si cae en un mes cerrado, se pide reabrir | Fecharlos al día siguiente del cierre | Pasa poco y la deuda inicial conserva la fecha del estado de cuenta. Elegido por Dany |
 | Logo e ícono de la app | La hogaza: un pan de trigo sobre tinta con dos cortes que son el «=» de la partida doble. PPM se instala como app (manifest con íconos normal y maskable, ícono de iPhone y favicon) | Monograma «p.»; libro abierto | Une el «pan para mayo» con la partida doble, que es lo que hace PPM. Elegido por Dany |
 | Cómo se ven los adjuntos | Como el visor de Odoo 20: tira de miniaturas (la más reciente primero) y visor a pantalla completa con pasar, zoom, girar, descargar y borrar; en escritorio, la lista a la izquierda y teclado. El servidor hace una miniatura WebP de 360 px, convierte las HEIC a WebP y cada página de un PDF en imagen, una sola vez, guardadas junto al archivo (derived/); page\_count en ir\_attachment (0030) | La foto completa como miniatura; el PDF en un iframe | La miniatura pesaba hasta 5 MB, las HEIC no se veían en Chrome y el celular no muestra PDFs dentro de la página. Boceto aprobado por Dany |
+| Fuentes e íconos | Tipografías de texto servidas por PPM (@fontsource). Íconos de Material Symbols desde Google con icon\_names: una fuente con los de la interfaz y las categorías de fábrica (ui-icons.json, ~76 KB), más los que la persona eligió (/me devuelve sus íconos); el catálogo completo (4,274) solo al abrir «Ver todos los íconos» al crear una categoría | La fuente completa en cada visita (1.4 MB, 7.8 s en 4G); íconos autoalojados recortados en el servidor | Era casi todo lo que tardaba una pantalla; Dany quiere poder elegir entre todos los íconos, pero solo al crear una categoría |
+| Cómo carga la web | Cada pantalla, el calendario y los gráficos se descargan al abrirlos (JS inicial de 367 a 137 KB comprimido). Un service worker guarda los archivos de la app en el equipo; la API va siempre al servidor | Un solo archivo con toda la app; copia de los datos sin conexión | Medido con un año de datos en un celular con 4G: Inicio de ~11 s a 3.5 s la primera vez y 1.6 s después. Los datos siguen solo en el servidor, como se decidió |
 
 Preguntas para las siguientes sesiones:
 
@@ -2889,6 +2891,7 @@ Preguntas para las siguientes sesiones:
 
 | Fecha | Cambio |
 | --- | --- |
+| 2026-11-13 | Rendimiento (#69): la API ya era rápida (menos de 110 ms con un año de datos); lo lento era la fuente de íconos completa y la app en un solo archivo. Íconos a la medida, tipografías propias, pantallas bajo demanda y service worker |
 | 2026-11-13 | Bocetos aprobados: «Instalar PPM» en Más y adjuntos estilo Odoo 20. Adjuntos: miniaturas y vistas del servidor (Pillow, pillow-heif y pypdfium2), GET /attachments/{id}/thumb y /view con caché de un año, orden del más reciente al más antiguo y el visor nuevo en celular y escritorio (0030) |
 | 2026-11-13 | Nueva etapa tras la fase 1, en este orden: logo e ícono, adjuntos estilo Odoo 20, rendimiento, y UI/UX con versión de escritorio. Dany elige la hogaza como logo; PPM se puede instalar como app |
 | 2026-11-13 | #65 en main (0028). Ajustes de la revisión final: se pueden cancelar las cuotas de una compra de un mes cerrado (la fecha mínima es el día siguiente al cierre o al último corte facturado); 0029 liga el pago de «Pagué lo que faltaba» a su cancelación y deshacerla lo borra (elegido por Dany); el arranque de una tarjeta en un mes cerrado sigue pidiendo reabrir (elegido por Dany) |
