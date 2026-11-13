@@ -182,3 +182,54 @@ def test_en_dolares_pagado_por_adelantado(ana):
     assert rows[1] == ("Hogar", Decimal("575.18"), 0, Decimal("575.18"))     # 166.67 × 3.451
     assert rows[2] == ("Visa BBVA", Decimal("27.71"), 0, Decimal("8.03"))     # 602.89 − 575.18
     cuadra_cuotas_por_venir(ana)
+
+
+# --- Usar la cuota del banco (0027) -----------------------------------------------------------
+
+def test_usar_la_cuota_del_banco_reescribe_la_compra_y_lo_facturado(ana):
+    """Zapatillas sin cuota escrita: 3 × 100. El banco cobra 112.40: la tarjeta sube 37.20 y la cuota
+    ya facturada pasa a 112.40."""
+    card = visa(ana)
+    plan = en_cuotas(ana, card, "100.00", 3, "2026-09-25")
+    ana.execute("UPDATE account_installment_plan SET installment_amount = NULL WHERE id = %s", (plan,))
+    ana.execute("SELECT post_installment_billing('2026-10-21')")
+    ana.execute("SELECT set_installment_amount(%s, 112.40)", (plan,))
+    commit_check(ana)
+    assert saldo(ana, card) == (Decimal("-337.20"), Decimal("-337.20"))
+    assert [p for *_, p in plan_lines(ana, plan)] == [Decimal("112.40")] * 3
+    assert ana.execute("SELECT principal, installment_amount, price FROM account_installment_plan WHERE id = %s",
+                       (plan,)).fetchone() == (Decimal("337.20"), Decimal("112.40"), Decimal("300.00"))
+    billed = ana.execute("SELECT sum(l.debit) FROM account_move_line l JOIN account_move m ON m.id = l.move_id"
+                         " WHERE m.installment_plan_id = %s", (plan,)).fetchone()[0]
+    assert billed == Decimal("112.40")
+    cuadra_cuotas_por_venir(ana)
+
+
+def test_usar_la_cuota_del_banco_en_dolares_cuadra(ana):
+    card = visa(ana)
+    plan = en_cuotas(ana, card, "80.00", 3, "2026-05-25", currency="USD", rate="3.451")
+    ana.execute("SELECT post_installment_billing('2026-08-25')")
+    ana.execute("SELECT set_installment_amount(%s, 87.35)", (plan,))
+    commit_check(ana)
+    assert saldo(ana, role(ana, "installments")) == (0, 0)
+    cuadra_cuotas_por_venir(ana)
+
+
+def test_no_se_ajusta_una_compra_cancelada(ana):
+    _, plan = televisor(ana)
+    cancelar(ana, plan, "returned")
+    with pytest.raises(psycopg.errors.CheckViolation, match="se cancelaron"):
+        ana.execute("SELECT set_installment_amount(%s, 220)", (plan,))
+
+
+def test_la_cuota_no_puede_quedar_debajo_del_precio(ana):
+    _, plan = televisor(ana)
+    with pytest.raises(psycopg.errors.CheckViolation, match="no llegan a lo que costó"):
+        ana.execute("SELECT set_installment_amount(%s, 150)", (plan,))
+
+
+def test_la_cancelacion_no_pasa_a_por_confirmar(ana):
+    _, plan = televisor(ana)
+    m = cancelar(ana, plan, "returned")
+    with pytest.raises(psycopg.errors.CheckViolation, match="no pasa a por confirmar"):
+        ana.execute("UPDATE account_move SET state = 'draft' WHERE id = %s", (m,))

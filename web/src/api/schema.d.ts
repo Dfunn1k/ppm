@@ -467,6 +467,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cards/{card_id}/statements/{closing}/installments/{row_id}/use-bank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Usar la cuota del banco: la compra pasa a esa cuota y esta se divide en capital e interés */
+        post: operations["use_bank_installment_cards__card_id__statements__closing__installments__row_id__use_bank_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cards/{card_id}/statements/{closing}/installments/{row_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** No es esta compra: no volver a proponerla para esa cuota del banco */
+        post: operations["reject_installment_guess_cards__card_id__statements__closing__installments__row_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -2276,6 +2310,17 @@ export interface components {
             /** Late */
             late: number;
         };
+        /** InstallmentGuessOut */
+        InstallmentGuessOut: {
+            /** Plan Id */
+            plan_id: number;
+            /** Move Id */
+            move_id: number;
+            /** Ref */
+            ref: string;
+            /** Each */
+            each: string;
+        };
         /** InstallmentOut */
         InstallmentOut: {
             /** Move Id */
@@ -3274,6 +3319,11 @@ export interface components {
             /** Loan Account Id */
             loan_account_id: number | null;
         };
+        /** RejectGuessIn */
+        RejectGuessIn: {
+            /** Plan Id */
+            plan_id: number;
+        };
         /** ReminderOut */
         ReminderOut: {
             /** Recurring Id */
@@ -3539,6 +3589,9 @@ export interface components {
             move_id: number | null;
             /** Mine */
             mine: boolean;
+            /** Id */
+            id: number;
+            differs: components["schemas"]["InstallmentGuessOut"] | null;
         };
         /** StatementLineOut */
         StatementLineOut: {
@@ -4845,6 +4898,80 @@ export interface operations {
             };
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    use_bank_installment_cards__card_id__statements__closing__installments__row_id__use_bank_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+                closing: string;
+                row_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_installment_guess_cards__card_id__statements__closing__installments__row_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: number;
+                closing: string;
+                row_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectGuessIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

@@ -52,6 +52,8 @@ def test_la_cancelacion_no_se_edita_y_borrarla_la_deshace(ana: Con):
     cid = d["plan"]["canceled"]["move_id"]
     r = ana.c.put(f"/moves/{cid}", json={"kind": "transfer", "account_id": ana.bcp, "amount": "10", "to_account_id": ana.efectivo})
     assert r.status_code == 400 and "bórrala para deshacerla" in r.json()["detail"]
+    r = ana.c.post(f"/moves/{cid}/state", json={"pending": True})
+    assert r.status_code == 400 and "no pasa a por confirmar" in r.json()["detail"]
     assert ana.c.delete(f"/moves/{cid}").status_code == 204
     p = ana.c.get(f"/moves/{m['summary']['id']}").json()["plan"]
     assert p["canceled"] is None and not any(x["canceled"] for x in p["lines"]) and len(p["lines"]) == 6

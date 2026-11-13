@@ -259,6 +259,17 @@ class StatementInstallment:
     interest: Decimal
     move_id: int | None          # su compra en PPM
     mine: bool                   # tuya: la cuota se dividió en capital e interés
+    id: int = 0                  # la fila del «Detalle plan cuotas»
+    differs: InstallmentGuess | None = None   # sin par: una compra tuya que casi es, con otra cuota
+
+
+@dataclass(frozen=True)
+class InstallmentGuess:
+    """Una compra tuya que sería esta cuota del banco si no fuera por el monto de la cuota."""
+    plan_id: int
+    move_id: int
+    ref: str
+    each: Decimal                # la cuota en PPM
 
 
 @dataclass(frozen=True)
@@ -338,13 +349,26 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
             SELECT l.date, l.name, l.amount, trim(c.name), l.kind FROM account_credit_card_statement_line l
               JOIN res_currency c ON c.id = l.currency_id
              WHERE l.card_account_id = %s AND l.closing_date = %s ORDER BY l.date, l.id""", (card_id, closing)).fetchall()
-        plans = [StatementInstallment(*r) for r in conn.execute("""
+        plans = []
+        taken: set[int] = set()
+        for r in conn.execute("""
             SELECT s.date, s.name, trim(c.name), s.price, s.sequence, s.n_installments, s.capital, s.interest,
-                   p.move_id, coalesce(p.expense_account_id IS NOT NULL, false)
+                   p.move_id, coalesce(p.expense_account_id IS NOT NULL, false), s.id, s.currency_id,
+                   s.rejected_plan_ids, s.plan_id
               FROM account_credit_card_statement_installment s
               JOIN res_currency c ON c.id = s.currency_id
               LEFT JOIN account_installment_plan p ON p.id = s.plan_id
-             WHERE s.card_account_id = %s AND s.closing_date = %s ORDER BY s.id""", (card_id, closing))]
+             WHERE s.card_account_id = %s AND s.closing_date = %s ORDER BY s.id""", (card_id, closing)).fetchall():
+            if r[13] is not None:
+                taken.add(r[13])
+            plans.append(r)
+        out = []
+        for r in plans:
+            guess = None if r[13] is not None else _guess(conn, card_id, r, taken)
+            if guess is not None:
+                taken.add(guess.plan_id)
+            out.append(StatementInstallment(*r[:10], r[10], guess))
+        plans = out
 
     fees = [StatementFee(n, a, c) for _, n, a, c, k in rows if k == "fee"]
     bank_lines = [StatementLine(d, n, a, c) for d, n, a, c, k in rows if k == "move"]
@@ -371,6 +395,69 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
     explain = _explain(currencies, lines, unmatched, fees, charges, unread)
     return Reconciliation(closing, date_from, date_due, filename, limit, limit_cur, used, available, currencies,
                           fees, _cents(charges[limit_cur]), plans, explain, lines, unmatched, unread)
+
+
+def _guess(conn: psycopg.Connection, card_id: int, r: tuple, taken: set[int]) -> InstallmentGuess | None:
+    """Una cuota del banco sin par: la compra tuya en cuotas que lo sería salvo por el monto de la
+    cuota (misma tarjeta, moneda y número de cuotas, fecha a 3 días o menos, sin cancelar)."""
+    date, _name, _cur, price, seq, n, capital, interest, *_rest = r
+    cur_id, rejected = r[11], r[12]
+    row = conn.execute("""
+        SELECT p.id, p.move_id, m.ref, pl.principal
+          FROM account_installment_plan p
+          JOIN account_move m ON m.id = p.move_id AND m.state = 'posted'
+          JOIN account_installment_plan_line pl ON pl.plan_id = p.id AND pl.sequence = %(seq)s
+         WHERE p.card_account_id = %(card)s AND p.currency_id = %(cur)s AND p.n_installments = %(n)s
+           AND p.expense_account_id IS NOT NULL AND p.cancel_move_id IS NULL
+           AND abs(m.date - %(date)s) <= %(days)s AND pl.principal <> %(total)s
+           AND NOT (p.id = ANY(%(skip)s))
+         ORDER BY coalesce(p.price, p.principal) = %(price)s DESC, abs(m.date - %(date)s), p.id
+         LIMIT 1""", {"seq": seq, "card": card_id, "cur": cur_id, "n": n, "date": date, "days": PLAN_DAYS,
+                      "total": capital + interest, "price": price, "skip": list(taken | set(rejected))}).fetchone()
+    return InstallmentGuess(*row) if row else None
+
+
+def use_bank_installment(user_id: int, card_id: int, closing: dt.date, row_id: int) -> None:
+    """«Usar la del banco»: la compra pasa a la cuota del estado de cuenta y esta cuota se divide en
+    capital e interés."""
+    with user_transaction(user_id) as conn:
+        _card(conn, card_id)
+        r = conn.execute("""
+            SELECT s.date, s.name, trim(c.name), s.price, s.sequence, s.n_installments, s.capital, s.interest,
+                   NULL, false, s.id, s.currency_id, s.rejected_plan_ids, s.plan_id
+              FROM account_credit_card_statement_installment s JOIN res_currency c ON c.id = s.currency_id
+             WHERE s.id = %s AND s.card_account_id = %s AND s.closing_date = %s""", (row_id, card_id, closing)).fetchone()
+        if r is None:
+            raise AccountError(404, "No encontramos esa cuota del estado de cuenta")
+        if r[13] is not None:
+            raise AccountError(400, "Esa cuota ya cuadra con su compra")
+        taken = {x for (x,) in conn.execute(
+            "SELECT plan_id FROM account_credit_card_statement_installment WHERE card_account_id = %s"
+            " AND closing_date = %s AND plan_id IS NOT NULL", (card_id, closing))}
+        guess = _guess(conn, card_id, r, taken)
+        if guess is None:
+            raise AccountError(400, "No encontramos una compra tuya para esa cuota")
+        try:
+            with conn.transaction():
+                conn.execute("SELECT set_installment_amount(%s, %s)", (guess.plan_id, r[6] + r[7]))
+                conn.execute("SELECT set_installment_detail(%s, %s, %s, %s)", (guess.plan_id, r[4], r[6], r[7]))
+                conn.execute("UPDATE account_credit_card_statement_installment SET plan_id = %s WHERE id = %s",
+                             (guess.plan_id, row_id))
+                conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        except psycopg.Error as e:
+            raise _translate(e) from None
+
+
+def reject_installment_guess(user_id: int, card_id: int, closing: dt.date, row_id: int, plan_id: int) -> None:
+    """«No es esta compra»: esa cuota del banco no se vuelve a proponer con esa compra."""
+    with user_transaction(user_id) as conn:
+        done = conn.execute("""
+            UPDATE account_credit_card_statement_installment
+               SET rejected_plan_ids = array_append(rejected_plan_ids, %s)
+             WHERE id = %s AND card_account_id = %s AND closing_date = %s AND plan_id IS NULL
+               AND NOT (%s = ANY(rejected_plan_ids))""", (plan_id, row_id, card_id, closing, plan_id)).rowcount
+        if not done:
+            raise AccountError(404, "No encontramos esa cuota del estado de cuenta")
 
 
 def _explain(currencies: list[StatementCurrency], lines: list[StatementLine], unmatched: list[Unmatched],

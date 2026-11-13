@@ -161,3 +161,63 @@ def test_el_lector_bcp_lee_el_texto_del_pdf():
     assert moves[-1].name == "CUOTA DEL MES" and moves[0].name == "BODEGA UNO LIMA"
     assert [(x.name, x.sequence, x.n_installments, x.capital, x.interest) for x in p.installments] == \
         [("TIENDA CUOTAS", 1, 3, Decimal("221.43"), Decimal("40.59"))]
+
+
+# --- La cuota del banco es distinta (0027) ----------------------------------------------------
+
+def unipiel_sin_cuota(ana: Con) -> tuple[int, int]:
+    """Unipiel registrada sin escribir la cuota: en PPM son 3 × S/ 231.00, el banco cobra 262.02."""
+    card = ana.card(name="Visa Qore", closing_day=25, credit_limit="7010.91", last4="1111")["account"]["id"]
+    m = ana.buy(card, "693.00", "2026-10-14", installments=3, ref="Unipiel")
+    return card, m["summary"]["id"]
+
+
+def test_la_cuota_del_banco_distinta_se_avisa_y_se_usa(ana: Con, pdf):
+    card, unipiel = unipiel_sin_cuota(ana)
+    r = upload(ana, card)
+    inst = r["installments"][0]
+    assert inst["move_id"] is None
+    assert inst["differs"] == {"plan_id": inst["differs"]["plan_id"], "move_id": unipiel, "ref": "Unipiel", "each": "231.00"}
+
+    r = ana.c.post(f"/cards/{card}/statements/{CORTE}/installments/{inst['id']}/use-bank")
+    assert r.status_code == 200, r.text
+    inst = r.json()["installments"][0]
+    assert (inst["move_id"], inst["mine"], inst["differs"]) == (unipiel, True, None)
+    plan = ana.c.get(f"/moves/{unipiel}").json()["plan"]
+    assert (plan["principal"], plan["installment_amount"], plan["price"]) == ("786.06", "262.02", "693.00")
+    assert [x["principal"] for x in plan["lines"]] == ["262.02"] * 3
+    assert (plan["lines"][0]["interest"], plan["lines"][1]["interest"]) == ("40.59", None)
+    assert next(s for s in ana.detail(card)["status"] if s["currency"] == "PEN")["total_debt"] == "786.06"
+
+
+def test_no_es_esta_compra(ana: Con, pdf):
+    card, _ = unipiel_sin_cuota(ana)
+    inst = upload(ana, card)["installments"][0]
+    r = ana.c.post(f"/cards/{card}/statements/{CORTE}/installments/{inst['id']}/reject",
+                   json={"plan_id": inst["differs"]["plan_id"]})
+    assert r.status_code == 200, r.text
+    assert r.json()["installments"][0]["differs"] is None
+    r = ana.c.post(f"/cards/{card}/statements/{CORTE}/installments/{inst['id']}/use-bank")
+    assert r.status_code == 400 and r.json()["detail"] == "No encontramos una compra tuya para esa cuota"
+
+
+def test_si_la_cuota_cuadra_no_hay_aviso(ana: Con, pdf):
+    card, _ = qore(ana)
+    assert upload(ana, card)["installments"][0]["differs"] is None
+
+
+def test_tras_usar_la_del_banco_el_ciclo_cuadra(ana: Con, pdf):
+    """El caso Qore completo, pero con Unipiel registrada sin cuota: tras «Usar la del banco», el
+    subtotal en soles cuadra al céntimo y la cuota queda emparejada."""
+    card = ana.card(name="Visa Qore", closing_day=25, credit_limit="7010.91", last4="1111")["account"]["id"]
+    for on, amount in PEN:
+        ana.buy(card, amount, on)
+    for on, amount in USD:
+        ana.buy(card, amount, on, currency="USD", rate="3.500")
+    ana.buy(card, "693.00", "2026-10-14", installments=3, ref="Unipiel")
+    r = upload(ana, card)
+    assert "Subtotal en S/: cuadra al céntimo." not in r["explanations"]
+    inst = r["installments"][0]
+    r = ana.c.post(f"/cards/{card}/statements/{CORTE}/installments/{inst['id']}/use-bank").json()
+    assert "Subtotal en S/: cuadra al céntimo." in r["explanations"]
+    assert not [x for x in r["lines"] if x["move_id"] is None]

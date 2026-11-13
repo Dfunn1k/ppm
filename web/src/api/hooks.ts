@@ -614,6 +614,27 @@ export function useReconciliation(id: number, closing: string) {
   });
 }
 
+/** La cuota del banco es distinta: usarla en la compra, o decir que no es esa compra. */
+export function useBankInstallment(id: number, closing: string) {
+  const qc = useQueryClient();
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async ({ rowId, rejectPlan }: { rowId: number; rejectPlan?: number }) => {
+      const path = { card_id: id, closing, row_id: rowId };
+      const { data, error, response } = rejectPlan === undefined
+        ? await api.POST("/cards/{card_id}/statements/{closing}/installments/{row_id}/use-bank", { params: { path } })
+        : await api.POST("/cards/{card_id}/statements/{closing}/installments/{row_id}/reject",
+          { params: { path }, body: { plan_id: rejectPlan } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (d) => {
+      qc.setQueryData([...CARDS, id, "statement", closing], d);
+      return changed();
+    },
+  });
+}
+
 /** Importar el estado de cuenta en PDF: su foto, sus fechas y el capital e interés de sus cuotas. */
 export function useImportCardStatement(id: number) {
   const qc = useQueryClient();

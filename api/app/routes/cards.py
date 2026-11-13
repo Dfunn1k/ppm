@@ -295,6 +295,17 @@ class StatementFeeOut(BaseModel):
     currency: str
 
 
+class InstallmentGuessOut(BaseModel):
+    plan_id: int
+    move_id: int
+    ref: str
+    each: Decimal                        # la cuota en PPM
+
+
+class RejectGuessIn(BaseModel):
+    plan_id: int
+
+
 class StatementInstallmentOut(BaseModel):
     date: dt.date
     name: str
@@ -306,6 +317,8 @@ class StatementInstallmentOut(BaseModel):
     interest: Decimal
     move_id: int | None
     mine: bool
+    id: int                              # la fila del «Detalle plan cuotas»
+    differs: InstallmentGuessOut | None  # sin par: una compra tuya que casi es, con otra cuota
 
 
 class ReconciliationOut(BaseModel):
@@ -349,4 +362,26 @@ def import_statement(card_id: int, file: Annotated[UploadFile, File()],
 @router.get("/cards/{card_id}/statements/{closing}", summary="Un estado de cuenta importado, conciliado con PPM")
 def reconciliation(card_id: int, closing: dt.date,
                    session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
+    return _reconciliation(session.user_id, card_id, closing)
+
+
+@router.post("/cards/{card_id}/statements/{closing}/installments/{row_id}/use-bank",
+             summary="Usar la cuota del banco: la compra pasa a esa cuota y esta se divide en capital e interés")
+def use_bank_installment(card_id: int, closing: dt.date, row_id: int,
+                         session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
+    try:
+        card_statements.use_bank_installment(session.user_id, card_id, closing, row_id)
+    except AccountError as e:
+        raise _http(e) from None
+    return _reconciliation(session.user_id, card_id, closing)
+
+
+@router.post("/cards/{card_id}/statements/{closing}/installments/{row_id}/reject",
+             summary="No es esta compra: no volver a proponerla para esa cuota del banco")
+def reject_installment_guess(card_id: int, closing: dt.date, row_id: int, body: RejectGuessIn,
+                             session: CurrentSession = Depends(current_session)) -> ReconciliationOut:
+    try:
+        card_statements.reject_installment_guess(session.user_id, card_id, closing, row_id, body.plan_id)
+    except AccountError as e:
+        raise _http(e) from None
     return _reconciliation(session.user_id, card_id, closing)

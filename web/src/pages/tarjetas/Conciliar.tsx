@@ -4,7 +4,7 @@
 import { useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
-import { type Reconciliation, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
+import { type Reconciliation, useBankInstallment, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
 import { ErrorAlert, Icon, Screen, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { add, formatAmount, subtract, symbolOf } from "@/lib/money";
@@ -45,6 +45,7 @@ export function Conciliar() {
 }
 
 function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliation; lang: string }) {
+  const bankInstallment = useBankInstallment(id, r.closing_date);
   const money = (v: string, cur = r.limit_currency) => formatAmount(v, symbolOf(cur), lang);
   const missing = r.lines.filter((l) => l.move_id === null);
   const photo: [string, string][] = [
@@ -88,7 +89,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
                   <span className="truncate font-semibold">{x.name} · cuota {x.sequence}/{x.n_installments}</span>
                   <span className="text-caption text-muted-foreground tabular-nums">
                     Capital {money(x.capital, x.currency)} + interés {money(x.interest, x.currency)}
-                    {x.move_id === null ? " · no la encontramos en PPM" : x.mine ? " · dividida en tu gasto" : " · de otra persona: te debe la cuota completa"}
+                    {x.differs ? ` · en PPM la cuota es ${money(x.differs.each, x.currency)}` : x.move_id === null ? " · no la encontramos en PPM" : x.mine ? " · dividida en tu gasto" : " · de otra persona: te debe la cuota completa"}
                   </span>
                 </span>
                 <span className="text-amount">{money(add(x.capital, x.interest), x.currency)}</span>
@@ -100,6 +101,34 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
           })}
         </section>
       )}
+
+      {r.installments.filter((x) => x.differs).map((x) => {
+        const g = x.differs!;
+        const bank = add(x.capital, x.interest);
+        const up = (Number(bank) - Number(g.each)) * x.n_installments;
+        return (
+          <section key={x.id} aria-label="La cuota del banco es distinta"
+            className="mt-4 flex flex-col gap-2 rounded-xl bg-attention-soft p-3.5 text-attention">
+            <span className="flex items-center gap-1.5 text-label"><Icon name="error" className="text-[18px]" />La cuota del banco es distinta</span>
+            <p className="text-[14px] leading-5 text-foreground">
+              {g.ref}: el banco cobra <b>{money(bank, x.currency)}</b> por cuota ({money(x.capital, x.currency)} de capital
+              + {money(x.interest, x.currency)} de interés). En PPM cada cuota es {money(g.each, x.currency)}.
+            </p>
+            <dl className="grid grid-cols-[1fr_auto] gap-y-0.5 text-[14px] leading-5 text-foreground tabular-nums">
+              <dt>Las {x.n_installments} cuotas pasan a</dt><dd className="text-right font-semibold">{money(bank, x.currency)}</dd>
+              <dt>La tarjeta {up >= 0 ? "sube" : "baja"}</dt><dd className="text-right font-semibold">{money(Math.abs(up).toFixed(2), x.currency)}</dd>
+              <dt>Esta cuota: capital + interés</dt><dd className="text-right font-semibold">{money(x.capital, x.currency)} + {money(x.interest, x.currency)}</dd>
+            </dl>
+            {bankInstallment.error && <ErrorAlert>{bankInstallment.error.message}</ErrorAlert>}
+            <div className="mt-1 flex gap-2">
+              <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id })}
+                className="h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
+              <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id, rejectPlan: g.plan_id })}
+                className="h-11 rounded-xl border border-input-line px-3.5 font-semibold text-foreground">No es esta compra</button>
+            </div>
+          </section>
+        );
+      })}
 
       <section aria-label="PPM y el banco" className="mt-5 flex flex-col">
         <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 border-b border-border pb-1 text-label text-muted-foreground">
