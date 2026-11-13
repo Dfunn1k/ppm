@@ -18,7 +18,7 @@ import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
-import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
+import { addDays, DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
 import { shortDate, todayISO } from "@/lib/dates";
 import { MODE_NAME, ruleText } from "@/lib/recurrence";
@@ -491,7 +491,7 @@ export function Registrar({ editing, recurring, reminder }: {
               className="h-10 min-w-0 border-0 bg-transparent p-0" />
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title={repeating ? "¿Desde cuándo?" : "¿Cuándo fue?"} value={date}
-            onChange={setDate} />
+            onChange={setDate} min={me?.lock_date ? addDays(1, me.lock_date) : undefined} />
           {!editing && !repeating && <PendingFiles files={files} onChange={setFiles} />}
 
           {kind !== "transfer" && (

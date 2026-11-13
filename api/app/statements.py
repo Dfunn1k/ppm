@@ -317,6 +317,8 @@ def undo(user_id: int, statement_id: int) -> int:
             n = conn.execute("SELECT undo_bank_statement(%s)", (statement_id,)).fetchone()[0]
         except psycopg.errors.NoDataFound:
             raise AccountError(404, "No encontramos ese extracto") from None
+        except psycopg.errors.CheckViolation as e:   # p. ej. el periodo está cerrado
+            raise AccountError(400, e.diag.message_primary or "No se pudo deshacer") from None
     collect(user_id)
     return n
 

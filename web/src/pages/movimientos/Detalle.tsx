@@ -67,10 +67,11 @@ export function DetalleMovimiento() {
   const partnerId = d.partner_id ?? d.paid_by_partner_id ?? s.partner_id;
   const plan = d.plan;
   const cancels = d.cancels;
-  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan && !cancels;
+  const locked = d.locked;
+  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan && !cancels && !locked;
   const canceled = plan?.canceled;
   // Solo una compra tuya (con su categoría) que aún tiene cuotas por facturar
-  const cancelable = !!plan && transfer && !!plan.category && !canceled && Number(plan.remaining) > 0 && s.posted;
+  const cancelable = !!plan && transfer && !!plan.category && !canceled && Number(plan.remaining) > 0 && s.posted && !locked;
   // Saldo inicial con una persona: lo que ya había antes de PPM (te debía, o le debías)
   const opening = s.kind === "opening" && s.partner
     ? d.lines.some((l) => l.partner_id && Number(l.debit) > 0) ? `${s.partner} ya te debía esto cuando empezaste a usar PPM.` : `Ya le debías esto a ${s.partner} cuando empezaste a usar PPM.`
@@ -94,6 +95,15 @@ export function DetalleMovimiento() {
         </span>
       </div>
 
+      {locked && (
+        <div role="status" className="mt-2 flex items-start gap-2 rounded-md bg-muted p-3 text-caption">
+          <Icon name="lock" />
+          <span>
+            <b>Periodo cerrado hasta el {shortDate(me.lock_date!)}.</b> Este movimiento no se cambia ni se borra. Para corregirlo,
+            reabre en <Link to="/mas/cierre" className="font-semibold underline">Más › Cierre de periodo</Link>.
+          </span>
+        </div>
+      )}
       {!s.posted && (
         <div role="status" className="mt-2 flex items-start gap-2 rounded-md bg-attention-soft p-3 text-caption text-attention">
           <Icon name="schedule" /><span><b>Por confirmar.</b> No cuenta en tus saldos hasta que lo confirmes.</span>
@@ -342,17 +352,17 @@ export function DetalleMovimiento() {
             <span>Editar</span><Icon name="edit" className="text-[22px]" />
           </Link>
         )}
-        {!((plan || cancels) && s.posted) && (
+        {!((plan || cancels) && s.posted) && !locked && (
           <button type="button" disabled={state.isPending} onClick={() => state.mutate(s.posted)}
             className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
             <Icon name={s.posted ? "schedule" : "check"} />
             {s.posted ? "Pasar a por confirmar" : "Confirmar"}
           </button>
         )}
-        <button type="button" onClick={() => setConfirmDelete(true)}
+        {!locked && <button type="button" onClick={() => setConfirmDelete(true)}
           className="flex h-11 items-center justify-center gap-1.5 text-[14px] font-semibold text-destructive">
           <Icon name={cancels ? "undo" : "delete"} />{plan ? "Borrar la compra y sus cuotas" : cancels ? "Deshacer la cancelación" : "Borrar movimiento"}
-        </button>
+        </button>}
       </div>
 
       {plan && cancelable && <CancelPlanSheet plan={plan} title={s.ref} open={canceling} onClose={() => setCanceling(false)} />}

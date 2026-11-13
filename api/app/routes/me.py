@@ -1,5 +1,6 @@
 """La persona conectada (A2 configuración inicial) y los catálogos que necesitan sus pantallas."""
 
+import datetime as dt
 from dataclasses import asdict
 from typing import Annotated, Literal
 
@@ -28,6 +29,7 @@ class MeOut(BaseModel):
     notice_days: int
     ui_private: bool
     home_account_id: int | None
+    lock_date: dt.date | None = None     # cierre de periodo
 
     @classmethod
     def of(cls, me: users.Me) -> "MeOut":

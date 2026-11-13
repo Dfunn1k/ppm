@@ -1,13 +1,13 @@
-// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Inicio, Reportes (X2), Apariencia, Recurrentes (X1), Categorías (X3) y, para el
+// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Inicio, Reportes (X2), Apariencia, Recurrentes (X1), Categorías (X3), Cierre de periodo (X4) y, para el
 // administrador, Tipo de cambio (Z1);
 // lo demás llega con su rebanada.
 import { Link } from "react-router";
 
 import { useMe, usePending } from "@/api/hooks";
 import { Icon } from "@/components/ui";
+import { shortDate } from "@/lib/dates";
 
 const SOON = [
-  ["lock_clock", "Cierre de periodo", "Que los meses revisados no cambien"],
   ["tune", "Monedas, idioma y formato", "Agregar monedas y cambiar cómo se ven"],
 ] as const;
 
@@ -78,6 +78,16 @@ export function Mas() {
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">Categorías</span>
           <span className="text-caption text-muted-foreground">Las de gasto y de ingreso · crear nuevas</span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
+      <Link to="/mas/cierre" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="lock_clock" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Cierre de periodo</span>
+          <span className="text-caption text-muted-foreground">
+            {me?.lock_date ? `Cerrado hasta el ${shortDate(me.lock_date)}` : "Que los meses revisados no cambien"}
+          </span>
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>

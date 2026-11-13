@@ -1299,6 +1299,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/closing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El cierre de periodo y qué impide cerrar hasta una fecha */
+        get: operations["get_closing_closing_get"];
+        /** Cerrar hasta una fecha, moverla (atrás reabre) o reabrir todo */
+        put: operations["set_lock_closing_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1894,6 +1912,27 @@ export interface components {
             /** Partner Id */
             partner_id?: number | null;
         };
+        /** ClosingOut */
+        ClosingOut: {
+            /** Lock Date */
+            lock_date: string | null;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Suggested
+             * Format: date
+             */
+            suggested: string;
+            /** Drafts */
+            drafts: number;
+            /** Unclassified */
+            unclassified: number;
+            /** Can Close */
+            can_close: boolean;
+        };
         /** CountsOut */
         CountsOut: {
             /** New */
@@ -2424,6 +2463,11 @@ export interface components {
             /** Active */
             active: boolean;
         };
+        /** LockIn */
+        LockIn: {
+            /** Lock Date */
+            lock_date: string | null;
+        };
         /** LoginIn */
         LoginIn: {
             /**
@@ -2527,6 +2571,8 @@ export interface components {
             ui_private: boolean;
             /** Home Account Id */
             home_account_id: number | null;
+            /** Lock Date */
+            lock_date?: string | null;
         };
         /** MePatch */
         MePatch: {
@@ -2612,6 +2658,11 @@ export interface components {
              */
             bank: components["schemas"]["BankLineOut"][];
             cancels?: components["schemas"]["CancelOfOut"] | null;
+            /**
+             * Locked
+             * @default false
+             */
+            locked: boolean;
         };
         /** MoveIn */
         MoveIn: {
@@ -3592,6 +3643,11 @@ export interface components {
             /** Id */
             id: number;
             differs: components["schemas"]["InstallmentGuessOut"] | null;
+            /**
+             * Not Split
+             * @default false
+             */
+            not_split: boolean;
         };
         /** StatementLineOut */
         StatementLineOut: {
@@ -7091,6 +7147,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PeopleReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_closing_closing_get: {
+        parameters: {
+            query?: {
+                date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_lock_closing_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LockIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingOut"];
                 };
             };
             /** @description Validation Error */

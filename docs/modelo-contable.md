@@ -1079,7 +1079,7 @@ Efecto a tener en cuenta: corregir un movimiento antiguo cambia los saldos desde
 
 Una fecha de bloqueo congela todo lo anterior, como la fecha de bloqueo de Odoo. Es como cerrar con cinta el cuaderno de septiembre: puedes leerlo, pero no escribir ni borrar en él. Con `lock_date = 2026-09-30` en tu usuario (`res_users`), ningún movimiento con fecha hasta el 30 de septiembre se puede crear, editar, mover ni borrar, así que esos saldos ya no cambian.
 
-Como nadie audita PPM, el cierre se puede reabrir moviendo la fecha hacia atrás o dejándola vacía. Para no dejar pendientes congelados, no se puede cerrar un periodo que tenga borradores.
+Como nadie audita PPM, el cierre se puede reabrir moviendo la fecha hacia atrás o dejándola vacía. Para no dejar pendientes congelados, no se puede cerrar un periodo que tenga borradores ni movimientos por clasificar, y solo se cierran días que ya pasaron. Lo construido (0028) ajusta el SQL de abajo en dos cosas: el candado lee el cierre del dueño de la fila, no de la sesión, para que borrar a una persona no choque con su propio cierre; y solo mira lo que cambia saldos (en el asiento, la fecha y el estado; en el apunte, la cuenta, los montos, la moneda y la persona), así los vencimientos, los cortes de las cuotas y las conciliaciones siguen libres.
 
 ```sql
 -- La fecha de cierre vive en res_users.lock_date (ver DDL)
@@ -2635,7 +2635,7 @@ Orden de las rebanadas:
 
 ## Decisiones y preguntas abiertas
 
-Doscientas dieciocho decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
+Doscientas veintidós decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
 
 | Decisión | Elegido | Alternativa descartada | Por qué |
 | --- | --- | --- | --- |
@@ -2857,6 +2857,10 @@ Doscientas dieciocho decisiones sostienen la fase 1; cada una puede revisarse an
 | Valor de «Cuotas por venir» en otra moneda | Al tipo de venta, como la tarjeta que la compensa | Al tipo de compra, como lo que se tiene | Una compra en cuotas en dólares no cambia el patrimonio hasta que se factura; con compra 3.43 y venta 3.45, US$ 300 lo bajaban S/ 6 |
 | Cuota del banco distinta a la de PPM | La conciliación avisa «La cuota del banco es distinta» con un botón «Usar la del banco», que ajusta el plan, la tarjeta y «Cuotas por venir»; «No es esta compra» descarta el emparejamiento | Tomarla sola al importar el PDF | Si el emparejamiento se equivoca, nada cambia sin que Dany lo vea; antes la cuota quedaba sin emparejar y el interés nunca entraba. Elegido por Dany |
 | Devolver o adelantar una compra en cuotas | «Cancelar las cuotas que faltan» con dos salidas; las cuotas ya facturadas quedan. «Lo devolví»: la tarjeta y «Cuotas por venir» bajan por lo no facturado y no queda gasto. «Pagué lo que faltaba»: se escribe lo que cobró el banco, que va a la categoría de la compra ese día; «Cuotas por venir» baja por lo no facturado y la tarjeta, por el interés perdonado; la hoja pide de qué cuenta se pagó (o «Todavía no lo pago») y registra también el pago de la tarjeta. Borrar el asiento de la cancelación la deshace (0026) | Borrar la compra y registrarla de nuevo | Borrar se llevaba los gastos de los meses ya facturados. Devolver y adelantar no son lo mismo: al adelantar, el capital que faltaba sigue siendo gasto y solo desaparece el interés futuro. Elegido por Dany |
+| Candado del cierre | Lee el cierre del dueño de la fila y mira solo lo que cambia saldos: fecha y estado del asiento; cuenta, montos, moneda y persona del apunte (0028) | El trigger del diseño: el cierre de la sesión y cualquier cambio | Borrar a una persona no choca con su cierre, y los vencimientos, los cortes de las cuotas y las conciliaciones siguen libres sin tocar saldos. Hallado en la revisión de Fable |
+| Qué impide cerrar | Algo por confirmar o por clasificar hasta esa fecha, o una fecha que no ha pasado. Reabrir (mover atrás o quitar) siempre se puede. X4 propone el fin del mes pasado | Solo los borradores | Lo por clasificar tampoco cuenta como gasto ni ingreso: cerrarlo lo dejaría congelado a medias. Boceto aprobado por Dany |
+| Estado de cuenta después del cierre | Se importa igual: la foto y la conciliación quedan; la cuota facturada en un periodo cerrado no se divide y la conciliación dice que se reabra y se vuelva a importar | Rechazar la importación | El PDF suele llegar después del corte; no se pierde la foto del banco por un mes cerrado. Elegido por Dany |
+| Cuotas en un periodo cerrado | Realinear los cortes no mueve los asientos de cuota cerrados; la cuota de un corte cerrado se factura por confirmar al día siguiente del cierre; dividir, ajustar o cancelar en fechas cerradas pide reabrir | Saltarse el cierre para las tarjetas | El cierre es la promesa de que esos saldos no cambian: tampoco por la tarjeta |
 
 Preguntas para las siguientes sesiones:
 
@@ -2882,6 +2886,7 @@ Preguntas para las siguientes sesiones:
 
 | Fecha | Cambio |
 | --- | --- |
+| 2026-11-13 | Rebanada 13 · Cierre de periodo: boceto de X4 aprobado por Dany. #64 en main (0027, con el asiento de una cancelación que ya no pasa a por confirmar). 0028: candado por dueño de la fila y solo sobre lo que cambia saldos, lock\_blockers, solo días pasados, realinear sin mover lo cerrado; GET y PUT /closing, lock\_date en /me y locked en el detalle; X4 en Más, el candado en el detalle y Registrar sin fechas cerradas. Con esto termina el plan de construcción de la fase 1 |
 | 2026-11-13 | Dany autoriza a Claude a terminar solo (merge incluido) la revisión de tarjetas y la rebanada 13. #63 en main (0026). La cuota del banco es distinta (0027): la conciliación propone la compra tuya que sería esa cuota salvo por el monto; «Usar la del banco» reescribe la compra (tarjeta y Cuotas por venir por todas las cuotas), sus líneas y lo ya facturado con set\_installment\_amount, y divide la cuota con su detalle; «No es esta compra» guarda el plan en rejected\_plan\_ids |
 | 2026-11-13 | Dany aprueba los bocetos de la revisión de tarjetas (M2 con «Cancelar las cuotas que faltan», su hoja y «La cuota del banco es distinta») y elige que «Pagué lo que faltaba» pida la cuenta y registre el pago. #62 en main (0025). Cancelar las cuotas (0026): cancel\_installment\_plan, asiento ligado al plan (cancel\_move\_id) y las cuotas que faltaban guardadas en canceled\_lines; borrar el asiento las devuelve con los cortes de hoy; POST /plans/{id}/cancel |
 | 2026-11-13 | Revisión de las tarjetas antes del Cierre de periodo. 0025: al importar un estado de cuenta, el calendario de cada compra en cuotas se rehace desde su fecha con los cortes del banco (antes, si el banco cortaba antes del día de la tarjeta, la cuota saltaba un mes); la última cuota en otra moneda se lleva el céntimo del redondeo; «Cuotas por venir» se valora a la venta, como la tarjeta. Decididos por Dany, con boceto pendiente: «Usar la del banco» en la conciliación y «Cancelar las cuotas que faltan» con dos salidas, «Lo devolví» y «Pagué lo que faltaba». La sección Tarjetas de crédito y la decisión Compras en cuotas se ponen al día con 0021 |

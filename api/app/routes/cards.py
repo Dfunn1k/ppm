@@ -319,6 +319,7 @@ class StatementInstallmentOut(BaseModel):
     mine: bool
     id: int                              # la fila del «Detalle plan cuotas»
     differs: InstallmentGuessOut | None  # sin par: una compra tuya que casi es, con otra cuota
+    not_split: bool = False              # tuya, en un periodo cerrado: no se dividió en capital e interés
 
 
 class ReconciliationOut(BaseModel):
