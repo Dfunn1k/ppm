@@ -178,6 +178,7 @@ class PlanCancelOut(BaseModel):
     move_id: int                         # su asiento: borrarlo la deshace
     amount: Decimal                      # lo que faltaba facturar
     charged: Decimal | None              # pagada por adelantado: lo que cobró el banco
+    payment_move_id: int | None = None   # el pago de la tarjeta registrado con ella: deshacer lo borra
 
 
 class CancelOfOut(BaseModel):

@@ -5,7 +5,7 @@
 import { useState } from "react";
 
 import { type MoveDetail, useAccounts, useCancelPlan, useMe } from "@/api/hooks";
-import { DateField } from "@/components/DateSheet";
+import { addDays, DateField } from "@/components/DateSheet";
 import { Sheet, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, PrimaryButton } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
@@ -22,7 +22,10 @@ export function CancelPlanSheet({ plan, title, open, onClose }: { plan: Plan; ti
   const money = (v: string) => formatAmount(v, symbolOf(cur), lang);
   const left = plan.lines.filter((x) => !x.billed && !x.canceled);
   const billed = plan.lines.filter((x) => x.billed);
+  // No antes del último corte facturado ni dentro del periodo cerrado
+  const afterLock = me?.lock_date ? addDays(1, me.lock_date) : undefined;
   const lastBilled = billed.at(-1)?.closing_date;
+  const minDate = [lastBilled, afterLock].filter((x): x is string => !!x).sort().at(-1);
 
   const [kind, setKind] = useState<"returned" | "prepaid">("returned");
   const [date, setDate] = useState(todayISO());
@@ -87,7 +90,7 @@ export function CancelPlanSheet({ plan, title, open, onClose }: { plan: Plan; ti
         </fieldset>
 
         <div className={kind === "prepaid" ? "grid grid-cols-2 gap-3" : ""}>
-          <DateField label="Fecha" value={date} onChange={setDate} max={todayISO()} min={lastBilled}
+          <DateField label="Fecha" value={date} onChange={setDate} max={todayISO()} min={minDate}
             sheetTitle={kind === "returned" ? "¿Cuándo lo devolviste?" : "¿Cuándo lo pagaste?"} />
           {kind === "prepaid" && (
             <label className="flex flex-col gap-1.5 text-caption font-semibold">

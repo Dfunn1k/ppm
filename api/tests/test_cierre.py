@@ -148,3 +148,12 @@ def test_alta_de_tarjeta_con_su_ultimo_corte_cerrado(ana):
     card = visa(ana)
     falla(ana, "SELECT post_card_opening(%s, %s, 300, 1, '2026-09-20')", (card, cur(ana, "PEN")))
     falla(ana, "SELECT post_card_installments_opening(%s, %s, 100, 3, 'Laptop', 1, '2026-09-25')", (card, cur(ana, "PEN")))
+
+
+def test_cancelar_hoy_una_compra_de_un_mes_cerrado(ana):
+    """El televisor es de agosto y septiembre está cerrado: la cancelación va con la fecha de hoy y
+    no toca la compra, así que se puede."""
+    _, plan = televisor(ana)
+    cerrar(ana)
+    m = cancelar(ana, plan, "returned")
+    assert ana.execute("SELECT date FROM account_move WHERE id = %s", (m,)).fetchone()[0] == date(2026, 11, 10)

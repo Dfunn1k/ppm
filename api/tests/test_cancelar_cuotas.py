@@ -233,3 +233,17 @@ def test_la_cancelacion_no_pasa_a_por_confirmar(ana):
     m = cancelar(ana, plan, "returned")
     with pytest.raises(psycopg.errors.CheckViolation, match="no pasa a por confirmar"):
         ana.execute("UPDATE account_move SET state = 'draft' WHERE id = %s", (m,))
+
+
+def test_borrar_la_compra_se_lleva_tambien_el_pago(ana):
+    card, plan = televisor(ana)
+    pen = cur(ana, "PEN")
+    bank = ana.execute("SELECT create_cash_account('Caja', %s, 2000, '2026-01-01')", (pen,)).fetchone()[0]
+    cancelar(ana, plan, "prepaid", "800.00")
+    ana.execute("SET CONSTRAINTS ALL DEFERRED")
+    pay = move(ana, [(card, 800, 0, pen, 800), (bank, 0, 800, pen, -800)], date=CANCELA)
+    ana.execute("UPDATE account_installment_plan SET cancel_payment_move_id = %s WHERE id = %s", (pay, plan))
+    purchase = ana.execute("SELECT move_id FROM account_installment_plan WHERE id = %s", (plan,)).fetchone()[0]
+    ana.execute("DELETE FROM account_move WHERE id = %s", (purchase,))
+    commit_check(ana)
+    assert ana.execute("SELECT count(*) FROM account_move WHERE id = %s", (pay,)).fetchone()[0] == 0

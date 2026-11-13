@@ -71,7 +71,7 @@ export function DetalleMovimiento() {
   const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan && !cancels && !locked;
   const canceled = plan?.canceled;
   // Solo una compra tuya (con su categoría) que aún tiene cuotas por facturar
-  const cancelable = !!plan && transfer && !!plan.category && !canceled && Number(plan.remaining) > 0 && s.posted && !locked;
+  const cancelable = !!plan && transfer && !!plan.category && !canceled && Number(plan.remaining) > 0 && s.posted;   // aunque la compra esté en un mes cerrado: la cancelación va con su propia fecha
   // Saldo inicial con una persona: lo que ya había antes de PPM (te debía, o le debías)
   const opening = s.kind === "opening" && s.partner
     ? d.lines.some((l) => l.partner_id && Number(l.debit) > 0) ? `${s.partner} ya te debía esto cuando empezaste a usar PPM.` : `Ya le debías esto a ${s.partner} cuando empezaste a usar PPM.`
@@ -299,6 +299,9 @@ export function DetalleMovimiento() {
                     + (Number(subtract(canceled.amount, canceled.charged ?? canceled.amount)) > 0
                       ? ` Te ahorraste ${formatAmount(subtract(canceled.amount, canceled.charged ?? canceled.amount), symbolOf(plan.currency), lang)} de interés.` : "")}
               </span>
+              {canceled.payment_move_id && (
+                <span className="text-caption text-muted-foreground">Deshacer también borra el pago de la tarjeta que se registró con ella.</span>
+              )}
               {undoCancel.error && <ErrorAlert>{undoCancel.error.message}</ErrorAlert>}
               <button type="button" disabled={undoCancel.isPending} onClick={() => undoCancel.mutate()}
                 className="mt-1 min-h-11 self-start text-[14px] font-semibold underline">
