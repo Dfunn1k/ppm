@@ -2635,7 +2635,7 @@ Orden de las rebanadas:
 
 ## Decisiones y preguntas abiertas
 
-Doscientas veintitrés decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
+Doscientas veinticuatro decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
 
 | Decisión | Elegido | Alternativa descartada | Por qué |
 | --- | --- | --- | --- |
@@ -2862,6 +2862,7 @@ Doscientas veintitrés decisiones sostienen la fase 1; cada una puede revisarse 
 | Estado de cuenta después del cierre | Se importa igual: la foto y la conciliación quedan; la cuota facturada en un periodo cerrado no se divide y la conciliación dice que se reabra y se vuelva a importar | Rechazar la importación | El PDF suele llegar después del corte; no se pierde la foto del banco por un mes cerrado. Elegido por Dany |
 | Cuotas en un periodo cerrado | Realinear los cortes no mueve los asientos de cuota cerrados; la cuota de un corte cerrado se factura por confirmar al día siguiente del cierre; dividir, ajustar o cancelar en fechas cerradas pide reabrir | Saltarse el cierre para las tarjetas | El cierre es la promesa de que esos saldos no cambian: tampoco por la tarjeta |
 | Arranque de una tarjeta en un mes cerrado | El alta con deuda, las cuotas de antes de PPM y corregir lo que tocaba pagar siguen fechados en el último corte; si cae en un mes cerrado, se pide reabrir | Fecharlos al día siguiente del cierre | Pasa poco y la deuda inicial conserva la fecha del estado de cuenta. Elegido por Dany |
+| Logo e ícono de la app | La hogaza: un pan de trigo sobre tinta con dos cortes que son el «=» de la partida doble. PPM se instala como app (manifest con íconos normal y maskable, ícono de iPhone y favicon) | Monograma «p.»; libro abierto | Une el «pan para mayo» con la partida doble, que es lo que hace PPM. Elegido por Dany |
 
 Preguntas para las siguientes sesiones:
 
@@ -2887,6 +2888,7 @@ Preguntas para las siguientes sesiones:
 
 | Fecha | Cambio |
 | --- | --- |
+| 2026-11-13 | Nueva etapa tras la fase 1, en este orden: logo e ícono, adjuntos estilo Odoo 20, rendimiento, y UI/UX con versión de escritorio. Dany elige la hogaza como logo; PPM se puede instalar como app |
 | 2026-11-13 | #65 en main (0028). Ajustes de la revisión final: se pueden cancelar las cuotas de una compra de un mes cerrado (la fecha mínima es el día siguiente al cierre o al último corte facturado); 0029 liga el pago de «Pagué lo que faltaba» a su cancelación y deshacerla lo borra (elegido por Dany); el arranque de una tarjeta en un mes cerrado sigue pidiendo reabrir (elegido por Dany) |
 | 2026-11-13 | Rebanada 13 · Cierre de periodo: boceto de X4 aprobado por Dany. #64 en main (0027, con el asiento de una cancelación que ya no pasa a por confirmar). 0028: candado por dueño de la fila y solo sobre lo que cambia saldos, lock\_blockers, solo días pasados, realinear sin mover lo cerrado; GET y PUT /closing, lock\_date en /me y locked en el detalle; X4 en Más, el candado en el detalle y Registrar sin fechas cerradas. Con esto termina el plan de construcción de la fase 1 |
 | 2026-11-13 | Dany autoriza a Claude a terminar solo (merge incluido) la revisión de tarjetas y la rebanada 13. #63 en main (0026). La cuota del banco es distinta (0027): la conciliación propone la compra tuya que sería esa cuota salvo por el monto; «Usar la del banco» reescribe la compra (tarjeta y Cuotas por venir por todas las cuotas), sus líneas y lo ya facturado con set\_installment\_amount, y divide la cuota con su detalle; «No es esta compra» guarda el plan en rejected\_plan\_ids |
