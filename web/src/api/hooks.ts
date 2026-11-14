@@ -59,6 +59,56 @@ export function useCatalog() {
   });
 }
 
+/** Las formas de entrar: el botón de Google aparece solo si el servidor tiene su cliente. */
+export function useProviders() {
+  return useQuery({
+    queryKey: ["providers"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/auth/providers");
+      if (!data) fail(response, error);
+      return data;
+    },
+    staleTime: Infinity,
+  });
+}
+
+/** Volviendo de Google con un correo que ya tiene cuenta: cuál espera unirse (null si venció). */
+export function useGooglePending() {
+  return useQuery({
+    queryKey: ["google-pending"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/auth/google/pending");
+      if (response.status === 404) return null;
+      if (!data) fail(response, error);
+      return data;
+    },
+    retry: false,
+  });
+}
+
+export function useGooglePendingConfirm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (password: string) => {
+      const { data, error, response } = await api.POST("/auth/google/pending", { body: { password } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (me) => qc.setQueryData(ME, me),
+  });
+}
+
+export function useGoogleUnlink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error, response } = await api.DELETE("/auth/google");
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ME }),
+  });
+}
+
 export function useSignup() {
   const qc = useQueryClient();
   return useMutation({
@@ -964,11 +1014,13 @@ export function useToggleCurrency() {
 }
 
 export function useChangePassword() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { current_password: string; new_password: string }) => {
+    mutationFn: async (body: { current_password?: string; new_password: string }) => {
       const { error, response } = await api.POST("/auth/password", { body });
       if (!response.ok) fail(response, error);
     },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ME }),
   });
 }
 

@@ -38,6 +38,8 @@ class MeOut(BaseModel):
     lock_date: dt.date | None = None     # cierre de periodo
     icons: list[str] = []                # los íconos de sus categorías y cuentas
     formats: list[CurrencyFormatOut] = []   # cómo se escribe cada moneda que usa, en su formato
+    google_email: str | None = None      # con qué cuenta de Google entra, si la vinculó
+    has_password: bool = True            # False: creó la cuenta con Google y aún no tiene contraseña
 
     @classmethod
     def of(cls, me: users.Me) -> "MeOut":

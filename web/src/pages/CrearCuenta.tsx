@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { z } from "zod";
 
 import { ApiError, useSignup } from "@/api/hooks";
+import { GoogleButton } from "@/components/GoogleButton";
 import { Refran } from "@/components/Refran";
 import { ErrorAlert, Icon, LineField, PasswordField, PrimaryButton, Screen, TextLink } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ export function CrearCuenta() {
           </ErrorAlert>
         )}
         {signup.error && !taken && <ErrorAlert>{signup.error.message}</ErrorAlert>}
+        <GoogleButton />
         <LineField label="¿Cómo te llamamos?" autoComplete="given-name" error={errors.name?.message} {...form.register("name")} />
         <LineField
           label="Correo"

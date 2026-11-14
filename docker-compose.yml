@@ -4,6 +4,7 @@
 #   usuario-api  le pone la contraseña a ppm_api, el usuario con que entra la API, y termina
 #   api      FastAPI en http://localhost:8000 (se recarga sola al editar api/app/)
 #   mailpit  atrapa los correos que envía la API; se ven en http://localhost:8025
+#   google-falsa  una Google de mentira en http://localhost:8099 para «Continuar con Google»
 #   web      la app web (Vite + React) en http://localhost:5173; /api/… va a la API
 # Pruebas, sin instalar nada:  docker compose run --rm pruebas   (API)
 #                              docker compose run --rm e2e       (recorridos en el navegador)
@@ -59,6 +60,12 @@ services:
       # Quienes ven Z1 (tipo de cambio): el de las pruebas e2e y los tuyos, en .env (ADMIN_EMAILS=tu@correo)
       ADMIN_EMAILS: e2e-admin@prueba.ppm,${ADMIN_EMAILS:-}
       RATES_IMPORT: "true"           # el importador diario de SUNAT
+      # Entrar con Google: en desarrollo, la Google falsa. Para probar con la de verdad, pon en .env
+      # GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_AUTH_URL y GOOGLE_TOKEN_URL (ver DESPLIEGUE.md)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-ppm-local}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-ppm-local}
+      GOOGLE_AUTH_URL: ${GOOGLE_AUTH_URL:-http://localhost:8099/auth}
+      GOOGLE_TOKEN_URL: ${GOOGLE_TOKEN_URL:-http://google-falsa:8099/token}
     ports:
       - "8000:8000"
     volumes:
@@ -69,6 +76,8 @@ services:
       usuario-api:
         condition: service_completed_successfully
       mailpit:
+        condition: service_started
+      google-falsa:
         condition: service_started
 
   web:
@@ -129,6 +138,15 @@ services:
     image: axllent/mailpit:v1.27.0
     ports:
       - "8025:8025"
+
+  # Solo en desarrollo y en las pruebas e2e (no está en docker-compose.prod.yml)
+  google-falsa:
+    image: python:3.13-slim
+    volumes:
+      - ./api/dev/google_falsa.py:/google_falsa.py:ro
+    command: ["python", "-u", "/google_falsa.py"]
+    ports:
+      - "8099:8099"
 
   pruebas:
     profiles: ["pruebas"]

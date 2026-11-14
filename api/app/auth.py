@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import psycopg
 
+from app import google
 from app.config import get_settings
 from app.db import anon_transaction, user_transaction
 from app.mail import Mail, Mailer
@@ -72,11 +73,12 @@ def logout_everywhere(user_id: int) -> int:
         return conn.execute("SELECT auth_session_delete_all()").fetchone()[0]
 
 
-def change_password(user_id: int, current_token: str, current: str, new: str) -> None:
-    """Pide la contraseña actual; cierra las demás sesiones y deja viva esta."""
+def change_password(user_id: int, current_token: str, current: str | None, new: str) -> None:
+    """Pide la contraseña actual; cierra las demás sesiones y deja viva esta. Quien entró con
+    Google y todavía no tiene contraseña la crea sin «actual»."""
     with user_transaction(user_id) as conn:
         stored = conn.execute("SELECT password FROM res_users").fetchone()[0]
-        if not verify_password(stored, current):
+        if stored is not None and not verify_password(stored, current or ""):
             raise BadCredentials
         conn.execute("SELECT auth_password_set(%s, %s)", (hash_password(new), token_hash(current_token)))
 
@@ -117,3 +119,101 @@ def send_quietly(mailer: Mailer, mail: Mail) -> None:
         mailer.send(mail)
     except Exception:  # noqa: BLE001 - el registro basta; la respuesta ya se dio
         logging.getLogger("ppm.mail").exception("No se pudo enviar el correo a %s", mail.to)
+
+
+# ── Entrar con Google ────────────────────────────────────────────────────────────────────────
+
+PENDING_MINUTES = 15
+
+
+class GoogleInUse(Exception):
+    """Esa cuenta de Google ya entra a otra cuenta de PPM."""
+
+
+class GoogleLinkedOther(Exception):
+    """El correo tiene cuenta, pero unida a otra cuenta de Google."""
+
+
+class PendingExpired(Exception):
+    """La unión pendiente venció o ya se usó."""
+
+
+class NoOtherKey(Exception):
+    """Sin contraseña, desvincular Google la dejaría sin forma de entrar."""
+
+
+@dataclass(frozen=True)
+class GoogleResult:
+    session: NewSession | None = None   # entró (o se creó la cuenta)
+    pending: str | None = None          # el correo ya tiene cuenta: este número espera su contraseña
+
+
+def google_login(who: google.Identity, user_agent: str | None = None) -> GoogleResult:
+    with anon_transaction() as conn:
+        user_id, outcome = conn.execute("SELECT * FROM auth_oauth_lookup(%s, %s, %s)",
+                                        (google.PROVIDER, who.sub, who.email)).fetchone()
+        if outcome == "login":
+            return GoogleResult(session=_open_session(conn, user_id, user_agent))
+        if outcome == "linked_other":
+            raise GoogleLinkedOther
+        if outcome == "existing":
+            token, digest = new_token()
+            expires = datetime.now(UTC) + timedelta(minutes=PENDING_MINUTES)
+            conn.execute("SELECT auth_oauth_pending_create(%s, %s, %s, %s, %s, %s)",
+                         (user_id, digest, expires, google.PROVIDER, who.sub, who.email))
+            return GoogleResult(pending=token)
+        try:
+            with conn.transaction():
+                user_id = conn.execute("SELECT auth_oauth_signup(%s, %s, %s, %s)",
+                                       (who.name, google.PROVIDER, who.sub, who.email)).fetchone()[0]
+        except psycopg.errors.UniqueViolation:   # alguien con ese correo o esa Google justo ahora
+            raise GoogleInUse from None
+        return GoogleResult(session=_open_session(conn, user_id, user_agent))
+
+
+@dataclass(frozen=True)
+class Pending:
+    email: str          # la cuenta de PPM
+    google_email: str   # la cuenta de Google que espera unirse
+
+
+def google_pending(token: str) -> Pending | None:
+    with anon_transaction() as conn:
+        row = conn.execute("SELECT login, oauth_email FROM auth_oauth_pending(%s)", (token_hash(token),)).fetchone()
+    return Pending(*row) if row else None
+
+
+def google_pending_confirm(token: str, password: str, user_agent: str | None = None) -> NewSession:
+    """Une la cuenta de Google pendiente con la contraseña de la cuenta de PPM, y entra."""
+    with anon_transaction() as conn:
+        row = conn.execute("SELECT user_id, password_hash FROM auth_oauth_pending(%s)", (token_hash(token),)).fetchone()
+        if row is None:
+            raise PendingExpired
+        if not verify_password(row[1], password):
+            raise BadCredentials
+        try:
+            with conn.transaction():
+                user_id = conn.execute("SELECT auth_oauth_pending_confirm(%s)", (token_hash(token),)).fetchone()[0]
+        except psycopg.errors.UniqueViolation:
+            raise GoogleInUse from None
+        if user_id is None:
+            raise PendingExpired
+        return _open_session(conn, user_id, user_agent)
+
+
+def google_link(user_id: int, who: google.Identity) -> None:
+    with user_transaction(user_id) as conn:
+        try:
+            with conn.transaction():
+                conn.execute("SELECT auth_oauth_link(%s, %s, %s)", (google.PROVIDER, who.sub, who.email))
+        except psycopg.errors.UniqueViolation:
+            raise GoogleInUse from None
+
+
+def google_unlink(user_id: int) -> None:
+    with user_transaction(user_id) as conn:
+        try:
+            with conn.transaction():
+                conn.execute("SELECT auth_oauth_unlink()")
+        except psycopg.errors.CheckViolation:
+            raise NoOtherKey from None

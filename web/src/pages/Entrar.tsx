@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
 
 import { ApiError, useLogin } from "@/api/hooks";
+import { GoogleButton, googleProblem } from "@/components/GoogleButton";
 import { Refran } from "@/components/Refran";
 import { ErrorAlert, Icon, LineField, PasswordField, PrimaryButton, Screen, TextLink } from "@/components/ui";
 
@@ -16,6 +17,7 @@ export function Entrar() {
   const navigate = useNavigate();
   const passwordChanged = (useLocation().state as { passwordChanged?: boolean } | null)?.passwordChanged;
   const login = useLogin();
+  const fromGoogle = googleProblem(useSearchParams()[0].get("google"));
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
   const { errors } = form.formState;
 
@@ -39,6 +41,8 @@ export function Entrar() {
             <span>Contraseña cambiada. Entra con la nueva.</span>
           </div>
         )}
+        {fromGoogle && !login.error && <ErrorAlert>{fromGoogle}</ErrorAlert>}
+        <GoogleButton />
         {login.error && (
           <ErrorAlert>
             {login.error instanceof ApiError && login.error.status === 401

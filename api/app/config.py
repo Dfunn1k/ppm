@@ -26,6 +26,10 @@ class Settings:
     rates_import: bool          # el importador diario de SUNAT corre dentro de la API
     sunat_url: str
     filestore_dir: str          # el almacén de adjuntos: una carpeta por persona
+    google_client_id: str | None      # Entrar con Google: sin él, el botón no aparece
+    google_client_secret: str | None
+    google_auth_url: str              # adónde va el navegador a elegir su cuenta
+    google_token_url: str             # dónde la API cambia el código por el ID token
 
 
 @lru_cache
@@ -46,4 +50,8 @@ def get_settings() -> Settings:
         rates_import=_bool("RATES_IMPORT", False),
         sunat_url=os.environ.get("SUNAT_URL", "https://www.sunat.gob.pe/a/txt/tipoCambio.txt"),
         filestore_dir=os.environ.get("FILESTORE_DIR", "/var/lib/ppm/filestore"),
+        google_client_id=os.environ.get("GOOGLE_CLIENT_ID") or None,
+        google_client_secret=os.environ.get("GOOGLE_CLIENT_SECRET") or None,
+        google_auth_url=os.environ.get("GOOGLE_AUTH_URL", "https://accounts.google.com/o/oauth2/v2/auth"),
+        google_token_url=os.environ.get("GOOGLE_TOKEN_URL", "https://oauth2.googleapis.com/token"),
     )
