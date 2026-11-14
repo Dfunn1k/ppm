@@ -77,7 +77,7 @@ export function YaDebia() {
           )}
           <AmountField label={side === "owes_me" ? "¿Cuánto te debía?" : "¿Cuánto le debías?"} symbol={symbolOf(currency)}
             value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <DateField label="¿Desde cuándo?" max={todayISO()} value={date} onChange={setDate}
+          <DateField label="¿Desde cuándo?" max={todayISO()} value={date} onChange={setDate} booked
             hint="La fecha de la deuda: con ella se ve cuánto tiempo tiene." />
           {foreign && <RateField input={rate} currency={currency} side={side === "owes_me" ? "buy" : "sell"} />}
           <LineField label="Nota (opcional)" placeholder="Lo del celular" maxLength={120} value={note} onChange={(e) => setNote(e.target.value)} />

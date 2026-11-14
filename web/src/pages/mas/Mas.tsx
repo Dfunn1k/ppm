@@ -62,15 +62,6 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
-      <button type="button" onClick={() => setInstalling(true)} className="flex min-h-16 items-center gap-3.5 border-b border-border text-left">
-        <Logo size={40} />
-        <span className="flex flex-1 flex-col">
-          <span className="font-semibold">Instalar PPM</span>
-          <span className="text-caption text-muted-foreground">{INSTALL_HINT[install.state]}</span>
-        </span>
-        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
-      </button>
-      <InstallSheet open={installing} onClose={() => setInstalling(false)} />
       <Link to="/mas/reportes" className="flex min-h-16 items-center gap-3.5 border-b border-border">
         <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="bar_chart" className="text-[22px]" /></span>
         <span className="flex flex-1 flex-col">
@@ -115,6 +106,25 @@ export function Mas() {
           <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
         </Link>
       )}
+
+      {/* No es una opción más de la lista: es sobre este equipo, en su propia sección */}
+      <section aria-label="En este equipo" className="mt-6 flex flex-col gap-2">
+        <span className="border-b border-border pb-1 text-label text-muted-foreground">En este equipo</span>
+        <div className="flex items-center gap-3.5 rounded-lg bg-muted p-3.5">
+          <Logo size={44} />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="font-semibold">{install.state === "installed" ? "PPM está instalada" : "Instalar PPM"}</span>
+            <span className="text-caption text-muted-foreground">{INSTALL_HINT[install.state]}</span>
+          </span>
+          {install.state !== "installed" && (
+            <button type="button" onClick={() => setInstalling(true)} aria-label="Instalar PPM"
+              className="flex h-10 flex-none items-center gap-1.5 rounded-full bg-primary px-4 text-[14px] font-semibold text-primary-foreground">
+              <Icon name="install_desktop" className="text-[20px]" />Instalar
+            </button>
+          )}
+        </div>
+        <InstallSheet open={installing} onClose={() => setInstalling(false)} />
+      </section>
 
       <span className="mt-6 border-b border-border pb-1 text-label text-muted-foreground">Muy pronto</span>
       <ul>

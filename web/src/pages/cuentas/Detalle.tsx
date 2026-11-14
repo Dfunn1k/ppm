@@ -291,7 +291,7 @@ function OpeningSheet({ open, onClose, detail, base, lang }: {
             : "Esta cuenta no tiene saldo inicial. Escribe con cuánto empezó."}
         </p>
         <AmountField label="Saldo inicial" symbol={symbolOf(currency)} value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <DateField label="Al día" max={todayISO()} value={date} onChange={setDate} />
+        <DateField label="Al día" max={todayISO()} value={date} onChange={setDate} booked />
         {foreign && <RateField input={rate} currency={currency} side={side} />}
         {(problem || set.error) && <ErrorAlert>{problem ?? set.error?.message}</ErrorAlert>}
         <PrimaryButton pending={set.isPending}>Guardar saldo</PrimaryButton>

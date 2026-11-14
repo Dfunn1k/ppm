@@ -197,7 +197,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
             <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
               className="h-10 min-w-0 border-0 bg-transparent p-0" />
           </div>
-          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} />
+          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} booked />
           <label className="flex min-h-[52px] cursor-pointer items-center gap-3">
             <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
             <span className="flex flex-1 flex-col">
