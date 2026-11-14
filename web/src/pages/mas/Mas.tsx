@@ -1,6 +1,6 @@
-// X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Inicio, Reportes (X2), Apariencia, Recurrentes (X1), Categorías (X3), Cierre de periodo (X4) y, para el
-// administrador, Tipo de cambio (Z1);
-// lo demás llega con su rebanada.
+// X0 · Más: Mi cuenta, Pendientes (con su número), Inicio, Apariencia, Reportes (X2), Recurrentes (X1),
+// Categorías (X3), Cierre de periodo (X4), Monedas y formato (X5) y, para el administrador, Tipo de cambio
+// (Z1). Aparte, «En este equipo»: instalar PPM.
 import { useState } from "react";
 import { Link } from "react-router";
 
@@ -9,10 +9,7 @@ import { INSTALL_HINT, InstallSheet, Logo } from "@/components/InstallSheet";
 import { Icon } from "@/components/ui";
 import { useInstall } from "@/lib/install";
 import { shortDate } from "@/lib/dates";
-
-const SOON = [
-  ["tune", "Monedas, idioma y formato", "Agregar monedas y cambiar cómo se ven"],
-] as const;
+import { formatNumber, symbolOf } from "@/lib/money";
 
 export function Mas() {
   const me = useMe().data;
@@ -96,6 +93,16 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
+      <Link to="/mas/monedas" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="currency_exchange" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Monedas y formato</span>
+          <span className="text-caption text-muted-foreground tabular-nums">
+            {me ? `${me.currencies.map((c) => symbolOf(c)).join(" · ")} · ${formatNumber("1284.90", me.lang ?? "es-PE")}` : "Tus monedas y cómo se escriben"}
+          </span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
       {me?.is_admin && (
         <Link to="/mas/tipo-de-cambio" className="flex min-h-16 items-center gap-3.5 border-b border-border">
           <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="currency_exchange" className="text-[22px]" /></span>
@@ -126,18 +133,6 @@ export function Mas() {
         <InstallSheet open={installing} onClose={() => setInstalling(false)} />
       </section>
 
-      <span className="mt-6 border-b border-border pb-1 text-label text-muted-foreground">Muy pronto</span>
-      <ul>
-        {SOON.map(([icon, name, hint]) => (
-          <li key={name} aria-disabled="true" className="flex min-h-14 items-center gap-3.5 border-b border-border text-muted-foreground">
-            <span className="grid size-10 flex-none place-items-center rounded-full border-[1.5px] border-dashed border-border"><Icon name={icon} /></span>
-            <span className="flex flex-col">
-              <span className="font-semibold">{name}</span>
-              <span className="text-caption">{hint}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
     </main>
   );
 }

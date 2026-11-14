@@ -930,6 +930,39 @@ export function useUpdateMe() {
   });
 }
 
+export type MyCurrency = components["schemas"]["MyCurrencyOut"];
+const MY_CURRENCIES = ["my-currencies"] as const;
+
+/** Más › Monedas y formato: tus monedas, con sus cuentas y de dónde sale su tipo de cambio. */
+export function useMyCurrencies() {
+  return useQuery({
+    queryKey: MY_CURRENCIES,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/me/currencies");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Agregar o quitar una moneda: cambia la lista y lo que `/me` dice de tus monedas. */
+export function useToggleCurrency() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ code, add }: { code: string; add: boolean }) => {
+      const { data, error, response } = add
+        ? await api.POST("/me/currencies", { body: { currency: code } })
+        : await api.DELETE("/me/currencies/{currency}", { params: { path: { currency: code } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(MY_CURRENCIES, data);
+      return qc.invalidateQueries({ queryKey: ME });
+    },
+  });
+}
+
 export function useChangePassword() {
   return useMutation({
     mutationFn: async (body: { current_password: string; new_password: string }) => {

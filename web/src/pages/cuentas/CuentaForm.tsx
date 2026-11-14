@@ -7,11 +7,11 @@ import { z } from "zod";
 
 import type { BankIn, CashIn } from "@/api/hooks";
 import { rateHint, useSuggestedRate } from "@/components/RateField";
-import { Segmented, SheetSelect } from "@/components/Sheet";
+import { CurrencyChoice, Segmented, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
-import { CURRENCY_NAME, parseAmount, symbolOf } from "@/lib/money";
+import { currencyLabel, parseAmount, symbolOf } from "@/lib/money";
 
 export type Bank = { id: number; name: string; cci_code: string | null };
 
@@ -149,11 +149,11 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
 
       {currencies.length > 1 && (
         <div className="mt-5">
-          <Segmented
+          <CurrencyChoice
             label="Moneda"
             value={currency}
             onChange={(v) => form.setValue("currency", v)}
-            options={currencies.map((c) => ({ value: c, label: `${CURRENCY_NAME[c] ? CURRENCY_NAME[c][0]!.toUpperCase() + CURRENCY_NAME[c].slice(1) : c} · ${symbolOf(c)}` }))}
+            options={currencies.map((c) => ({ value: c, label: currencyLabel(c) }))}
           />
         </div>
       )}

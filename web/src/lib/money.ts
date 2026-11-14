@@ -9,7 +9,23 @@ function sep(lang: string) {
   return SEPARATORS[lang] ?? SEPARATORS["es-PE"]!;
 }
 
-/** «S/ 1,284.90»: el símbolo antes, con espacio; lo negativo con signo menos (no guion). */
+// Cómo se escribe cada moneda que usa la persona (GET /me → formats): su símbolo en su formato y sus
+// decimales. Lo carga App al saber quién entró; sin datos, los de es-PE de siempre.
+type CurrencyFormat = { code: string; symbol: string; decimals: number };
+const FORMATS = new Map<string, CurrencyFormat>();
+const NO_CENTS = new Set<string>();   // los símbolos de las monedas sin decimales (el yen, el peso chileno)
+
+export function setCurrencyFormats(list: CurrencyFormat[]) {
+  FORMATS.clear();
+  NO_CENTS.clear();
+  for (const f of list) {
+    FORMATS.set(f.code, f);
+    if (f.decimals === 0) NO_CENTS.add(f.symbol);
+  }
+}
+
+/** «S/ 1,284.90»: el símbolo antes, con espacio; lo negativo con signo menos (no guion). En una moneda
+ *  sin decimales, «CLP 15,000» (si alguna vez trae céntimos, se muestran: nunca se esconde un monto). */
 export function formatAmount(amount: number | string, symbol: string, lang = "es-PE"): string {
   const s = sep(lang);
   const text = typeof amount === "number" ? amount.toFixed(2) : amount.trim();
@@ -17,7 +33,8 @@ export function formatAmount(amount: number | string, symbol: string, lang = "es
   const [whole = "0", cents = ""] = text.replace(/^[-+]/, "").split(".");
   const grouped = whole.replace(/^0+(?=\d)/, "").replace(/\B(?=(\d{3})+(?!\d))/g, s.thousands);
   const two = (cents + "00").slice(0, 2);
-  return `${negative ? "− " : ""}${symbol ? `${symbol} ` : ""}${grouped}${s.decimal}${two}`;
+  const tail = symbol && NO_CENTS.has(symbol) && two === "00" ? "" : `${s.decimal}${two}`;
+  return `${negative ? "− " : ""}${symbol ? `${symbol} ` : ""}${grouped}${tail}`;
 }
 
 /** Solo el número, sin símbolo: «8,240.30». */
@@ -48,8 +65,16 @@ export const CURRENCY_SYMBOL: Record<string, string> = { PEN: "S/", USD: "US$", 
 
 export const CURRENCY_NAME: Record<string, string> = { PEN: "soles", USD: "dólares", EUR: "euros" };
 
+/** «Soles · S/» para elegir una moneda; las que no tienen nombre corto, solo con su código («CLP»). */
+export function currencyLabel(code: string) {
+  const name = CURRENCY_NAME[code];
+  const sym = symbolOf(code);
+  if (name) return `${name[0]!.toUpperCase()}${name.slice(1)} · ${sym}`;
+  return sym === code ? code : `${code} · ${sym}`;
+}
+
 export function symbolOf(code: string | null | undefined) {
-  return code ? (CURRENCY_SYMBOL[code] ?? code) : "";
+  return code ? (FORMATS.get(code)?.symbol ?? CURRENCY_SYMBOL[code] ?? code) : "";
 }
 
 // --- Cuentas exactas con el tipo de cambio (BigInt, nunca float) --------------------------------

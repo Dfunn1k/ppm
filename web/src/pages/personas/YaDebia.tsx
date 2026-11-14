@@ -8,11 +8,11 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useMe, usePartner, usePartnerOpening } from "@/api/hooks";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput } from "@/components/RateField";
-import { Segmented } from "@/components/Sheet";
+import { CurrencyChoice, Segmented } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
-import { CURRENCY_NAME, parseAmount, symbolOf } from "@/lib/money";
+import { currencyLabel, parseAmount, symbolOf } from "@/lib/money";
 import { AmountField } from "@/pages/cuentas/CuentaForm";
 import { useBack } from "@/lib/transitions";
 
@@ -72,8 +72,8 @@ export function YaDebia() {
           <Segmented label="¿Quién le debía a quién?" value={side} onChange={(v) => setSide(v as Side)}
             options={[{ value: "owes_me", label: first ? `${first} me debía` : "Me debía" }, { value: "i_owe", label: `Yo le debía` }]} />
           {me.currencies.length > 1 && (
-            <Segmented label="Moneda" size="sm" value={currency} onChange={setCurrency}
-              options={me.currencies.map((c) => ({ value: c, label: `${(CURRENCY_NAME[c] ?? c).replace(/^./, (x) => x.toUpperCase())} · ${symbolOf(c)}` }))} />
+            <CurrencyChoice label="Moneda" size="sm" value={currency} onChange={setCurrency}
+              options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
           )}
           <AmountField label={side === "owes_me" ? "¿Cuánto te debía?" : "¿Cuánto le debías?"} symbol={symbolOf(currency)}
             value={amount} onChange={(e) => setAmount(e.target.value)} />
