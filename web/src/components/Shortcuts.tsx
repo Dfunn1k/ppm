@@ -1,6 +1,6 @@
 // Atajos de teclado de escritorio (decisión «Escritorio»): N registra, / busca, ↑ ↓ recorren la lista,
 // E edita el movimiento abierto, Esc cierra y Ctrl + Enter guarda. No hacen nada mientras escribes
-// en un campo (salvo Ctrl + Enter), con una hoja abierta o en el celular.
+// en un campo (salvo Ctrl + Enter), con una hoja o un visor abiertos, ni en el celular.
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 
@@ -33,7 +33,8 @@ export function Shortcuts() {
       if (!isDesktop() || e.defaultPrevented || e.isComposing) return;
       const { location: loc, home: homeAccount } = now.current;
       const path = loc.pathname;
-      const sheetOpen = !!document.querySelector(".sheet-panel");
+      // Una hoja, el visor de adjuntos o el panel de registrar abiertos: ellos escuchan el teclado
+      const dialogOpen = !!document.querySelector('[role="dialog"][aria-modal="true"]');
 
       // Ctrl + Enter: guarda el formulario en el que estás (o el del panel de registrar)
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
@@ -42,8 +43,7 @@ export function Shortcuts() {
         if (form) { e.preventDefault(); form.requestSubmit(); }
         return;
       }
-      // Con el panel de registrar abierto, solo él escucha (Esc lo cierra)
-      if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target) || sheetOpen || document.querySelector(".register-panel")) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target) || dialogOpen) return;
 
       if (e.key === "n" || e.key === "N") {
         if (path.startsWith("/registrar")) return;

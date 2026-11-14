@@ -58,8 +58,21 @@ test("Registrar se abre en un panel y al cerrarlo sigues donde estabas", async (
   await expect(panel).toBeHidden();
   await expect(page).toHaveURL(cuenta);
 
+  // Pasar a Ingreso y a «Más» tipos no saca del panel
+  await page.getByRole("link", { name: "Registrar un movimiento" }).click();
+  await page.getByRole("radio", { name: "Ingreso" }).click();
+  await expect(panel).toBeVisible();
+  await page.getByRole("radio", { name: "Más" }).click();
+  await page.getByRole("dialog").getByRole("link").first().click();
+  await expect(panel).toBeVisible();
+  await expect(page.getByRole("heading", { name: "BCP" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(cuenta);
+
   await page.getByRole("link", { name: "Registrar un movimiento" }).click();
   await spend(page, "35.50", "Almuerzo del viernes");
+  await expect(panel).toBeVisible();
   await page.getByLabel("Nota").press("Control+Enter");   // Ctrl + Enter guarda
   await expect(panel).toBeHidden();
   await expect(page).toHaveURL("/movimientos");

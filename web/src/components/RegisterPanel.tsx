@@ -1,5 +1,6 @@
 // Registrar en escritorio: un panel que entra por la derecha sobre la pantalla en la que estabas,
-// como una ficha que se apoya encima del cuaderno sin cerrarlo. Al guardar o cerrar, vuelves ahí.
+// como una ficha que se apoya encima del cuaderno sin cerrarlo. Al cerrar vuelves ahí; al guardar,
+// a donde Registrar lleva siempre (Movimientos o el movimiento).
 import { type ReactNode, useEffect, useRef } from "react";
 
 import { useBack } from "@/lib/transitions";
@@ -14,8 +15,8 @@ export function RegisterPanel({ children }: { children: ReactNode }) {
     const before = document.activeElement as HTMLElement | null;
     panel.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      // Una hoja abierta dentro del panel se cierra primero (ella misma escucha Esc)
-      if (e.key === "Escape" && !document.querySelector(".sheet-panel")) { e.preventDefault(); close.current(); }
+      // Una hoja o el visor abiertos dentro del panel se cierran primero (ellos mismos escuchan Esc)
+      if (e.key === "Escape" && document.querySelectorAll('[role="dialog"][aria-modal="true"]').length === 1) { e.preventDefault(); close.current(); }
     };
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("keydown", onKey); before?.focus(); };

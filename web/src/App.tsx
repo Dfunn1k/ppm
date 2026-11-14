@@ -96,10 +96,11 @@ function WithNav() {
 
 /** Dentro de la app: en escritorio, el riel a la izquierda y los atajos de teclado. */
 function Shell() {
+  const desktop = useDesktop();
   return (
     <>
-      <Rail />
-      <Shortcuts />
+      {desktop && <Rail />}
+      {desktop && <Shortcuts />}
       <div className="lg:pl-[88px]"><Outlet /></div>
     </>
   );
@@ -226,6 +227,9 @@ export function App() {
     {background && (
       <Routes>
         <Route path="/registrar" element={<RegisterPanel><Registrar /></RegisterPanel>} />
+        <Route path="/registrar/persona/:kind" element={<RegisterPanel><RegistrarPersona /></RegisterPanel>} />
+        <Route path="/registrar/reembolso" element={<RegisterPanel><Reembolso /></RegisterPanel>} />
+        <Route path="/registrar/manual" element={<RegisterPanel><AsientoManual /></RegisterPanel>} />
         <Route path="*" element={null} />
       </Routes>
     )}
