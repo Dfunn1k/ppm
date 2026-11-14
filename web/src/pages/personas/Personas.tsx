@@ -3,7 +3,7 @@
 // Los tres totales de arriba filtran (?ver=me-deben|debo|guardo): «Me deben» y «Debo a personas» de
 // Cuentas abren ya filtrado.
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, NavLink, useNavigate, useSearchParams } from "react-router";
 
 import { type PartnerRow, useMe, usePartnersOverview } from "@/api/hooks";
 import { Avatar } from "@/components/MoveBits";
@@ -102,11 +102,11 @@ export function Personas() {
               <span className="border-b border-border pb-1 text-label text-muted-foreground">{side.title}</span>
               {shown.length === 0 && <span className="py-3 text-caption text-muted-foreground">Nadie por ahora.</span>}
               {shown.map((p) => (
-                <Link key={p.id} to={`/personas/${p.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+                <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
                   <Avatar name={p.name} size={40} />
                   <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
                   <span className="text-amount">{joinMoney(side.of(p), lang)}</span>
-                </Link>
+                </NavLink>
               ))}
               <button type="button" onClick={() => setParams({}, { replace: true })} className="flex min-h-12 items-center font-semibold">
                 Ver a todas las personas
@@ -120,7 +120,7 @@ export function Personas() {
               {pending.map((p) => {
                 const net = isZero(p.net) ? null : isNegative(p.net) ? "Le debes" : "Te debe";
                 return (
-                  <Link key={p.id} to={`/personas/${p.id}`} className="flex min-h-[68px] items-center gap-3 border-b border-border">
+                  <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-[68px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
                     <Avatar name={p.name} size={40} />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="font-semibold">{p.name}</span>
@@ -132,7 +132,7 @@ export function Personas() {
                         <span className="text-amount">{money(p.net.replace("-", ""))}</span>
                       </span>
                     )}
-                  </Link>
+                  </NavLink>
                 );
               })}
             </section>
@@ -142,7 +142,7 @@ export function Personas() {
             <section aria-label="Al día" className="mt-5 flex flex-col">
               <span className="border-b border-border pb-1 text-label text-muted-foreground">Al día</span>
               {settled.map((p) => (
-                <Link key={p.id} to={`/personas/${p.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+                <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
                   <Avatar name={p.name} size={40} />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="font-semibold">{p.name}</span>
@@ -151,7 +151,7 @@ export function Personas() {
                     </span>
                   </span>
                   <span className="text-caption text-muted-foreground">Sin pendientes</span>
-                </Link>
+                </NavLink>
               ))}
             </section>
           )}

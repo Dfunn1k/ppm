@@ -59,7 +59,7 @@ function Tab({ item }: { item: Item }) {
 
 /** El + registra con la cuenta o tarjeta que estás mirando; en el Inicio, con la elegida en Más › Inicio;
  *  en otra pantalla, sin cuenta elegida. */
-function registerLink(path: string, homeAccount: number | null | undefined) {
+export function registerLink(path: string, homeAccount: number | null | undefined) {
   const id = /^\/(?:cuentas|tarjetas)\/(\d+)/.exec(path)?.[1] ?? (path === "/inicio" && homeAccount ? String(homeAccount) : null);
   return id ? `/registrar?cuenta=${id}` : "/registrar";
 }
@@ -70,7 +70,7 @@ export function AppNav() {
   if (here && !FROM_WHERE_YOU_CAME.some((p) => path.startsWith(p))) lastTab = here;
   const homeAccount = useMe().data?.home_account_id;
   return (
-    <nav aria-label="Navegación principal" className="app-nav fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card">
+    <nav aria-label="Navegación principal" className="app-nav fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card lg:hidden">
       <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
         <Tab item={ITEMS[1]!} />

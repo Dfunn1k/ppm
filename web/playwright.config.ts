@@ -13,5 +13,9 @@ export default defineConfig({
     timezoneId: "America/Lima",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "celular", use: { ...devices["Pixel 7"] } }],
+  projects: [
+    { name: "celular", use: { ...devices["Pixel 7"] }, testIgnore: /escritorio\.spec\.ts/ },
+    // Desde 1024 px: el riel, la lista con su detalle al lado y Registrar en un panel
+    { name: "escritorio", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } }, testMatch: /escritorio\.spec\.ts/ },
+  ],
 });

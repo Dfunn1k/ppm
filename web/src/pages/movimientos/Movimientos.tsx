@@ -1,6 +1,6 @@
 // M1 · Movimientos: el mes por días, con lo que entró y salió, búsqueda y filtros.
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { NavLink, useLocation, useSearchParams } from "react-router";
 
 import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth } from "@/api/hooks";
 import { CategorySheet } from "@/components/CategorySheet";
@@ -9,6 +9,7 @@ import { OptionList, Sheet } from "@/components/Sheet";
 import { BoneRows } from "@/components/Skeleton";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
+import { useDesktop } from "@/lib/desktop";
 import { monthName, monthOptions } from "@/lib/months";
 import { formatAmount, isZero, symbolOf } from "@/lib/money";
 
@@ -160,7 +161,7 @@ export function Movimientos() {
         <OptionList value={filters.kind ?? ""} options={KIND_OPTIONS} onPick={(v) => { set("tipo", v || null); setSheet(null); }} />
       </Sheet>
       {sheet === "category" && (
-        <div className="fixed inset-x-0 top-3 z-[60] mx-auto flex max-w-md justify-center gap-1">
+        <div className="fixed inset-x-0 top-3 z-[60] lg:left-[88px] mx-auto flex max-w-md justify-center gap-1">
           {(["expense", "income"] as const).map((k) => (
             <button key={k} type="button" aria-pressed={categoryKind === k} onClick={() => setCategoryKind(k)}
               className={`h-9 rounded-full px-4 text-caption font-semibold ${categoryKind === k ? "bg-primary text-primary-foreground" : "bg-card"}`}>
@@ -180,8 +181,12 @@ export function Movimientos() {
 
 function MoveRow({ move: x, lang, base }: { move: MoveSummary; lang: string; base: string }) {
   const caption = moveCaption(x, lang);
+  // En escritorio la lista sigue al lado: el detalle se abre sin perder el mes, la búsqueda ni los filtros
+  const search = useLocation().search;
+  const desktop = useDesktop();
   return (
-    <Link to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+    <NavLink to={{ pathname: `/movimientos/${x.id}`, search: desktop ? search : "" }}
+      className="flex min-h-[60px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
       <MoveIcon move={x} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{x.ref}</span>
@@ -190,6 +195,6 @@ function MoveRow({ move: x, lang, base }: { move: MoveSummary; lang: string; bas
         </span>
       </span>
       <MoveAmount move={x} base={base} lang={lang} />
-    </Link>
+    </NavLink>
   );
 }

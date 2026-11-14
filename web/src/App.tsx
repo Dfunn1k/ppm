@@ -1,9 +1,14 @@
 import { lazy, type ReactNode, Suspense, useEffect } from "react";
-import { Navigate, Outlet, Route, Routes } from "react-router";
+import { type Location, Navigate, Outlet, Route, Routes, useLocation } from "react-router";
 
 import { type Me, useMe } from "./api/hooks";
 import { applyIconsOf } from "./lib/iconFont";
 import { AppNav } from "./components/AppNav";
+import { Rail } from "./components/Rail";
+import { RegisterPanel } from "./components/RegisterPanel";
+import { Shortcuts } from "./components/Shortcuts";
+import { Split, SplitIndex } from "./components/Split";
+import { useDesktop } from "./lib/desktop";
 import { Spinner } from "./components/ui";
 import { WizardProvider } from "./pages/bienvenida/wizard";
 import { Entrar } from "./pages/Entrar";
@@ -89,6 +94,17 @@ function WithNav() {
   );
 }
 
+/** Dentro de la app: en escritorio, el riel a la izquierda y los atajos de teclado. */
+function Shell() {
+  return (
+    <>
+      <Rail />
+      <Shortcuts />
+      <div className="lg:pl-[88px]"><Outlet /></div>
+    </>
+  );
+}
+
 /** Tema y acento de la persona; antes de entrar, el del sistema y tinta. */
 function useTheme(me: Me | null | undefined) {
   useEffect(() => {
@@ -102,12 +118,16 @@ function useTheme(me: Me | null | undefined) {
 
 export function App() {
   const me = useMe();
+  const location = useLocation();
+  const desktop = useDesktop();
+  // En escritorio el + abre Registrar en un panel sobre la pantalla de la que viniste
+  const background = desktop ? (location.state as { background?: Location } | null)?.background : undefined;
   useTheme(me.data);
   useEffect(() => applyIconsOf(me.data?.icons), [me.data]);
 
   return (
     <Suspense fallback={<Spinner />}>
-    <Routes>
+    <Routes location={background ?? location}>
       <Route element={<Guard allow={(m) => m === null} />}>
         <Route path="/entrar" element={<Entrar />} />
         <Route path="/crear-cuenta" element={<CrearCuenta />} />
@@ -130,31 +150,50 @@ export function App() {
         <Route path="3/banco" element={<Paso3Banco />} />
       </Route>
       <Route element={<Guard allow={(m) => m !== null && m.configured} />}>
+      <Route element={<Shell />}>
         <Route element={<WithNav />}>
           <Route path="/inicio" element={<Inicio />} />
-          <Route path="/cuentas" element={<Cuentas />} />
-          <Route path="/cuentas/:id" element={<Detalle />} />
-          <Route path="/tarjetas/:id" element={<Tarjeta />} />
-          <Route path="/personas" element={<Personas />} />
-          <Route path="/movimientos" element={<Movimientos />} />
-          <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
           <Route path="/por-clasificar" element={<PorClasificar />} />
           <Route path="/mas" element={<Mas />} />
           <Route path="/pendientes" element={<Pendientes />} />
-          <Route path="/mas/reportes" element={<Reportes />} />
           <Route path="/mas/categorias" element={<Categorias />} />
           <Route path="/mas/recurrentes" element={<Recurrentes />} />
-          <Route path="/prestamos/:id" element={<Prestamo />} />
+        </Route>
+        {/* Lista y detalle: en escritorio lado a lado; en el celular, cada una en su pantalla */}
+        <Route element={<Split list={<Movimientos />} />}>
+          <Route element={<WithNav />}>
+            <Route path="/movimientos" element={<SplitIndex icon="receipt_long" title="Elige un movimiento">Ábrelo aquí al lado para ver su detalle, confirmarlo o cambiarlo. Con ↑ ↓ pasas al siguiente.</SplitIndex>} />
+            <Route path="/movimientos/:id" element={<DetalleMovimiento />} />
+          </Route>
+        </Route>
+        <Route element={<Split list={<Cuentas />} />}>
+          <Route element={<WithNav />}>
+            <Route path="/cuentas" element={<SplitIndex icon="account_balance_wallet" title="Elige una cuenta">Aquí al lado ves su saldo, su número y CCI para copiar y sus movimientos.</SplitIndex>} />
+            <Route path="/cuentas/:id" element={<Detalle />} />
+            <Route path="/tarjetas/:id" element={<Tarjeta />} />
+            <Route path="/prestamos/:id" element={<Prestamo />} />
+          </Route>
+        </Route>
+        <Route element={<Split list={<Personas />} />}>
+          <Route element={<WithNav />}>
+            <Route path="/personas" element={<SplitIndex icon="group" title="Elige una persona">Aquí al lado ves lo que te debe o le debes, sus préstamos y recordatorios.</SplitIndex>} />
+          </Route>
+          <Route path="/personas/:id" element={<Persona />} />
+        </Route>
+        <Route element={<Split list={<Reportes />} />}>
+          <Route element={<WithNav />}>
+            <Route path="/mas/reportes" element={<SplitIndex to="/mas/reportes/gastos" />} />
+          </Route>
+          <Route path="/mas/reportes/gastos" element={<ReporteCategorias kind="expense" />} />
+          <Route path="/mas/reportes/ingresos" element={<ReporteCategorias kind="income" />} />
+          <Route path="/mas/reportes/flujo" element={<ReporteFlujo />} />
+          <Route path="/mas/reportes/patrimonio" element={<ReportePatrimonio />} />
+          <Route path="/mas/reportes/personas" element={<ReportePersonas />} />
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
         <Route path="/mas/cierre" element={<Cierre />} />
         <Route path="/mas/inicio" element={<InicioAjustes />} />
-        <Route path="/mas/reportes/gastos" element={<ReporteCategorias kind="expense" />} />
-        <Route path="/mas/reportes/ingresos" element={<ReporteCategorias kind="income" />} />
-        <Route path="/mas/reportes/flujo" element={<ReporteFlujo />} />
-        <Route path="/mas/reportes/patrimonio" element={<ReportePatrimonio />} />
-        <Route path="/mas/reportes/personas" element={<ReportePersonas />} />
         <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />
         <Route path="/mas/recurrentes/:id" element={<Recurrente />} />
         <Route path="/mas/recurrentes/:id/editar" element={<EditarRecurrente />} />
@@ -167,7 +206,6 @@ export function App() {
         <Route path="/registrar/reembolso" element={<Reembolso />} />
         <Route path="/registrar/manual" element={<AsientoManual />} />
         <Route path="/registrar/saldo-inicial" element={<YaDebia />} />
-        <Route path="/personas/:id" element={<Persona />} />
         <Route path="/personas/:id/ya-debia" element={<YaDebia />} />
         <Route path="/movimientos/:id/editar" element={<EditarMovimiento />} />
         <Route path="/cuentas/nueva" element={<NuevaCuenta />} />
@@ -182,8 +220,15 @@ export function App() {
         <Route path="/cuentas/:id/importar" element={<Importar />} />
         <Route path="/extractos/:id" element={<Extracto />} />
       </Route>
+      </Route>
       <Route path="*" element={me.isPending ? <Spinner /> : <Navigate to={home(me.data)} replace />} />
     </Routes>
+    {background && (
+      <Routes>
+        <Route path="/registrar" element={<RegisterPanel><Registrar /></RegisterPanel>} />
+        <Route path="*" element={null} />
+      </Routes>
+    )}
     </Suspense>
   );
 }
