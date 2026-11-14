@@ -13,6 +13,7 @@ import { useDesktop } from "./lib/desktop";
 import { Spinner } from "./components/ui";
 import { WizardProvider } from "./pages/bienvenida/wizard";
 import { Entrar } from "./pages/Entrar";
+import { UnirGoogle } from "./pages/UnirGoogle";
 import { Inicio } from "./pages/Inicio";
 
 // Cada pantalla es un archivo aparte que se descarga al abrirla: así la primera carga trae solo lo
@@ -135,6 +136,7 @@ export function App() {
     <Routes location={background ?? location}>
       <Route element={<Guard allow={(m) => m === null} />}>
         <Route path="/entrar" element={<Entrar />} />
+        <Route path="/entrar/google" element={<UnirGoogle />} />
         <Route path="/crear-cuenta" element={<CrearCuenta />} />
         <Route path="/recuperar" element={<Recuperar />} />
       </Route>

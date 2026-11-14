@@ -40,6 +40,8 @@ class Me:
     lock_date: dt.date | None = None     # cierre de periodo: nada con fecha hasta ese día se toca
     icons: list[str] = field(default_factory=list)   # los íconos de sus categorías y cuentas (la fuente a la medida)
     formats: list[CurrencyFormat] = field(default_factory=list)   # cómo se escribe cada moneda que usa
+    google_email: str | None = None   # la cuenta de Google con que entra, si la vinculó
+    has_password: bool = True         # False si creó la cuenta con Google y aún no tiene contraseña
 
 
 def get_me(user_id: int) -> Me:
@@ -59,7 +61,8 @@ def get_me(user_id: int) -> Me:
                                               ORDER BY c.id <> u.currency_id, c.name)
                                FROM res_users_currency uc JOIN res_currency c ON c.id = uc.currency_id
                                LEFT JOIN res_currency_format f ON f.currency_id = c.id AND f.lang_id = u.lang_id),
-                            '{}')
+                            '{}'),
+                   u.oauth_email, u.password IS NOT NULL
               FROM res_users u
               LEFT JOIN res_country co  ON co.id = u.country_id
               LEFT JOIN res_currency cur ON cur.id = u.currency_id
@@ -67,7 +70,8 @@ def get_me(user_id: int) -> Me:
         """).fetchone()
     return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails,
               notice_days=row[11], ui_private=row[12], home_account_id=row[13], lock_date=row[14],
-              icons=list(row[15]), formats=[CurrencyFormat(c, s, int(d)) for c, s, d in row[16]])
+              icons=list(row[15]), formats=[CurrencyFormat(c, s, int(d)) for c, s, d in row[16]],
+              google_email=row[17], has_password=row[18])
 
 
 def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None,

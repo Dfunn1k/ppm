@@ -31,6 +31,19 @@ Solo Caddy publica puertos (80 y 443). La API y la base quedan dentro de la red 
 - **Un dominio o subdominio** (por ejemplo `ppm.ejemplo.com`) con un registro **A** que apunte a la IP de la VPS. Debe resolver **antes** de levantar: Caddy pide el certificado a Let's Encrypt al arrancar.
 - **Un proveedor de correo SMTP** con STARTTLS en el puerto 587 (por ejemplo Brevo, Resend, Amazon SES o el SMTP de Google Workspace). Lo usa «Olvidé mi contraseña». La API no soporta SSL directo en el 465.
 - **El correo del administrador**: quien verá Z1 (tipo de cambio).
+- **Opcional, para «Continuar con Google»**: un cliente OAuth de Google (paso 1b). Sin él, PPM funciona igual y el botón no aparece.
+
+### 1b. El cliente de Google (opcional)
+
+En [Google Cloud Console](https://console.cloud.google.com), dentro de un proyecto, en **Google Auth Platform**:
+
+1. **Branding**: nombre de la app `PPM`, tu correo de asistencia y, en dominios autorizados, el dominio de `PPM_DOMAIN`. Sin logo: con logo, Google exige verificar la marca.
+2. **Audience**: tipo *Externo*. Mientras esté en *Testing* solo entran los correos de *Test users*; cuando funcione, *Publish app* (con solo nombre y correo no pide revisión).
+3. **Data access**: solo `openid`, `.../auth/userinfo.email` y `.../auth/userinfo.profile`.
+4. **Clients › Create client**: *Aplicación web*, sin orígenes de JavaScript, y en **URIs de redireccionamiento autorizados**, exactamente `https://TU-DOMINIO/api/auth/google/callback` (y, para probar en tu equipo, `http://localhost:5173/api/auth/google/callback`).
+5. Copia el Client ID y el secreto (Google muestra el secreto una sola vez) a `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` del `.env`.
+
+Para probar en tu equipo con la Google de verdad (sin ellas, el desarrollo usa una Google falsa en http://localhost:8099), pon en el `.env` del repo las dos de arriba y además `GOOGLE_AUTH_URL=https://accounts.google.com/o/oauth2/v2/auth` y `GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token`.
 
 ## 2. Preparar el servidor (una sola vez)
 
@@ -78,6 +91,7 @@ nano .env                 # llena todo
 | `SMTP_STARTTLS` | `true` |
 | `MAIL_FROM` | el remitente, de un dominio verificado en el proveedor: `PPM <no-responder@ejemplo.com>` |
 | `ADMIN_EMAILS` | el o los correos de administrador, separados por coma |
+| `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` | opcionales: el cliente de Google del paso 1b. Vacíos, no aparece «Continuar con Google» |
 
 `.env` tiene secretos: no se sube a git (ya está en `.gitignore`) ni se copia a ningún otro lado.
 

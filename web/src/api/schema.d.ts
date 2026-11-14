@@ -81,7 +81,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cambiar contraseña */
+        /** Cambiar contraseña (o crearla, si entraste con Google y aún no tienes) */
         post: operations["change_password_auth_password_post"];
         delete?: never;
         options?: never;
@@ -118,6 +118,92 @@ export interface paths {
         /** Poner la contraseña nueva con el enlace del correo */
         post: operations["confirm_reset_auth_password_reset_confirm_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Formas de entrar disponibles (el botón de Google aparece si está configurado) */
+        get: operations["providers_auth_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ir a Google para entrar o vincular */
+        get: operations["google_start_auth_google_start_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La vuelta de Google */
+        get: operations["google_callback_auth_google_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La cuenta de Google que espera unirse a tu cuenta */
+        get: operations["google_pending_auth_google_pending_get"];
+        put?: never;
+        /** Unir la cuenta de Google con tu contraseña, y entrar */
+        post: operations["google_pending_confirm_auth_google_pending_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Desvincular Google */
+        delete: operations["google_unlink_auth_google_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2677,6 +2763,13 @@ export interface components {
              * @default []
              */
             formats: components["schemas"]["CurrencyFormatOut"][];
+            /** Google Email */
+            google_email?: string | null;
+            /**
+             * Has Password
+             * @default true
+             */
+            has_password: boolean;
         };
         /** MePatch */
         MePatch: {
@@ -3186,7 +3279,7 @@ export interface components {
         /** PasswordChangeIn */
         PasswordChangeIn: {
             /** Current Password */
-            current_password: string;
+            current_password?: string | null;
             /** New Password */
             new_password: string;
         };
@@ -3205,22 +3298,6 @@ export interface components {
              * @default 0.00
              */
             insurance: number | string;
-        };
-        /** PendingIn */
-        PendingIn: {
-            /** Pending */
-            pending: boolean;
-        };
-        /** PendingOut */
-        PendingOut: {
-            /** Reminders */
-            reminders: components["schemas"]["ReminderOut"][];
-            /** Drafts Due */
-            drafts_due: number;
-            /** Bank Charges */
-            bank_charges: number;
-            /** Bank Charge Move Id */
-            bank_charge_move_id: number | null;
         };
         /** PeopleReportOut */
         PeopleReportOut: {
@@ -3348,6 +3425,11 @@ export interface components {
             row: number;
             /** Reason */
             reason: string;
+        };
+        /** ProvidersOut */
+        ProvidersOut: {
+            /** Google */
+            google: boolean;
         };
         /** RateDayOut */
         RateDayOut: {
@@ -3996,6 +4078,18 @@ export interface components {
             /** Counterpart Role */
             counterpart_role: string | null;
         };
+        /** PendingIn */
+        app__routes__auth__PendingIn: {
+            /** Password */
+            password: string;
+        };
+        /** PendingOut */
+        app__routes__auth__PendingOut: {
+            /** Email */
+            email: string;
+            /** Google Email */
+            google_email: string;
+        };
         /** BankOut */
         app__routes__me__BankOut: {
             /** Id */
@@ -4031,6 +4125,22 @@ export interface components {
             maturity_manual?: string | null;
             /** Maturity Closing */
             maturity_closing?: string | null;
+        };
+        /** PendingIn */
+        app__routes__moves__PendingIn: {
+            /** Pending */
+            pending: boolean;
+        };
+        /** PendingOut */
+        app__routes__recurring__PendingOut: {
+            /** Reminders */
+            reminders: components["schemas"]["ReminderOut"][];
+            /** Drafts Due */
+            drafts_due: number;
+            /** Bank Charges */
+            bank_charges: number;
+            /** Bank Charge Move Id */
+            bank_charge_move_id: number | null;
         };
     };
     responses: never;
@@ -4252,6 +4362,204 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    providers_auth_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvidersOut"];
+                };
+            };
+        };
+    };
+    google_start_auth_google_start_get: {
+        parameters: {
+            query?: {
+                mode?: "login" | "link";
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            303: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_callback_auth_google_callback_get: {
+        parameters: {
+            query?: {
+                code?: string | null;
+                state?: string | null;
+                error?: string | null;
+            };
+            header?: {
+                "user-agent"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                ppm_google?: string | null;
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            303: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_pending_auth_google_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_google_pending?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__routes__auth__PendingOut"];
+                };
+            };
+            /** @description No hay ninguna, o venció */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_pending_confirm_auth_google_pending_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "user-agent"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                ppm_google_pending?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__routes__auth__PendingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_unlink_auth_google_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin contraseña: te quedarías sin forma de entrar */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5559,7 +5867,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PendingIn"];
+                "application/json": components["schemas"]["app__routes__moves__PendingIn"];
             };
         };
         responses: {
@@ -6441,7 +6749,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PendingOut"];
+                    "application/json": components["schemas"]["app__routes__recurring__PendingOut"];
                 };
             };
             /** @description Validation Error */
