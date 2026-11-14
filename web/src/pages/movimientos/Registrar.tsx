@@ -16,14 +16,14 @@ import { MasTipos } from "@/components/MasTipos";
 import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
-import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
+import { CurrencyChoice, OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
 import { shortDate, todayISO } from "@/lib/dates";
 import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
-import { CURRENCY_NAME, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
+import { currencyLabel, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 import { PersonaSheet } from "@/pages/personas/PersonaForm";
 import { useBack } from "@/lib/transitions";
 
@@ -352,8 +352,8 @@ export function Registrar({ editing, recurring, reminder }: {
           )}
           {card && me.currencies.length > 1 && (
             <div className="mt-3">
-              <Segmented label="Moneda" size="sm" value={currency} onChange={setCardCurrency}
-                options={me.currencies.map((c) => ({ value: c, label: `${(CURRENCY_NAME[c] ?? c).replace(/^./, (x) => x.toUpperCase())} · ${symbolOf(c)}` }))} />
+              <CurrencyChoice label="Moneda" size="sm" value={currency} onChange={setCardCurrency}
+                options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
             </div>
           )}
 

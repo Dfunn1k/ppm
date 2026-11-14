@@ -9,12 +9,12 @@ import { MasHeader } from "@/components/MasTipos";
 import { PersonPicker } from "@/components/PersonPicker";
 import { Installments } from "@/components/Installments";
 import { RateField, useRateInput } from "@/components/RateField";
-import { OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
+import { CurrencyChoice, OptionList, Sheet, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
-import { CURRENCY_NAME, add, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { add, currencyLabel, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 
 const TEXT: Record<PersonKind, { ask: string; who: string; into: boolean; submit: string; role: "owes_me" | "i_owe" | "keep" }> = {
@@ -164,8 +164,8 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
               hint: [a.subtitle, formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang)].filter(Boolean).join(" · ") }))} />
           {isCard && me.currencies.length > 1 && (
             <div className="mt-3">
-              <Segmented label="¿En qué moneda?" size="sm" value={currency} onChange={setCardCurrency}
-                options={me.currencies.map((c) => ({ value: c, label: `${(CURRENCY_NAME[c] ?? c).replace(/^./, (x) => x.toUpperCase())} · ${symbolOf(c)}` }))} />
+              <CurrencyChoice label="¿En qué moneda?" size="sm" value={currency} onChange={setCardCurrency}
+                options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
             </div>
           )}
           {foreign && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} side={isCard ? "sell" : undefined} /></div>}

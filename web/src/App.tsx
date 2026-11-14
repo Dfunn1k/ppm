@@ -3,6 +3,7 @@ import { type Location, Navigate, Outlet, Route, Routes, useLocation } from "rea
 
 import { type Me, useMe } from "./api/hooks";
 import { applyIconsOf } from "./lib/iconFont";
+import { setCurrencyFormats } from "./lib/money";
 import { AppNav } from "./components/AppNav";
 import { Rail } from "./components/Rail";
 import { RegisterPanel } from "./components/RegisterPanel";
@@ -46,6 +47,7 @@ const ReportePatrimonio = lazy(() => import("./pages/reportes/Patrimonio").then(
 const ReportePersonas = lazy(() => import("./pages/reportes/Personas").then((m) => ({ default: m.ReportePersonas })));
 const Reportes = lazy(() => import("./pages/reportes/Reportes").then((m) => ({ default: m.Reportes })));
 const Mas = lazy(() => import("./pages/mas/Mas").then((m) => ({ default: m.Mas })));
+const Monedas = lazy(() => import("./pages/mas/Monedas").then((m) => ({ default: m.Monedas })));
 const MiCuenta = lazy(() => import("./pages/mas/MiCuenta").then((m) => ({ default: m.MiCuenta })));
 const TipoCambio = lazy(() => import("./pages/mas/TipoCambio").then((m) => ({ default: m.TipoCambio })));
 const DetalleMovimiento = lazy(() => import("./pages/movimientos/Detalle").then((m) => ({ default: m.DetalleMovimiento })));
@@ -119,6 +121,8 @@ function useTheme(me: Me | null | undefined) {
 
 export function App() {
   const me = useMe();
+  // Antes de pintar: los montos se escriben con el símbolo y los decimales de cada moneda de la persona
+  if (me.data?.formats) setCurrencyFormats(me.data.formats);
   const location = useLocation();
   const desktop = useDesktop();
   // En escritorio el + abre Registrar en un panel sobre la pantalla de la que viniste
@@ -193,6 +197,7 @@ export function App() {
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
+        <Route path="/mas/monedas" element={<Monedas />} />
         <Route path="/mas/cierre" element={<Cierre />} />
         <Route path="/mas/inicio" element={<InicioAjustes />} />
         <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />

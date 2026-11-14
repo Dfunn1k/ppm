@@ -2635,7 +2635,7 @@ Orden de las rebanadas:
 
 ## Decisiones y preguntas abiertas
 
-Doscientas treinta decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
+Doscientas treinta y una decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
 
 | Decisión | Elegido | Alternativa descartada | Por qué |
 | --- | --- | --- | --- |
@@ -2869,6 +2869,7 @@ Doscientas treinta decisiones sostienen la fase 1; cada una puede revisarse ante
 | Escritorio | Desde 1024 px, un riel de íconos de 88 px a la izquierda con Registrar arriba y las secciones con su nombre corto. Movimientos, Cuentas (con tarjetas y préstamos), Personas y Reportes en dos paneles (la lista fija y el elegido al lado; sin nada elegido, una invitación a elegir; Reportes abre Gastos). Registrar como panel lateral sobre la pantalla en la que estabas. Las hojas se abren como ventana al centro; las demás pantallas van centradas junto al riel. Atajos: N, /, ↑ ↓, E, Esc, Ctrl ↵. En el celular no cambia nada | Barra lateral ancha como Odoo; barra superior con pestañas; lista y detalle en todas las secciones | Elegido por Dany el 13-nov: más espacio para el contenido. Las pantallas de escritorio se redibujan con la revisión de UI/UX del celular antes de programarlas |
 | Mientras carga y sin datos | Siluetas con la forma de la pantalla (título, flecha y periodo al instante). Sin datos, la forma de Recurrentes: ícono, qué es, cómo empezar y un botón si hay algo que hacer; nunca ceros que parecen datos ni ayuda para tocar lo que no está. La tarjeta muestra un ciclo a la vez con ‹ › | Un círculo girando en una pantalla en blanco; gráficos vacíos con ceros; todo el historial de la tarjeta de una vez | Revisión con capturas reales (celular, oscuro, API lenta, cuenta nueva): la pantalla en blanco parecía rota y la tarjeta llegaba a 15,000 px con un año de uso |
 | Títulos y lo elegido | Pestañas de abajo: etiqueta chica y el dato grande. Pantallas a las que entras: flecha y título, sin punto y sin etiqueta que repita adónde vuelves. Hojas: × y su título. La opción elegida de un selector usa el token selected (en oscuro, clara con letra oscura). El subtítulo de una cuenta no repite el banco si el nombre ya lo dice | Tres estilos de título a la vez; la elegida en un gris apenas distinto en oscuro | Una sola regla se aprende una vez; en oscuro la opción elegida no se distinguía |
+| Monedas y formato | Más › Monedas y formato. Catálogo completo de ISO 4217 (sin fondos, metales ni retiradas; nombres y decimales de CLDR, hasta 2 decimales). Cada persona agrega las que usa y quita las que no tienen cuentas ni movimientos; la moneda principal queda fija (un trigger impide quitarla). El formato de números y fechas se elige de res_lang, cada uno con su ejemplo. Los montos se escriben con el símbolo de res_currency_format o con el código, y sin céntimos en las monedas sin decimales. Migración 0031 | Solo dólar y euro; separadores y orden de la fecha por separado; poder cambiar la moneda principal | Elegido por Dany el 14-nov: cualquier moneda para viajes o cuentas afuera; un formato con ejemplo evita mezclas confusas; cambiar la principal obligaría a recalcular todo el historial. SUNAT solo publica el dólar: las demás tienen tipo de cambio a mano |
 
 Preguntas para las siguientes sesiones:
 
@@ -2894,6 +2895,7 @@ Preguntas para las siguientes sesiones:
 
 | Fecha | Cambio |
 | --- | --- |
+| 2026-11-14 | Monedas y formato (#73, 0031): catálogo ISO 4217, agregar y quitar monedas, la principal fija y el formato Perú o España. «Muy pronto» desaparece de Más. Dany autorizó el merge propio de #72 y #73 |
 | 2026-11-14 | Fechas y cierre (#72): toda fecha que crea un asiento (saldo inicial, pagos, préstamos, reembolsos, asiento manual, lo que ya debía, plata que guardo, recurrentes) bloquea los días cerrados y lo explica en el calendario; los atajos «Hoy» y «Ayer» también. A pedido de Dany, «Instalar PPM» sale de la lista de Más a su propia sección, «En este equipo» |
 | 2026-11-14 | Versión de escritorio (#71): desde 1024 px el riel reemplaza la barra de abajo; Movimientos, Cuentas, Personas y Reportes en lista y detalle; el Inicio en tres columnas; los movimientos de la cuenta y el ciclo de la tarjeta en tabla; Registrar en panel lateral; atajos N, /, ↑ ↓, E, Esc y Ctrl ↵. Dany aprueba las hojas como ventana al centro, sin flecha de volver en los paneles y que al guardar desde el panel se llegue a Movimientos. En el celular las capturas salen idénticas a las de main |
 | 2026-11-13 | Dany elige el riel de íconos (B) para escritorio y aprueba los 16 cambios de la revisión UI/UX del celular (#70): la tarjeta por ciclo, «Confirmar» en el aviso, la cuenta con sus movimientos arriba, los totales de Personas en una fila, una regla de títulos, la pestaña de donde llegaste, el dólar en claro, el token selected para oscuro, siluetas al cargar y vacíos al estilo de Recurrentes |

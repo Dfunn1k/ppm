@@ -180,3 +180,9 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
     </div>
   );
 }
+
+/** Elegir la moneda: con pocas, los botones de siempre; con más de tres, el campo que abre la lista. */
+export function CurrencyChoice(props: { label: string; options: Option[]; value: string; onChange: (v: string) => void; size?: "sm" | "md" }) {
+  if (props.options.length <= 3) return <Segmented {...props} />;
+  return <SheetSelect label={props.label} options={props.options} value={props.value} onChange={props.onChange} />;
+}

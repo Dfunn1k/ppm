@@ -130,7 +130,7 @@ def test_catalogo_para_los_pasos():
     signup(c, email())
     cat = c.get("/catalog").json()
     assert {"code": "PE", "name": "Perú"} in cat["countries"]
-    assert {"code": "USD", "name": "Dólar estadounidense"} in cat["currencies"]
+    assert {"code": "USD", "name": "Dólar estadounidense", "decimals": 2} in cat["currencies"]
     assert client().get("/catalog").status_code == 401
 
 

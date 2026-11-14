@@ -175,6 +175,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/currencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Más › Monedas y formato: tus monedas, sus cuentas y su tipo de cambio */
+        get: operations["my_currencies_me_currencies_get"];
+        put?: never;
+        /** Agregar una moneda a las que usas */
+        post: operations["add_currency_me_currencies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/currencies/{currency}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Quitar una moneda que no usa ninguna cuenta ni movimiento */
+        delete: operations["remove_currency_me_currencies__currency__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts": {
         parameters: {
             query?: never;
@@ -1825,7 +1860,7 @@ export interface components {
             /** Countries */
             countries: components["schemas"]["OptionOut"][];
             /** Currencies */
-            currencies: components["schemas"]["OptionOut"][];
+            currencies: components["schemas"]["CurrencyOptionOut"][];
             /** Langs */
             langs: components["schemas"]["OptionOut"][];
             /** Banks */
@@ -1997,6 +2032,29 @@ export interface components {
             amount: string;
             /** Oldest Days */
             oldest_days: number;
+        };
+        /** CurrencyFormatOut */
+        CurrencyFormatOut: {
+            /** Code */
+            code: string;
+            /** Symbol */
+            symbol: string;
+            /** Decimals */
+            decimals: number;
+        };
+        /** CurrencyIn */
+        CurrencyIn: {
+            /** Currency */
+            currency: string;
+        };
+        /** CurrencyOptionOut */
+        CurrencyOptionOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Decimals */
+            decimals: number;
         };
         /** CurrencyStatusOut */
         CurrencyStatusOut: {
@@ -2614,6 +2672,11 @@ export interface components {
              * @default []
              */
             icons: string[];
+            /**
+             * Formats
+             * @default []
+             */
+            formats: components["schemas"]["CurrencyFormatOut"][];
         };
         /** MePatch */
         MePatch: {
@@ -2627,6 +2690,8 @@ export interface components {
             notice_days?: number | null;
             /** Ui Private */
             ui_private?: boolean | null;
+            /** Lang */
+            lang?: string | null;
         };
         /** MoneyOut */
         MoneyOut: {
@@ -2804,6 +2869,23 @@ export interface components {
         MovedOut: {
             /** Move Id */
             move_id: number;
+        };
+        /** MyCurrencyOut */
+        MyCurrencyOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Symbol */
+            symbol: string;
+            /** Decimals */
+            decimals: number;
+            /** Base */
+            base: boolean;
+            /** Accounts */
+            accounts: string[];
+            /** Rate */
+            rate: ("SUNAT" | "manual") | null;
         };
         /** NetPointOut */
         NetPointOut: {
@@ -4305,6 +4387,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_currencies_me_currencies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCurrencyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_currency_me_currencies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CurrencyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCurrencyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_currency_me_currencies__currency__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                currency: string;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCurrencyOut"][];
                 };
             };
             /** @description Validation Error */
