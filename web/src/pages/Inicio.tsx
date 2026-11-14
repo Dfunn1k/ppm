@@ -9,10 +9,11 @@ import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { activityCaption, noticeView, sectionOf } from "@/components/Pending";
 import { OptionList, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, formatAmount, isNegative, isZero, rateText, symbolOf } from "@/lib/money";
 import { monthName, monthOnly, monthOptions } from "@/lib/months";
+import { HomeSkeleton } from "@/components/Skeleton";
 
 const ONE: Record<string, string> = { USD: "dólar", EUR: "euro" };
 
@@ -34,7 +35,7 @@ export function Inicio() {
   const [picking, setPicking] = useState(false);
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
-  if (!me?.currency || home.isPending) return <Spinner />;
+  if (!me?.currency || home.isPending) return <HomeSkeleton />;
   if (home.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{home.error.message}</ErrorAlert></main>;
   const h = home.data;
   const lang = me.lang ?? "es-PE";
@@ -73,8 +74,8 @@ export function Inicio() {
       <span className="mt-1 text-caption text-muted-foreground tabular-nums">{today}</span>
       {h.foreign.map((f) => (
         <span key={f.currency} className="text-caption text-muted-foreground tabular-nums">
-          Tus {amount(f.amount, f.currency)} cuentan a {rateText(f.rate)}
-          {f.rate_date === todayISO() ? ", el tipo de compra de hoy." : `, el último que hay (${shortDate(f.rate_date)}).`}
+          {amount(f.amount, f.currency)} = {money((Number(f.amount) * Number(f.rate)).toFixed(2))} · {ONE[f.currency] ?? f.currency} a {rateText(f.rate)}
+          {f.rate_date === todayISO() ? " de hoy" : ` del ${shortDate(f.rate_date)}`}
         </span>
       ))}
       {h.foreign.filter((f) => f.stale).map((f) => (

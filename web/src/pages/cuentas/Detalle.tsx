@@ -12,16 +12,17 @@ import {
   useSetOpening,
   useUpdateAccount,
 } from "@/api/hooks";
-import { Activities } from "@/components/Pending";
+import { Activities, ActivitySheet } from "@/components/Pending";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { copyText } from "@/lib/clipboard";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
 
 import { AmountField } from "./CuentaForm";
+import { DetailSkeleton } from "@/components/Skeleton";
 
 function CopyRow({ label, value, display, last }: { label: string; value: string; display: string; last?: boolean }) {
   const [copied, setCopied] = useState(false);
@@ -46,14 +47,14 @@ function CopyRow({ label, value, display, last }: { label: string; value: string
 
 const cciDisplay = (cci: string) => `${cci.slice(0, 3)}-${cci.slice(3, 6)}-${cci.slice(6, 18)}-${cci.slice(18)}`;
 
-type Menu = null | "open" | "rename" | "opening" | "archive";
+type Menu = null | "open" | "rename" | "opening" | "archive" | "reminder";
 
 export function Detalle() {
   const id = Number(useParams().id);
   const me = useMe().data;
   const account = useAccount(id);
   const [menu, setMenu] = useState<Menu>(null);
-  if (!me?.currency || account.isPending) return <Spinner />;
+  if (!me?.currency || account.isPending) return <DetailSkeleton back="/cuentas" />;
   if (account.isError) {
     return (
       <main className="mx-auto max-w-md px-6 pt-8">
@@ -98,7 +99,7 @@ export function Detalle() {
 
       {d.bank && <StatementCard detail={d} lang={lang} />}
 
-      <Activities target={{ account_id: d.account.id }} />
+      <Activities target={{ account_id: d.account.id }} hideEmpty />
 
       <section aria-label="Movimientos" className="mt-5 flex flex-col">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
@@ -116,11 +117,13 @@ export function Detalle() {
       <Sheet title="Opciones de la cuenta" open={menu === "open"} onClose={close}>
         <div className="flex flex-col">
           <MenuItem icon="edit" onClick={() => setMenu("rename")}>Renombrar</MenuItem>
+          <MenuItem icon="notification_add" onClick={() => setMenu("reminder")}>Agregar recordatorio</MenuItem>
           <MenuItem icon="flag" onClick={() => setMenu("opening")}>Corregir el saldo inicial</MenuItem>
           {d.bank && <MenuItem icon="tune" to={`/cuentas/${id}/editar`}>Editar banco, número y CCI</MenuItem>}
           <MenuItem icon="archive" danger onClick={() => setMenu("archive")}>Archivar cuenta</MenuItem>
         </div>
       </Sheet>
+      <ActivitySheet open={menu === "reminder"} onClose={close} target={{ account_id: d.account.id }} />
       <RenameSheet open={menu === "rename"} onClose={close} detail={d} />
       <OpeningSheet open={menu === "opening"} onClose={close} detail={d} base={me.currency} lang={lang} />
       <ArchiveSheet open={menu === "archive"} onClose={close} detail={d} />
@@ -132,7 +135,7 @@ export function Detalle() {
 function StatementCard({ detail: d, lang }: { detail: AccountDetail; lang: string }) {
   const last = d.last_statement;
   const status = !last
-    ? { icon: "upload", text: "Trae tus movimientos", cls: "" }
+    ? null
     : last.difference === null
       ? { icon: "description", text: last.name, cls: "" }
       : isZero(last.difference)
@@ -140,23 +143,24 @@ function StatementCard({ detail: d, lang }: { detail: AccountDetail; lang: strin
         : { icon: "error", text: `${isNegative(last.difference) ? "Sobran" : "Faltan"} ${formatNumber(last.difference.replace("-", ""), lang)}`, cls: "text-attention" };
   return (
     <>
+      {!last ? (
+        <Link to={`/cuentas/${d.account.id}/importar`}
+          className="mt-4 flex min-h-12 items-center gap-2.5 rounded-[12px] bg-muted px-3.5 font-semibold">
+          <Icon name="upload_file" /><span className="flex-1">Importar extracto del banco</span>
+          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        </Link>
+      ) : (
       <div className="mt-4 flex items-center gap-3 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
-        {last ? (
-          <Link to={`/extractos/${last.id}`} className="flex min-w-0 flex-1 flex-col">
-            <span className="text-caption text-muted-foreground">Último extracto{last.date_to ? ` · hasta el ${shortDate(last.date_to)}` : ""}</span>
-            <span className={`flex items-center gap-1 truncate font-semibold ${status.cls}`}><Icon name={status.icon} className="text-[18px]" />{status.text}</span>
-          </Link>
-        ) : (
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-caption text-muted-foreground">Extracto del banco</span>
-            <span className="flex items-center gap-1 font-semibold"><Icon name={status.icon} className="text-[18px]" />{status.text}</span>
-          </span>
-        )}
+        <Link to={`/extractos/${last.id}`} className="flex min-w-0 flex-1 flex-col">
+          <span className="text-caption text-muted-foreground">Último extracto{last.date_to ? ` · hasta el ${shortDate(last.date_to)}` : ""}</span>
+          <span className={`flex items-center gap-1 truncate font-semibold ${status!.cls}`}><Icon name={status!.icon} className="text-[18px]" />{status!.text}</span>
+        </Link>
         <Link to={`/cuentas/${d.account.id}/importar`}
           className="flex h-10 flex-none items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[14px] font-semibold">
           <Icon name="upload_file" />Importar extracto
         </Link>
       </div>
+      )}
       {d.unclassified > 0 && (
         <Link to={`/por-clasificar?cuenta=${d.account.id}`}
           className="mt-2 flex min-h-12 items-center gap-2.5 rounded-[12px] bg-attention-soft px-3 text-attention">

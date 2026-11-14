@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
-import { useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
+import { useAccounts, useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { MoveAttachments } from "@/components/Attachments";
 import { CancelPlanSheet } from "@/components/CancelPlanSheet";
 import { CategoryChip } from "@/components/CategorySheet";
@@ -14,11 +14,12 @@ import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
 import { divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
+import { DetailSkeleton } from "@/components/Skeleton";
 
 const FX_GROUP = { gain: "Ingresos", loss: "Gastos financieros" } as const;
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "setiembre", "octubre", "noviembre", "diciembre"];
@@ -35,6 +36,7 @@ export function DetalleMovimiento() {
   const back = useBack();
   const me = useMe().data;
   const move = useMove(id);
+  const accounts = useAccounts().data;
   const state = useSetMoveState(id);
   const remove = useDeleteMove(id);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -42,7 +44,7 @@ export function DetalleMovimiento() {
   const undoCancel = useDeleteMove(move.data?.plan?.canceled?.move_id ?? 0);
   const [classifying, setClassifying] = useState(false);
   const [dating, setDating] = useState<(Maturity & { owesMe: boolean }) | null>(null);
-  if (move.isPending || !me) return <Spinner />;
+  if (move.isPending || !me) return <DetailSkeleton back="/movimientos" rows={3} />;
   if (move.isError) {
     return (
       <main className="mx-auto max-w-md px-6 pt-8">
@@ -77,6 +79,9 @@ export function DetalleMovimiento() {
     ? d.lines.some((l) => l.partner_id && Number(l.debit) > 0) ? `${s.partner} ya te debía esto cuando empezaste a usar PPM.` : `Ya le debías esto a ${s.partner} cuando empezaste a usar PPM.`
     : null;
   const [from, to] = transfer ? s.account.split(" → ") : [s.account, null];
+  // El ícono de la cuenta, como en Cuentas; si todavía no llegó la lista, el de una billetera.
+  const iconOf = (name: string | null | undefined) =>
+    [...(accounts?.have ?? []), ...(accounts?.owe ?? [])].find((a) => a.name === name)?.icon ?? "account_balance_wallet";
   const exchange = transfer && s.to_currency !== s.currency && s.to_amount;
   // En un cambio que toca la moneda base, el tipo sale de los dos montos
   const exchangeRate = exchange
@@ -105,8 +110,14 @@ export function DetalleMovimiento() {
         </div>
       )}
       {!s.posted && (
-        <div role="status" className="mt-2 flex items-start gap-2 rounded-md bg-attention-soft p-3 text-caption text-attention">
-          <Icon name="schedule" /><span><b>Por confirmar.</b> No cuenta en tus saldos hasta que lo confirmes.</span>
+        <div role="status" className="mt-2 flex items-center gap-2 rounded-md bg-attention-soft py-2.5 pr-2.5 pl-3 text-caption text-attention">
+          <Icon name="schedule" /><span className="flex-1"><b>Por confirmar.</b> No cuenta en tus saldos todavía.</span>
+          {!locked && (
+            <button type="button" disabled={state.isPending} onClick={() => state.mutate(false)}
+              className="flex h-10 flex-none items-center gap-1 rounded-full bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground">
+              <Icon name="check" className="text-[18px]" />Confirmar
+            </button>
+          )}
         </div>
       )}
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
@@ -127,7 +138,6 @@ export function DetalleMovimiento() {
       )}
       {opening && <p className="mt-2 text-caption text-muted-foreground">{opening} Para corregirlo, bórralo y vuelve a anotarlo desde la persona.</p>}
       <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-[32px] leading-10 font-semibold tracking-[-0.02em] tabular-nums whitespace-nowrap" : "text-amount-hero"} ${tone}`}>
-        {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} className="text-[30px]" />}
         {sign}{formatAmount(s.amount, symbolOf(s.currency), lang)}
         {exchange && <><Icon name="arrow_forward" aria-label="a" className="text-[26px] text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}
       </span>
@@ -154,11 +164,11 @@ export function DetalleMovimiento() {
           </Link>
         )}
         {(transfer || d.account_id) && s.kind !== "other" && (
-          <Field icon={f === "in" ? "south_west" : "north_east"} label={f === "in" ? "Entró a" : "Salió de"} value={from!} />
+          <Field icon={iconOf(from)} label={f === "in" ? "Entró a" : "Salió de"} value={from!} />
         )}
         {plan?.category && <Field icon="category" label="En qué" value={plan.category} />}
         {transfer && !plan && (
-          <Field icon="south_west" label="Entró a"
+          <Field icon={iconOf(to)} label="Entró a"
             value={`${to}${s.to_amount && s.to_currency !== s.currency ? ` · ${formatAmount(s.to_amount, symbolOf(s.to_currency), lang)}` : ""}`} />
         )}
         {exchangeRate && (
@@ -355,7 +365,7 @@ export function DetalleMovimiento() {
             <span>Editar</span><Icon name="edit" className="text-[22px]" />
           </Link>
         )}
-        {!((plan || cancels) && s.posted) && !locked && (
+        {s.posted && !(plan || cancels) && !locked && (
           <button type="button" disabled={state.isPending} onClick={() => state.mutate(s.posted)}
             className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
             <Icon name={s.posted ? "schedule" : "check"} />

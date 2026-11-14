@@ -187,5 +187,6 @@ test("importar el PDF del estado de cuenta: la foto del banco y la cuota en capi
 
   await page.goto(`/tarjetas/${card}`);
   await expect(page.getByText("S/ 5,283.53")).toBeVisible();
+  await page.getByRole("button", { name: "Ciclo anterior" }).click();     // se ve un ciclo a la vez: el del estado es el que cerró
   await expect(page.getByRole("link", { name: "Ver su estado de cuenta" })).toBeVisible();
 });

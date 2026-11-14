@@ -6,6 +6,7 @@ import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth } fro
 import { CategorySheet } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
+import { BoneRows } from "@/components/Skeleton";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { monthName, monthOptions } from "@/lib/months";
@@ -126,6 +127,9 @@ export function Movimientos() {
       </div>
 
       {month.isError && <div className="mt-4"><ErrorAlert>{month.error.message}</ErrorAlert></div>}
+      {month.isPending && (
+        <div aria-busy="true"><span role="status" className="sr-only">Cargando</span><BoneRows count={3} /><BoneRows count={3} /></div>
+      )}
       {m && m.days.length === 0 && (
         <p className="mt-8 text-center text-muted-foreground">
           {filters.q || filters.account_id || filters.category_id || filters.kind || filters.pending

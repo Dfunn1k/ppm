@@ -149,7 +149,6 @@ export function NuevaCategoria() {
           className="grid size-11 place-items-center rounded-full">
           <Icon name="close" className="text-[24px]" />
         </Link>
-        <span className="pr-2.5 text-label text-muted-foreground">Categorías</span>
       </div>
       <form noValidate onSubmit={save} className="flex flex-1 flex-col">
         <h1 className="mt-1 text-title-hero">Nueva categoría</h1>

@@ -20,7 +20,6 @@ export function ReportHeader({ title }: { title: string }) {
         <Link to="/mas/reportes" aria-label="Volver a Reportes" className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </Link>
-        <span className="pr-2.5 text-label text-muted-foreground">Reportes</span>
       </div>
       <h1 className="mt-3 font-display text-[40px] leading-[42px] font-extrabold tracking-[-0.03em]">{title}</h1>
     </>

@@ -6,10 +6,12 @@ import { useState } from "react";
 import { CartesianGrid, Layer, Line, LineChart, Rectangle, ResponsiveContainer, Sankey, Tooltip, XAxis, YAxis } from "recharts";
 
 import { type FlowReport, useFlowReport } from "@/api/hooks";
-import { ErrorAlert, Spinner } from "@/components/ui";
+import { ErrorAlert } from "@/components/ui";
 import { monthName } from "@/lib/months";
 
 import { ChartTip, MONTH_LETTER, PeriodBar, ReportHeader, catColor, useMoney, usePeriod } from "./common";
+import { ReportBones } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
 
 type Node = FlowReport["uses"][number] & { side: "in" | "out"; fill: string };
 
@@ -29,7 +31,7 @@ export function ReporteFlujo() {
   const money = useMoney();
   const [sel, setSel] = useState<number | null>(null);
 
-  if (report.isPending) return <Spinner />;
+  if (report.isPending) return <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10"><ReportHeader title="Flujo" /><PeriodBar p={p} /><ReportBones chart="bars" /></main>;
   if (report.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{report.error.message}</ErrorAlert></main>;
   const r = report.data;
   const nodes: Node[] = [
@@ -44,6 +46,18 @@ export function ReporteFlujo() {
   const savings = r.savings.map((m) => ({ ...m, label: MONTH_LETTER[Number(m.month.slice(5, 7)) - 1], pct: m.percent }));
   const negative = Number(r.saved) < 0;
 
+  if (links.length === 0) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10">
+        <ReportHeader title="Flujo" />
+        <PeriodBar p={p} />
+        <EmptyState icon="water" title="Todavía no hay flujo">
+          Cuando entre y salga plata en este periodo, aquí ves de dónde vino, a dónde fue y cuánto guardaste.
+        </EmptyState>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10">
       <ReportHeader title="Flujo" />
@@ -57,9 +71,6 @@ export function ReporteFlujo() {
 
       <section aria-label="De dónde entró y a dónde fue" className="mt-5 flex flex-col gap-1.5">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Entró</span><span>Salió y guardaste</span></div>
-        {links.length === 0 ? (
-          <span className="py-3 text-caption text-muted-foreground">Nada en este periodo.</span>
-        ) : (
           <div className="h-[320px]" role="img"
             aria-label={`Entró ${money(r.income)}: ${r.sources.map((n) => `${n.name} ${money(n.amount)}`).join(", ")}. Fue a: ${r.uses.map((n) => `${n.name} ${money(n.amount)}`).join(", ")}`}>
             <ResponsiveContainer width="100%" height="100%">
@@ -105,11 +116,10 @@ export function ReporteFlujo() {
               </Sankey>
             </ResponsiveContainer>
           </div>
-        )}
         <span className="text-caption text-muted-foreground">Toca un destino para seguir su plata. Pasar plata entre tus cuentas o pagar la tarjeta no es flujo: no sale de ti.</span>
       </section>
 
-      <section aria-label="Cuánto guardas" className="mt-6 flex flex-col gap-1.5">
+      {savings.some((m) => m.pct !== null) && <section aria-label="Cuánto guardas" className="mt-6 flex flex-col gap-1.5">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Cuánto guardas · para mayo</span><span>12 meses</span></div>
         <div className="h-[170px]" role="img" aria-label={`Porcentaje guardado: ${savings.map((m) => `${monthName(m.month)} ${m.pct ?? "sin ingresos"}${m.pct === null ? "" : " %"}`).join(", ")}`}>
           <ResponsiveContainer width="100%" height="100%">
@@ -130,7 +140,7 @@ export function ReporteFlujo() {
           </ResponsiveContainer>
         </div>
         <span className="text-caption text-muted-foreground">El % de lo que entró que no salió.</span>
-      </section>
+      </section>}
     </main>
   );
 }

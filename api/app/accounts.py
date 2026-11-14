@@ -208,6 +208,11 @@ def card_subtitle(bank: str | None, brand: str | None, last4: str | None) -> str
     return " · ".join(x for x in [bank, tail] if x) or None
 
 
+def _bank_unless_named(bank: str | None, name: str) -> str | None:
+    """El banco va en el subtítulo solo si el nombre no lo dice ya: «BCP» no lleva «… · BCP» debajo."""
+    return None if bank and bank.casefold() in name.casefold() else bank
+
+
 def _row(r: tuple, balances: list[Money]) -> AccountRow:
     acc_id, name, _type, role, icon, currency, acc_kind, bank_name, is_card, brand, last4, card_bank, \
         is_loan, loan_bank = r
@@ -225,13 +230,15 @@ def _row(r: tuple, balances: list[Money]) -> AccountRow:
         kind = "other"
     subtitle = None
     if kind == "bank":
-        subtitle = f"{KIND_NAMES[acc_kind]} en {CURRENCY_NAMES.get(currency or '', currency)} · {bank_name}"
+        subtitle = " · ".join(x for x in [f"{KIND_NAMES[acc_kind]} en {CURRENCY_NAMES.get(currency or '', currency)}",
+                                          _bank_unless_named(bank_name, name)] if x)
     elif kind == "cash" and currency and currency != "PEN":
         subtitle = f"En {CURRENCY_NAMES.get(currency, currency)}"
     elif kind == "card":
-        subtitle = card_subtitle(card_bank, brand, last4)
+        subtitle = card_subtitle(_bank_unless_named(card_bank, name), brand, last4)
     elif kind == "loan":
-        subtitle = f"Préstamo en {CURRENCY_NAMES.get(currency or '', currency)} · {loan_bank}"
+        subtitle = " · ".join(x for x in [f"Préstamo en {CURRENCY_NAMES.get(currency or '', currency)}",
+                                          _bank_unless_named(loan_bank, name)] if x)
     return AccountRow(acc_id, name, kind, currency, icon or ("account_balance" if kind == "bank" else "payments"),
                       subtitle, balances, sum((m.base for m in balances), ZERO))
 

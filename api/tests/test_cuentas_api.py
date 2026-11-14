@@ -60,6 +60,13 @@ def test_el_saldo_del_efectivo_desde_el_paso_3():
     assert c.get("/accounts").json()["real_total"] == "320.00"
 
 
+def test_el_banco_va_en_el_subtitulo_si_el_nombre_no_lo_dice():
+    c = person()
+    r = c.post("/accounts/bank", json={"name": "Sueldo", "currency": "PEN", "bank_id": bank_id(c, "BCP")})
+    assert r.status_code == 201, r.text
+    assert r.json()["account"]["subtitle"] == "Ahorros en soles · BCP"
+
+
 def test_cuenta_de_banco_en_soles():
     c = person()
     r = c.post("/accounts/bank", json={
@@ -69,7 +76,7 @@ def test_cuenta_de_banco_en_soles():
     assert r.status_code == 201, r.text
     d = r.json()
     assert d["account"]["kind"] == "bank"
-    assert d["account"]["subtitle"] == "Ahorros en soles · BCP"
+    assert d["account"]["subtitle"] == "Ahorros en soles"          # el nombre ya dice BCP: no se repite
     assert d["account"]["balances"] == [{"currency": "PEN", "amount": "8240.30", "base": "8240.30", "book": "8240.30"}]
     assert d["bank"] == {"bank_id": bank_id(c, "BCP"), "bank_name": "BCP", "acc_kind": "savings",
                          "acc_number": "191-12345678-0-12", "cci": "00219100123456789012"}

@@ -308,7 +308,7 @@ export function Registrar({ editing, recurring, reminder }: {
         <div role="radiogroup" aria-label="Tipo de movimiento" className="mt-2 grid grid-cols-4 gap-1 rounded-md bg-muted p-[3px]">
           {(Object.keys(KIND_LABEL) as Kind[]).map((k) => (
             <button key={k} type="button" role="radio" aria-checked={k === kind} onClick={() => changeKind(k)}
-              className={`h-[38px] rounded-[8px] text-[14px] font-semibold ${k === kind ? "bg-card shadow-sm" : ""}`}>
+              className={`h-[38px] rounded-[8px] text-[14px] font-semibold ${k === kind ? "bg-selected text-selected-foreground shadow-sm" : ""}`}>
               {KIND_LABEL[k]}
             </button>
           ))}

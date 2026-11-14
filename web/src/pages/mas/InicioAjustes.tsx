@@ -37,9 +37,8 @@ export function InicioAjustes() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-        <span className="pr-2.5 text-label text-muted-foreground">Inicio</span>
       </div>
-      <h1 className="mt-6 text-title-hero">Tu Inicio.</h1>
+      <h1 className="mt-6 text-title-hero">Tu Inicio</h1>
       <p className="mt-3 text-muted-foreground">Qué cuentas ves al abrir PPM, en qué orden, y con cuál registras desde el Inicio.</p>
 
       <section aria-label="Cuentas en el Inicio" className="mt-6 flex flex-col">

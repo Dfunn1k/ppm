@@ -21,9 +21,8 @@ export function Apariencia() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-        <span className="pr-2.5 text-label text-muted-foreground">Apariencia</span>
       </div>
-      <h1 className="mt-6 text-title-hero">Cómo se ve PPM.</h1>
+      <h1 className="mt-6 text-title-hero">Cómo se ve PPM</h1>
       <p className="mt-3 text-muted-foreground">Se guarda en tu cuenta: se ve igual en todos tus dispositivos.</p>
 
       <div className="mt-6">

@@ -50,7 +50,7 @@ export function TipoCambio() {
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
         <span className="pr-2.5 text-label text-muted-foreground">Tipo de cambio · administrador</span>
       </div>
-      <h1 className="mt-4 text-title-hero">Tipo de cambio.</h1>
+      <h1 className="mt-4 text-title-hero">Tipo de cambio</h1>
       <p className="mt-2.5 text-muted-foreground">Lo usa todo PPM. El dólar llega solo desde SUNAT; aquí corriges un día o cargas lo que falte.</p>
 
       <div className="mt-4 flex flex-col gap-2">

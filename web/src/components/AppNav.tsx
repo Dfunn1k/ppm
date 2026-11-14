@@ -15,15 +15,23 @@ const ITEMS: Item[] = [
   { to: "/mas", label: "Más", icon: "menu" },
 ];
 
-/** Personas y las tarjetas viven dentro de Cuentas, Por clasificar dentro de Movimientos y Pendientes se
- *  abre desde el Inicio: ahí también se marcan. */
+/** Personas y las tarjetas viven dentro de Cuentas y Por clasificar dentro de Movimientos: ahí también se
+ *  marcan. Pendientes se abre desde el Inicio o desde Más: se marca la pestaña desde la que llegaste. */
 const ALSO: Record<string, string[]> = {
-  "/inicio": ["/pendientes"], "/cuentas": ["/personas", "/tarjetas"], "/movimientos": ["/por-clasificar"],
+  "/cuentas": ["/personas", "/tarjetas", "/prestamos"], "/movimientos": ["/por-clasificar"],
 };
+const FROM_WHERE_YOU_CAME = ["/pendientes"];
+let lastTab = "/inicio";
+
+function tabOf(path: string) {
+  return ITEMS.find((i) => i.to && (path.startsWith(i.to) || ALSO[i.to]?.some((p) => path.startsWith(p))))?.to;
+}
 
 function Tab({ item }: { item: Item }) {
   const path = useLocation().pathname;
-  const also = !!item.to && (ALSO[item.to]?.some((p) => path.startsWith(p)) ?? false);
+  const also = !!item.to && (FROM_WHERE_YOU_CAME.some((p) => path.startsWith(p))
+    ? lastTab === item.to
+    : (ALSO[item.to]?.some((p) => path.startsWith(p)) ?? false));
   if (!item.to) {
     return (
       <span aria-disabled="true" title="Muy pronto" className="flex flex-col items-center gap-0.5 text-[12px] leading-4 text-muted-foreground opacity-60">
@@ -58,6 +66,8 @@ function registerLink(path: string, homeAccount: number | null | undefined) {
 
 export function AppNav() {
   const path = useLocation().pathname;
+  const here = tabOf(path);
+  if (here && !FROM_WHERE_YOU_CAME.some((p) => path.startsWith(p))) lastTab = here;
   const homeAccount = useMe().data?.home_account_id;
   return (
     <nav aria-label="Navegación principal" className="app-nav fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card">

@@ -218,10 +218,13 @@ function ActivityForm({ activity, target, onDone }: { activity?: Activity; targe
 }
 
 /** La sección «Recordatorios» del detalle de un movimiento, una persona o una cuenta. */
-export function Activities({ target }: { target: ActivityTarget }) {
+/** Los recordatorios de algo. Con `hideEmpty`, la sección no aparece mientras no haya ninguno
+    (se agregan desde el menú ⋮ de la pantalla). */
+export function Activities({ target, hideEmpty }: { target: ActivityTarget; hideEmpty?: boolean }) {
   const list = useActivities(target).data ?? [];
   const [adding, setAdding] = useState(false);
   const today = todayISO();
+  if (hideEmpty && list.length === 0) return null;
   return (
     <section aria-label="Recordatorios" className="mt-6 flex flex-col">
       <span className="border-b border-border pb-1 text-label text-muted-foreground">Recordatorios</span>

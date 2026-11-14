@@ -27,7 +27,6 @@ export function Cierre() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-        <span className="pr-2.5 text-label text-muted-foreground">Más</span>
       </div>
       <h1 className="mt-2 text-title-hero">Cierre de periodo</h1>
       <p className="mt-2 text-muted-foreground">

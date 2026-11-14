@@ -7,16 +7,18 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useCardRate, useMe, useUpdateCard } from "@/api/hooks";
-import { Activities } from "@/components/Pending";
+import { Activities, ActivitySheet } from "@/components/Pending";
 import { Segmented, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
 import { ImportStatement } from "@/pages/tarjetas/Conciliar";
 import { DateField } from "@/components/DateSheet";
 import { daysUntil } from "@/lib/cards";
+import { monthName } from "@/lib/months";
 import { shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
+import { DetailSkeleton } from "@/components/Skeleton";
 
-type Menu = null | "open" | "rename" | "edit" | "due" | "archive" | "charge" | "rate";
+type Menu = null | "open" | "rename" | "edit" | "due" | "archive" | "charge" | "rate" | "reminder";
 type Item = CardDetail["cycles"][number]["items"][number];
 
 export function Tarjeta() {
@@ -24,7 +26,8 @@ export function Tarjeta() {
   const me = useMe().data;
   const card = useCard(id);
   const [menu, setMenu] = useState<Menu>(null);
-  if (!me?.currency || card.isPending) return <Spinner />;
+  const [picked, setPicked] = useState<string | null>(null);
+  if (!me?.currency || card.isPending) return <DetailSkeleton back="/cuentas" />;
   if (card.isError) {
     return (
       <main className="mx-auto max-w-md px-6 pt-8">
@@ -37,6 +40,11 @@ export function Tarjeta() {
   const lang = me.lang ?? "es-PE";
   const base = me.currency;
   const money = (v: string, cur: string) => formatAmount(v, symbolOf(cur), lang);
+  // Un ciclo a la vez, como el estado de cuenta: por defecto el que está abierto.
+  const found = d.cycles.findIndex((c) => c.closing_date === picked);
+  const open = d.cycles.findLastIndex((c) => c.state === "current");
+  const at = found >= 0 ? found : Math.max(0, open);
+  const cycle = d.cycles[at];
   const close = () => setMenu(null);
 
   const owed = d.status.filter((s) => Number(s.to_pay) > 0);
@@ -199,24 +207,40 @@ export function Tarjeta() {
         </button>
       </section>
 
-      <Activities target={{ account_id: id }} />
+      <Activities target={{ account_id: id }} hideEmpty />
 
       <div className="mt-3 flex flex-col gap-4">
-        {d.cycles.map((c) => (
-          <section key={c.closing_date} aria-label={cycleLabel(c)} className="flex flex-col">
-            <div className="flex justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-              <span>{cycleLabel(c)}</span>
-              <span className="text-right">{c.charges.map((x) => money(x.amount, x.currency)).join(" · ")}</span>
+        {cycle && (
+          <section aria-label={cycleLabel(cycle)} className="flex flex-col">
+            <div className="flex items-center justify-between gap-2">
+              <button type="button" aria-label="Ciclo anterior" disabled={at >= d.cycles.length - 1}
+                onClick={() => setPicked(d.cycles[at + 1]!.closing_date)}
+                className="grid size-10 flex-none place-items-center rounded-full border border-border bg-card disabled:opacity-40">
+                <Icon name="chevron_left" />
+              </button>
+              <span className="flex min-w-0 flex-col items-center text-center">
+                <span className="font-semibold">{cycleTitle(cycle, at === open)}</span>
+                <span className="text-caption text-muted-foreground tabular-nums">{cycleLabel(cycle)}</span>
+              </span>
+              <button type="button" aria-label="Ciclo siguiente" disabled={at <= 0}
+                onClick={() => setPicked(d.cycles[at - 1]!.closing_date)}
+                className="grid size-10 flex-none place-items-center rounded-full border border-border bg-card disabled:opacity-40">
+                <Icon name="chevron_right" />
+              </button>
             </div>
-            {c.statement && (
-              <Link to={`/tarjetas/${id}/estado/${c.closing_date}`}
+            <div className="mt-3 flex justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
+              <span>{cycle.items.length} {cycle.items.length === 1 ? "movimiento" : "movimientos"}</span>
+              <span className="text-right">{cycle.charges.map((x) => money(x.amount, x.currency)).join(" · ")}</span>
+            </div>
+            {cycle.statement && (
+              <Link to={`/tarjetas/${id}/estado/${cycle.closing_date}`}
                 className="flex min-h-11 items-center gap-1.5 border-b border-border text-caption font-semibold text-primary-strong">
                 <Icon name="fact_check" className="text-[18px]" />Ver su estado de cuenta
               </Link>
             )}
-            {c.items.map((i, n) => <ItemRow key={`${i.move_id}-${i.sequence ?? n}`} item={i} base={base} lang={lang} />)}
+            {cycle.items.map((i, n) => <ItemRow key={`${i.move_id}-${i.sequence ?? n}`} item={i} base={base} lang={lang} />)}
           </section>
-        ))}
+        )}
         {d.cycles.length === 0 && (
           <span className="text-caption text-muted-foreground">
             Lo que compres con la tarjeta aparece aquí, agrupado por ciclo como en tu estado de cuenta.
@@ -231,11 +255,13 @@ export function Tarjeta() {
       <Sheet title="Opciones de la tarjeta" open={menu === "open"} onClose={close}>
         <div className="flex flex-col">
           <MenuItem icon="edit" onClick={() => setMenu("rename")}>Renombrar</MenuItem>
+          <MenuItem icon="notification_add" onClick={() => setMenu("reminder")}>Agregar recordatorio</MenuItem>
           <MenuItem icon="tune" onClick={() => setMenu("edit")}>Editar corte, línea y datos</MenuItem>
           <MenuItem icon="event" onClick={() => setMenu("due")}>Cambiar fecha de pago</MenuItem>
           <MenuItem icon="archive" danger onClick={() => setMenu("archive")}>Archivar tarjeta</MenuItem>
         </div>
       </Sheet>
+      <ActivitySheet open={menu === "reminder"} onClose={close} target={{ account_id: id }} />
       <RenameSheet key={`r${menu}`} open={menu === "rename"} onClose={close} card={d} />
       <EditSheet key={`e${menu}`} open={menu === "edit"} onClose={close} card={d} lang={lang} />
       <DueSheet key={`d${menu}`} open={menu === "due"} onClose={close} card={d} />
@@ -320,8 +346,14 @@ function dueIn(due: string) {
   return ` · faltan ${n} ${n === 1 ? "día" : "días"}`;
 }
 
+function cycleTitle(c: CardDetail["cycles"][number], open: boolean) {
+  if (open) return "Ciclo actual";
+  if (c.state === "billed") return "Último estado de cuenta";
+  return `Ciclo de ${monthName(c.closing_date.slice(0, 7)).toLowerCase()}`;
+}
+
 function cycleLabel(c: CardDetail["cycles"][number]) {
-  if (c.state === "current") return `Ciclo actual · cierra ${shortDate(c.closing_date)}`;
+  if (c.state === "current") return `Cierra ${shortDate(c.closing_date)}`;
   if (c.state === "billed") {
     return c.date_due ? `Cerró ${shortDate(c.closing_date)} · pagar antes del ${shortDate(c.date_due)}`
       : `Cerró ${shortDate(c.closing_date)} · sin fecha de pago`;
