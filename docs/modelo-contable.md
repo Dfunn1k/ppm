@@ -2369,7 +2369,7 @@ ALTER ROLE ppm_admin BYPASSRLS;   -- importador y administración
 ```sql
 ALTER TABLE res_users
   ADD COLUMN login             text NOT NULL,                 -- el correo
-  ADD COLUMN password          text NOT NULL,                 -- huella Argon2id, nunca en claro
+  ADD COLUMN password          text,                          -- huella Argon2id; vacía si entra solo con Google (0032)
   ADD COLUMN email_verified_at timestamptz,                   -- verificar se exigirá más adelante
   ADD COLUMN tz                text NOT NULL DEFAULT 'America/Lima',  -- zona IANA
   ADD COLUMN ui_theme          text NOT NULL DEFAULT 'system'

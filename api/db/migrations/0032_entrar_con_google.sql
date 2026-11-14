@@ -142,7 +142,9 @@ ALTER TABLE res_users_token
   DROP COLUMN oauth_provider_id, DROP COLUMN oauth_uid, DROP COLUMN oauth_email,
   DROP CONSTRAINT res_users_token_purpose_check,
   ADD CONSTRAINT res_users_token_purpose_check CHECK (purpose IN ('reset', 'verify'));
-DELETE FROM res_users WHERE password IS NULL;
+-- Las cuentas creadas con Google quedan con una huella que no corresponde a ninguna contraseña (no se
+-- borran: perderían sus datos); entran con «Olvidé mi contraseña»
+UPDATE res_users SET password = '!sin-contrasena' WHERE password IS NULL;
 DROP INDEX res_users_oauth;
 ALTER TABLE res_users
   DROP CONSTRAINT res_users_has_a_key, DROP CONSTRAINT res_users_oauth_complete,
