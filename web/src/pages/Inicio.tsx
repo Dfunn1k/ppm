@@ -17,6 +17,9 @@ import { HomeSkeleton } from "@/components/Skeleton";
 
 const ONE: Record<string, string> = { USD: "dólar", EUR: "euro" };
 
+/** En escritorio cada columna de abajo es una tarjeta. */
+const DESK_CARD = "lg:mt-0 lg:self-start lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-5";
+
 function Heading({ label, to, link }: { label: string; to: string; link: string }) {
   return (
     <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
@@ -52,9 +55,11 @@ export function Inicio() {
   const cards = h.accounts;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-7 pb-28">
-      <div className="flex items-center gap-2">
-        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex flex-1 items-center gap-0.5 text-title-2">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-7 pb-28 lg:grid lg:max-w-[1280px] lg:grid-cols-3 lg:content-start lg:gap-5 lg:px-10 lg:pt-10 lg:pb-10">
+      {/* En escritorio el saldo va a la izquierda y el mes con el ojo a la derecha; abajo, dos filas de tarjetas */}
+      <div className="flex flex-col lg:col-span-3 lg:flex-row-reverse lg:items-end lg:gap-6">
+      <div className="flex items-center gap-2 lg:flex-none">
+        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex flex-1 items-center gap-0.5 text-title-2 lg:h-11 lg:flex-none lg:rounded-xl lg:border lg:border-border lg:px-4 lg:text-body lg:font-semibold">
           {monthName(month)}<Icon name="expand_more" className="text-[22px] text-muted-foreground" />
         </button>
         <button type="button" aria-pressed={hidden} aria-label={hidden ? "Mostrar los montos" : "Esconder los montos"}
@@ -63,13 +68,14 @@ export function Inicio() {
           <Icon name={hidden ? "visibility_off" : "visibility"} className="text-[22px]" />
         </button>
         <Link to="/mas/cuenta" aria-label={`Mi cuenta: ${me.name}`}
-          className="grid size-10 place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground">
+          className="grid size-10 place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground lg:hidden">
           {me.name[0]?.toUpperCase()}
         </Link>
       </div>
-      {notice && <div className="mt-4"><ErrorAlert>{notice}</ErrorAlert></div>}
+      <div className="flex flex-col lg:min-w-0 lg:flex-1">
+      {notice && <div className="mt-4 lg:mt-0 lg:mb-4"><ErrorAlert>{notice}</ErrorAlert></div>}
 
-      <span className="mt-5 text-caption text-muted-foreground">Lo que realmente tengo · hoy</span>
+      <span className="mt-5 text-caption text-muted-foreground lg:mt-0">Lo que realmente tengo · hoy</span>
       <h1 className="font-display text-[48px] leading-[50px] font-extrabold tracking-[-0.03em] tabular-nums">{money(h.real_total)}</h1>
       <span className="mt-1 text-caption text-muted-foreground tabular-nums">{today}</span>
       {h.foreign.map((f) => (
@@ -87,10 +93,12 @@ export function Inicio() {
           </span>
         </div>
       ))}
+      </div>
+      </div>
 
       <PendingCard lang={lang} hidden={hidden} />
 
-      <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4">
+      <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:p-5">
         <div className="flex items-baseline justify-between">
           <span className="text-label text-muted-foreground">Para mayo · {monthOnly(month)}</span>
           <span className="text-caption text-muted-foreground tabular-nums">{h.saved_percent === null ? "" : `${hidden ? "••" : percent} % de lo que entró`}</span>
@@ -119,7 +127,7 @@ export function Inicio() {
       </section>
 
       {h.top.length > 0 && (
-        <section aria-label="En qué se va la plata" className="mt-6 flex flex-col">
+        <section aria-label="En qué se va la plata" className={`mt-6 flex flex-col lg:col-start-2 lg:row-start-3 ${DESK_CARD}`}>
           <Heading label="En qué se va la plata" to={`/movimientos?mes=${month}&tipo=expense`} link="Ver todo" />
           {h.top.map((t) => (
             <Link key={t.id} to={`/movimientos?mes=${month}&categoria=${t.id}&categoria_nombre=${encodeURIComponent(t.name)}`}
@@ -140,14 +148,14 @@ export function Inicio() {
       )}
 
       {cards.length > 0 && (
-        <section aria-label="Mis cuentas" className="mt-6 flex flex-col gap-2">
+        <section aria-label="Mis cuentas" className={`mt-6 flex flex-col gap-2 lg:col-start-1 lg:row-start-3 lg:gap-0 ${DESK_CARD}`}>
           <Heading label="Mis cuentas" to="/mas/inicio" link="Elegir cuáles" />
-          <div className="-mr-6 flex gap-2 overflow-x-auto pr-6 pb-1">
+          <div className="-mr-6 flex gap-2 overflow-x-auto pr-6 pb-1 lg:mr-0 lg:flex-col lg:gap-0 lg:overflow-visible lg:pr-0 lg:pb-0">
             {cards.map((a) => (
-              <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-[150px] flex-none flex-col gap-2 rounded-lg border border-border bg-card p-3">
-                <span className="grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name={a.icon ?? "payments"} className="text-[18px]" /></span>
-                <span className="truncate text-caption text-muted-foreground">{a.name}</span>
-                <span className="flex flex-col">
+              <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-[150px] flex-none flex-col gap-2 rounded-lg border border-border bg-card p-3 lg:min-h-[60px] lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0 lg:border-b lg:bg-transparent lg:px-0 lg:py-2">
+                <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground lg:size-9"><Icon name={a.icon ?? "payments"} className="text-[18px]" /></span>
+                <span className="truncate text-caption text-muted-foreground lg:flex-1 lg:text-body lg:font-semibold lg:text-foreground">{a.name}</span>
+                <span className="flex flex-col lg:items-end">
                   <span className="font-semibold tabular-nums">{amount(a.amount, a.currency)}</span>
                   {a.currency !== h.currency && (
                     <span className="text-caption text-muted-foreground tabular-nums">{money(a.base)} hoy</span>
@@ -159,7 +167,7 @@ export function Inicio() {
         </section>
       )}
 
-      <section aria-label="Últimos movimientos" className="mt-6 flex flex-col">
+      <section aria-label="Últimos movimientos" className={`mt-6 flex flex-col lg:col-start-3 lg:row-start-3 ${DESK_CARD}`}>
         <Heading label="Últimos movimientos" to="/movimientos" link="Ver todos" />
         {h.recent.length === 0 && <span className="py-3 text-caption text-muted-foreground">Todavía no registras nada. Toca + para empezar.</span>}
         {h.recent.map((x) => (
@@ -208,7 +216,7 @@ function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
   ].sort((x, y) => ORDER[x.section] - ORDER[y.section] || x.date.localeCompare(y.date));
   if (items.length === 0) return null;
   return (
-    <section aria-label="Pendientes" className="mt-5 flex flex-col rounded-lg border border-border bg-card px-4 pt-3 pb-1">
+    <section aria-label="Pendientes" className="mt-5 flex flex-col rounded-lg border border-border bg-card px-4 pt-3 pb-1 lg:col-start-3 lg:row-start-2 lg:mt-0 lg:px-5">
       <span className="text-label text-muted-foreground">
         Pendientes · {items.length}{box.late > 0 && <span className="text-attention"> · {box.late === 1 ? "1 vencido" : `${box.late} vencidos`}</span>}
       </span>

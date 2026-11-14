@@ -8,6 +8,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 
+import { isDesktop } from "./desktop";
+
 /** Las pestañas de la barra: entre ellas, fundido. */
 const TABS = ["/inicio", "/movimientos", "/cuentas", "/mas"];
 
@@ -51,7 +53,8 @@ export function ViewTransitions() {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const root = document.documentElement;
     run = (to, go) => {
-      if (reduce.matches) return go();
+      // En escritorio lo elegido se abre al lado de la lista: nada se desliza
+      if (reduce.matches || isDesktop()) return go();
       root.dataset.nav = to ? direction(window.location.pathname, to) : "back";
       const t = document.startViewTransition(() => new Promise<void>((resolve) => {
         pending.current = resolve;
@@ -61,7 +64,8 @@ export function ViewTransitions() {
       t.finished.finally(() => { delete root.dataset.nav; });
     };
     const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      // En escritorio el enlace navega solo (y conserva su estado, como el + que abre el panel)
+      if (isDesktop() || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a");
       if (!a || !a.getAttribute("href") || a.target || a.hasAttribute("download")) return;
       const url = new URL(a.href);

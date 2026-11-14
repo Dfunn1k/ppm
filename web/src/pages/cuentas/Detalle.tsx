@@ -23,6 +23,10 @@ import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf }
 
 import { AmountField } from "./CuentaForm";
 import { DetailSkeleton } from "@/components/Skeleton";
+import { useDesktop } from "@/lib/desktop";
+
+/** En escritorio los movimientos van en tabla: fecha, movimiento, categoría, monto y saldo. */
+const TABLE = "grid grid-cols-[64px_minmax(0,1.4fr)_minmax(0,1fr)_112px_112px] items-center gap-3";
 
 function CopyRow({ label, value, display, last }: { label: string; value: string; display: string; last?: boolean }) {
   const [copied, setCopied] = useState(false);
@@ -54,6 +58,7 @@ export function Detalle() {
   const me = useMe().data;
   const account = useAccount(id);
   const [menu, setMenu] = useState<Menu>(null);
+  const table = useDesktop();
   if (!me?.currency || account.isPending) return <DetailSkeleton back="/cuentas" />;
   if (account.isError) {
     return (
@@ -102,11 +107,17 @@ export function Detalle() {
       <Activities target={{ account_id: d.account.id }} hideEmpty />
 
       <section aria-label="Movimientos" className="mt-5 flex flex-col">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-          <span>Movimientos</span>
-          <span>Saldo</span>
-        </div>
-        {d.lines.map((l) => <LineRow key={l.id} line={l} lang={lang} />)}
+        {table ? (
+          <div className={`${TABLE} border-b border-border pb-1 text-label text-muted-foreground`}>
+            <span>Fecha</span><span>Movimiento</span><span>Categoría</span><span className="text-right">Monto</span><span className="text-right">Saldo</span>
+          </div>
+        ) : (
+          <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
+            <span>Movimientos</span>
+            <span>Saldo</span>
+          </div>
+        )}
+        {d.lines.map((l) => <LineRow key={l.id} line={l} lang={lang} table={table} />)}
         {onlyOpening && (
           <span className="py-3 text-caption text-muted-foreground">
             Cuando registres gastos e ingresos, aparecen aquí con el saldo después de cada uno.
@@ -174,7 +185,7 @@ function StatementCard({ detail: d, lang }: { detail: AccountDetail; lang: strin
   );
 }
 
-function LineRow({ line: l, lang }: { line: AccountDetail["lines"][number]; lang: string }) {
+function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number]; lang: string; table: boolean }) {
   const opening = l.counterpart_role === "opening";
   const suspense = l.counterpart_role === "suspense";
   const out = isNegative(l.amount);
@@ -185,6 +196,31 @@ function LineRow({ line: l, lang }: { line: AccountDetail["lines"][number]; lang
       : { bg: `var(--cat-${l.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: l.counterpart_icon ?? "category" };
   const caption = opening ? "lo que tenía al empezar" : suspense ? "Por clasificar" : (l.counterpart ?? "Varias categorías");
   const Row = opening ? "div" : Link;
+  const amount = opening ? (
+    <span className="text-amount">{formatNumber(l.amount, lang)}</span>
+  ) : (
+    <span className={`flex items-center justify-end gap-0.5 text-amount ${out ? "text-expense" : "text-income"}`}>
+      <Icon name={out ? "north_east" : "south_west"} className="text-[16px]" />
+      {out ? "− " : "+ "}{formatNumber(l.amount.replace("-", ""), lang)}
+    </span>
+  );
+  if (table) {
+    return (
+      <Row to={`/movimientos/${l.move_id}`} className={`${TABLE} min-h-[52px] border-b border-border hover:bg-muted/60`}>
+        <span className="text-caption text-muted-foreground tabular-nums">{shortDate(l.date)}</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-8 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
+            <Icon name={chip.icon} className="text-[18px]" />
+          </span>
+          <span className="truncate font-semibold">{opening ? "Saldo inicial" : l.ref}</span>
+          {!l.posted && <span className="flex-none rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">Por confirmar</span>}
+        </span>
+        <span className={`truncate text-caption ${suspense ? "font-semibold text-attention" : "text-muted-foreground"}`}>{caption}</span>
+        <span className="text-right tabular-nums">{amount}</span>
+        <span className="text-right text-caption text-muted-foreground tabular-nums">{l.running !== null ? formatNumber(l.running, lang) : ""}</span>
+      </Row>
+    );
+  }
   return (
     <Row to={`/movimientos/${l.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
       <span className="grid size-9 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
@@ -197,14 +233,7 @@ function LineRow({ line: l, lang }: { line: AccountDetail["lines"][number]; lang
         </span>
       </span>
       <span className="flex flex-col items-end tabular-nums">
-        {opening ? (
-          <span className="text-amount">{formatNumber(l.amount, lang)}</span>
-        ) : (
-          <span className={`flex items-center gap-0.5 text-amount ${out ? "text-expense" : "text-income"}`}>
-            <Icon name={out ? "north_east" : "south_west"} className="text-[16px]" />
-            {out ? "− " : "+ "}{formatNumber(l.amount.replace("-", ""), lang)}
-          </span>
-        )}
+        {amount}
         {l.running !== null && <span className="text-caption text-muted-foreground">{formatNumber(l.running, lang)}</span>}
       </span>
     </Row>

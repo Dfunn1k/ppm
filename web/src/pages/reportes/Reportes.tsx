@@ -1,7 +1,7 @@
 // X2 · Reportes: el índice. Una tarjeta por reporte con su cifra del mes elegido y un gráfico chico;
 // tocarla abre el reporte completo en ese mes.
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, NavLink, useSearchParams } from "react-router";
 import { Area, AreaChart, Cell, Pie, PieChart } from "recharts";
 
 import { useReportSummary } from "@/api/hooks";
@@ -19,7 +19,7 @@ function Card({ to, label, value, children, note, empty, icon }: {
   to: string; label: string; value: string; children: React.ReactNode; note: React.ReactNode; empty?: string; icon: string;
 }) {
   return (
-    <Link to={to} className="flex items-center gap-3.5 rounded-lg border border-border bg-card px-4 py-3.5">
+    <NavLink to={to} className="flex items-center gap-3.5 rounded-lg border border-border bg-card px-4 py-3.5 lg:aria-[current=page]:border-foreground lg:aria-[current=page]:shadow-[inset_0_0_0_1px_var(--foreground)]">
       <span aria-hidden="true" className="grid size-16 flex-none place-items-center">
         {empty ? <span className="grid size-12 place-items-center rounded-full bg-secondary text-muted-foreground"><Icon name={icon} /></span> : children}
       </span>
@@ -31,7 +31,7 @@ function Card({ to, label, value, children, note, empty, icon }: {
         </>}
       </span>
       <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
-    </Link>
+    </NavLink>
   );
 }
 

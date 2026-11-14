@@ -17,6 +17,7 @@ import { monthName } from "@/lib/months";
 import { shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
 import { DetailSkeleton } from "@/components/Skeleton";
+import { useDesktop } from "@/lib/desktop";
 
 type Menu = null | "open" | "rename" | "edit" | "due" | "archive" | "charge" | "rate" | "reminder";
 type Item = CardDetail["cycles"][number]["items"][number];
@@ -27,6 +28,7 @@ export function Tarjeta() {
   const card = useCard(id);
   const [menu, setMenu] = useState<Menu>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  const table = useDesktop();
   if (!me?.currency || card.isPending) return <DetailSkeleton back="/cuentas" />;
   if (card.isError) {
     return (
@@ -238,7 +240,12 @@ export function Tarjeta() {
                 <Icon name="fact_check" className="text-[18px]" />Ver su estado de cuenta
               </Link>
             )}
-            {cycle.items.map((i, n) => <ItemRow key={`${i.move_id}-${i.sequence ?? n}`} item={i} base={base} lang={lang} />)}
+            {table && cycle.items.length > 0 && (
+              <div className={`${TABLE} border-b border-border py-1 text-label text-muted-foreground`}>
+                <span>Fecha</span><span>Movimiento</span><span>Detalle</span><span className="text-right">Monto</span>
+              </div>
+            )}
+            {cycle.items.map((i, n) => <ItemRow key={`${i.move_id}-${i.sequence ?? n}`} item={i} base={base} lang={lang} table={table} />)}
           </section>
         )}
         {d.cycles.length === 0 && (
@@ -367,7 +374,10 @@ function plansTotal(d: CardDetail, lang: string) {
   return [...by].map(([cur, cents]) => formatAmount((cents / 100).toFixed(2), symbolOf(cur), lang)).join(" · ");
 }
 
-function ItemRow({ item: i, base, lang }: { item: Item; base: string; lang: string }) {
+/** En escritorio el ciclo va en tabla: fecha, movimiento, detalle y monto. */
+const TABLE = "grid grid-cols-[64px_minmax(0,1.3fr)_minmax(0,1fr)_120px] items-center gap-3";
+
+function ItemRow({ item: i, base, lang, table }: { item: Item; base: string; lang: string; table: boolean }) {
   const up = Number(i.amount) > 0;   // sube la deuda: una compra, una cuota, un cargo
   const chip = i.kind === "payment"
     ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "credit_card" }
@@ -382,6 +392,28 @@ function ItemRow({ item: i, base, lang }: { item: Item; base: string; lang: stri
         ? `${shortDate(i.date)} · desde ${i.counterpart ?? "varias cuentas"}`
         : `${shortDate(i.date)} · ${i.counterpart ?? "Varias categorías"}`;
   const value = (i.currency === base ? "" : `${symbolOf(i.currency)} `) + formatNumber(i.amount.replace("-", ""), lang);
+  if (table) {
+    // La fecha va en su columna: el detalle dice el resto (cuota, desde qué cuenta, categoría)
+    const detail = i.kind === "payment" ? `Desde ${i.counterpart ?? "varias cuentas"}`
+      : i.kind === "installment" || i.kind === "opening" ? hint : (i.counterpart ?? "Varias categorías");
+    return (
+      <Link to={`/movimientos/${i.move_id}`} className={`${TABLE} min-h-[52px] border-b border-border hover:bg-muted/60`}>
+        <span className="text-caption text-muted-foreground tabular-nums">{shortDate(i.date)}</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-8 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
+            <Icon name={chip.icon} className="text-[18px]" />
+          </span>
+          <span className="truncate font-semibold">{i.kind === "opening" && !i.sequence ? "Saldo inicial" : i.ref}</span>
+          {!i.posted && <span className="flex-none rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">Por confirmar</span>}
+        </span>
+        <span className="truncate text-caption text-muted-foreground">{detail}</span>
+        <span className={`flex items-center justify-end gap-0.5 text-amount ${up ? "text-expense" : "text-income"}`}>
+          <Icon name={up ? "north_east" : "south_west"} className="text-[16px]" />
+          {value}
+        </span>
+      </Link>
+    );
+  }
   return (
     <Link to={`/movimientos/${i.move_id}`} className="flex min-h-[58px] items-center gap-3 border-b border-border">
       <span className="grid size-9 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>

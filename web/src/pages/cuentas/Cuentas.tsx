@@ -1,5 +1,5 @@
 // C1 · Cuentas: lo que realmente tengo, y debajo lo que tengo, lo que guardo de otros y lo que debo.
-import { Link, useLocation } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 
 import { type AccountRow, useAccounts, useMe } from "@/api/hooks";
 import { ErrorAlert, Icon } from "@/components/ui";
@@ -44,7 +44,7 @@ function Row({ to, icon, letter, name, subtitle, amount, negative, attention }: 
     </>
   );
   const cls = "flex min-h-[60px] items-center gap-3 border-b border-border";
-  return to ? <Link to={to} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
+  return to ? <NavLink to={to} className={`${cls} lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]`}>{body}</NavLink> : <div className={cls}>{body}</div>;
 }
 
 /** Por cobrar y Por pagar se leen como «Me deben» y «Debo a personas», y llevan a Personas ya filtrada. */
