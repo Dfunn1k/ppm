@@ -8,7 +8,10 @@ import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis
 
 import { type CategoryReport, useCategoryReport } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
+import { ReportBones } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { monthName } from "@/lib/months";
 
 import {
   ChartTip, MONTH_LETTER, PeriodBar, ReportHeader, Versus, against, catColor, delta, useMoney, usePeriod,
@@ -24,7 +27,7 @@ export function ReporteCategorias({ kind }: { kind: "expense" | "income" }) {
   const [open, setOpen] = useState<number[]>([]);
   const expense = kind === "expense";
 
-  if (report.isPending) return <Spinner />;
+  if (report.isPending) return <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10"><ReportHeader title={expense ? "Gastos" : "Ingresos"} /><PeriodBar p={p} /><ReportBones chart={expense ? "donut" : "bars"} /></main>;
   if (report.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{report.error.message}</ErrorAlert></main>;
   const r = report.data;
   const vs = against(p);
@@ -42,6 +45,28 @@ export function ReporteCategorias({ kind }: { kind: "expense" | "income" }) {
     label: MONTH_LETTER[i]!, month: m.month, total: Number(m.total),
     ...Object.fromEntries(r.groups.map((g, k) => [`g${g.id}`, Number(m.groups[k] ?? 0)])),
   }));
+
+  const when = p.year ? `en ${p.year}` : `en ${monthName(p.month).split(" ")[0]!.toLowerCase()}`;
+  if (r.groups.length === 0) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10">
+        <ReportHeader title={expense ? "Gastos" : "Ingresos"} />
+        <PeriodBar p={p} />
+        <EmptyState icon={expense ? "donut_large" : "bar_chart"} title={expense ? `Nada gastado ${when}` : `Nada entró ${when}`}
+          action={{ to: expense ? "/registrar" : "/registrar?tipo=income", label: expense ? "Registrar un gasto" : "Registrar un ingreso" }}>
+          {expense ? "Cuando registres un gasto, aquí ves en qué se va la plata, por grupo y categoría."
+            : "Cuando registres un ingreso, aquí ves de dónde entra la plata."}
+        </EmptyState>
+        {r.unclassified.count > 0 && (
+          <Link to="/por-clasificar" className="mt-6 flex min-h-11 items-center gap-2 rounded-md bg-attention-soft px-3 text-caption font-semibold text-attention">
+            <Icon name="inbox" className="text-[18px]" />
+            <span className="flex-1">{r.unclassified.count === 1 ? "1 movimiento por clasificar no entra" : `${r.unclassified.count} movimientos por clasificar no entran`}</span>
+            <Icon name="chevron_right" className="text-[18px]" />
+          </Link>
+        )}
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10">
@@ -116,7 +141,6 @@ export function ReporteCategorias({ kind }: { kind: "expense" | "income" }) {
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
           <span>{expense ? "Por grupo" : "Por categoría"}</span><span>vs. {vs}</span>
         </div>
-        {r.groups.length === 0 && <span className="py-3 text-caption text-muted-foreground">Nada en este periodo.</span>}
         {r.groups.map((g) => {
           const isOpen = open.includes(g.id);
           const expandable = g.children.length > 0;

@@ -79,7 +79,7 @@ test("el Inicio cuenta los dólares al tipo de hoy", async ({ page }) => {
   const buy = await todayBuy(page);
   test.skip(buy === null, "No hay ningún tipo de cambio cargado todavía");
   await page.reload();
-  await expect(page.getByText(`Tus US$ 200.00 cuentan a ${buy}`)).toBeVisible();
+  await expect(page.getByText(`dólar a ${buy} de hoy`)).toContainText("US$ 200.00 = S/");
 });
 
 test("Z1: solo el administrador ve el tipo de cambio y lo carga a mano", async ({ browser }) => {
@@ -96,7 +96,7 @@ test("Z1: solo el administrador ve el tipo de cambio y lo carga a mano", async (
   await readyUser(page, "e2e-admin@prueba.ppm");
   await page.getByRole("link", { name: "Más" }).click();
   await page.getByRole("link", { name: /Tipo de cambio/ }).click();
-  await expect(page.getByRole("heading", { name: "Tipo de cambio." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tipo de cambio" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Dólar", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Cargar a mano" }).click();

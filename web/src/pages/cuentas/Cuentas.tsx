@@ -2,9 +2,10 @@
 import { Link, useLocation } from "react-router";
 
 import { type AccountRow, useAccounts, useMe } from "@/api/hooks";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { cardHint } from "@/lib/cards";
 import { formatAmount, symbolOf } from "@/lib/money";
+import { ListSkeleton } from "@/components/Skeleton";
 
 function Group({ label, total, children }: { label: string; total: string; children: React.ReactNode }) {
   return (
@@ -91,7 +92,7 @@ export function Cuentas() {
   const me = useMe().data;
   const accounts = useAccounts();
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
-  if (!me?.currency || accounts.isPending) return <Spinner />;
+  if (!me?.currency || accounts.isPending) return <ListSkeleton />;
   if (accounts.isError) return <ErrorAlert>{accounts.error.message}</ErrorAlert>;
 
   const o = accounts.data;

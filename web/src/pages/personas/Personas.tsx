@@ -7,11 +7,12 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { type PartnerRow, useMe, usePartnersOverview } from "@/api/hooks";
 import { Avatar } from "@/components/MoveBits";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
 
 import { PersonaSheet } from "./PersonaForm";
+import { ListSkeleton } from "@/components/Skeleton";
 
 type Money = PartnerRow["owes_me"][number];
 
@@ -44,7 +45,7 @@ export function Personas() {
   const overview = usePartnersOverview();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
-  if (!me?.currency || overview.isPending) return <Spinner />;
+  if (!me?.currency || overview.isPending) return <ListSkeleton back="/cuentas" title="Personas" />;
   if (overview.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{overview.error.message}</ErrorAlert></main>;
 
   const o = overview.data;
@@ -81,14 +82,16 @@ export function Personas() {
         </div>
       ) : (
         <>
-          <div role="group" aria-label="Ver solo" className="mt-5 grid grid-cols-3 gap-2">
-            {totals.map(([v, total]) => {
+          {/* Una sola barra con los tres: los montos no se parten; si alguno es largo, los tres bajan un punto */}
+          <div role="group" aria-label="Ver solo" className="mt-5 grid grid-cols-3 overflow-hidden rounded-lg border border-border bg-card">
+            {totals.map(([v, total], i) => {
               const on = view === v;
+              const small = totals.some(([, t]) => money(t).length > 11);
               return (
                 <button key={v} type="button" aria-pressed={on} onClick={() => setParams(on ? {} : { ver: v }, { replace: true })}
-                  className={`flex flex-col gap-0.5 rounded-lg border p-3 text-left ${on ? "border-primary bg-secondary" : "border-border bg-card"}`}>
+                  className={`flex min-w-0 flex-col gap-0.5 px-2.5 py-3 text-left ${i > 0 ? "border-l border-border" : ""} ${on ? "bg-secondary shadow-[inset_0_-3px_0_var(--foreground)]" : ""}`}>
                   <span className="text-caption text-muted-foreground">{SIDE[v].label}</span>
-                  <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(total)}</span>
+                  <span className={`${small ? "text-[14px]" : "text-[16px]"} leading-6 font-semibold whitespace-nowrap tabular-nums`}>{money(total)}</span>
                 </button>
               );
             })}

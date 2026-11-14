@@ -63,7 +63,7 @@ export function MasHeader({ kind, locked }: { kind: MasKind; locked?: boolean })
           <Link to="/registrar" replace data-replace="true" role="radio" aria-checked="false" className={tab}>Gasto</Link>
           <Link to="/registrar?tipo=income" replace data-replace="true" role="radio" aria-checked="false" className={tab}>Ingreso</Link>
           <Link to="/registrar?tipo=transfer" replace data-replace="true" role="radio" aria-checked="false" className={tab}>Transferir</Link>
-          <button type="button" role="radio" aria-checked="true" onClick={() => setOpen(true)} className={`${tab} bg-card shadow-sm`}>Más</button>
+          <button type="button" role="radio" aria-checked="true" onClick={() => setOpen(true)} className={`${tab} bg-selected text-selected-foreground shadow-sm`}>Más</button>
         </div>
       )}
       <div className="mt-3 flex items-center gap-2">

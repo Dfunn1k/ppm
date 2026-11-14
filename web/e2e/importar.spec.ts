@@ -105,7 +105,7 @@ test("el Inicio avisa, el detalle dice lo que dijo el banco y deshacer borra lo 
   await page.getByRole("button", { name: "Deshacer esta importación" }).click();
   await page.getByRole("button", { name: "Borrar 3 y deshacer" }).click();
   await expect(page).toHaveURL(`/cuentas/${bank}`);
-  await expect(page.getByText("Trae tus movimientos")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Importar extracto del banco" })).toBeVisible();
   await page.goto("/por-clasificar");
   await expect(page.getByText("Bandeja vacía")).toBeVisible();
 });

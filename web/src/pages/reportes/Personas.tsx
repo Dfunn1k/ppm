@@ -6,10 +6,11 @@ import { Link } from "react-router";
 
 import { usePeopleReport } from "@/api/hooks";
 import { Avatar } from "@/components/MoveBits";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 
 import { ReportHeader, useMoney } from "./common";
+import { ReportBones } from "@/components/Skeleton";
 
 const TRAMOS = [
   { label: "0–30 días", from: 0, to: 30 },
@@ -23,7 +24,7 @@ export function ReportePersonas() {
   const money = useMoney();
   const [tramo, setTramo] = useState<number | null>(null);
 
-  if (report.isPending) return <Spinner />;
+  if (report.isPending) return <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10"><ReportHeader title="Personas" /><ReportBones chart="bars" /></main>;
   if (report.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{report.error.message}</ErrorAlert></main>;
   const r = report.data;
   const total = r.ages.reduce((a, v) => a + Number(v), 0);

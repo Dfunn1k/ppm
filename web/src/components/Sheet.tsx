@@ -171,7 +171,7 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
             role="radio"
             aria-checked={o.value === value}
             onClick={() => onChange(o.value)}
-            className={`rounded-[8px] font-semibold ${size === "sm" ? "h-9 text-caption" : "h-10"} ${o.value === value ? "bg-card shadow-sm" : ""}`}
+            className={`rounded-[8px] font-semibold ${size === "sm" ? "h-9 text-caption" : "h-10"} ${o.value === value ? "bg-selected text-selected-foreground shadow-sm" : ""}`}
           >
             {o.label}
           </button>

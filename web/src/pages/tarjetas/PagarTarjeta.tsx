@@ -90,7 +90,7 @@ export function PagarTarjeta() {
             {sides.map((s) => (
               <button key={s.currency} type="button" role="radio" aria-checked={s.currency === cur}
                 onClick={() => { setSide(s.currency); setAmount(null); setAccountId(""); }}
-                className={`flex h-[52px] flex-col items-center justify-center rounded-[8px] ${s.currency === cur ? "bg-card shadow-sm" : ""}`}>
+                className={`flex h-[52px] flex-col items-center justify-center rounded-[8px] ${s.currency === cur ? "bg-selected text-selected-foreground shadow-sm" : ""}`}>
                 <span className="text-[14px] font-semibold">{(CURRENCY_NAME[s.currency] ?? s.currency).replace(/^./, (c) => c.toUpperCase())}</span>
                 <span className="text-caption text-muted-foreground tabular-nums">Toca {money(Number(s.to_pay) > 0 ? s.to_pay : "0.00", s.currency)}</span>
               </button>

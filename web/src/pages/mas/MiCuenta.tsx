@@ -44,7 +44,6 @@ export function MiCuenta() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-        <span className="pr-2.5 text-label text-muted-foreground">Mi cuenta</span>
       </div>
       <h1 className="mt-6 text-title-hero">{me.name}</h1>
       <span className="mt-2 text-muted-foreground">{me.email} · {currencies}</span>

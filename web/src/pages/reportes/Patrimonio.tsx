@@ -4,11 +4,14 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { useMe, useNetWorthReport } from "@/api/hooks";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { formatAmount, rateText, symbolOf } from "@/lib/money";
 import { monthName } from "@/lib/months";
 
 import { ChartTip, MONTH_LETTER, ReportHeader, useMoney } from "./common";
+import { ReportBones } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { isZero } from "@/lib/money";
 
 const PARTS: Record<string, { label: string; op: number }> = {
   bank: { label: "Bancos", op: 1 },
@@ -23,7 +26,7 @@ export function ReportePatrimonio() {
   const money = useMoney();
   const lang = useMe().data?.lang ?? "es-PE";
 
-  if (report.isPending) return <Spinner />;
+  if (report.isPending) return <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10"><ReportHeader title="Patrimonio" /><ReportBones chart="bars" /></main>;
   if (report.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{report.error.message}</ErrorAlert></main>;
   const r = report.data;
   const first = r.months[0]!, last = r.months.at(-1)!;
@@ -31,6 +34,17 @@ export function ReportePatrimonio() {
   const points = r.months.map((m) => ({ ...m, value: Number(m.amount), label: MONTH_LETTER[Number(m.date.slice(5, 7)) - 1] }));
   const have = r.have.reduce((a, x) => a + Number(x.amount), 0);
   const gain = (f: (typeof r.foreign)[number]) => Number(f.today) - Number(f.book);
+
+  if (r.months.every((m) => isZero(m.amount)) && isZero(r.today)) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10">
+        <ReportHeader title="Patrimonio" />
+        <EmptyState icon="show_chart" title="Tu curva empieza este mes">
+          Al cierre de cada mes PPM anota lo que realmente tienes. Con dos meses ya ves cómo va.
+        </EmptyState>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10">

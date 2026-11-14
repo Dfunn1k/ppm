@@ -7,13 +7,14 @@ import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction } f
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 
 import { PersonaSheet } from "./PersonaForm";
 import { joinMoney } from "./Personas";
+import { DetailSkeleton } from "@/components/Skeleton";
 
 type Hoja = null | "pago" | "compensar" | "perdido" | "editar";
 
@@ -38,7 +39,7 @@ export function Persona() {
   const offset = usePartnerAction(id, "offset");
   const writeOff = usePartnerAction(id, "write-off");
   const [hoja, setHoja] = useState<Hoja>(null);
-  if (!me?.currency || detail.isPending) return <Spinner />;
+  if (!me?.currency || detail.isPending) return <DetailSkeleton back="/personas" />;
   if (detail.isError) {
     return (
       <main className="mx-auto max-w-md px-6 pt-8">
