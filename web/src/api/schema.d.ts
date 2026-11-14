@@ -2609,6 +2609,11 @@ export interface components {
             home_account_id: number | null;
             /** Lock Date */
             lock_date?: string | null;
+            /**
+             * Icons
+             * @default []
+             */
+            icons: string[];
         };
         /** MePatch */
         MePatch: {

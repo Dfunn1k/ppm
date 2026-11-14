@@ -2,14 +2,14 @@
 // («Hoy», «Ayer» o los que pida la pantalla). Igual en todos los celulares y con los colores de PPM;
 // nunca el calendario del navegador. Tocar el mes abre los 12 meses y tocar el año, los años: vistas
 // propias, sin el selector del navegador. Al elegir un día, la hoja se cierra.
-import { type ReactNode, useId, useState } from "react";
-import { DayPicker } from "react-day-picker";
-import { es } from "react-day-picker/locale";
+import { lazy, type ReactNode, Suspense, useId, useState } from "react";
 
 import { longDate, todayISO } from "@/lib/dates";
 
 import { Sheet } from "./Sheet";
 import { Icon } from "./ui";
+
+const DayGrid = lazy(() => import("./DayGrid"));   // el calendario, solo al abrir una fecha
 
 export type Shortcut = { label: string; value: string };
 
@@ -125,9 +125,9 @@ export function DateSheet({ open, onClose, title, value, onChange, min, max, sho
         </div>
       )}
       {view === "days" && (
-        <DayPicker
+        <Suspense fallback={<div className="h-72" />}>
+        <DayGrid
           mode="single"
-          locale={es}
           weekStartsOn={1}
           month={month}
           onMonthChange={setMonth}
@@ -150,6 +150,7 @@ export function DateSheet({ open, onClose, title, value, onChange, min, max, sho
             hidden: "invisible",
           }}
         />
+        </Suspense>
       )}
       {children}
     </Sheet>
