@@ -128,7 +128,7 @@ export function AsientoManual({ editing }: { editing?: MoveDetail }) {
           <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
             className="h-10 min-w-0 border-0 bg-transparent p-0" />
         </div>
-        <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} max={todayISO()} />
+        <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} max={todayISO()} booked />
 
         <div className="min-h-4 flex-1" />
         <div className="flex flex-col gap-3">

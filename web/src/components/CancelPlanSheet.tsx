@@ -90,7 +90,7 @@ export function CancelPlanSheet({ plan, title, open, onClose }: { plan: Plan; ti
         </fieldset>
 
         <div className={kind === "prepaid" ? "grid grid-cols-2 gap-3" : ""}>
-          <DateField label="Fecha" value={date} onChange={setDate} max={todayISO()} min={minDate}
+          <DateField label="Fecha" value={date} onChange={setDate} max={todayISO()} min={minDate} booked
             sheetTitle={kind === "returned" ? "¿Cuándo lo devolviste?" : "¿Cuándo lo pagaste?"} />
           {kind === "prepaid" && (
             <label className="flex flex-col gap-1.5 text-caption font-semibold">

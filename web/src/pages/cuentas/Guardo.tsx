@@ -102,7 +102,7 @@ export function NuevaGuardo() {
             <Icon name="event" className="text-[18px]" />
             {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : "Hoy · otra fecha"}
           </button>
-          {dateOpen && <DateField label="Te la dio el" max={todayISO()} value={date} onChange={setDate} />}
+          {dateOpen && <DateField label="Te la dio el" max={todayISO()} value={date} onChange={setDate} booked />}
           {(problem || failure) && (
             <ErrorAlert>{problem ?? (failure instanceof ApiError ? failure.message : "No se pudo guardar")}</ErrorAlert>
           )}

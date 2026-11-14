@@ -281,7 +281,7 @@ export function PagarCuota() {
             className="flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold">
             <Icon name="event" className="text-[18px]" />{dateLabel(date)}
           </button>
-          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo pagaste?" value={date} onChange={setDate} max={todayISO()} />
+          <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo pagaste?" value={date} onChange={setDate} max={todayISO()} booked />
           <span className="text-caption text-muted-foreground">Es la cuota del {shortDate(l.next.occurrence)}: si pagas antes, ese día no se crea otra.</span>
         </div>
         <div className="min-h-6 flex-1" />

@@ -80,3 +80,23 @@ test("con el mes cerrado, las cuotas que faltan de una compra de ese mes se pued
   await hoja.getByRole("button", { name: /^Cancelar (la cuota|las \d+ cuotas)$/ }).click();
   await expect(page.getByText(/Lo devolviste el/)).toBeVisible();
 });
+
+test("con el mes cerrado, las fechas de los asientos no dejan elegir sus días, y lo dicen", async ({ page }) => {
+  await readyUser(page);
+  const accounts = await (await page.request.get("/api/accounts")).json();
+  const cash = accounts.have[0].id as number;
+  await page.request.put(`/api/accounts/${cash}/opening`, { data: { amount: "500", date: lima(-60) } });
+  expect((await page.request.put("/api/closing", { data: { lock_date: FIN_MES_PASADO } })).status()).toBe(200);
+
+  // Corregir el saldo inicial, fuera de Registrar
+  await page.goto(`/cuentas/${cash}`);
+  await page.getByRole("button", { name: "Más opciones de la cuenta" }).click();
+  await page.getByRole("button", { name: "Corregir el saldo inicial" }).click();
+  await page.getByRole("button", { name: /^Al día/ }).click();
+  const hoja = page.getByRole("dialog").last();
+  await expect(hoja.getByText(/^Cerrado hasta el .*reábrelo en Más › Cierre de periodo\.$/)).toBeVisible();
+  // El calendario abre en el mes del saldo inicial, que ya está cerrado: su día no se puede elegir
+  const [, m, d] = lima(-60).split("-").map(Number);
+  const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  await expect(hoja.getByRole("grid").getByRole("button", { name: new RegExp(`(^|\\D)${d} de ${MESES[m! - 1]}`) })).toBeDisabled();
+});

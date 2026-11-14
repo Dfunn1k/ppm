@@ -143,7 +143,7 @@ export function PagarTarjeta() {
                 <Icon name="event" className="text-[18px]" />{dateLabel(date)}
               </button>
             </div>
-            <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo pagaste?" value={date} onChange={setDate} max={todayISO()} />
+            <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo pagaste?" value={date} onChange={setDate} max={todayISO()} booked />
           </>
         )}
 

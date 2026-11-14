@@ -194,7 +194,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       </div>
       {dateOpen && (
         <div className="mt-3">
-          <DateField label="Saldo al día" max={todayISO()} value={date} onChange={(v) => form.setValue("date", v)} />
+          <DateField label="Saldo al día" max={todayISO()} value={date} onChange={(v) => form.setValue("date", v)} booked />
         </div>
       )}
       {kind === "bank" && moreOpen && (

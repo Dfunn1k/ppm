@@ -4,7 +4,8 @@
 // propias, sin el selector del navegador. Al elegir un día, la hoja se cierra.
 import { lazy, type ReactNode, Suspense, useId, useState } from "react";
 
-import { longDate, todayISO } from "@/lib/dates";
+import { useMe } from "@/api/hooks";
+import { longDate, shortDate, todayISO } from "@/lib/dates";
 
 import { Sheet } from "./Sheet";
 import { Icon } from "./ui";
@@ -38,7 +39,15 @@ export function endOfMonth(iso = todayISO()): string {
 
 export const WHEN_SHORTCUTS = (): Shortcut[] => [{ label: "Hoy", value: todayISO() }, { label: "Ayer", value: addDays(-1) }];
 
-export function DateSheet({ open, onClose, title, value, onChange, min, max, shortcuts = WHEN_SHORTCUTS(), children }: {
+/** El primer día que se puede tocar: el siguiente al cierre de periodo (Más › Cierre de periodo). */
+export function useOpenFrom(): { from?: string; lock?: string } {
+  const lock = useMe().data?.lock_date ?? undefined;
+  return lock ? { from: addDays(1, lock), lock } : {};
+}
+
+const later = (a?: string, b?: string) => (!a ? b : !b ? a : a > b ? a : b);
+
+export function DateSheet({ open, onClose, title, value, onChange, min: asked, max, shortcuts = WHEN_SHORTCUTS(), booked, children }: {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -47,8 +56,11 @@ export function DateSheet({ open, onClose, title, value, onChange, min, max, sho
   min?: string;
   max?: string;
   shortcuts?: Shortcut[];
+  booked?: boolean;                   // la fecha de un asiento: los días cerrados no se pueden elegir
   children?: ReactNode;               // lo que va debajo: «Quitar la fecha», una nota
 }) {
+  const closed = useOpenFrom();
+  const min = booked ? later(asked, closed.from) : asked;
   const [month, setMonth] = useState<Date>(toDate(value ?? todayISO()));
   const [view, setView] = useState<"days" | "months" | "years">("days");
   const pick = (iso: string) => { onChange(iso); onClose(); };
@@ -72,9 +84,10 @@ export function DateSheet({ open, onClose, title, value, onChange, min, max, sho
         <div className="mx-3 flex flex-wrap gap-2">
           {shortcuts.map((s) => {
             const on = s.value === value;
+            const out = (!!min && s.value < min) || (!!max && s.value > max);   // «Ayer» en un día cerrado
             return (
-              <button key={s.label} type="button" aria-pressed={on} onClick={() => pick(s.value)}
-                className={`h-9 rounded-full border px-3.5 text-caption font-semibold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+              <button key={s.label} type="button" aria-pressed={on} disabled={out} onClick={() => pick(s.value)}
+                className={`h-9 rounded-full border px-3.5 text-caption font-semibold disabled:opacity-35 ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
                 {s.label}
               </button>
             );
@@ -152,6 +165,12 @@ export function DateSheet({ open, onClose, title, value, onChange, min, max, sho
         />
         </Suspense>
       )}
+      {booked && closed.lock && (
+        <p className="mx-3 mt-3 flex items-start gap-2 text-caption text-muted-foreground">
+          <Icon name="lock_clock" className="text-[18px]" />
+          <span>Cerrado hasta el {shortDate(closed.lock)}. Para usar esos días, reábrelo en Más › Cierre de periodo.</span>
+        </p>
+      )}
       {children}
     </Sheet>
   );
@@ -163,7 +182,7 @@ export function dateLabel(iso: string) {
 }
 
 /** Un campo de fecha de una línea (etiqueta arriba) que abre el calendario. */
-export function DateField({ label, value, onChange, min, max, shortcuts, placeholder = "Elige una fecha", hint, sheetTitle }: {
+export function DateField({ label, value, onChange, min, max, shortcuts, placeholder = "Elige una fecha", hint, sheetTitle, booked }: {
   label: string;
   value: string | null;
   onChange: (iso: string) => void;
@@ -173,6 +192,7 @@ export function DateField({ label, value, onChange, min, max, shortcuts, placeho
   placeholder?: string;
   hint?: ReactNode;
   sheetTitle?: string;
+  booked?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -188,7 +208,7 @@ export function DateField({ label, value, onChange, min, max, shortcuts, placeho
       </button>
       {hint && <span className="text-caption text-muted-foreground">{hint}</span>}
       <DateSheet open={open} onClose={() => setOpen(false)} title={sheetTitle ?? label} value={value} onChange={onChange}
-        min={min} max={max} shortcuts={shortcuts ?? (max === todayISO() ? WHEN_SHORTCUTS() : [])} />
+        min={min} max={max} booked={booked} shortcuts={shortcuts ?? (max === todayISO() ? WHEN_SHORTCUTS() : [])} />
     </div>
   );
 }

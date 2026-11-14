@@ -260,7 +260,7 @@ function OccurrenceSheet({ id, next, name, money, lang, onClose }: {
           options={[{ value: "date", label: "Otra fecha" }, { value: "amount", label: "Otro monto" }, { value: "skip", label: "Saltar" }]} />
       </div>
       <div className="mx-1 mt-4">
-        {tab === "date" && <DateField label="¿Qué día esta vez?" value={date} onChange={setDate} />}
+        {tab === "date" && <DateField label="¿Qué día esta vez?" value={date} onChange={setDate} booked />}
         {tab === "amount" && (
           <label className="flex flex-col gap-0.5 text-caption font-semibold">
             ¿Cuánto esta vez?
