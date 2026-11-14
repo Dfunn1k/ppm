@@ -1,10 +1,13 @@
 // X0 · Más (mínimo): Mi cuenta, Pendientes (con su número), Inicio, Reportes (X2), Apariencia, Recurrentes (X1), Categorías (X3), Cierre de periodo (X4) y, para el
 // administrador, Tipo de cambio (Z1);
 // lo demás llega con su rebanada.
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { useMe, usePending } from "@/api/hooks";
+import { INSTALL_HINT, InstallSheet, Logo } from "@/components/InstallSheet";
 import { Icon } from "@/components/ui";
+import { useInstall } from "@/lib/install";
 import { shortDate } from "@/lib/dates";
 
 const SOON = [
@@ -15,6 +18,8 @@ export function Mas() {
   const me = useMe().data;
   const box = usePending().data;
   const count = box ? box.notices.length + box.activities.length : 0;
+  const install = useInstall();
+  const [installing, setInstalling] = useState(false);
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
       <h1 className="text-label text-muted-foreground">Más</h1>
@@ -57,6 +62,15 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
+      <button type="button" onClick={() => setInstalling(true)} className="flex min-h-16 items-center gap-3.5 border-b border-border text-left">
+        <Logo size={40} />
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Instalar PPM</span>
+          <span className="text-caption text-muted-foreground">{INSTALL_HINT[install.state]}</span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </button>
+      <InstallSheet open={installing} onClose={() => setInstalling(false)} />
       <Link to="/mas/reportes" className="flex min-h-16 items-center gap-3.5 border-b border-border">
         <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="bar_chart" className="text-[22px]" /></span>
         <span className="flex flex-1 flex-col">
