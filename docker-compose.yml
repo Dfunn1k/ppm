@@ -66,6 +66,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-ppm-local}
       GOOGLE_AUTH_URL: ${GOOGLE_AUTH_URL:-http://localhost:8099/auth}
       GOOGLE_TOKEN_URL: ${GOOGLE_TOKEN_URL:-http://google-falsa:8099/token}
+      PRIVACY_EMAIL: ${PRIVACY_EMAIL:-privacidad@ppm.local}
     ports:
       - "8000:8000"
     volumes:

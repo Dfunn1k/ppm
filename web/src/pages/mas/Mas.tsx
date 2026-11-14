@@ -132,6 +132,9 @@ export function Mas() {
         </div>
         <InstallSheet open={installing} onClose={() => setInstalling(false)} />
       </section>
+      <p className="mt-6 text-center text-caption text-muted-foreground">
+        <Link to="/privacidad" className="underline">Privacidad</Link>
+      </p>
 
     </main>
   );

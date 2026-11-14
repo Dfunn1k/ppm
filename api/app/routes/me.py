@@ -4,11 +4,12 @@ import datetime as dt
 from dataclasses import asdict
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
-from app import recurring, users
-from app.routes.deps import CurrentSession, current_session
+from app import auth, recurring, users
+from app.config import get_settings
+from app.routes.deps import CurrentSession, clear_session_cookie, current_session
 
 router = APIRouter(tags=["persona"])
 
@@ -154,3 +155,41 @@ def remove_currency(currency: str, session: CurrentSession = Depends(current_ses
     except users.CurrencyError as e:
         raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from None
     return my_currencies(session)
+
+
+class PrivacyOut(BaseModel):
+    contact_email: str | None    # PRIVACY_EMAIL del servidor; sin él, la página no muestra «Contacto»
+
+
+@router.get("/privacy", summary="La página de privacidad (pública): el correo de contacto")
+def privacy() -> PrivacyOut:
+    return PrivacyOut(contact_email=get_settings().privacy_email)
+
+
+class DeletionOut(BaseModel):
+    accounts: int
+    moves: int
+    attachments: int
+    recurring: int
+
+
+class DeleteIn(BaseModel):
+    password: Annotated[str, Field(max_length=128)] | None = None   # con contraseña: ella confirma
+    email: Annotated[str, Field(max_length=254)] | None = None      # sin contraseña (Google): su correo
+
+
+@router.get("/me/deletion", summary="Eliminar mi cuenta: lo que se borra")
+def deletion(session: CurrentSession = Depends(current_session)) -> DeletionOut:
+    return DeletionOut(**asdict(auth.deletion_preview(session.user_id)))
+
+
+@router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT,
+             summary="Eliminar mi cuenta y todo lo que registré, al instante",
+             responses={400: {"description": "No es tu contraseña (o tu correo)"}})
+def delete(body: DeleteIn, response: Response, session: CurrentSession = Depends(current_session)) -> None:
+    try:
+        auth.delete_account(session.user_id, body.password, body.email)
+    except auth.WrongConfirmation:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            "No es tu contraseña" if body.password is not None else "No es tu correo") from None
+    clear_session_cookie(response)

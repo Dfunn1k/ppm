@@ -69,6 +69,7 @@ services:
       RATES_IMPORT: "true"
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}           # vacíos: sin «Continuar con Google»
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      PRIVACY_EMAIL: ${PRIVACY_EMAIL:-}                 # el contacto de /privacidad
     volumes:
       - filestore:/var/lib/ppm/filestore   # los adjuntos (extractos): una carpeta por persona
     # Un solo proceso: el importador de SUNAT corre dentro de él (con más, correría varias veces)

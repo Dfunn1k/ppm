@@ -30,6 +30,7 @@ class Settings:
     google_client_secret: str | None
     google_auth_url: str              # adónde va el navegador a elegir su cuenta
     google_token_url: str             # dónde la API cambia el código por el ID token
+    privacy_email: str | None         # el correo de contacto de la página de privacidad
 
 
 @lru_cache
@@ -54,4 +55,5 @@ def get_settings() -> Settings:
         google_client_secret=os.environ.get("GOOGLE_CLIENT_SECRET") or None,
         google_auth_url=os.environ.get("GOOGLE_AUTH_URL", "https://accounts.google.com/o/oauth2/v2/auth"),
         google_token_url=os.environ.get("GOOGLE_TOKEN_URL", "https://oauth2.googleapis.com/token"),
+        privacy_email=os.environ.get("PRIVACY_EMAIL") or None,
     )

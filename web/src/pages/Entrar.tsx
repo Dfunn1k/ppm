@@ -17,7 +17,9 @@ export function Entrar() {
   const navigate = useNavigate();
   const passwordChanged = (useLocation().state as { passwordChanged?: boolean } | null)?.passwordChanged;
   const login = useLogin();
-  const fromGoogle = googleProblem(useSearchParams()[0].get("google"));
+  const [params] = useSearchParams();
+  const fromGoogle = googleProblem(params.get("google"));
+  const deleted = params.get("cuenta") === "eliminada";
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
   const { errors } = form.formState;
 
@@ -35,6 +37,12 @@ export function Entrar() {
       </p>
       <div className="flex-1" />
       <form noValidate onSubmit={onSubmit} className="mt-8 flex flex-col gap-3">
+        {deleted && !login.error && (
+          <div role="status" className="flex items-start gap-2 rounded-md bg-muted p-3 text-caption">
+            <Icon name="check_circle" fill className="text-income" />
+            <span><b>Tu cuenta se eliminó.</b> Gracias por usar PPM.</span>
+          </div>
+        )}
         {passwordChanged && !login.error && (
           <div role="status" className="flex items-start gap-2 rounded-md bg-muted p-3 text-caption">
             <Icon name="check_circle" fill className="text-income" />
@@ -63,6 +71,9 @@ export function Entrar() {
         <PrimaryButton pending={login.isPending}>Iniciar sesión</PrimaryButton>
         <p className="text-center text-caption text-muted-foreground">
           ¿Primera vez? <TextLink to="/crear-cuenta">Crea tu cuenta</TextLink>
+        </p>
+        <p className="mt-2 text-center text-caption text-muted-foreground">
+          <Link to="/privacidad" className="underline">Privacidad</Link>
         </p>
       </form>
     </Screen>

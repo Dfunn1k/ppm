@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { z } from "zod";
 
 import { ApiError, useSignup } from "@/api/hooks";
@@ -76,6 +76,9 @@ export function CrearCuenta() {
         <PrimaryButton pending={signup.isPending}>Crear cuenta</PrimaryButton>
         <p className="text-center text-caption text-muted-foreground">
           ¿Ya tienes cuenta? <TextLink to="/entrar">Inicia sesión</TextLink>
+        </p>
+        <p className="mt-2 text-center text-caption text-muted-foreground">
+          <Link to="/privacidad" className="underline">Privacidad</Link>
         </p>
       </form>
     </Screen>

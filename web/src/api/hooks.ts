@@ -98,6 +98,46 @@ export function useGooglePendingConfirm() {
   });
 }
 
+/** La página de privacidad (pública): el correo de contacto del servidor. */
+export function usePrivacy() {
+  return useQuery({
+    queryKey: ["privacy"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/privacy");
+      if (!data) fail(response, error);
+      return data;
+    },
+    staleTime: Infinity,
+  });
+}
+
+/** Eliminar mi cuenta: lo que se va (cuentas, movimientos, adjuntos, recurrentes). */
+export function useDeletion() {
+  return useQuery({
+    queryKey: ["deletion"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/me/deletion");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Elimina la cuenta: con la contraseña o, sin ella (Google), con el correo. Se va todo, también la sesión. */
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (confirm: { password: string } | { email: string }) => {
+      const { error, response } = await api.POST("/me/delete", { body: confirm });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => {
+      qc.clear();
+      qc.setQueryData(ME, null);
+    },
+  });
+}
+
 export function useGoogleUnlink() {
   const qc = useQueryClient();
   return useMutation({

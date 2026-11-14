@@ -5,6 +5,7 @@ SHA-1 (ab/ab12…): la misma foto subida dos veces ocupa un solo lugar. La base 
 (ir_attachment); aquí solo van los bytes. Pasar a S3 sería cambiar este módulo, no la lógica."""
 
 import hashlib
+import shutil
 from collections.abc import Callable
 import os
 from dataclasses import dataclass
@@ -72,3 +73,8 @@ def collect(user_id: int, in_use: set[str]) -> int:
         if path.is_file() and path.name.split(".", 1)[0] not in alive:
             path.unlink()
     return n
+
+
+def remove_all(user_id: int) -> None:
+    """Eliminar mi cuenta: la carpeta entera de la persona (sus archivos y lo que salió de ellos)."""
+    shutil.rmtree(_folder(user_id), ignore_errors=True)
