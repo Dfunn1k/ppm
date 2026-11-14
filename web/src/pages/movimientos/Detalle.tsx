@@ -334,7 +334,7 @@ export function DetalleMovimiento() {
         </section>
       )}
 
-      <MoveAttachments moveId={s.id} />
+      <MoveAttachments moveId={s.id} caption={`${s.ref} · ${formatAmount(s.amount, symbolOf(s.currency), lang)}`} />
       <Activities target={{ move_id: s.id }} />
 
       <div className="min-h-6 flex-1" />

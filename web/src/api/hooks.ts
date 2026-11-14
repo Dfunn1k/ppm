@@ -1258,6 +1258,16 @@ export function useDeleteActivity() {
 export type Attachment = components["schemas"]["AttachmentOut"];
 
 /** Para mostrar el adjunto (inline) o descargarlo. */
+/** La miniatura WebP del servidor (la foto o la primera página del PDF): liviana y guardada en el navegador. */
+export function attachmentThumb(id: number) {
+  return `${window.location.origin}/api/attachments/${id}/thumb`;
+}
+
+/** Lo que muestra el visor: la foto, o una página del PDF como imagen. */
+export function attachmentView(id: number, page = 1) {
+  return `${window.location.origin}/api/attachments/${id}/view${page > 1 ? `?page=${page}` : ""}`;
+}
+
 export function attachmentUrl(id: number, download = false) {
   return `${window.location.origin}/api/attachments/${id}/file${download ? "?download=true" : ""}`;
 }

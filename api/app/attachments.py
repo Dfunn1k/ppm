@@ -9,7 +9,7 @@ import datetime as dt
 
 import psycopg
 
-from app import filestore
+from app import filestore, previews
 from app.accounts import AccountError
 from app.db import user_transaction
 from app.statements import collect
@@ -31,6 +31,7 @@ class Attachment:
     mimetype: str
     file_size: int
     create_date: dt.datetime
+    page_count: int | None = None   # un PDF: cuántas páginas tiene el visor
 
 
 def _mimetype(content: bytes) -> str | None:
@@ -50,12 +51,27 @@ def _own_move(conn: psycopg.Connection, move_id: int) -> None:
 
 
 def of_move(user_id: int, move_id: int) -> list[Attachment]:
+    """Los adjuntos de un movimiento, del más reciente al más antiguo."""
     with user_transaction(user_id) as conn:
         _own_move(conn, move_id)
         rows = conn.execute("""
-            SELECT id, name, mimetype, file_size, create_date FROM ir_attachment
-             WHERE res_model = 'account.move' AND res_id = %s ORDER BY id""", (move_id,)).fetchall()
-    return [Attachment(*r) for r in rows]
+            SELECT id, name, mimetype, file_size, create_date, page_count, store_fname FROM ir_attachment
+             WHERE res_model = 'account.move' AND res_id = %s ORDER BY create_date DESC, id DESC""", (move_id,)).fetchall()
+        out = []
+        for *r, fname in rows:
+            if r[2] == "application/pdf" and r[5] is None:      # un PDF de antes: se cuenta una vez
+                data = filestore.read(user_id, fname)
+                r[5] = _pages(data) if data else None
+                conn.execute("UPDATE ir_attachment SET page_count = %s WHERE id = %s", (r[5], r[0]))
+            out.append(Attachment(*r))
+    return out
+
+
+def _pages(content: bytes) -> int | None:
+    try:
+        return previews.page_count(content)
+    except Exception:  # noqa: BLE001 — un PDF dañado igual se puede descargar
+        return None
 
 
 def add(user_id: int, move_id: int, content: bytes, name: str | None) -> Attachment:
@@ -71,10 +87,11 @@ def add(user_id: int, move_id: int, content: bytes, name: str | None) -> Attachm
         _own_move(conn, move_id)
         stored = filestore.save(user_id, content)
         row = conn.execute("""
-            INSERT INTO ir_attachment (res_model, res_id, name, mimetype, file_size, checksum, store_fname)
-            VALUES ('account.move', %s, %s, %s, %s, %s, %s)
-            RETURNING id, name, mimetype, file_size, create_date""",
-                           (move_id, clean, mime, stored.file_size, stored.checksum, stored.store_fname)).fetchone()
+            INSERT INTO ir_attachment (res_model, res_id, name, mimetype, file_size, checksum, store_fname, page_count)
+            VALUES ('account.move', %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, name, mimetype, file_size, create_date, page_count""",
+                           (move_id, clean, mime, stored.file_size, stored.checksum, stored.store_fname,
+                            _pages(content) if mime == "application/pdf" else None)).fetchone()
     return Attachment(*row)
 
 
@@ -86,6 +103,39 @@ def content(user_id: int, attachment_id: int) -> tuple[str, str, bytes]:
     if data is None:
         raise AccountError(404, "No encontramos ese adjunto")
     return row[0], row[1], data   # type: ignore[index]
+
+
+def _source(user_id: int, attachment_id: int) -> tuple[str, str, int | None, bytes]:
+    with user_transaction(user_id) as conn:
+        row = conn.execute("SELECT checksum, mimetype, page_count, store_fname FROM ir_attachment"
+                           " WHERE id = %s AND res_model = 'account.move'", (attachment_id,)).fetchone()
+    data = filestore.read(user_id, row[3]) if row else None
+    if data is None:
+        raise AccountError(404, "No encontramos ese adjunto")
+    return row[0], row[1], row[2], data   # type: ignore[index]
+
+
+def thumbnail(user_id: int, attachment_id: int) -> bytes:
+    """La miniatura WebP (la foto o la primera página del PDF), hecha una sola vez."""
+    checksum, mime, _, data = _source(user_id, attachment_id)
+    try:
+        return filestore.derived(user_id, checksum, "thumb.webp", lambda: previews.thumbnail(data, mime))
+    except Exception:  # noqa: BLE001 — un archivo que no se puede leer: la web muestra su ícono
+        raise AccountError(415, "No se puede mostrar este adjunto: descárgalo") from None
+
+
+def view(user_id: int, attachment_id: int, page: int = 1) -> tuple[bytes, str]:
+    """Lo que muestra el visor: la foto (o su WebP si el navegador no la sabe mostrar) o una página."""
+    checksum, mime, pages, data = _source(user_id, attachment_id)
+    if mime == "application/pdf" and not 1 <= page <= (pages or 1):
+        raise AccountError(404, "Ese PDF no tiene esa página")
+    if mime in previews.SHOWABLE:
+        return data, mime
+    kind = f"p{page}.webp" if mime == "application/pdf" else "view.webp"
+    try:
+        return filestore.derived(user_id, checksum, kind, lambda: previews.view(data, mime, page)[0]), "image/webp"
+    except Exception:  # noqa: BLE001
+        raise AccountError(415, "No se puede mostrar este adjunto: descárgalo") from None
 
 
 def delete(user_id: int, attachment_id: int) -> None:

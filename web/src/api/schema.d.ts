@@ -1180,6 +1180,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/attachments/{attachment_id}/thumb": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La miniatura de un adjunto (WebP) */
+        get: operations["thumb_attachments__attachment_id__thumb_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/attachments/{attachment_id}/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo que muestra el visor: la foto o una página del PDF */
+        get: operations["view_attachments__attachment_id__view_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/attachments/{attachment_id}": {
         parameters: {
             query?: never;
@@ -1480,6 +1514,8 @@ export interface components {
              * Format: date-time
              */
             create_date: string;
+            /** Page Count */
+            page_count?: number | null;
         };
         /** BankChargeIn */
         BankChargeIn: {
@@ -6919,6 +6955,74 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    thumb_attachments__attachment_id__thumb_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachment_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    view_attachments__attachment_id__view_get: {
+        parameters: {
+            query?: {
+                page?: number;
+            };
+            header?: never;
+            path: {
+                attachment_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": unknown;
                 };
             };
             /** @description Validation Error */
