@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import psycopg
 
-from app import google
+from app import filestore, google
 from app.config import get_settings
 from app.db import anon_transaction, user_transaction
 from app.mail import Mail, Mailer
@@ -217,3 +217,42 @@ def google_unlink(user_id: int) -> None:
                 conn.execute("SELECT auth_oauth_unlink()")
         except psycopg.errors.CheckViolation:
             raise NoOtherKey from None
+
+
+# ── Eliminar mi cuenta ──────────────────────────────────────────────────────────────────────────
+
+class WrongConfirmation(Exception):
+    """No es su contraseña (o, sin contraseña, no es su correo)."""
+
+
+@dataclass(frozen=True)
+class Deletion:
+    """Lo que se va al eliminar la cuenta, para verlo antes de firmar."""
+    accounts: int        # las tuyas, como en Cuentas: sin categorías ni las de la app (Por cobrar…)
+    moves: int
+    attachments: int
+    recurring: int
+
+
+def deletion_preview(user_id: int) -> Deletion:
+    with user_transaction(user_id) as conn:
+        return Deletion(*conn.execute("""
+            SELECT (SELECT count(*) FROM account_account WHERE active AND account_type IN ('asset', 'liability')
+                                                           AND system_role IS NULL),
+                   (SELECT count(*) FROM account_move),
+                   (SELECT count(*) FROM ir_attachment),
+                   (SELECT count(*) FROM account_recurring)""").fetchone())
+
+
+def delete_account(user_id: int, password: str | None, email: str | None) -> None:
+    """Borra la cuenta y todo lo suyo, al instante. Con contraseña se confirma con ella; quien
+    entró solo con Google, escribiendo su correo. Después, sus archivos del disco."""
+    with user_transaction(user_id) as conn:
+        stored, login = conn.execute("SELECT password, login FROM res_users").fetchone()
+        ok = (verify_password(stored, password or "") if stored is not None
+              else (email or "").strip().lower() == login.lower())
+        if not ok:
+            raise WrongConfirmation
+        conn.execute("SELECT auth_account_delete()")
+    filestore.remove_all(user_id)
+    logging.getLogger("ppm.auth").info("Cuenta %s eliminada", user_id)

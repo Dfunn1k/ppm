@@ -50,6 +50,8 @@ const Reportes = lazy(() => import("./pages/reportes/Reportes").then((m) => ({ d
 const Mas = lazy(() => import("./pages/mas/Mas").then((m) => ({ default: m.Mas })));
 const Monedas = lazy(() => import("./pages/mas/Monedas").then((m) => ({ default: m.Monedas })));
 const MiCuenta = lazy(() => import("./pages/mas/MiCuenta").then((m) => ({ default: m.MiCuenta })));
+const EliminarCuenta = lazy(() => import("./pages/mas/EliminarCuenta").then((m) => ({ default: m.EliminarCuenta })));
+const Privacidad = lazy(() => import("./pages/Privacidad").then((m) => ({ default: m.Privacidad })));
 const TipoCambio = lazy(() => import("./pages/mas/TipoCambio").then((m) => ({ default: m.TipoCambio })));
 const DetalleMovimiento = lazy(() => import("./pages/movimientos/Detalle").then((m) => ({ default: m.DetalleMovimiento })));
 const Movimientos = lazy(() => import("./pages/movimientos/Movimientos").then((m) => ({ default: m.Movimientos })));
@@ -141,6 +143,7 @@ export function App() {
         <Route path="/recuperar" element={<Recuperar />} />
       </Route>
       <Route path="/restablecer" element={<Restablecer />} />
+      <Route path="/privacidad" element={<Privacidad />} />
       <Route
         path="/bienvenida"
         element={
@@ -198,6 +201,7 @@ export function App() {
           <Route path="/mas/reportes/personas" element={<ReportePersonas />} />
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
+        <Route path="/mas/cuenta/eliminar" element={<EliminarCuenta />} />
         <Route path="/mas/apariencia" element={<Apariencia />} />
         <Route path="/mas/monedas" element={<Monedas />} />
         <Route path="/mas/cierre" element={<Cierre />} />

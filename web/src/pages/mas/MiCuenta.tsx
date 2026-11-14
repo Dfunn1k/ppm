@@ -1,5 +1,5 @@
 // X6 · Mi cuenta: Google (vincular o desvincular), cambiar o crear la contraseña, cerrar sesión en
-// todos lados y cerrar sesión. Nadie se queda sin llave: sin contraseña, Google no se desvincula.
+// todos lados, eliminar la cuenta y cerrar sesión. Nadie se queda sin llave: sin contraseña, Google no se desvincula.
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -102,7 +102,14 @@ export function MiCuenta() {
           : <Row icon="key" title="Crear contraseña" hint="Para entrar también con tu correo, sin Google" onClick={() => setSheet("password")} />}
         <Row icon="devices" title="Cerrar sesión en todos lados" hint="Si dejaste tu cuenta abierta en otro equipo" onClick={() => setSheet("everywhere")} />
         <Row icon="download" title="Exportar mis datos" hint="Muy pronto" disabled />
-        <Row icon="person_remove" title="Eliminar mi cuenta" hint="Muy pronto" disabled />
+        <Link to="/mas/cuenta/eliminar" className="flex min-h-[60px] items-center gap-3.5 border-b border-border text-destructive">
+          <Icon name="person_remove" className="w-9 text-center text-[22px]" />
+          <span className="flex flex-1 flex-col">
+            <span className="font-semibold">Eliminar mi cuenta</span>
+            <span className="text-caption text-muted-foreground">Borra tu cuenta y todo lo que registraste</span>
+          </span>
+          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        </Link>
       </div>
       {!me.google_email && google && (
         <span className="mt-3 text-caption text-muted-foreground">
