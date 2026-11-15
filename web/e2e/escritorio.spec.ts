@@ -64,11 +64,23 @@ test("Registrar se abre en un panel y al cerrarlo sigues donde estabas", async (
   await expect(panel).toBeVisible();
   await page.getByRole("radio", { name: "Más" }).click();
   await page.getByRole("dialog").getByRole("link").first().click();
-  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("textbox", { name: "¿Cuánto le prestaste?" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "BCP" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await expect(page).toHaveURL(cuenta);
+
+  // Esc apenas elegido el tipo, mientras la hoja de tipos todavía se va: igual cierra el panel.
+  // Con el procesador frenado (como en CI) el Esc cae siempre dentro de esos 200 ms
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 8 });
+  await page.getByRole("link", { name: "Registrar un movimiento" }).click();
+  await page.getByRole("radio", { name: "Más" }).click();
+  await page.getByRole("dialog").getByRole("link").first().click();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(cuenta);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
 
   await page.getByRole("link", { name: "Registrar un movimiento" }).click();
   await spend(page, "35.50", "Almuerzo del viernes");
