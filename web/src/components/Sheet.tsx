@@ -52,7 +52,7 @@ export function Sheet({ title, open, onClose, children }: {
       <div
         ref={panel}
         role="dialog"
-        aria-modal="true"
+        aria-modal={leaving ? undefined : true}   // mientras se va ya no cuenta como abierta: Esc llega a quien queda
         tabIndex={-1}
         aria-labelledby={titleId}
         className="sheet-panel absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-lg bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none lg:top-[12dvh] lg:bottom-auto lg:max-h-[76dvh] lg:rounded-lg"
