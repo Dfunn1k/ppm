@@ -20,6 +20,7 @@ async function readyUser(page: Page) {
   await page.getByLabel("Contraseña", { exact: true }).fill("pan-para-mayo-2026");
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await page.getByRole("button", { name: "Siguiente" }).click();
+  await expect(page.getByRole("heading", { name: "¿Usas otras monedas?" })).toBeVisible();   // el paso 2 ya se dibujó
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByLabel("Lo que hay hoy en Efectivo").fill("500");
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
