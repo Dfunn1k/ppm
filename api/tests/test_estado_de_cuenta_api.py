@@ -32,7 +32,7 @@ def ana() -> Con:
 @pytest.fixture
 def pdf(monkeypatch: pytest.MonkeyPatch):
     """El «PDF» que se sube es su texto: así se puede cambiar una línea en cada prueba."""
-    monkeypatch.setattr(card_pdf, "pdf_text", lambda data: data.decode())
+    monkeypatch.setattr(card_pdf, "pdf_text", lambda data, fit=False: data.decode())
 
 
 def qore(ana: Con) -> tuple[int, int]:
