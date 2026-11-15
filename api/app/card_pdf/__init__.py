@@ -78,13 +78,23 @@ def _parsers() -> list[Parser]:
 
 def pdf_text(data: bytes) -> str:
     """El texto del PDF con su disposición: cada columna queda en su lugar (así se sabe si un monto
-    es en soles o en dólares). Los caracteres repetidos de las negritas se quitan."""
+    es en soles o en dólares). Los caracteres repetidos de las negritas se quitan.
+
+    Cada letra ocupa una columna del texto del ancho de la letra mediana de la página: con el ancho
+    fijo de pdfplumber (7.25 pt), en un PDF de letra chica los espacios entre columnas se aplastan y
+    un monto en dólares cae en la columna de los soles."""
     import pdfplumber
     try:
         with pdfplumber.open(io.BytesIO(data)) as pdf:
-            return "\n".join(p.dedupe_chars().extract_text(layout=True) or "" for p in pdf.pages)
+            return "\n".join(_page_text(p.dedupe_chars()) for p in pdf.pages)
     except Exception:   # pdfplumber lanza varios tipos según el archivo
         raise AccountError(400, "No pudimos abrir ese PDF: si tiene clave, quítasela y vuelve a subirlo") from None
+
+
+def _page_text(page) -> str:
+    widths = sorted(c["width"] for c in page.chars if c["text"].strip())
+    density = min(widths[len(widths) // 2], 7.25) if widths else 7.25
+    return page.extract_text(layout=True, x_density=density) or ""
 
 
 def parse_text(text: str) -> ParsedStatement:

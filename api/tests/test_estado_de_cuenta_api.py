@@ -153,6 +153,17 @@ def test_sin_estado_de_cuenta_la_linea_es_estimada_y_el_tc_del_ciclo_se_edita(an
     assert all(not x["edited"] for x in d["rates"])
 
 
+def test_el_lector_bcp_lee_un_pdf_de_letra_chica():
+    """El mismo estado impreso por el navegador en letra de 7 px: los dólares siguen en su columna."""
+    data = (Path(__file__).parent / "fixtures" / "bcp_visa_2026-10_letra_chica.pdf").read_bytes()
+    p = card_pdf.parse_pdf(data)
+    by = {c.currency: c for c in p.currencies}
+    assert (by["PEN"].subtotal, by["PEN"].billed) == (Decimal("1117.82"), Decimal("1120.23"))
+    assert (by["USD"].subtotal, by["USD"].billed) == (Decimal("30.84"), Decimal("30.84"))
+    moves = [x for x in p.lines if x.kind == "move"]
+    assert sum(x.amount for x in moves if x.currency == "USD") == Decimal("30.84") and p.unread == []
+
+
 def test_el_lector_bcp_lee_el_texto_del_pdf():
     p = card_pdf.parse_text(TEXT)
     assert (p.bank, p.last4, p.date_from, p.closing_date) == ("BCP", "1111", date(2026, 9, 28), date(2026, 10, 25))
