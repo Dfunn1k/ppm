@@ -21,6 +21,7 @@ async function signup(page: Page) {
 async function readyUser(page: Page) {
   await signup(page);
   await page.getByRole("button", { name: "Siguiente" }).click();
+  await expect(page.getByRole("heading", { name: "¿Usas otras monedas?" })).toBeVisible();   // el paso 2 ya se dibujó
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
   await expect(page).toHaveURL("/inicio");
@@ -35,6 +36,7 @@ async function pickBank(page: Page, bank: string) {
 test("el paso 3 guarda el efectivo y crea los bancos al empezar", async ({ page }) => {
   await signup(page);
   await page.getByRole("button", { name: "Siguiente" }).click();
+  await expect(page.getByRole("heading", { name: "¿Usas otras monedas?" })).toBeVisible();   // el paso 2 ya se dibujó
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByLabel("Lo que hay hoy en Efectivo").fill("320");
 

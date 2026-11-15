@@ -11,6 +11,7 @@ function newEmail() {
 
 async function setupSteps(page: Page) {
   await page.getByRole("button", { name: "Siguiente" }).click();
+  await expect(page.getByRole("heading", { name: "¿Usas otras monedas?" })).toBeVisible();   // el paso 2 ya se dibujó
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
   await expect(page).toHaveURL("/inicio");
