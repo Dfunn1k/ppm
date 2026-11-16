@@ -4,6 +4,7 @@
 import { Link, useLocation } from "react-router";
 
 import { useMe, usePending } from "@/api/hooks";
+import { movesLink, rememberMoves } from "@/lib/movesFilter";
 
 import { registerLink } from "./AppNav";
 import { Logo } from "./InstallSheet";
@@ -39,6 +40,7 @@ export function Rail() {
   const box = usePending().data;
   const pending = box ? box.notices.length + box.activities.length : 0;
   const here = railItem(location.pathname);
+  rememberMoves(me?.id, location.pathname, location.search);
   return (
     <nav aria-label="Navegación principal"
       className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center gap-1 overflow-y-auto border-r border-border bg-card py-4 lg:flex">
@@ -51,7 +53,7 @@ export function Rail() {
       {ITEMS.map((i) => {
         const on = here === i.to;
         return (
-          <Link key={i.to} to={i.to} aria-current={on ? "page" : undefined}
+          <Link key={i.to} to={i.to === "/movimientos" ? movesLink(me?.id) : i.to} aria-current={on ? "page" : undefined}
             className={`relative flex w-[72px] flex-col items-center gap-0.5 rounded-xl py-2 text-[12px] leading-4 ${on ? "bg-secondary font-semibold text-secondary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
             <Icon name={i.icon} fill={on} className="text-[22px]" />
             {i.label}
