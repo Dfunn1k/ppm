@@ -101,7 +101,14 @@ export function MiCuenta() {
           ? <Row icon="key" title="Cambiar contraseña" hint="Cierra tus otras sesiones; esta sigue abierta" onClick={() => setSheet("password")} />
           : <Row icon="key" title="Crear contraseña" hint="Para entrar también con tu correo, sin Google" onClick={() => setSheet("password")} />}
         <Row icon="devices" title="Cerrar sesión en todos lados" hint="Si dejaste tu cuenta abierta en otro equipo" onClick={() => setSheet("everywhere")} />
-        <Row icon="download" title="Exportar mis datos" hint="Muy pronto" disabled />
+        <Link to="/mas/cuenta/exportar" className="flex min-h-[60px] items-center gap-3.5 border-b border-border">
+          <Icon name="download" className="w-9 text-center text-[22px] text-muted-foreground" />
+          <span className="flex flex-1 flex-col">
+            <span className="font-semibold">Exportar mis datos</span>
+            <span className="text-caption text-muted-foreground">Un ZIP con todo: para Excel y de respaldo</span>
+          </span>
+          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        </Link>
         <Link to="/mas/cuenta/eliminar" className="flex min-h-[60px] items-center gap-3.5 border-b border-border text-destructive">
           <Icon name="person_remove" className="w-9 text-center text-[22px]" />
           <span className="flex flex-1 flex-col">

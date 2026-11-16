@@ -123,6 +123,38 @@ export function useDeletion() {
   });
 }
 
+/** Exportar mis datos: lo que va en el ZIP y cuánto pesan los adjuntos. */
+export function useExportSummary() {
+  return useQuery({
+    queryKey: ["export"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/me/export");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+/** Arma el ZIP en el servidor y lo descarga: datos.json, csv/ y, si se pide, adjuntos/. */
+export function useExportZip() {
+  return useMutation({
+    mutationFn: async (attachments: boolean) => {
+      const { data, error, response } = await api.GET("/me/export/zip", {
+        params: { query: { attachments } }, parseAs: "blob",
+      });
+      if (!data) fail(response, error);
+      const name = /filename="([^"]+)"/.exec(response.headers.get("content-disposition") ?? "")?.[1] ?? "ppm.zip";
+      const url = URL.createObjectURL(data as Blob);
+      const a = Object.assign(document.createElement("a"), { href: url, download: name });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      return { name, size: (data as Blob).size };
+    },
+  });
+}
+
 /** Elimina la cuenta: con la contraseña o, sin ella (Google), con el correo. Se va todo, también la sesión. */
 export function useDeleteAccount() {
   const qc = useQueryClient();

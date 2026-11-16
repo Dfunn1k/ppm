@@ -36,7 +36,16 @@ export function EliminarCuenta() {
         Se borra al instante todo lo que registraste en PPM. <b className="text-foreground">No se puede deshacer.</b>
       </p>
 
-      <dl aria-label="Lo que se borra" className="mt-5 flex flex-col rounded-md bg-muted px-3.5 py-1">
+      <Link to="/mas/cuenta/exportar" className="mt-5 flex min-h-[60px] items-center gap-3 rounded-md border border-border bg-card px-3.5 py-2.5">
+        <Icon name="download" className="text-[22px] text-muted-foreground" />
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">¿Te llevas tus datos?</span>
+          <span className="text-caption text-muted-foreground">Exporta un ZIP antes de borrar</span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
+
+      <dl aria-label="Lo que se borra" className="mt-4 flex flex-col rounded-md bg-muted px-3.5 py-1">
         {rows.map(([icon, label, count], i) => (
           <div key={label} className={`flex min-h-11 items-center gap-3 ${i < rows.length - 1 ? "border-b border-border" : ""}`}>
             <Icon name={icon} className="text-[20px] text-muted-foreground" />
