@@ -7,7 +7,9 @@ import { CategorySheet } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { BoneRows } from "@/components/Skeleton";
+import { Kbd } from "@/components/ShortcutsHelp";
 import { tagColor } from "@/components/Tags";
+import { keyLabel, useShortcuts } from "@/lib/shortcuts";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { useDesktop } from "@/lib/desktop";
@@ -40,6 +42,7 @@ export function Movimientos() {
   const me = useMe().data;
   const accounts = useAccounts().data;
   const tags = useTags().data ?? [];
+  const { keys, hints } = useShortcuts();
   const [params, setParams] = useSearchParams();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [categoryKind, setCategoryKind] = useState<"expense" | "income">("expense");
@@ -104,7 +107,8 @@ export function Movimientos() {
       <label className="mt-4 flex h-11 items-center gap-2 rounded-md bg-muted px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
         <Icon name="search" className="text-muted-foreground" />
         <input aria-label="Buscar movimientos" placeholder="Buscar por nota, categoría o monto" value={search}
-          onChange={(e) => setSearch(e.target.value)} className="min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
+          onChange={(e) => setSearch(e.target.value)} className="peer min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
+        {hints && !search && <span className="peer-focus:hidden"><Kbd>{keyLabel(keys.search)}</Kbd></span>}
         {search && (
           <button type="button" aria-label="Borrar búsqueda" onClick={() => setSearch("")}><Icon name="close" className="text-muted-foreground" /></button>
         )}

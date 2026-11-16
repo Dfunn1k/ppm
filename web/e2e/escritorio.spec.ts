@@ -144,3 +144,50 @@ test("etiquetas en escritorio: el reporte se abre al lado y Más › Etiquetas t
   await expect(page.getByRole("heading", { name: "Etiquetas" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Mudanza/ })).toContainText("1 movimiento");
 });
+
+test("atajos: ? muestra todos, se cambia una tecla y las pistas se apagan", async ({ page }) => {
+  await readyUser(page);
+  await page.goto("/movimientos");
+  await expect(page.getByRole("textbox", { name: "Buscar movimientos" })).toBeVisible();
+
+  // A · «?» y el botón del riel abren la hoja
+  await page.keyboard.press("?");
+  const hoja = page.getByRole("dialog", { name: "Atajos de teclado" });
+  await expect(hoja).toContainText("Registrar un movimiento");
+  await page.keyboard.press("Escape");
+  await expect(hoja).toBeHidden();
+  await page.getByRole("button", { name: /Atajos de teclado/ }).click();
+  await expect(hoja).toBeVisible();
+
+  // C · Más › Atajos: cambiar Registrar a R
+  await hoja.getByRole("link", { name: /Cambiar teclas/ }).click();
+  await expect(page).toHaveURL("/mas/atajos");
+  await page.getByRole("button", { name: "Cambiar la tecla de Registrar" }).click();
+  await page.keyboard.press("r");
+  await expect(page.getByRole("button", { name: /Volver a los de fábrica/ })).toBeVisible();
+  await page.getByRole("button", { name: "Cambiar la tecla de Buscar" }).click();
+  await page.keyboard.press("r");                                    // ya la usa Registrar
+  await expect(page.getByText("Esa tecla ya la usa otro atajo")).toBeVisible();
+
+  await page.goto("/movimientos");
+  await expect(page.getByRole("button", { name: /Atajos de teclado \(tecla \?\)/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Registrar un movimiento" })).toHaveAttribute("aria-keyshortcuts", "R");
+  await page.keyboard.press("n");
+  await expect(page).toHaveURL("/movimientos");
+  await page.keyboard.press("r");
+  await expect(page).toHaveURL(/\/registrar/);
+  await page.keyboard.press("Escape");
+
+  // B · las pistas se apagan con el interruptor
+  await page.goto("/movimientos");
+  await expect(page.locator("label:has(input[aria-label='Buscar movimientos']) kbd")).toHaveText("/");
+  await page.goto("/mas/atajos");
+  await page.getByRole("switch", { name: /Mostrar las pistas/ }).uncheck();
+  await page.goto("/movimientos");
+  await expect(page.getByRole("textbox", { name: "Buscar movimientos" })).toBeVisible();
+  await expect(page.locator("label:has(input[aria-label='Buscar movimientos']) kbd")).toHaveCount(0);
+
+  await page.goto("/mas/atajos");
+  await page.getByRole("button", { name: /Volver a los de fábrica/ }).click();
+  await expect(page.getByRole("button", { name: /Volver a los de fábrica/ })).toBeHidden();
+});

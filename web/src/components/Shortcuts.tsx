@@ -1,11 +1,13 @@
 // Atajos de teclado de escritorio (decisión «Escritorio»): N registra, / busca, ↑ ↓ recorren la lista,
-// E edita el movimiento abierto, Esc cierra y Ctrl + Enter guarda. No hacen nada mientras escribes
+// E edita el movimiento abierto, ? muestra los atajos, Esc cierra y Ctrl + Enter guarda. Las teclas de
+// una letra son las que la persona eligió (lib/shortcuts.ts). No hacen nada mientras escribes
 // en un campo (salvo Ctrl + Enter), con una hoja o un visor abiertos, ni en el celular.
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 import { useMe } from "@/api/hooks";
 import { isDesktop } from "@/lib/desktop";
+import { matches, openShortcutsHelp, useShortcuts } from "@/lib/shortcuts";
 
 import { registerLink } from "./AppNav";
 
@@ -25,13 +27,14 @@ export function Shortcuts() {
   const navigate = useNavigate();
   const location = useLocation();
   const home = useMe().data?.home_account_id;
-  const now = useRef({ location, home });
-  now.current = { location, home };
+  const { keys } = useShortcuts();
+  const now = useRef({ location, home, keys });
+  now.current = { location, home, keys };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!isDesktop() || e.defaultPrevented || e.isComposing) return;
-      const { location: loc, home: homeAccount } = now.current;
+      const { location: loc, home: homeAccount, keys: k } = now.current;
       const path = loc.pathname;
       // Una hoja, el visor de adjuntos o el panel de registrar abiertos: ellos escuchan el teclado
       const dialogOpen = !!document.querySelector('[role="dialog"][aria-modal="true"]');
@@ -45,11 +48,14 @@ export function Shortcuts() {
       }
       if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target) || dialogOpen) return;
 
-      if (e.key === "n" || e.key === "N") {
+      if (matches(e, k.help)) {
+        e.preventDefault();
+        openShortcutsHelp();
+      } else if (matches(e, k.register)) {
         if (path.startsWith("/registrar")) return;
         e.preventDefault();
         navigate(registerLink(path, homeAccount), { state: { background: loc } });
-      } else if (e.key === "/") {
+      } else if (matches(e, k.search)) {
         const search = document.querySelector<HTMLInputElement>("input[aria-label^='Buscar']");
         if (search) { e.preventDefault(); search.focus(); }
       } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -63,7 +69,7 @@ export function Shortcuts() {
         const url = new URL(next.href);
         navigate(url.pathname + url.search);
         next.scrollIntoView({ block: "nearest" });
-      } else if (e.key === "e" || e.key === "E") {
+      } else if (matches(e, k.edit)) {
         const id = /^\/movimientos\/(\d+)$/.exec(path)?.[1];
         if (id) { e.preventDefault(); navigate(`/movimientos/${id}/editar`); }
       } else if (e.key === "Escape") {

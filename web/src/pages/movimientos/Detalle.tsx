@@ -12,7 +12,9 @@ import { CancelPlanSheet } from "@/components/CancelPlanSheet";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
 import { DeferralSection, deferralCaption } from "@/components/Deferral";
+import { Kbd } from "@/components/ShortcutsHelp";
 import { MoveTagsRow } from "@/components/Tags";
+import { keyLabel, useShortcuts } from "@/lib/shortcuts";
 import { WithPartnerRow } from "@/components/WithPartner";
 import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
@@ -48,6 +50,7 @@ export function DetalleMovimiento() {
   const undoCancel = useDeleteMove(move.data?.plan?.canceled?.move_id ?? 0);
   const [classifying, setClassifying] = useState(false);
   const [dating, setDating] = useState<(Maturity & { owesMe: boolean }) | null>(null);
+  const { keys, hints } = useShortcuts();
   if (move.isPending || !me) return <DetailSkeleton back="/movimientos" rows={3} />;
   if (move.isError) {
     return (
@@ -417,7 +420,8 @@ export function DetalleMovimiento() {
         {editable && (
           <Link to={`/movimientos/${s.id}/editar`}
             className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground">
-            <span>Editar</span><Icon name="edit" className="text-[22px]" />
+            <span>Editar</span>
+            <span className="flex items-center gap-2">{hints && <Kbd dark>{keyLabel(keys.edit)}</Kbd>}<Icon name="edit" className="text-[22px]" /></span>
           </Link>
         )}
         {s.posted && !(plan || cancels || deferral || of) && !locked && (
@@ -432,6 +436,14 @@ export function DetalleMovimiento() {
           <Icon name={cancels || of ? "undo" : "delete"} />
           {plan ? "Borrar la compra y sus cuotas" : cancels || of ? "Deshacer la cancelación" : deferral ? "Borrar el movimiento y su reparto" : "Borrar movimiento"}
         </button>}
+        {hints && (
+          <p aria-label="Atajos" className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 text-caption text-muted-foreground">
+            <span className="flex items-center gap-1"><Kbd>↑</Kbd><Kbd>↓</Kbd> otro movimiento</span>
+            {editable && <span className="flex items-center gap-1"><Kbd>{keyLabel(keys.edit)}</Kbd> editar</span>}
+            <span className="flex items-center gap-1"><Kbd>{keyLabel(keys.register)}</Kbd> registrar</span>
+            <span className="flex items-center gap-1"><Kbd>{keyLabel(keys.help)}</Kbd> todos los atajos</span>
+          </p>
+        )}
       </div>
 
       {plan && cancelable && <CancelPlanSheet plan={plan} title={s.ref} open={canceling} onClose={() => setCanceling(false)} />}

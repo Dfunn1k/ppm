@@ -3125,6 +3125,18 @@ export interface components {
              * @default true
              */
             has_password: boolean;
+            /**
+             * Shortcuts
+             * @default {}
+             */
+            shortcuts: {
+                [key: string]: string;
+            };
+            /**
+             * Shortcut Hints
+             * @default true
+             */
+            shortcut_hints: boolean;
         };
         /** MePatch */
         MePatch: {
@@ -3140,6 +3152,12 @@ export interface components {
             ui_private?: boolean | null;
             /** Lang */
             lang?: string | null;
+            /** Shortcuts */
+            shortcuts?: {
+                [key: string]: string;
+            } | null;
+            /** Shortcut Hints */
+            shortcut_hints?: boolean | null;
         };
         /** MoneyOut */
         MoneyOut: {
