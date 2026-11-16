@@ -33,13 +33,20 @@ test("elegir qué cuentas se ven, su orden y la cuenta del +", async ({ page }) 
   await page.getByRole("button", { name: "Subir BCP" }).click();
   await page.getByRole("switch", { name: "Ver Efectivo en el Inicio" }).click();
   await expect(page.getByText("No se ve en el Inicio")).toBeVisible();
-  await page.getByRole("button", { name: /Al tocar \+ desde el Inicio/ }).click();
+  await page.getByRole("button", { name: /Al tocar \+, sale de/ }).click();
   await page.getByRole("dialog").getByRole("radio", { name: /^BCP/ }).click();
 
   await page.goto("/inicio");
   await expect(cuentas.getByRole("link", { name: /Efectivo|BCP/ })).toHaveText([/BCP/]);
   await page.getByRole("link", { name: "Registrar un movimiento" }).click();
   await expect(page).toHaveURL(`/registrar?cuenta=${bcp}`);
+  await expect(page.getByRole("button", { name: /^Sale de/ })).toContainText("BCP");
+
+  // Desde otra pantalla también arranca con esa, no con la primera de la lista
+  await page.goto("/movimientos");
+  await page.getByRole("link", { name: "Registrar un movimiento" }).click();
+  await expect(page).toHaveURL(`/registrar?cuenta=${bcp}`);
+  await expect(page.getByRole("button", { name: /^Sale de/ })).toContainText("BCP");
 });
 
 test("el ojo esconde los montos del Inicio y se recuerda", async ({ page }) => {
