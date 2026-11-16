@@ -57,10 +57,10 @@ function Tab({ item }: { item: Item }) {
   );
 }
 
-/** El + registra con la cuenta o tarjeta que estás mirando; en el Inicio, con la elegida en Más › Inicio;
- *  en otra pantalla, sin cuenta elegida. */
+/** El + registra con la cuenta o tarjeta que estás mirando; en cualquier otra pantalla, con la elegida
+ *  en Más › Inicio (si no hay, Registrar arranca con la primera de tus cuentas). */
 export function registerLink(path: string, homeAccount: number | null | undefined) {
-  const id = /^\/(?:cuentas|tarjetas)\/(\d+)/.exec(path)?.[1] ?? (path === "/inicio" && homeAccount ? String(homeAccount) : null);
+  const id = /^\/(?:cuentas|tarjetas)\/(\d+)/.exec(path)?.[1] ?? (homeAccount ? String(homeAccount) : null);
   return id ? `/registrar?cuenta=${id}` : "/registrar";
 }
 

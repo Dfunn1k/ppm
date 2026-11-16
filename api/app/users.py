@@ -36,7 +36,7 @@ class Me:
     is_admin: bool = False    # está en ADMIN_EMAILS: ve y corrige el tipo de cambio (Z1)
     notice_days: int = 3      # Pendientes: con cuántos días avisan el pago de tarjeta y los vencimientos
     ui_private: bool = False  # modo privado: los montos del Inicio escondidos
-    home_account_id: int | None = None   # la cuenta con que arranca el + del Inicio; None = elegirla cada vez
+    home_account_id: int | None = None   # la cuenta con que arranca el + fuera de una cuenta; None = elegirla cada vez
     lock_date: dt.date | None = None     # cierre de periodo: nada con fecha hasta ese día se toca
     icons: list[str] = field(default_factory=list)   # los íconos de sus categorías y cuentas (la fuente a la medida)
     formats: list[CurrencyFormat] = field(default_factory=list)   # cómo se escribe cada moneda que usa

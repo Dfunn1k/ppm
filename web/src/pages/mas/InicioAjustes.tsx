@@ -1,5 +1,5 @@
 // X0 · Más › Inicio: qué cuentas de dinero se ven en el Inicio, en qué orden (flechas ↑↓) y con qué
-// cuenta arranca el + del Inicio. Cada cambio se guarda al instante.
+// cuenta arranca el +. Cada cambio se guarda al instante.
 import { Link } from "react-router";
 
 import { type HomeSetup, useAccounts, useHomeSetup, useMe, useSaveHomeSetup } from "@/api/hooks";
@@ -39,7 +39,7 @@ export function InicioAjustes() {
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
       </div>
       <h1 className="mt-6 text-title-hero">Tu Inicio</h1>
-      <p className="mt-3 text-muted-foreground">Qué cuentas ves al abrir PPM, en qué orden, y con cuál registras desde el Inicio.</p>
+      <p className="mt-3 text-muted-foreground">Qué cuentas ves al abrir PPM, en qué orden, y con cuál arranca el + al registrar.</p>
 
       <section aria-label="Cuentas en el Inicio" className="mt-6 flex flex-col">
         <span className="border-b border-border pb-1 text-label text-muted-foreground">Cuentas en el Inicio</span>
@@ -68,9 +68,9 @@ export function InicioAjustes() {
       </section>
 
       <div className="mt-5 flex flex-col gap-1.5">
-        <SheetSelect label="Al tocar + desde el Inicio, sale de" sheetTitle="¿De qué cuenta sale?"
+        <SheetSelect label="Al tocar +, sale de" sheetTitle="¿De qué cuenta sale?"
           value={s.account_id ? String(s.account_id) : ""} onChange={(v) => send({ account_id: v ? Number(v) : null })}
-          options={[{ value: "", label: "Elegirla cada vez", hint: "Registrar empieza sin cuenta" },
+          options={[{ value: "", label: "Elegirla cada vez", hint: "Registrar arranca con la primera de tus cuentas" },
             ...money.map((a) => ({ value: String(a.id), label: a.name, hint: a.subtitle ?? undefined }))]} />
         <span className="text-caption text-muted-foreground">Dentro de una cuenta o tarjeta, el + registra con esa.</span>
       </div>

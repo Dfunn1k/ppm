@@ -60,7 +60,7 @@ class HomeSetupOut(BaseModel):
 class HomeSetupIn(BaseModel):
     order: Annotated[list[int], Field(max_length=200)]    # todas las cuentas de dinero, en el orden del Inicio
     hidden: Annotated[list[int], Field(max_length=200)] = []   # las que no se ven en el Inicio
-    account_id: int | None = None                          # la del + del Inicio; None = elegirla cada vez
+    account_id: int | None = None                          # la del + fuera de una cuenta; None = elegirla cada vez
 
 
 class HomeOut(BaseModel):

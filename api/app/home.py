@@ -2,7 +2,7 @@
 los avisos y los últimos movimientos. Todo se calcula; nada se guarda.
 
 Inicio a tu medida (Más › Inicio): qué cuentas de dinero se ven y en qué orden, y con qué cuenta
-arranca el + del Inicio."""
+arranca el +."""
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -64,7 +64,7 @@ class SetupAccount:
 @dataclass(frozen=True)
 class Setup:
     accounts: list[SetupAccount]  # efectivo y bancos, en el orden del Inicio
-    account_id: int | None        # la cuenta del + del Inicio; None = elegirla cada vez
+    account_id: int | None        # la cuenta del +; None = elegirla cada vez
 
 
 @dataclass(frozen=True)
