@@ -243,6 +243,7 @@ export function App() {
         <Route path="/registrar/persona/:kind" element={<RegisterPanel><RegistrarPersona /></RegisterPanel>} />
         <Route path="/registrar/reembolso" element={<RegisterPanel><Reembolso /></RegisterPanel>} />
         <Route path="/registrar/manual" element={<RegisterPanel><AsientoManual /></RegisterPanel>} />
+        <Route path="/registrar/saldo-inicial" element={<RegisterPanel><YaDebia /></RegisterPanel>} />
         <Route path="*" element={null} />
       </Routes>
     )}
