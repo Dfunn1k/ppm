@@ -39,7 +39,7 @@ test("prestar desde Más, cobrar sin pasarse y verlo en Personas", async ({ page
   await page.goto("/registrar");
   await page.getByRole("radio", { name: "Más" }).click();
   await page.getByRole("link", { name: /Le presté a alguien/ }).click();
-  await expect(page).toHaveURL("/registrar/persona/lend");
+  await expect(page).toHaveURL(/\/registrar\/persona\/lend\?cuenta=\d+$/);   // con la cuenta que ya estaba elegida
   await page.getByRole("textbox", { name: "¿Cuánto le prestaste?" }).fill("59");
   await newPerson(page, "Sandra Machado");
   await chooseAccount(page, "Sale de", "BCP");

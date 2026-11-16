@@ -1,7 +1,9 @@
 // R1 · Más tipos de movimiento: lo ocasional en un cajón aparte. Cada opción abre el mismo
 // formulario de Registrar con los campos que le tocan. Y la cabecera que comparten esas pantallas.
 import { useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
+
+import { withAccount } from "@/lib/startAccount";
 
 import { Sheet } from "./Sheet";
 import { Icon } from "./ui";
@@ -26,7 +28,8 @@ const GROUPS: [string, MasKind[]][] = [
   ["Otros", ["refund", "manual"]],
 ];
 
-export function MasTipos({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** `account`: la cuenta que ya estaba elegida, para que el otro formulario arranque con ella. */
+export function MasTipos({ open, onClose, account }: { open: boolean; onClose: () => void; account?: number | string | null }) {
   // En escritorio sigue en el panel de registrar sobre la misma pantalla de fondo
   const state = useLocation().state;
   return (
@@ -35,7 +38,7 @@ export function MasTipos({ open, onClose }: { open: boolean; onClose: () => void
         <div key={label} className="flex flex-col">
           <span className="mx-1 mt-3 mb-0.5 text-label text-muted-foreground">{label}</span>
           {kinds.map((k) => (
-            <Link key={k} to={MAS[k].to} replace state={state} data-replace="true" onClick={onClose} className="flex min-h-14 items-center gap-3 rounded-md px-2">
+            <Link key={k} to={k === "opening" || k === "manual" ? MAS[k].to : withAccount(MAS[k].to, account)} replace state={state} data-replace="true" onClick={onClose} className="flex min-h-14 items-center gap-3 rounded-md px-2">
               <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
                 <Icon name={MAS[k].icon} />
               </span>
@@ -55,17 +58,19 @@ export function MasTipos({ open, onClose }: { open: boolean; onClose: () => void
 }
 
 /** Gasto · Ingreso · Transferir · Más, con «Más» elegido, y el chip con la opción para cambiarla. */
-export function MasHeader({ kind, locked }: { kind: MasKind; locked?: boolean }) {
+export function MasHeader({ kind, locked, account }: { kind: MasKind; locked?: boolean; account?: number }) {
   const state = useLocation().state;
+  const [search] = useSearchParams();
+  const cuenta = account ?? search.get("cuenta");
   const [open, setOpen] = useState(false);
   const tab = "grid h-[38px] place-items-center rounded-[8px] text-[14px] font-semibold";
   return (
     <>
       {!locked && (
         <div role="radiogroup" aria-label="Tipo de movimiento" className="mt-2 grid grid-cols-4 gap-1 rounded-md bg-muted p-[3px]">
-          <Link to="/registrar" replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Gasto</Link>
-          <Link to="/registrar?tipo=income" replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Ingreso</Link>
-          <Link to="/registrar?tipo=transfer" replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Transferir</Link>
+          <Link to={withAccount("/registrar", cuenta)} replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Gasto</Link>
+          <Link to={withAccount("/registrar?tipo=income", cuenta)} replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Ingreso</Link>
+          <Link to={withAccount("/registrar?tipo=transfer", cuenta)} replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Transferir</Link>
           <button type="button" role="radio" aria-checked="true" onClick={() => setOpen(true)} className={`${tab} bg-selected text-selected-foreground shadow-sm`}>Más</button>
         </div>
       )}
@@ -80,7 +85,7 @@ export function MasHeader({ kind, locked }: { kind: MasKind; locked?: boolean })
           <span className="grid h-[22px] place-items-center rounded-full border border-border px-2 text-[12px] leading-4 text-muted-foreground">avanzado</span>
         )}
       </div>
-      <MasTipos open={open} onClose={() => setOpen(false)} />
+      <MasTipos open={open} onClose={() => setOpen(false)} account={cuenta} />
     </>
   );
 }
