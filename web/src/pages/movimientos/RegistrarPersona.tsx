@@ -1,6 +1,7 @@
 // R1 · Con otra persona: le presté, me prestaron, me pagaron, pagué, me dio para guardar y le devolví
 // o usé su plata. El mismo formulario para las seis: cuánto, con quién y de qué cuenta, y una tarjeta
-// que dice cómo queda la deuda. Un cobro o un pago no pasan de lo que se debe.
+// que dice cómo queda la deuda. Un cobro o un pago no pasan de lo que se debe, y pueden ir en otra
+// moneda, como en una casa de cambio: la deuda en dólares se paga con soles (o al revés).
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 
@@ -14,7 +15,7 @@ import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
-import { add, currencyLabel, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, add, currencyLabel, divide, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 
 const TEXT: Record<PersonKind, { ask: string; who: string; into: boolean; submit: string; role: "owes_me" | "i_owe" | "keep" }> = {
@@ -59,6 +60,8 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   const [inInstallments, setInInstallments] = useState(false);
   const [installments, setInstallments] = useState(6);
   const [cuota, setCuota] = useState("");
+  const [debtPick, setDebtPick] = useState(editing?.summary.to_currency ?? "");   // qué deuda paga, si hay en varias monedas
+  const [debtAmount, setDebtAmount] = useState(editing?.summary.to_amount ? formatNumber(editing.summary.to_amount, lang) : "");
   const detail = usePartner(LIMITED.includes(kind) && who ? who : 0).data;
 
   const base = me?.currency ?? "PEN";
@@ -73,45 +76,59 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
 
   const person: PartnerRow | undefined = people.people.find((p) => p.id === who);
   const first = person?.name.split(" ")[0] ?? "";
-  // Lo que hay con esa persona en la moneda de la cuenta, sin contar este movimiento si se está editando
-  const had = person?.[t.role].find((m) => m.currency === currency)?.amount ?? "0.00";
-  const mine = editing && editing.summary.currency === currency && who === editing.partner_id ? editing.summary.amount : "0.00";
+  // Cobrar o pagar: la deuda puede estar en otra moneda que la cuenta. Sin elegir, la de la cuenta si
+  // hay deuda en ella; si no, la primera que haya
+  const twoWay = kind === "collect" || kind === "repay";
+  const editedDebt = editing && who === editing.partner_id ? editing.summary.to_currency ?? editing.summary.currency : null;
+  const debtCurrencies = twoWay && person
+    ? [...new Set([...person[t.role].map((m) => m.currency), ...(editedDebt ? [editedDebt] : [])])] : [];
+  const debtCur = !twoWay || debtCurrencies.length === 0 ? currency
+    : debtCurrencies.includes(debtPick) ? debtPick : debtCurrencies.includes(currency) ? currency : debtCurrencies[0]!;
+  const cross = debtCur !== currency;
+  // Lo que hay con esa persona en la moneda de la deuda, sin contar este movimiento si se está editando
+  const had = person?.[t.role].find((m) => m.currency === debtCur)?.amount ?? "0.00";
+  const mine = editedDebt === debtCur ? editing!.summary.to_amount ?? editing!.summary.amount : "0.00";
   const have = LIMITED.includes(kind) ? add(had, mine) : subtract(had, kind === editing?.summary.kind ? mine : "0.00");
   const value = parseAmount(amount || "", lang);
+  const debtValue = cross ? parseAmount(debtAmount || "", lang) : value;
   const cuotaValue = cuota.trim() ? parseAmount(cuota, lang) : null;
   const cuotas = isCard && inInstallments && !editing;
   // En cuotas te debe todas: la cuota del banco × cuántas (sin cuota, lo que costó)
   const owed = cuotas && value && Number(cuotaValue) > 0 ? multiply(cuotaValue!, String(installments)) : value;
   const money = (v: string) => formatAmount(v, symbolOf(currency), lang);
-  const over = LIMITED.includes(kind) && who && value && Number(value) > Number(have);
+  const nameOf = (c: string) => CURRENCY_NAME[c] ?? c;
+  const owedMoney = (v: string) => formatAmount(v, symbolOf(debtCur), lang);   // en la moneda de la deuda
+  const over = LIMITED.includes(kind) && who && debtValue && Number(debtValue) > Number(have);
+  // El tipo que sale de los dos montos, en soles por unidad de la otra moneda
+  const crossRate = cross && Number(value) > 0 && Number(debtValue) > 0
+    ? currency === base ? divide(value!, debtValue!) : debtCur === base ? divide(debtValue!, value!) : null : null;
   const only = LIMITED.includes(kind)
     ? people.people.filter((p) => p[t.role].length > 0 || p.id === editing?.partner_id).map((p) => p.id) : undefined;
   const foreign = currency !== base;
   const future = date > todayISO();
-  const openDebts = (kind === "collect" ? detail?.owes_me : detail?.i_owe)?.filter((i) => i.currency === currency) ?? [];
+  const openDebts = (kind === "collect" ? detail?.owes_me : detail?.i_owe)?.filter((i) => i.currency === debtCur) ?? [];
 
   const card = (() => {
-    if (!person || !value || Number(value) <= 0) return null;
-    const after = LIMITED.includes(kind) ? subtract(have, value) : add(have, value);
-    const oldest = openDebts[0];
+    if (!person || !value || Number(value) <= 0 || !debtValue || Number(debtValue) <= 0) return null;
+    const after = LIMITED.includes(kind) ? subtract(have, debtValue) : add(have, value);
+    const how = debt ? `Se descuenta primero de «${debt.ref}».` : openDebts[0] ? `Se descuenta de la deuda más antigua: «${openDebts[0].ref}».` : "";
+    const fx = cross ? " La diferencia con lo que valía la deuda va a Ganancia por tipo de cambio o Costo del cambio." : "";
     switch (kind) {
       case "lend": return [`${first} te quedará debiendo ${money(add(have, owed ?? value))}`,
         `${Number(have) > 0 ? `Ya te debía ${money(have)}. ` : ""}` + (isCard
           ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? " Te debe todas las cuotas; cada una vence con la fecha de pago de su corte." : ""}`
           : "No es un gasto: la plata sigue siendo tuya.")];
       case "borrow": return [`Le quedarás debiendo ${money(after)} a ${first}`, "No es un ingreso: entra a tu cuenta, pero se la debes."];
-      case "collect": return [`${first} te debe ${money(have)} · quedará en ${money(after)}`,
-        debt ? `Se descuenta primero de «${debt.ref}».` : oldest ? `Se descuenta de la deuda más antigua: «${oldest.ref}».` : ""];
-      case "repay": return [`Le debes ${money(have)} a ${first} · quedará en ${money(after)}`,
-        debt ? `Se descuenta primero de «${debt.ref}».` : oldest ? `Se descuenta de la deuda más antigua: «${oldest.ref}».` : ""];
+      case "collect": return [`${first} te debe ${owedMoney(have)} · quedará en ${owedMoney(after)}`, how + fx];
+      case "repay": return [`Le debes ${owedMoney(have)} a ${first} · quedará en ${owedMoney(after)}`, how + fx];
       case "custody_in": return [`Guardarás ${money(after)} de ${first}`, "Entra a tu cuenta, pero no suma a lo que realmente tienes: es suya."];
       case "custody_out": return [`Guardas ${money(have)} de ${first} · quedarán ${money(after)}`, "Sale de tu cuenta y baja lo que guardas. No es un gasto tuyo."];
     }
   })();
   const overText = kind === "collect"
-    ? `${first} te debe ${money(have)}. Escribe hasta ${money(have)}; si te dio de más, registra el resto como «Me prestaron» o «Me dio para guardar».`
+    ? `${first} te debe ${owedMoney(have)}. Escribe hasta ${owedMoney(have)}; si te dio de más, registra el resto como «Me prestaron» o «Me dio para guardar».`
     : kind === "repay"
-      ? `Le debes ${money(have)} a ${first}. Escribe hasta ${money(have)}; si le diste de más, registra el resto como «Le presté a alguien».`
+      ? `Le debes ${owedMoney(have)} a ${first}. Escribe hasta ${owedMoney(have)}; si le diste de más, registra el resto como «Le presté a alguien».`
       : `Guardas ${money(have)} de ${first}. Escribe hasta ${money(have)}.`;
 
   const submit = (e: React.FormEvent) => {
@@ -120,15 +137,18 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     if (!who) return setProblem(`Elige ${t.who.replace(/[¿?]/g, "").toLowerCase()}`);
     if (!account) return setProblem("Elige la cuenta");
     if (!value || Number(value) <= 0) return setProblem("Escribe un monto mayor que cero");
+    if (cross && !(Number(debtValue) > 0)) return setProblem(`Escribe cuánto de la deuda en ${nameOf(debtCur)} cancela`);
     if (over) return setProblem(overText);
-    if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
+    if (foreign && !cross && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
     if (cuotas && cuota.trim() && !(Number(cuotaValue) > 0)) return setProblem("Escribe la cuota como 207.00");
     const body: MoveIn = {
       kind, account_id: account.id, amount: value, date, ref: note.trim() || null, pending, later: false,
-      rate: foreign ? rate.value.trim() : null, partner_id: who, debt_line_id: debt?.id ?? null, splits: [], lines: [],
+      rate: foreign && !cross ? rate.value.trim() : null, partner_id: who, debt_line_id: debt?.id ?? null, splits: [], lines: [],
       currency: isCard ? currency : null,
       installments: cuotas ? installments : null,
       installment_amount: cuotas ? cuotaValue : null,
+      debt_currency: cross ? debtCur : null,
+      debt_amount: cross ? debtValue : null,
     };
     save.mutate(body, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : `/personas/${who}`, { replace: true }) });
   };
@@ -168,7 +188,29 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
                 options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
             </div>
           )}
-          {foreign && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} side={isCard ? "sell" : undefined} /></div>}
+          {twoWay && debtCurrencies.length > 1 && (
+            <div className="mt-3">
+              <CurrencyChoice label="¿Qué deuda paga?" size="sm" value={debtCur} onChange={(c) => { setDebtPick(c); setDebt(null); }}
+                options={debtCurrencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
+            </div>
+          )}
+          {cross && (
+            <div className="mt-3 flex flex-col gap-1 border-b border-border pb-3">
+              <label className="flex flex-col gap-0.5 text-caption font-semibold">
+                ¿Cuánto de la deuda en {nameOf(debtCur)} cancela?
+                <span className="flex items-baseline gap-2 border-b-2 border-input-line">
+                  <span aria-hidden="true" className="text-[20px] font-semibold text-muted-foreground">{symbolOf(debtCur)}</span>
+                  <input inputMode="decimal" placeholder={formatNumber(have, lang)} value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)}
+                    className="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 text-[24px] font-semibold tabular-nums" />
+                </span>
+              </label>
+              <span className="text-caption text-muted-foreground tabular-nums">
+                La deuda es en {nameOf(debtCur)} y la plata {t.into ? "entra" : "sale"} en {nameOf(currency)}
+                {crossRate ? `: a ${Number(crossRate).toFixed(3)} por ${symbolOf(currency === base ? debtCur : currency)}` : ""}.
+              </span>
+            </div>
+          )}
+          {foreign && !cross && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} side={isCard ? "sell" : undefined} /></div>}
           {isCard && !editing && (
             <>
               <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>

@@ -168,3 +168,36 @@ test("sin deudas todavía, Personas se abre desde Cuentas y el saldo inicial se 
   await page.getByRole("button", { name: /^Me deben/ }).click();
   await expect(page.getByRole("region", { name: "Me deben" })).toContainText("Nadie por ahora.");
 });
+
+test("cobrar en soles lo que te deben en dólares", async ({ page }) => {
+  await readyUser(page);
+  const banks = (await (await page.request.get("/api/catalog")).json()).banks as { id: number; name: string }[];
+  const bbva = (await (await page.request.post("/api/accounts/bank", {
+    data: { name: "BBVA dólares", currency: "USD", bank_id: banks.find((b) => b.name === "BBVA")!.id, opening: { amount: "200", rate: "3.70" } },
+  })).json()).account.id as number;
+  const paul = (await (await page.request.post("/api/partners", { data: { name: "Paul" } })).json()).id as number;
+  const r = await page.request.post("/api/moves", {
+    data: { kind: "lend", account_id: bbva, amount: "133.38", rate: "3.50", partner_id: paul, ref: "Vuelos" },
+  });
+  expect(r.ok()).toBeTruthy();
+
+  await page.goto(`/registrar/persona/collect?persona=${paul}`);
+  await page.getByRole("textbox", { name: "¿Cuánto te pagaron?" }).fill("466.90");
+  await chooseAccount(page, "Entra a", "BCP");
+  const debt = page.getByRole("textbox", { name: "¿Cuánto de la deuda en dólares cancela?" });
+  await expect(debt).toBeVisible();
+  await debt.fill("133.38");
+  await expect(page.getByText("La deuda es en dólares y la plata entra en soles: a 3.501 por US$.")).toBeVisible();
+  await expect(page.getByText("Paul te debe US$ 133.38 · quedará en US$ 0.00")).toBeVisible();
+  await page.getByRole("button", { name: "Registrar cobro" }).click();
+
+  await expect(page).toHaveURL(`/personas/${paul}`);
+  await expect(page.getByText("Están a mano: no hay nada pendiente.")).toBeVisible();
+  await page.goto("/movimientos");
+  await page.getByRole("link", { name: /Paul me pagó/ }).click();
+  await expect(page.getByText("Canceló de la deuda")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Vuelos/ })).toContainText("US$ 133.38");   // la deuda, en su moneda
+  const fx = page.getByRole("region", { name: "Ganancia por tipo de cambio" });
+  await expect(fx).toContainText("+ S/ 0.07");
+  await expect(fx).toContainText("La deuda valía");
+});

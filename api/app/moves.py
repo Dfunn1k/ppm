@@ -81,6 +81,8 @@ class MoveInput:
     installments: int | None = None                      # gasto o préstamo con tarjeta: en cuántas cuotas
     installment_amount: Decimal | None = None            # cada cuota, del cronograma del banco; None = sin intereses
     later: bool = False                                  # gasto o ingreso: «Lo clasifico después» (a Por clasificar)
+    debt_currency: str | None = None                     # cobrar o pagar en otra moneda: la de la deuda…
+    debt_amount: Decimal | None = None                   # …y cuánto de ella cancela
 
 
 @dataclass(frozen=True)
@@ -233,15 +235,31 @@ def _build_person(conn: psycopg.Connection, m: MoveInput, on: dt.date, base_id: 
     card = m.kind == "lend" and m.account_id in accs and accs[m.account_id].card
     money = _money_account(accs, m.account_id, "adonde entra" if into else "de donde sale",
                            _use_currency(conn, m.currency, base_id) if card else None)
+    # Cobrar o pagar en otra moneda: la deuda es en dólares y la plata entra o sale en soles (o al revés)
+    debt_id, debt_code, debt_amount = money.currency_id, money.currency or "", m.amount
+    if m.debt_currency is not None or m.debt_amount is not None:
+        if m.kind not in ("collect", "repay"):
+            raise AccountError(400, "En otra moneda va solo un cobro o un pago de una deuda")
+        debt_id, debt_code = _use_currency(conn, m.debt_currency, base_id)
+        if debt_id == money.currency_id:
+            debt_amount = m.amount
+        elif m.debt_amount is None or m.debt_amount <= 0:
+            raise AccountError(400, f"Escribe cuánto de la deuda en {debt_code} cancela")
+        else:
+            debt_amount = m.debt_amount
+    cross = debt_id != money.currency_id
     # Un cobro, un pago o una devolución no pueden pasar de lo que hay (no queda un «me deben» negativo)
     if m.kind in ("collect", "repay", "custody_out"):
-        have = owed(conn, role, m.partner_id, money.currency_id, move_id)  # type: ignore[arg-type]
-        if m.amount > have:
-            raise AccountError(400, _limit_message(m.kind, name, money.currency or "", have))
-    rate = _rate(conn, money, base_id, on, m.rate)
-    base = _round(m.amount * rate)
+        have = owed(conn, role, m.partner_id, debt_id, move_id)  # type: ignore[arg-type]
+        if debt_amount > have:
+            raise AccountError(400, _limit_message(m.kind, name, debt_code, have))
     person = conn.execute("SELECT system_account(%s)", (role,)).fetchone()[0]
     n = _first(name)
+    if cross:
+        lines = _cross_person(conn, m, on, base_id, move_id, money, person, role, debt_id, debt_amount)  # type: ignore[arg-type]
+        return (f"{n} me pagó" if m.kind == "collect" else f"Pago a {n}"), lines
+    rate = _rate(conn, money, base_id, on, m.rate)
+    base = _round(m.amount * rate)
     ref = {"lend": f"Préstamo a {n}", "borrow": f"Préstamo de {n}", "collect": f"{n} me pagó",
            "repay": f"Pago a {n}", "custody_in": f"Plata de {n} para guardar",
            "custody_out": f"Devolución a {n}"}[m.kind]
@@ -251,6 +269,46 @@ def _build_person(conn: psycopg.Connection, m: MoveInput, on: dt.date, base_id: 
         return ref, _lend_in_installments(conn, m, money, person, rate, base_id)
     return ref, [_side(money.id, base, money.currency_id, m.amount, None, into),  # type: ignore[arg-type]
                  _side(person, base, money.currency_id, m.amount, m.partner_id, not into)]  # type: ignore[arg-type]
+
+
+def _debt_book(conn: psycopg.Connection, account: int, partner: int, currency: int, base_id: int,
+               amount: Decimal, move_id: int | None) -> Decimal:
+    """Cuánto vale en libros (en moneda base) esa parte de lo que se debe con una persona: a su valor
+    promedio, como lo que sale de una cuenta en otra moneda. Si se cancela todo, su valor exacto."""
+    if currency == base_id:
+        return amount
+    qty, book = conn.execute("""
+        SELECT coalesce(sum(l.amount_currency), 0), coalesce(sum(l.balance), 0)
+          FROM account_move_line l JOIN account_move mv ON mv.id = l.move_id AND mv.state = 'posted'
+         WHERE l.account_id = %s AND l.partner_id = %s AND l.currency_id = %s AND mv.id <> coalesce(%s, 0)""",
+        (account, partner, currency, move_id)).fetchone()
+    if amount == abs(qty):
+        return abs(book)
+    return _round(amount * abs(book) / abs(qty))
+
+
+def _cross_person(conn: psycopg.Connection, m: MoveInput, on: dt.date, base_id: int, move_id: int | None,
+                  money: _Acc, person: int, role: str, debt_id: int, debt_amount: Decimal) -> list[Line]:
+    """Un cobro o un pago en otra moneda, como una casa de cambio que cancela la deuda: la deuda baja en
+    su moneda, a su valor en libros, y la plata entra o sale en la de la cuenta. Si lo que entró (o lo
+    que costó lo que salió) no es igual a lo que valía la deuda, la diferencia es la realizada:
+    «Ganancia por tipo de cambio» o «Costo del cambio»."""
+    book = _debt_book(conn, person, m.partner_id, debt_id, base_id, debt_amount, move_id)  # type: ignore[arg-type]
+    if m.kind == "collect":
+        got = m.amount if money.currency_id == base_id else book
+        lines = [_side(money.id, got, money.currency_id, m.amount, None, True),  # type: ignore[arg-type]
+                 _side(person, book, debt_id, debt_amount, m.partner_id, False)]
+        diff = got - book
+    else:
+        paid = m.amount if money.currency_id == base_id else _cost(conn, money, m.amount, on, move_id, m.rate)
+        lines = [_side(money.id, paid, money.currency_id, m.amount, None, False),  # type: ignore[arg-type]
+                 _side(person, book, debt_id, debt_amount, m.partner_id, True)]
+        diff = book - paid
+    if diff:
+        fx = conn.execute("SELECT system_account(%s)", ("fx_gain" if diff > 0 else "fx_loss",)).fetchone()[0]
+        lines.append((fx, Decimal(0), diff, base_id, -diff, None) if diff > 0
+                     else (fx, -diff, Decimal(0), base_id, -diff, None))
+    return lines
 
 
 def _installment_total(m: MoveInput) -> Decimal:
@@ -830,8 +888,10 @@ def _kind(lines: list[tuple]) -> tuple[str, list[tuple], list[tuple], list[tuple
     persons = [x for x in money if x[4] in PERSON_ROLES]
     cash = [x for x in money if x[4] not in (*PERSON_ROLES, "suspense")]
     cats = [x for x in lines if x[3] in ("income", "expense")]
-    # Entre dos cuentas de dinero, la ganancia o el costo del cambio no la vuelven gasto ni ingreso
-    fx = [x for x in cats if x[4] in ("fx_gain", "fx_loss")] if len(cash) == 2 and not persons else []
+    # Entre dos cuentas de dinero, o al cobrar o pagar en otra moneda, la ganancia o el costo del cambio
+    # no la vuelven gasto ni ingreso
+    fx = ([x for x in cats if x[4] in ("fx_gain", "fx_loss")]
+          if (len(cash) == 2 and not persons) or (len(cash) == 1 and persons) else [])
     cats = [x for x in cats if x not in fx]
     expense = bool(cats) and all(x[3] == "expense" for x in cats)
     if any(x[4] == "opening" for x in lines):
@@ -889,7 +949,10 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
                         cat_base, pname or "", categories, partner_id=pid, partner=pname)
     elif kind in PERSON_KINDS:
         m = cash[0]
+        other = who[7] != m[7]   # cobrado o pagado en otra moneda: cuánto de la deuda canceló
         s = MoveSummary(move_id, on, ref, posted, kind, m[7], abs(m[8]), abs(m[9]), m[2], [],
+                        who[7] if other else None, sum((abs(x[8]) for x in persons), Decimal(0)) if other else None,  # type: ignore[index]
+                        -sum((x[9] for x in fx), Decimal(0)) if fx else None,
                         partner_id=pid, partner=pname)
     elif kind == "opening" and persons:   # saldo inicial con una persona: ya te debía o ya le debías
         s = MoveSummary(move_id, on, ref, posted, kind, who[7], abs(who[8]), abs(who[9]), pname or "", [],  # type: ignore[index]
@@ -1045,7 +1108,8 @@ def _detail(user_id: int, move_id: int) -> MoveDetail:
                           paid_by_partner_id=paid_by, lines=all_lines, plan=plan)
 
     m = cash[0] if cash else None
-    rate = _round6(abs(m[9] / m[8])) if m is not None and m[7] != base and m[8] else None
+    rate = (_round6(abs(m[9] / m[8])) if m is not None and m[7] != base and m[8] and summary.to_currency is None
+            else None)   # en otra moneda el tipo sale de los dos montos
     splits = [SplitOut(Category(x[1], x[2], x[5], x[6]), abs(x[9])) for x in cats]
     return MoveDetail(summary, m[1] if m else None, None, rate, splits, partner_id=pid,
                       settled=settled, lines=all_lines, plan=plan)

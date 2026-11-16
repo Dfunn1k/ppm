@@ -17,7 +17,7 @@ import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
-import { divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
+import { add, divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 import { DetailSkeleton } from "@/components/Skeleton";
 
@@ -88,6 +88,12 @@ export function DetalleMovimiento() {
     ? s.to_currency === me.currency ? divide(s.to_amount!, s.amount) : s.currency === me.currency ? divide(s.amount, s.to_amount!) : null
     : null;
   const gain = s.fx != null && !isNegative(s.fx);
+  // Un cobro o un pago en otra moneda: cuánto de la deuda canceló, a qué tipo y cuánto valía en libros
+  const debtCross = !transfer && s.to_currency && s.to_amount && s.to_currency !== s.currency ? s.to_amount : null;
+  const debtRate = debtCross
+    ? s.currency === me.currency ? divide(s.amount, debtCross) : s.to_currency === me.currency ? divide(debtCross, s.amount) : null
+    : null;
+  const debtBook = debtCross && s.fx != null ? (s.kind === "collect" ? subtract(s.base, s.fx) : add(s.base, s.fx)) : null;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
@@ -171,11 +177,14 @@ export function DetalleMovimiento() {
           <Field icon={iconOf(to)} label="Entró a"
             value={`${to}${s.to_amount && s.to_currency !== s.currency ? ` · ${formatAmount(s.to_amount, symbolOf(s.to_currency), lang)}` : ""}`} />
         )}
-        {exchangeRate && (
+        {debtCross && (
+          <Field icon="handshake" label="Canceló de la deuda" value={formatAmount(debtCross, symbolOf(s.to_currency), lang)} />
+        )}
+        {(exchangeRate ?? debtRate) && (
           <div className="flex min-h-[52px] items-center gap-3 border-b border-border">
             <Icon name="currency_exchange" className="w-9 text-center text-muted-foreground" />
             <span className="flex-1">Tipo de cambio</span>
-            <span className="font-semibold tabular-nums">{exchangeRate}</span>
+            <span className="font-semibold tabular-nums">{exchangeRate ?? debtRate}</span>
           </div>
         )}
         {d.splits.length > 0 && (
@@ -211,7 +220,7 @@ export function DetalleMovimiento() {
               <Link key={x.line_id} to={`/movimientos/${x.move_id}`} className="flex min-h-11 items-center gap-3">
                 <span className="flex-1 truncate font-semibold">{x.ref}</span>
                 <span className="text-caption text-muted-foreground">{shortDate(x.date)}</span>
-                <span className="tabular-nums">{formatAmount(x.amount, symbolOf(s.currency), lang)}</span>
+                <span className="tabular-nums">{formatAmount(x.amount, symbolOf(debtCross ? s.to_currency : s.currency), lang)}</span>
               </Link>
             ))}
           </div>
@@ -322,7 +331,7 @@ export function DetalleMovimiento() {
         </section>
       )}
 
-      {s.fx != null && d.cost != null && (
+      {s.fx != null && (d.cost != null || debtBook != null) && (
         <section aria-label={gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}
           className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-card p-3.5">
           <span className="flex items-center gap-3">
@@ -336,10 +345,21 @@ export function DetalleMovimiento() {
             </span>
           </span>
           <dl className="grid grid-cols-[1fr_auto] gap-y-0.5 border-t border-border pt-2 text-caption text-muted-foreground tabular-nums">
-            <dt>Te costaron (a {Number(d.cost_rate).toFixed(3)} en promedio)</dt>
-            <dd>{formatAmount(d.cost, symbolOf(me.currency), lang)}</dd>
-            <dt>Recibiste</dt>
-            <dd>{formatAmount(s.to_amount ?? "0", symbolOf(s.to_currency), lang)}</dd>
+            {debtBook != null ? (
+              <>
+                <dt>La deuda valía</dt>
+                <dd>{formatAmount(debtBook, symbolOf(me.currency), lang)}</dd>
+                <dt>{s.kind === "collect" ? "Te pagaron" : "Pagaste"}</dt>
+                <dd>{formatAmount(s.base, symbolOf(me.currency), lang)}</dd>
+              </>
+            ) : (
+              <>
+                <dt>Te costaron (a {Number(d.cost_rate).toFixed(3)} en promedio)</dt>
+                <dd>{formatAmount(d.cost!, symbolOf(me.currency), lang)}</dd>
+                <dt>Recibiste</dt>
+                <dd>{formatAmount(s.to_amount ?? "0", symbolOf(s.to_currency), lang)}</dd>
+              </>
+            )}
           </dl>
         </section>
       )}

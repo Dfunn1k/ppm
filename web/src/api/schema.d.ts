@@ -3036,6 +3036,10 @@ export interface components {
              * @default false
              */
             later: boolean;
+            /** Debt Currency */
+            debt_currency?: string | null;
+            /** Debt Amount */
+            debt_amount?: number | string | null;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
