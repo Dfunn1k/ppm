@@ -44,6 +44,15 @@ test("los reportes: índice, gastos por grupo, flujo, patrimonio y personas", as
 
   await page.getByRole("link", { name: /Gastos/ }).click();
   const grupos = page.getByRole("region", { name: "Por grupo" });
+  const dona = page.getByRole("img", { name: /Gasto por grupo/ });
+  await expect(dona).toContainText("Total");                       // sin elegir nada: el general
+  await grupos.getByRole("button", { name: /Comida y bebida/ }).click();
+  await expect(dona).toContainText("Comida");
+  await grupos.getByRole("button", { name: /Comida y bebida/ }).click();
+  await expect(dona).toContainText("Total");                       // al plegarlo vuelve al general
+  await page.getByRole("radio", { name: "Año" }).click();
+  await page.getByRole("radio", { name: "Mes" }).click();
+  await expect(dona).toContainText("Total");
   await grupos.getByRole("button", { name: /Comida y bebida/ }).click();
   await grupos.getByRole("link", { name: /Supermercado y mercado/ }).click();
   await expect(page).toHaveURL(/\/movimientos\?mes=\d{4}-\d{2}&categoria=\d+/);

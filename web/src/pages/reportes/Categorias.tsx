@@ -19,8 +19,13 @@ import {
 
 type Group = CategoryReport["groups"][number];
 
+/** Al cambiar de reporte o de periodo se empieza en general: sin grupo elegido ni desplegado. */
 export function ReporteCategorias({ kind }: { kind: "expense" | "income" }) {
   const p = usePeriod();
+  return <CategoryReportView key={`${kind}-${p.period}`} kind={kind} p={p} />;
+}
+
+function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: ReturnType<typeof usePeriod> }) {
   const report = useCategoryReport(kind, p.period);
   const money = useMoney();
   const [selected, setSelected] = useState<number | null>(null);
@@ -34,9 +39,16 @@ export function ReporteCategorias({ kind }: { kind: "expense" | "income" }) {
   const top = r.groups.filter((g) => Number(g.amount) > 0);
   const sel = selected !== null ? top.find((g) => g.id === selected) : undefined;
   const max = Math.max(...r.groups.map((g) => Number(g.amount)), 1);
+  // Desplegar un grupo lo resalta en la dona; plegarlo vuelve al último que siga abierto, o al total
   const toggle = (g: Group) => {
-    setSelected(g.id);
-    setOpen((o) => (o.includes(g.id) ? o.filter((x) => x !== g.id) : [...o, g.id]));
+    if (open.includes(g.id)) {
+      const rest = open.filter((x) => x !== g.id);
+      setOpen(rest);
+      if (selected === g.id) setSelected(rest.at(-1) ?? null);
+    } else {
+      setOpen([...open, g.id]);
+      setSelected(g.id);
+    }
   };
   const moves = (id: number, name: string) =>
     `/movimientos?mes=${p.month}&categoria=${id}&categoria_nombre=${encodeURIComponent(name)}`;
