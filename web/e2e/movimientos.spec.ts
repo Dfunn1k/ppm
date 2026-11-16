@@ -156,4 +156,19 @@ test("buscar y filtrar en el mes", async ({ page }) => {
   await page.getByRole("radio", { name: /^Efectivo/ }).click();
   await expect(page.getByRole("link", { name: /Taxi/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Almuerzo/ })).toHaveCount(0);
+  // El filtro se recuerda al ir a otra pestaña y volver por la barra
+  const nav = page.getByRole("navigation", { name: "Navegación principal" });
+  await nav.getByRole("link", { name: "Inicio" }).click();
+  await expect(page).toHaveURL("/inicio");
+  await nav.getByRole("link", { name: "Movimientos" }).click();
+  await expect(page).toHaveURL(`/movimientos?cuenta=${acc("Efectivo")}`);
+  await expect(page.getByRole("button", { name: "Efectivo" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Almuerzo/ })).toHaveCount(0);
+
+  // Quitado con su ✕, la pestaña vuelve a abrir la lista completa
+  await page.getByRole("button", { name: "Efectivo" }).click();
+  await expect(page.getByRole("link", { name: /Almuerzo/ })).toBeVisible();
+  await nav.getByRole("link", { name: "Inicio" }).click();
+  await nav.getByRole("link", { name: "Movimientos" }).click();
+  await expect(page).toHaveURL("/movimientos");
 });

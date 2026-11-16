@@ -3,6 +3,7 @@
 import { Link, NavLink, useLocation } from "react-router";
 
 import { useMe } from "@/api/hooks";
+import { movesLink, rememberMoves } from "@/lib/movesFilter";
 
 import { Icon } from "./ui";
 
@@ -27,7 +28,7 @@ function tabOf(path: string) {
   return ITEMS.find((i) => i.to && (path.startsWith(i.to) || ALSO[i.to]?.some((p) => path.startsWith(p))))?.to;
 }
 
-function Tab({ item }: { item: Item }) {
+function Tab({ item, to }: { item: Item; to?: string }) {
   const path = useLocation().pathname;
   const also = !!item.to && (FROM_WHERE_YOU_CAME.some((p) => path.startsWith(p))
     ? lastTab === item.to
@@ -43,7 +44,7 @@ function Tab({ item }: { item: Item }) {
     );
   }
   return (
-    <NavLink to={item.to} aria-current={also ? "page" : undefined}
+    <NavLink to={to ?? item.to} aria-current={also ? "page" : undefined}
       className="flex flex-col items-center gap-0.5 text-[12px] leading-4 text-muted-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground">
       {({ isActive: exact }) => { const isActive = exact || also; return (
         <>
@@ -65,15 +66,17 @@ export function registerLink(path: string, homeAccount: number | null | undefine
 }
 
 export function AppNav() {
-  const path = useLocation().pathname;
+  const { pathname: path, search } = useLocation();
   const here = tabOf(path);
   if (here && !FROM_WHERE_YOU_CAME.some((p) => path.startsWith(p))) lastTab = here;
-  const homeAccount = useMe().data?.home_account_id;
+  const me = useMe().data;
+  const homeAccount = me?.home_account_id;
+  rememberMoves(me?.id, path, search);
   return (
     <nav aria-label="Navegación principal" className="app-nav fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card lg:hidden">
       <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
-        <Tab item={ITEMS[1]!} />
+        <Tab item={ITEMS[1]!} to={movesLink(me?.id)} />
         <Link to={registerLink(path, homeAccount)} aria-label="Registrar un movimiento"
           className="-mt-7 grid size-14 place-items-center justify-self-center rounded-full bg-primary text-primary-foreground shadow-lg">
           <Icon name="add" className="text-[28px]" />
