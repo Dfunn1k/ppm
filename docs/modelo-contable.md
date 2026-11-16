@@ -2887,7 +2887,7 @@ Preguntas para las siguientes sesiones:
 - [x] ¿Estados de transacción (borrador / confirmada), como `state` en `account.move`?
 - [x] ¿Cómo se corrige un error: editar, borrar o registrar un reverso?
 - [x] ¿Tarjetas de crédito con fecha de corte y fecha de pago?
-- [ ] ¿Cómo se verá cada tipo de cuenta en la interfaz, sin lenguaje contable?
+- [x] ¿Cómo se verá cada tipo de cuenta en la interfaz, sin lenguaje contable? Resuelto con las pantallas del lienzo: «Lo que tengo» y «Lo que debo», cuentas, tarjetas, personas y categorías, sin Debe ni Haber.
 - [x] ¿De dónde saca la app el tipo de cambio SUNAT diario: una API o carga manual?
 - [x] ¿Pago mínimo: anotarlo desde el estado de cuenta o estimarlo? Cada banco usa su propia fórmula.
 - [x] Descartado: meses de gracia y disposición de efectivo. Las tarjetas se quedan en lo mínimo indispensable: corte, vencimiento y cuotas.
