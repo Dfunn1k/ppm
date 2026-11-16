@@ -33,6 +33,7 @@ import { useBack } from "@/lib/transitions";
 import { AsientoManual } from "./AsientoManual";
 import { Reembolso } from "./Reembolso";
 import { RegistrarPersona } from "./RegistrarPersona";
+import { YaDebia } from "@/pages/personas/YaDebia";
 
 type Kind = Extract<MoveIn["kind"], "expense" | "income" | "transfer">;
 type Who = { id: number; name: string };
@@ -55,6 +56,7 @@ export function EditarMovimiento() {
   if (isPersonKind(k)) return <RegistrarPersona editing={move.data} />;
   if (k === "refund") return <Reembolso editing={move.data} />;
   if (k === "other") return <AsientoManual editing={move.data} />;
+  if (k === "opening" && move.data.summary.partner_id) return <YaDebia editing={move.data} />;
   return <Registrar editing={move.data} />;
 }
 

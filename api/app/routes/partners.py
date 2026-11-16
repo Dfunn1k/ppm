@@ -82,6 +82,10 @@ class PartnerOpeningIn(BaseModel):
     ref: Annotated[str, Field(max_length=120)] | None = None   # la nota: «Lo del celular»
 
 
+class PartnerOpeningEditIn(PartnerOpeningIn):
+    partner_id: int                      # con quién (se puede cambiar)
+
+
 class MovedOut(BaseModel):
     move_id: int
 
@@ -134,3 +138,15 @@ def add_opening(partner_id: int, body: PartnerOpeningIn, session: CurrentSession
                                                      body.amount, body.date, body.rate, body.ref))
     except AccountError as e:
         raise _http(e) from None
+
+
+@router.put("/moves/{move_id}/opening", status_code=status.HTTP_204_NO_CONTENT,
+            summary="Corregir lo que había con una persona antes de PPM")
+def update_opening(move_id: int, body: PartnerOpeningEditIn,
+                   session: CurrentSession = Depends(current_session)) -> Response:
+    try:
+        partners.update_opening(session.user_id, move_id, body.partner_id, body.side, body.currency,
+                                body.amount, body.date, body.rate, body.ref)
+    except AccountError as e:
+        raise _http(e) from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -137,6 +137,20 @@ test("lo que una persona ya me debía antes de PPM queda como deuda abierta con 
   const deuda = page.getByRole("link", { name: /Lo del celular/ });
   await expect(deuda).toContainText(/hace 14\d días/);
   await expect(deuda).toContainText("S/ 300.00");
+
+  // Se corrige con «Editar», en el mismo formulario
+  await deuda.click();
+  await page.getByRole("link", { name: "Editar" }).click();
+  await expect(page.getByText("Editar movimiento")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "¿Cuánto te debía?" })).toHaveValue("300.00");
+  await expect(page.getByLabel("Nota (opcional)")).toHaveValue("Lo del celular");
+  await page.getByRole("textbox", { name: "¿Cuánto te debía?" }).fill("250");
+  await page.getByLabel("Nota (opcional)").fill("El celular");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page).toHaveURL(/\/movimientos\/\d+$/);
+  await expect(page.getByRole("heading", { name: "El celular" })).toBeVisible();
+  await expect(page.getByText("S/ 250.00").first()).toBeVisible();
+
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /BCP.*S\/ 1,000\.00/ })).toBeVisible();   // tu banco no se movió
 });
