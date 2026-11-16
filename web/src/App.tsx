@@ -8,6 +8,7 @@ import { AppNav } from "./components/AppNav";
 import { Rail } from "./components/Rail";
 import { RegisterPanel } from "./components/RegisterPanel";
 import { Shortcuts } from "./components/Shortcuts";
+import { ShortcutsHelp } from "./components/ShortcutsHelp";
 import { Split, SplitIndex } from "./components/Split";
 import { useDesktop } from "./lib/desktop";
 import { Spinner } from "./components/ui";
@@ -48,6 +49,7 @@ const ReportePatrimonio = lazy(() => import("./pages/reportes/Patrimonio").then(
 const ReportePersonas = lazy(() => import("./pages/reportes/Personas").then((m) => ({ default: m.ReportePersonas })));
 const Reportes = lazy(() => import("./pages/reportes/Reportes").then((m) => ({ default: m.Reportes })));
 const ReporteEtiquetas = lazy(() => import("./pages/reportes/Etiquetas").then((m) => ({ default: m.ReporteEtiquetas })));
+const Atajos = lazy(() => import("./pages/mas/Atajos").then((m) => ({ default: m.Atajos })));
 const Etiquetas = lazy(() => import("./pages/mas/Etiquetas").then((m) => ({ default: m.Etiquetas })));
 const Mas = lazy(() => import("./pages/mas/Mas").then((m) => ({ default: m.Mas })));
 const Monedas = lazy(() => import("./pages/mas/Monedas").then((m) => ({ default: m.Monedas })));
@@ -109,6 +111,7 @@ function Shell() {
     <>
       {desktop && <Rail />}
       {desktop && <Shortcuts />}
+      {desktop && <ShortcutsHelp />}
       <div className="lg:pl-[88px]"><Outlet /></div>
     </>
   );
@@ -171,6 +174,7 @@ export function App() {
           <Route path="/pendientes" element={<Pendientes />} />
           <Route path="/mas/categorias" element={<Categorias />} />
           <Route path="/mas/etiquetas" element={<Etiquetas />} />
+          <Route path="/mas/atajos" element={<Atajos />} />
           <Route path="/mas/recurrentes" element={<Recurrentes />} />
         </Route>
         {/* Lista y detalle: en escritorio lado a lado; en el celular, cada una en su pantalla */}

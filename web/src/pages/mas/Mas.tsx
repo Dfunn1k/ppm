@@ -7,6 +7,7 @@ import { Link } from "react-router";
 import { useMe, usePending } from "@/api/hooks";
 import { INSTALL_HINT, InstallSheet, Logo } from "@/components/InstallSheet";
 import { Icon } from "@/components/ui";
+import { useDesktop } from "@/lib/desktop";
 import { useInstall } from "@/lib/install";
 import { shortDate } from "@/lib/dates";
 import { formatNumber, symbolOf } from "@/lib/money";
@@ -17,6 +18,7 @@ export function Mas() {
   const count = box ? box.notices.length + box.activities.length : 0;
   const install = useInstall();
   const [installing, setInstalling] = useState(false);
+  const desktop = useDesktop();   // los atajos de teclado son de la computadora
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
       <h1 className="text-label text-muted-foreground">Más</h1>
@@ -91,6 +93,16 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
+      {desktop && (
+        <Link to="/mas/atajos" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+          <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="keyboard" className="text-[22px]" /></span>
+          <span className="flex flex-1 flex-col">
+            <span className="font-semibold">Atajos de teclado</span>
+            <span className="text-caption text-muted-foreground">Ver, cambiar las teclas y las pistas</span>
+          </span>
+          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        </Link>
+      )}
       <Link to="/mas/cierre" className="flex min-h-16 items-center gap-3.5 border-b border-border">
         <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="lock_clock" className="text-[22px]" /></span>
         <span className="flex flex-1 flex-col">

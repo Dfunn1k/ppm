@@ -4,6 +4,7 @@ import datetime as dt
 from dataclasses import dataclass, field
 
 import psycopg
+from psycopg.types.json import Jsonb
 
 from app.config import get_settings
 from app.db import user_transaction
@@ -18,6 +19,19 @@ class CurrencyFormat:
     code: str                 # 'USD'
     symbol: str               # cómo se escribe en tu formato: 'US$'; sin fila en res_currency_format, el código
     decimals: int             # 0 en el yen o el peso chileno
+
+
+# Los atajos de escritorio que se pueden cambiar y su tecla de fábrica. Esc, Ctrl + Enter y las
+# flechas quedan fijas: son convenciones que todo programa respeta.
+SHORTCUTS = {"register": "n", "search": "/", "edit": "e", "help": "?"}
+
+
+class ShortcutError(Exception):
+    pass
+
+
+def shortcut_map(saved: dict[str, str] | None) -> dict[str, str]:
+    return {**SHORTCUTS, **{k: v for k, v in (saved or {}).items() if k in SHORTCUTS}}
 
 
 @dataclass(frozen=True)
@@ -42,6 +56,8 @@ class Me:
     formats: list[CurrencyFormat] = field(default_factory=list)   # cómo se escribe cada moneda que usa
     google_email: str | None = None   # la cuenta de Google con que entra, si la vinculó
     has_password: bool = True         # False si creó la cuenta con Google y aún no tiene contraseña
+    shortcuts: dict[str, str] = field(default_factory=lambda: dict(SHORTCUTS))   # tecla de cada atajo
+    shortcut_hints: bool = True       # mostrar las pistas de los atajos en la pantalla
 
 
 def get_me(user_id: int) -> Me:
@@ -62,7 +78,7 @@ def get_me(user_id: int) -> Me:
                                FROM res_users_currency uc JOIN res_currency c ON c.id = uc.currency_id
                                LEFT JOIN res_currency_format f ON f.currency_id = c.id AND f.lang_id = u.lang_id),
                             '{}'),
-                   u.oauth_email, u.password IS NOT NULL
+                   u.oauth_email, u.password IS NOT NULL, u.ui_shortcuts, u.ui_shortcut_hints
               FROM res_users u
               LEFT JOIN res_country co  ON co.id = u.country_id
               LEFT JOIN res_currency cur ON cur.id = u.currency_id
@@ -71,7 +87,7 @@ def get_me(user_id: int) -> Me:
     return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails,
               notice_days=row[11], ui_private=row[12], home_account_id=row[13], lock_date=row[14],
               icons=list(row[15]), formats=[CurrencyFormat(c, s, int(d)) for c, s, d in row[16]],
-              google_email=row[17], has_password=row[18])
+              google_email=row[17], has_password=row[18], shortcuts=shortcut_map(row[19]), shortcut_hints=row[20])
 
 
 def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None,
@@ -84,6 +100,27 @@ def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str 
             " ui_private = coalesce(%s, ui_private)",
             (name.strip() if name else None, ui_theme, ui_accent, notice_days, ui_private))
     return get_me(user_id)
+
+
+def set_shortcuts(user_id: int, changes: dict[str, str] | None, hints: bool | None) -> None:
+    """Cambiar teclas (solo una letra, número o símbolo; dos atajos no comparten tecla) o, con
+    changes = {}, volver a las de fábrica. hints prende o apaga las pistas en la pantalla."""
+    with user_transaction(user_id) as conn:
+        if changes is not None:
+            saved = conn.execute("SELECT ui_shortcuts FROM res_users").fetchone()[0]
+            wanted = shortcut_map(saved) if changes else dict(SHORTCUTS)
+            for action, key in changes.items():
+                if action not in SHORTCUTS:
+                    raise ShortcutError("Ese atajo no se puede cambiar")
+                if len(key) != 1 or not key.isprintable() or key.isspace():
+                    raise ShortcutError("Elige una sola tecla: una letra, un número o un símbolo")
+                wanted[action] = key.lower()
+            if len(set(wanted.values())) != len(wanted):
+                raise ShortcutError("Esa tecla ya la usa otro atajo")
+            own = {k: v for k, v in wanted.items() if SHORTCUTS[k] != v}
+            conn.execute("UPDATE res_users SET ui_shortcuts = %s", (Jsonb(own),))
+        if hints is not None:
+            conn.execute("UPDATE res_users SET ui_shortcut_hints = %s", (hints,))
 
 
 def setup(user_id: int, country: str, other_currencies: list[str], lang: str | None, tz: str | None) -> Me:
