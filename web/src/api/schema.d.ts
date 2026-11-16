@@ -2507,6 +2507,15 @@ export interface components {
             account: string | null;
             /** Rest */
             rest: string;
+            /** Currency */
+            currency?: string | null;
+            /** Refund Currency */
+            refund_currency?: string | null;
+            /**
+             * Fx
+             * @default 0.00
+             */
+            fx: string;
         };
         /** DeferralIn */
         DeferralIn: {

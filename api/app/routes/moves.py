@@ -232,6 +232,9 @@ class DeferralCancelOut(BaseModel):
     refund: Decimal                  # lo que volvió (o devolviste), en moneda base
     account: str | None
     rest: Decimal                    # lo que contó ese día como gasto (o ingreso)
+    currency: str | None = None      # la moneda de esa cuenta…
+    refund_currency: Decimal | None = None   # …y lo que volvió en ella
+    fx: Decimal = Decimal("0.00")    # ganancia (+) o costo (−) del cambio, en moneda base
 
 
 class DeferralOut(BaseModel):

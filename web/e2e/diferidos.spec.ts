@@ -59,3 +59,29 @@ test("un seguro repartido en 12 meses: la parte del mes, cancelar lo que falta y
   await expect(partes).toContainText("Faltan S/ 1,100.00");
   await expect(page.getByRole("button", { name: "Cancelar lo que falta" })).toBeVisible();
 });
+
+test("cancelar con lo devuelto en dólares: el tipo de cambio y la diferencia del cambio", async ({ page }) => {
+  await newUser(page);
+  const banks = (await (await page.request.get("/api/catalog")).json()).banks as { id: number; name: string }[];
+  const usd = (await (await page.request.post("/api/accounts/bank", {
+    data: { name: "BBVA dólares", currency: "USD", bank_id: banks.find((b) => b.name === "BBVA")!.id, opening: { amount: "500", rate: "3.70" } },
+  })).json()).account.id as number;
+  const cats: Record<string, number> = {};
+  for (const g of (await (await page.request.get("/api/categories?kind=expense")).json()).groups) for (const k of g.children) cats[k.name] = k.id;
+  const d = await (await page.request.post("/api/moves", { data: {
+    kind: "expense", account_id: usd, amount: "300", rate: "3.70", ref: "Seguro de viaje",
+    splits: [{ category_id: cats["Seguro vehicular"], amount: "300" }], deferral: { method: "months", months: 12 } } })).json();
+  await page.goto(`/movimientos/${d.summary.id}`);
+
+  await page.getByRole("button", { name: "Cancelar lo que falta" }).click();
+  const hoja = page.getByRole("dialog");
+  await hoja.getByRole("button", { name: /^Entra a/ }).click();
+  await page.getByRole("radio", { name: /^BBVA dólares/ }).click();
+  await hoja.getByLabel("¿Cuánto te devolvieron?").fill("275");
+  await hoja.getByLabel("Tipo de cambio").fill("3.80");
+  await expect(hoja.getByText("S/ 1,045.00", { exact: true })).toBeVisible();
+  await expect(hoja.getByRole("region", { name: "Qué pasa al cancelar" })).toContainText("US$ 275.00 (S/ 1,045.00) entran a BBVA dólares");
+  await hoja.getByRole("button", { name: "Cancelar las 11 partes" }).click();
+  // US$ 275 valían S/ 1,017.50 al tipo de entonces: S/ 27.50 de ganancia
+  await expect(page.getByRole("region", { name: "Partes" })).toContainText("Te devolvieron US$ 275.00 (S/ 1,045.00) a BBVA dólares. El cambio te dejó S/ 27.50 de ganancia.");
+});

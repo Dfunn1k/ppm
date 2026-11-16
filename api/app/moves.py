@@ -1012,6 +1012,9 @@ class DeferralCancel:
     refund: Decimal              # lo que volvió (o devolviste), en moneda base
     account: str | None          # a qué cuenta entró (o de cuál salió)
     rest: Decimal                # lo que contó ese día como gasto (o ingreso)
+    currency: str | None = None  # la moneda de esa cuenta…
+    refund_currency: Decimal | None = None   # …y lo que volvió en ella
+    fx: Decimal = ZERO           # ganancia (+) o costo (−) del cambio, en moneda base
 
 
 @dataclass(frozen=True)
@@ -1312,7 +1315,7 @@ def _deferral_detail(conn: psycopg.Connection, move_id: int) -> DeferralDetail |
     canceled = None
     if cancel_id is not None:
         hold = DEFERRAL_ROLE[kind]
-        on, refund, account, rest = conn.execute("""
+        on, refund, account, rest, cur, refund_cur, fx = conn.execute("""
             SELECT m.date,
                    coalesce((SELECT abs(l.balance) FROM account_move_line l JOIN account_account a ON a.id = l.account_id
                               WHERE l.move_id = m.id AND a.account_type IN ('asset', 'liability')
@@ -1321,9 +1324,19 @@ def _deferral_detail(conn: psycopg.Connection, move_id: int) -> DeferralDetail |
                      WHERE l.move_id = m.id AND a.account_type IN ('asset', 'liability')
                        AND a.system_role IS DISTINCT FROM %(r)s),
                    coalesce((SELECT abs(l.balance) FROM account_move_line l
-                              WHERE l.move_id = m.id AND l.account_id = %(c)s), 0)
+                              WHERE l.move_id = m.id AND l.account_id = %(c)s), 0),
+                   (SELECT trim(c.name) FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                      JOIN res_currency c ON c.id = l.currency_id
+                     WHERE l.move_id = m.id AND a.account_type IN ('asset', 'liability')
+                       AND a.system_role IS DISTINCT FROM %(r)s),
+                   (SELECT abs(l.amount_currency) FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                     WHERE l.move_id = m.id AND a.account_type IN ('asset', 'liability')
+                       AND a.system_role IS DISTINCT FROM %(r)s),
+                   coalesce((SELECT -sum(l.balance) FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                              WHERE l.move_id = m.id AND a.system_role IN ('fx_gain', 'fx_loss')), 0)
               FROM account_move m WHERE m.id = %(m)s""", {"m": cancel_id, "r": hold, "c": cid}).fetchone()
-        canceled = DeferralCancel(cancel_id, on, _round(refund), account, _round(rest))
+        canceled = DeferralCancel(cancel_id, on, _round(refund), account, _round(rest), cur,
+                                  _round(refund_cur) if refund_cur is not None else None, _round(fx))
     remaining = sum((x.amount for x in parts if x.move_id is None and not x.canceled), ZERO)
     return DeferralDetail(kind, method, start, end, months, amount, Category(cid, cname, icon, color),
                           parts, remaining, canceled)
@@ -1384,9 +1397,25 @@ def cancel_deferral(user_id: int, move_id: int, on: dt.date | None, refund: Deci
                     money = _money_account(accs, account_id, "adonde entró" if into else "de donde salió")
                     r = _rate(conn, money, base_id, when, rate)
                     back = _round(refund * r)
-                    if back > remaining:
+                    # En la misma moneda en que pagaste (o cobraste): lo devuelto vale lo que costó, al tipo
+                    # de entonces; la diferencia con el de hoy es la ganancia o el costo del cambio
+                    worth = back
+                    if money.currency_id != base_id:
+                        orig = conn.execute("""
+                            SELECT l.currency_id, abs(l.amount_currency), abs(l.balance) FROM account_move_line l
+                             WHERE l.move_id = %s AND l.account_id <> %s ORDER BY l.id LIMIT 1""",
+                                            (move_id, hold)).fetchone()
+                        if orig and orig[0] == money.currency_id and orig[1]:
+                            worth = _round(refund * orig[2] / orig[1])
+                    if worth > remaining:
                         raise AccountError(400, f"No puede ser más de lo que falta ({fmt(_base_code(conn), remaining)})")
                     lines.append(_side(money.id, back, money.currency_id, refund, None, into))  # type: ignore[arg-type]
+                    diff = (back - worth) if into else (worth - back)
+                    if diff:
+                        fx = conn.execute("SELECT system_account(%s)", ("fx_gain" if diff > 0 else "fx_loss",)).fetchone()[0]
+                        lines.append((fx, ZERO, diff, base_id, -diff, None) if diff > 0
+                                     else (fx, -diff, ZERO, base_id, -diff, None))
+                    back = worth
                 rest = remaining - back
                 if rest > 0:
                     lines.append(_side(category, rest, base_id, rest, None, into))
