@@ -5,9 +5,10 @@ from dataclasses import asdict
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app import auth, recurring, users
+from app import auth, export, recurring, users
 from app.config import get_settings
 from app.routes.deps import CurrentSession, clear_session_cookie, current_session
 
@@ -193,3 +194,33 @@ def delete(body: DeleteIn, response: Response, session: CurrentSession = Depends
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             "No es tu contraseña" if body.password is not None else "No es tu correo") from None
     clear_session_cookie(response)
+
+
+class ExportOut(BaseModel):
+    accounts: int
+    categories: int
+    moves: int
+    partners: int
+    recurring: int
+    attachments: int
+    attachments_bytes: int          # lo que pesan los adjuntos: el ZIP con ellos pesa algo así
+
+
+@router.get("/me/export", summary="Exportar mis datos: lo que va en el ZIP")
+def export_summary(session: CurrentSession = Depends(current_session)) -> ExportOut:
+    return ExportOut(**asdict(export.summary(session.user_id)))
+
+
+@router.get("/me/export/zip", summary="Exportar mis datos: el ZIP con datos.json, csv/ y adjuntos/",
+            response_class=StreamingResponse, responses={200: {"content": {"application/zip": {}}}})
+def export_zip(attachments: bool = True, session: CurrentSession = Depends(current_session)) -> StreamingResponse:
+    zipped = export.build(session.user_id, attachments)
+    name = f"ppm-{export.today(session.user_id).isoformat()}.zip"
+
+    def chunks():
+        with zipped:
+            while chunk := zipped.read(1024 * 1024):
+                yield chunk
+
+    return StreamingResponse(chunks(), media_type="application/zip", headers={
+        "Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})

@@ -347,6 +347,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exportar mis datos: lo que va en el ZIP */
+        get: operations["export_summary_me_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/export/zip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exportar mis datos: el ZIP con datos.json, csv/ y adjuntos/ */
+        get: operations["export_zip_me_export_zip_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts": {
         parameters: {
             query?: never;
@@ -2379,6 +2413,23 @@ export interface components {
             closing_date: string;
             /** Date Due */
             date_due: string | null;
+        };
+        /** ExportOut */
+        ExportOut: {
+            /** Accounts */
+            accounts: number;
+            /** Categories */
+            categories: number;
+            /** Moves */
+            moves: number;
+            /** Partners */
+            partners: number;
+            /** Recurring */
+            recurring: number;
+            /** Attachments */
+            attachments: number;
+            /** Attachments Bytes */
+            attachments_bytes: number;
         };
         /** FlowNodeOut */
         FlowNodeOut: {
@@ -4960,6 +5011,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_summary_me_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_zip_me_export_zip_get: {
+        parameters: {
+            query?: {
+                attachments?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
+                };
             };
             /** @description Validation Error */
             422: {
