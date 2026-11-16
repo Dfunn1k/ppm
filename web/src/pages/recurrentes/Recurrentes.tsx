@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import { type RecurringNext, type RecurringRow, useMe, useOccurrence, useRecurring, useRecurringList, useRecurringState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
+import { TagChips } from "@/components/Tags";
 import { DateField } from "@/components/DateSheet";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
@@ -144,6 +145,7 @@ export function Recurrente() {
         {row.mode === "draft" && <span className="ml-2 text-caption font-normal text-muted-foreground">más o menos</span>}
       </span>
       <span className="text-caption text-muted-foreground">{where} · desde el {shortDate(rule.start)}</span>
+      {rec.data.tags.length > 0 && <div className="mt-2"><TagChips tags={rec.data.tags} small /></div>}
 
       {paused && (
         <div role="status" className="mt-4 flex gap-2.5 rounded-md bg-muted p-3 text-caption">

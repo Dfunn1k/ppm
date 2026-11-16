@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from app import loans, recurring
 from app.accounts import AccountError
 from app.routes.deps import CurrentSession, current_session
-from app.routes.moves import CategoryOut, MoveIn
+from app.routes.moves import CategoryOut, MoveIn, TagRefOut
 
 router = APIRouter(tags=["recurrentes"])
 
@@ -143,6 +143,7 @@ class RecurringDetailOut(BaseModel):
     next: list[NextOut]
     done: list[DoneOut]
     pending_reminder: dt.date | None
+    tags: list[TagRefOut] = []
 
 
 class ReminderOut(BaseModel):

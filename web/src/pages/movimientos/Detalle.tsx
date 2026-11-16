@@ -13,6 +13,7 @@ import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
 import { DeferralSection, deferralCaption } from "@/components/Deferral";
 import { MoveTagsRow } from "@/components/Tags";
+import { WithPartnerRow } from "@/components/WithPartner";
 import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
@@ -227,15 +228,8 @@ export function DetalleMovimiento() {
             ))}
           </div>
         )}
-        {d.with_partner_id && d.with_partner && (
-          <Link to={`/personas/${d.with_partner_id}`} className="flex min-h-14 items-center gap-3 border-b border-border">
-            <Avatar name={d.with_partner} />
-            <span className="flex flex-1 flex-col">
-              <span className="text-caption text-muted-foreground">Con quién</span>
-              <span className="font-semibold">{d.with_partner}</span>
-            </span>
-            <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
-          </Link>
+        {(s.kind === "expense" || s.kind === "income" || s.kind === "refund" || d.with_partner_id) && (
+          <WithPartnerRow moveId={s.id} partnerId={d.with_partner_id ?? null} partner={d.with_partner ?? null} locked={locked} />
         )}
         {s.kind === "other" && d.lines.length > 0 && (
           <div className="flex flex-col border-b border-border py-2">

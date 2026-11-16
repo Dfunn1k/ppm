@@ -96,6 +96,8 @@ class MoveInput:
     debt_amount: Decimal | None = None                   # …y cuánto de ella cancela
     deferral: DeferralInput | None = None                # gasto o ingreso: repartirlo en el tiempo
     tag_ids: list[int] | None = None                     # etiquetas; None al editar = las que tenía
+    with_partner_id: int | None = None                   # gasto o ingreso: con quién fue (solo informativo)
+    with_partner_set: bool = True                        # False al editar = se queda el que tenía
 
 
 @dataclass(frozen=True)
@@ -554,6 +556,8 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         if s.amount <= 0:
             raise AccountError(400, "Cada parte necesita un monto mayor que cero")
     own = [s for s in m.splits if s.partner_id is None]
+    if m.with_partner_id is not None and m.with_partner_set:   # el que ya tenía puede estar archivado
+        _partner(conn, m.with_partner_id)
     if not own:
         raise AccountError(400, "Al dividir, al menos una parte es tuya: elige su categoría")
     if sum((s.amount for s in m.splits), Decimal(0)) != m.amount:
@@ -603,7 +607,7 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
             receivable = receivable or conn.execute("SELECT system_account('receivable')").fetchone()[0]
             lines.append(_side(receivable, b, cur_id, s.amount, s.partner_id, True))
         else:
-            lines.append(_side(s.category_id, b, base_id, b, None, out))  # type: ignore[arg-type]
+            lines.append(_side(s.category_id, b, base_id, b, m.with_partner_id, out))  # type: ignore[arg-type]
     ref = accs[own[0].category_id].name  # type: ignore[index]
     if paid_by is not None:
         ref = f"{ref} (pagó {_first(payer)})"
@@ -748,13 +752,13 @@ def update(user_id: int, move_id: int, m: MoveInput) -> None:
             with conn.transaction():
                 before = _pairs(conn, move_id)
                 on, state = _state(conn, m)
+                if not m.with_partner_set:
+                    m = replace(m, with_partner_id=_with_partner(conn, move_id))
                 default_ref, lines = _build(conn, m, on, move_id)
-                kept = _with_partners(conn, move_id)
                 conn.execute("DELETE FROM account_move_line WHERE move_id = %s", (move_id,))
                 conn.execute("UPDATE account_move SET date = %s, ref = %s, state = %s WHERE id = %s",
                              (on, (m.ref or "").strip() or default_ref, state, move_id))
                 _write(conn, move_id, lines)
-                _keep_with_partners(conn, move_id, kept)
                 if m.tag_ids is not None:
                     tags_.write_tags(conn, move_id, m.tag_ids)
                 if m.debt_line_id is not None and m.kind in ("collect", "repay"):
@@ -764,19 +768,32 @@ def update(user_id: int, move_id: int, m: MoveInput) -> None:
             raise _translate(e) from None
 
 
-def _with_partners(conn: psycopg.Connection, move_id: int) -> dict[int, int]:
-    """Con quién fue cada categoría (lo que se elige al clasificar): el formulario no lo muestra, así
-    que editar no debe borrarlo."""
-    return dict(conn.execute("""
-        SELECT l.account_id, min(l.partner_id) FROM account_move_line l
+def _with_partner(conn: psycopg.Connection, move_id: int) -> int | None:
+    """Con quién fue (lo informativo de las categorías): si el formulario no lo manda, se queda."""
+    row = conn.execute("""
+        SELECT l.partner_id FROM account_move_line l
           JOIN account_account a ON a.id = l.account_id AND a.account_type IN ('income', 'expense')
-         WHERE l.move_id = %s AND l.partner_id IS NOT NULL GROUP BY l.account_id""", (move_id,)).fetchall())
+         WHERE l.move_id = %s AND l.partner_id IS NOT NULL ORDER BY l.id LIMIT 1""", (move_id,)).fetchone()
+    return row[0] if row else None
 
 
-def _keep_with_partners(conn: psycopg.Connection, move_id: int, kept: dict[int, int]) -> None:
-    for account_id, partner_id in kept.items():
-        conn.execute("UPDATE account_move_line SET partner_id = %s"
-                     " WHERE move_id = %s AND account_id = %s AND partner_id IS NULL", (partner_id, move_id, account_id))
+def set_with_partner(user_id: int, move_id: int, partner_id: int | None) -> None:
+    """Cambiar o quitar con quién fue, desde el detalle. Solo informativo: no crea deudas."""
+    with user_transaction(user_id) as conn:
+        if conn.execute("SELECT 1 FROM account_move WHERE id = %s", (move_id,)).fetchone() is None:
+            raise AccountError(404, "No encontramos ese movimiento")
+        if partner_id is not None:
+            _partner(conn, partner_id)
+        try:
+            with conn.transaction():
+                n = conn.execute("""
+                    UPDATE account_move_line l SET partner_id = %s FROM account_account a
+                     WHERE a.id = l.account_id AND a.account_type IN ('income', 'expense')
+                       AND l.move_id = %s""", (partner_id, move_id)).rowcount
+        except psycopg.Error as e:
+            raise _translate(e) from None
+    if n == 0:
+        raise AccountError(400, "Este movimiento no tiene categoría: «Con quién» va en un gasto o un ingreso")
 
 
 def set_pending(user_id: int, move_id: int, pending: bool) -> None:

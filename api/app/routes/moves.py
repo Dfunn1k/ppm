@@ -74,6 +74,7 @@ class MoveIn(BaseModel):
     debt_amount: Positive | None = None  # …y cuánto de ella cancela
     deferral: DeferralIn | None = None   # gasto o ingreso: repartirlo en el tiempo
     tag_ids: list[int] | None = None     # etiquetas; al editar, sin ellas se quedan las que tenía
+    with_partner_id: int | None = None   # gasto o ingreso: con quién fue (informativo); al editar, sin él se queda
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
@@ -84,7 +85,8 @@ class MoveIn(BaseModel):
             self.currency, self.installments, self.installment_amount, self.later,
             self.debt_currency, self.debt_amount,
             moves.DeferralInput(self.deferral.method, self.deferral.start, self.deferral.end, self.deferral.months)
-            if self.deferral else None, self.tag_ids)
+            if self.deferral else None, self.tag_ids, self.with_partner_id,
+            "with_partner_id" in self.model_fields_set)
 
 
 class PendingIn(BaseModel):
@@ -375,6 +377,19 @@ def create(body: MoveIn, session: CurrentSession = Depends(current_session)) -> 
 def update(move_id: int, body: MoveIn, session: CurrentSession = Depends(current_session)) -> MoveDetailOut:
     try:
         moves.update(session.user_id, move_id, body.logic())
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, move_id)
+
+
+class WithPartnerIn(BaseModel):
+    partner_id: int | None           # None = nadie
+
+
+@router.put("/moves/{move_id}/with-partner", summary="Cambiar o quitar con quién fue (solo informativo)")
+def set_with_partner(move_id: int, body: WithPartnerIn, session: CurrentSession = Depends(current_session)) -> MoveDetailOut:
+    try:
+        moves.set_with_partner(session.user_id, move_id, body.partner_id)
     except AccountError as e:
         raise _http(e) from None
     return _detail(session.user_id, move_id)

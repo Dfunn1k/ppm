@@ -6,13 +6,14 @@ Tres modos: automática (se confirma sola en su fecha), por confirmar (se crea p
 monto; el extracto del banco también lo corrige) y solo avisarme (no crea nada: avisa en el Inicio).
 «Solo esta vez» salta, mueve o cambia el monto de una fecha sin tocar las demás."""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 import datetime as dt
 from decimal import Decimal
 
 import psycopg
 
 from app import moves
+from app import tags as tags_
 from app.accounts import AccountError, _translate
 from app.db import user_transaction
 
@@ -93,6 +94,20 @@ def _save_lines(conn: psycopg.Connection, rec_id: int, lines: list[tuple]) -> No
     conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
 
 
+def _save_tags(conn: psycopg.Connection, rec_id: int, tag_ids: list[int] | None) -> None:
+    """Las etiquetas de la recurrente: cada movimiento que genere nace con ellas (un trigger las copia)."""
+    if tag_ids is None:
+        return
+    wanted = list(dict.fromkeys(tag_ids))
+    if len(wanted) > tags_.MAX_PER_MOVE:
+        raise AccountError(400, f"Hasta {tags_.MAX_PER_MOVE} etiquetas por movimiento")
+    if wanted and conn.execute("SELECT count(*) FROM account_tag WHERE id = ANY(%s)", (wanted,)).fetchone()[0] != len(wanted):
+        raise AccountError(404, "No encontramos esa etiqueta")
+    conn.execute("DELETE FROM account_recurring_account_tag_rel WHERE recurring_id = %s", (rec_id,))
+    for t in wanted:
+        conn.execute("INSERT INTO account_recurring_account_tag_rel (recurring_id, account_tag_id) VALUES (%s, %s)", (rec_id, t))
+
+
 def create(user_id: int, m: moves.MoveInput, rule: Rule, mode: str, bank_charge: bool = False) -> int:
     if mode not in MODES:
         raise AccountError(400, "Elige cómo se registra")
@@ -109,6 +124,7 @@ def create(user_id: int, m: moves.MoveInput, rule: Rule, mode: str, bank_charge:
                     (name, currency, *_rule_values(rule, today),
                      "variable" if mode == "draft" else "fixed", mode, bank_charge)).fetchone()[0]
                 _save_lines(conn, rec_id, lines)
+                _save_tags(conn, rec_id, m.tag_ids)
                 conn.execute("SELECT account_recurring_run()")
                 return rec_id
         except psycopg.Error as e:
@@ -171,6 +187,7 @@ def update(user_id: int, rec_id: int, m: moves.MoveInput, rule: Rule, mode: str)
                     (name, currency, *_rule_values(rule, today), "variable" if mode == "draft" else "fixed",
                      mode, rec_id))
                 _save_lines(conn, rec_id, lines)
+                _save_tags(conn, rec_id, m.tag_ids)
                 conn.execute("SELECT account_recurring_run()")
         except psycopg.Error as e:
             raise _translate(e) from None
@@ -394,6 +411,7 @@ class Detail:
     next: list[Next]
     done: list[Done]
     pending_reminder: dt.date | None   # recordatorio: la fecha que espera
+    tags: list[tags_.TagRef] = field(default_factory=list)
 
 
 def detail(user_id: int, rec_id: int) -> Detail:
@@ -417,10 +435,13 @@ def detail(user_id: int, rec_id: int) -> Detail:
              ORDER BY m.recurring_date DESC LIMIT 24""", (row.account_id, rec_id)).fetchall()]
         reminder = conn.execute("SELECT min(occurrence_date) FROM account_recurring_reminder WHERE recurring_id = %s",
                                 (rec_id,)).fetchone()[0]
+        tag_list = [tags_.TagRef(*t) for t in conn.execute("""
+            SELECT t.id, t.name, t.color FROM account_recurring_account_tag_rel r JOIN account_tag t ON t.id = r.account_tag_id
+             WHERE r.recurring_id = %s ORDER BY lower(t.name)""", (rec_id,))]
     accs, amounts, types, names, icons, colors = r[7], r[8], r[9], r[10], r[11], r[12]
     cats = [i for i, t in enumerate(types) if t in ("income", "expense")]
     return Detail(row, Rule(*rule), [moves.Category(accs[i], names[i], icons[i], colors[i]) for i in cats],
-                  [abs(amounts[i]) for i in cats], nxt, done, reminder)
+                  [abs(amounts[i]) for i in cats], nxt, done, reminder, tag_list)
 
 
 @dataclass(frozen=True)

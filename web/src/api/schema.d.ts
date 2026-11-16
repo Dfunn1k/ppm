@@ -779,6 +779,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moves/{move_id}/with-partner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Cambiar o quitar con quién fue (solo informativo) */
+        put: operations["set_with_partner_moves__move_id__with_partner_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/moves/{move_id}/state": {
         parameters: {
             query?: never;
@@ -3268,6 +3285,8 @@ export interface components {
             deferral?: components["schemas"]["DeferralIn"] | null;
             /** Tag Ids */
             tag_ids?: number[] | null;
+            /** With Partner Id */
+            with_partner_id?: number | null;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
@@ -3901,6 +3920,11 @@ export interface components {
             done: components["schemas"]["DoneOut"][];
             /** Pending Reminder */
             pending_reminder: string | null;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: components["schemas"]["TagRefOut"][];
         };
         /** RecurringIn */
         RecurringIn: {
@@ -4490,6 +4514,11 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WithPartnerIn */
+        WithPartnerIn: {
+            /** Partner Id */
+            partner_id: number | null;
         };
         /** BankOut */
         app__routes__accounts__BankOut: {
@@ -6457,6 +6486,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_with_partner_moves__move_id__with_partner_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithPartnerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
+                };
             };
             /** @description Validation Error */
             422: {
