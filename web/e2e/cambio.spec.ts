@@ -75,12 +75,14 @@ test("un gasto en dólares trae el tipo del día y dice cuánto es en soles", as
   await expect(page.getByText("S/ 35.00")).toBeVisible();
 });
 
-test("el Inicio cuenta los dólares al tipo de hoy", async ({ page }) => {
+test("el Inicio cuenta los dólares al último tipo de cambio", async ({ page }) => {
   await readyUser(page);
   const buy = await todayBuy(page);
   test.skip(buy === null, "No hay ningún tipo de cambio cargado todavía");
   await page.reload();
-  await expect(page.getByText(`dólar a ${buy} de hoy`)).toContainText("US$ 200.00 = S/");
+  // Los días en que SUNAT no publica (feriados, fines de semana) se cuenta con el último: «del 14 nov»
+  await expect(page.getByText(new RegExp(`dólar a ${buy!.replace(".", "\\.")} (de hoy|del \\d{2} \\S+)`)))
+    .toContainText("US$ 200.00 = S/");
 });
 
 test("Z1: solo el administrador ve el tipo de cambio y lo carga a mano", async ({ browser }) => {
