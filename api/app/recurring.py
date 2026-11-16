@@ -258,11 +258,11 @@ def reminder_done(user_id: int, rec_id: int, occurrence: dt.date) -> None:
 # --- Generar ----------------------------------------------------------------------------------
 
 def run(user_id: int) -> int:
-    """Registra lo que ya toca: las recurrentes y el interés de las cuotas ya facturadas. Se llama al
-    abrir la app (GET /me) y antes de mostrar recurrentes: sin programador nocturno, para que
+    """Registra lo que ya toca: las recurrentes, las cuotas ya facturadas y las partes de lo repartido.
+    Se llama al abrir la app (GET /me) y antes de mostrar recurrentes: sin programador nocturno, para que
     ppm_admin siga sin ver a nadie; lo atrasado sale con su fecha."""
     with user_transaction(user_id) as conn:
-        return conn.execute("SELECT account_recurring_run() + post_installment_billing()").fetchone()[0]
+        return conn.execute("SELECT account_recurring_run() + post_installment_billing() + post_deferrals()").fetchone()[0]
 
 
 # --- Ver --------------------------------------------------------------------------------------

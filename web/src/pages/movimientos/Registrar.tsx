@@ -21,6 +21,8 @@ import { CurrencyChoice, OptionList, Segmented, Sheet, SheetSelect } from "@/com
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
+import { DeferralFields, NO_DEFERRAL, type DeferralState, deferralBody, deferralValues } from "@/components/DeferralFields";
+import { deferralSchedule } from "@/lib/deferral";
 import { shortDate, todayISO } from "@/lib/dates";
 import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
@@ -129,6 +131,7 @@ export function Registrar({ editing, recurring, reminder }: {
   const [adding, setAdding] = useState(false);
   const [later, setLater] = useState(false);   // «Lo clasifico después»: a Por clasificar
   const [files, setFiles] = useState<File[]>([]);   // adjuntos: se suben al guardar
+  const [defer, setDefer] = useState<DeferralState>(NO_DEFERRAL);   // repartir en el tiempo
   const upload = useUploadAttachment();
   const partners = usePartners().data ?? [];
   const rule = recurring?.rule;
@@ -164,7 +167,10 @@ export function Registrar({ editing, recurring, reminder }: {
   const crossCurrency = kind === "transfer" && toAccount && toCurrency !== currency;
   const repeating = repeat && !editing;
   // «Lo clasifico después» va en un gasto o ingreso entero, pagado por ti, sin cuotas y sin repetir
-  const canLater = (kind === "expense" || kind === "income") && !split && !other && !(card && inInstallments) && !repeating && !editing;
+  // Repartir en el tiempo: un gasto o un ingreso entero, pagado por ti, sin cuotas, sin repetir y nuevo
+  const canDefer = (kind === "expense" || kind === "income") && !split && !other && !(card && inInstallments) && !repeating && !editing && !later;
+  const deferring = canDefer && defer.on;
+  const canLater = (kind === "expense" || kind === "income") && !split && !other && !(card && inInstallments) && !repeating && !editing && !deferring;
   const isLater = later && canLater;
   const future = date > todayISO() && !repeating;
   // El tipo de cambio se escribe solo si nada lo da: en una transferencia que toca la moneda base, sale de los dos montos
@@ -228,6 +234,14 @@ export function Registrar({ editing, recurring, reminder }: {
     } else if (isLater) {
       body.later = true;
     } else {
+      if (deferring) {
+        const v = deferralValues(defer, date);
+        const inBase = foreign ? (Number(rate.value) > 0 ? multiply(total, rate.value) : null) : total;
+        if (inBase && !deferralSchedule(inBase, defer.method, v.start, v.end, v.months)) {
+          return setProblem(defer.method === "days" ? "Revisa el reparto: que cubra más de un mes, hasta cinco años" : "Revisa el reparto: de 2 a 60 meses");
+        }
+        body.deferral = deferralBody(defer, date);
+      }
       const chosen = split ? parts : [{ ...parts[0]!, amount: total }];
       if (chosen.some((p) => !p.category && !p.partner)) return setProblem(kind === "expense" ? "Elige en qué gastaste" : "Elige de qué es el ingreso");
       if (!chosen.some((p) => p.category)) return setProblem("Al dividir, al menos una parte es tuya: elige su categoría");
@@ -540,6 +554,11 @@ export function Registrar({ editing, recurring, reminder }: {
                 </>
               )}
             </>
+          )}
+          {canDefer && !recurring && (
+            <DeferralFields value={defer} onChange={setDefer} kind={kind as "expense" | "income"} date={date}
+              total={total && Number(total) > 0 ? (foreign ? (Number(rate.value) > 0 ? multiply(total, rate.value) : null) : total) : null}
+              symbol={symbolOf(base)} lang={lang} />
           )}
           {!editing && !recurring && (
             <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
