@@ -672,11 +672,27 @@ CREATE FUNCTION tag_source(p_move bigint) RETURNS bigint LANGUAGE sql STABLE AS 
     p_move)
 $$;
 
--- Las etiquetas de cada movimiento, también las heredadas
+-- Las etiquetas de cada movimiento, también las heredadas: por conjuntos (una unión por cada origen),
+-- para que un reporte de un año no llame a tag_source fila por fila
 CREATE VIEW account_move_tag_v WITH (security_invoker = true) AS
-SELECT m.id AS move_id, r.account_tag_id AS tag_id, tag_source(m.id) <> m.id AS inherited
-  FROM account_move m
-  JOIN account_move_account_tag_rel r ON r.account_move_id = tag_source(m.id);
+SELECT r.account_move_id AS move_id, r.account_tag_id AS tag_id, false AS inherited
+  FROM account_move_account_tag_rel r
+UNION ALL   -- una parte repartida
+SELECT m.id, r.account_tag_id, true
+  FROM account_move m JOIN account_deferral d ON d.id = m.deferral_id
+  JOIN account_move_account_tag_rel r ON r.account_move_id = d.move_id
+UNION ALL   -- la cancelación de un reparto
+SELECT d.cancel_move_id, r.account_tag_id, true
+  FROM account_deferral d JOIN account_move_account_tag_rel r ON r.account_move_id = d.move_id
+ WHERE d.cancel_move_id IS NOT NULL
+UNION ALL   -- una cuota
+SELECT m.id, r.account_tag_id, true
+  FROM account_move m JOIN account_installment_plan p ON p.id = m.installment_plan_id
+  JOIN account_move_account_tag_rel r ON r.account_move_id = p.move_id
+UNION ALL   -- la cancelación de las cuotas
+SELECT p.cancel_move_id, r.account_tag_id, true
+  FROM account_installment_plan p JOIN account_move_account_tag_rel r ON r.account_move_id = p.move_id
+ WHERE p.cancel_move_id IS NOT NULL;
 ```
 
 **Adjuntos.** Es una biblioteca: la ficha del catálogo (nombre, tipo, tamaño, huella) va en la base y el libro, en el estante. El estante es el filestore: cada archivo se guarda en una carpeta según su huella SHA-1 (`ab/ab12…`), así que la misma foto subida dos veces ocupa un solo lugar. Si el estante es un disco local o S3 se decide con la tecnología; el modelo solo define la ficha.

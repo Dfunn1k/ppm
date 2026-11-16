@@ -49,6 +49,11 @@ def list_tags(user_id: int) -> list[Tag]:
              GROUP BY t.id ORDER BY t.active DESC, lower(t.name)""")]
 
 
+def any_tags(user_id: int) -> bool:
+    with user_transaction(user_id) as conn:
+        return conn.execute("SELECT EXISTS (SELECT 1 FROM account_move_account_tag_rel)").fetchone()[0]
+
+
 def create_tag(user_id: int, name: str, color: int | None) -> Tag:
     name = name.strip()
     if not name:

@@ -119,7 +119,7 @@ export function Reportes() {
         <Card to={`/mas/reportes/etiquetas${q}`} label="Etiquetas" icon="sell" value={money(s.tagged)}
           empty={isZero(s.tagged) ? `Nada con etiqueta en ${monthName(month).split(" ")[0]!.toLowerCase()}` : undefined}
           note={<span className="text-caption text-muted-foreground">{s.top_tag ? `La que más: ${s.top_tag}` : ""}</span>}>
-          <span className="grid size-12 place-items-center rounded-full text-white" style={{ background: catColor(s.top_tag_color) }}>
+          <span className="grid size-12 place-items-center rounded-full" style={{ background: catColor(s.top_tag_color), color: "var(--on-category)" }}>
             <Icon name="sell" />
           </span>
         </Card>

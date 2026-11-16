@@ -5,6 +5,9 @@ También: con quién fue un gasto clasificado se ve en el detalle y no se pierde
 
 import pytest
 
+from decimal import Decimal
+
+from tests.test_cancelar_cuotas_api import televisor
 from tests.test_diferidos_api import INICIO
 from tests.test_movimientos_api import HOY, MES, Ana, borrar_usuarios_de_prueba  # noqa: F401
 from tests.test_tarjetas_api import ANTES, CORTE, Con
@@ -134,6 +137,29 @@ def test_las_cuotas_llevan_las_de_su_compra(ana: Con):
     ana.buy(card, "1200.00", ANTES, installments=6, ref="Televisor", tag_ids=[tele])
     rep = report(ana, CORTE.strftime("%Y-%m"))
     assert [(t["name"], t["amount"]) for t in rep["tags"]] == [("Mudanza", "200.00")]   # la cuota 1 ya se facturó
+
+
+def test_las_cancelaciones_llevan_las_de_su_compra(ana: Con):
+    """Lo que cuenta al cancelar (lo que no te devolvieron de un reparto, lo que pagaste de las
+    cuotas que faltaban) también lleva la etiqueta: el reporte por etiqueta da lo mismo que Gastos."""
+    auto = tag(ana, "Auto")
+    d = ana.register(kind="expense", account_id=ana.bcp, amount="1200.00", date=INICIO.isoformat(), ref="SOAT",
+                     splits=[{"category_id": ana.cat["Seguro vehicular"], "amount": "1200.00"}],
+                     deferral={"method": "months", "months": 12}, tag_ids=[auto])
+    r = ana.c.post(f"/moves/{d['summary']['id']}/deferral/cancel", json={"refund": "600", "account_id": ana.bcp})
+    cancel = r.json()["deferral"]["canceled"]["move_id"]
+    assert ana.c.get(f"/moves/{cancel}").json()["tags_inherited"] is True
+
+    _, m = televisor(ana)
+    assert ana.c.put(f"/moves/{m['summary']['id']}/tags", json={"tag_ids": [auto]}).status_code == 204
+    left = sum(Decimal(x["principal"]) for x in m["plan"]["lines"] if not x["billed"])
+    r = ana.c.post(f"/plans/{m['plan']['plan_id']}/cancel", json={"kind": "prepaid", "charged": str(left), "account_id": ana.bcp})
+    assert r.status_code == 200, r.text
+    assert [t["name"] for t in ana.c.get(f"/moves/{r.json()['plan']['canceled']['move_id']}").json()["tags"]] == ["Auto"]
+
+    gastos = ana.c.get("/reports/expenses", params={"period": MES}).json()["total"]
+    assert Decimal(gastos) > Decimal("400.00")                         # parte del mes + 300 que no volvieron + cuotas
+    assert report(ana)["total"] == gastos
 
 
 # --- El reporte ---------------------------------------------------------------------------------

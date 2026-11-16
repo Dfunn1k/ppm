@@ -425,7 +425,7 @@ def summary(user_id: int, month: str) -> Summary:
     inc = categories(user_id, "income", month)
     nw = net_worth(user_id)
     pp = people(user_id)
-    tg = tags.report(user_id, month)
+    tg = tags.report(user_id, month) if tags.any_tags(user_id) else tags.TagReport(month, ZERO, [])
     top = tg.tags[0] if tg.tags and tg.tags[0].amount > 0 else None
     saved = inc.total - exp.total
     return Summary(month, nw.currency, exp.total, exp.previous,

@@ -1216,8 +1216,8 @@ def month(user_id: int, ym: str, account_id: int | None = None, category_id: int
                AND (%s::bigint IS NULL OR EXISTS (SELECT 1 FROM account_move_line l
                                                     JOIN account_account a ON a.id = l.account_id
                                                    WHERE l.move_id = m.id AND (a.id = %s OR a.parent_id = %s)))
-               AND (%s::bigint IS NULL OR EXISTS (SELECT 1 FROM account_move_account_tag_rel r
-                                                   WHERE r.account_move_id = tag_source(m.id) AND r.account_tag_id = %s))
+               AND (%s::bigint IS NULL OR EXISTS (SELECT 1 FROM account_move_tag_v v
+                                                   WHERE v.move_id = m.id AND v.tag_id = %s))
              ORDER BY m.date DESC, m.id DESC""",
                              (first, nxt, account_id, account_id, category_id, category_id, category_id,
                               tag_id, tag_id)).fetchall()

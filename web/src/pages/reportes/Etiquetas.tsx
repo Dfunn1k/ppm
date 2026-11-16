@@ -51,7 +51,7 @@ function TagReportView({ p }: { p: ReturnType<typeof usePeriod> }) {
               return (
                 <div key={t.id} className="flex flex-col border-b border-border">
                   <button type="button" aria-expanded={isOpen} onClick={() => toggle(t.id)} className="flex min-h-16 items-center gap-3 text-left">
-                    <span aria-hidden="true" className="grid size-9 flex-none place-items-center rounded-full text-white" style={{ background: tagColor(t.color) }}>
+                    <span aria-hidden="true" className="grid size-9 flex-none place-items-center rounded-full" style={{ background: tagColor(t.color), color: "var(--on-category)" }}>
                       <Icon name="sell" className="text-[18px]" />
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-1.5">
