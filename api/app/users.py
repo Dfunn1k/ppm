@@ -161,8 +161,8 @@ def my_currencies(user_id: int) -> list[MyCurrency]:
             SELECT trim(c.name), c.full_name, coalesce(f.symbol, trim(c.name)), c.decimal_places,
                    c.id = u.currency_id,
                    coalesce((SELECT array_agg(a.name ORDER BY a.name) FROM account_account a
-                              WHERE a.currency_id = c.id AND a.active
-                                AND a.account_type IN ('asset', 'liability')), '{}'),
+                              WHERE a.currency_id = c.id AND a.active AND a.system_role IS NULL
+                                AND a.account_type IN ('asset', 'liability')), '{}'),   -- las tuyas, no las de la app
                    (SELECT r.source FROM res_currency_rate r WHERE r.currency_id = c.id
                      ORDER BY r.name DESC LIMIT 1)
               FROM res_users_currency uc

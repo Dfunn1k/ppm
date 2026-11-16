@@ -44,6 +44,13 @@ class ManualLineIn(BaseModel):
     partner_id: int | None = None
 
 
+class DeferralIn(BaseModel):
+    method: Literal["days", "months"]    # por días (según los días de cada mes) o por meses (partes iguales)
+    start: dt.date | None = None         # desde cuándo cuenta; None = la fecha del movimiento
+    end: dt.date | None = None           # por días: el último día que cubre
+    months: Annotated[int, Field(ge=2, le=60)] | None = None   # por meses: en cuántos
+
+
 class MoveIn(BaseModel):
     kind: InputKind
     account_id: int | None = None        # de dónde sale o adónde entra (no en un asiento manual ni si pagó otro)
@@ -65,6 +72,7 @@ class MoveIn(BaseModel):
     later: bool = False                  # gasto o ingreso: «Lo clasifico después» (va a Por clasificar)
     debt_currency: Annotated[str, Field(min_length=3, max_length=3)] | None = None   # cobrar o pagar en otra moneda: la de la deuda…
     debt_amount: Positive | None = None  # …y cuánto de ella cancela
+    deferral: DeferralIn | None = None   # gasto o ingreso: repartirlo en el tiempo
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
@@ -73,7 +81,9 @@ class MoveIn(BaseModel):
             self.to_account_id, self.to_amount, self.partner_id, self.debt_line_id, self.paid_by_partner_id,
             [moves.ManualLine(x.account_id, x.debit, x.credit, x.partner_id) for x in self.lines],
             self.currency, self.installments, self.installment_amount, self.later,
-            self.debt_currency, self.debt_amount)
+            self.debt_currency, self.debt_amount,
+            moves.DeferralInput(self.deferral.method, self.deferral.start, self.deferral.end, self.deferral.months)
+            if self.deferral else None)
 
 
 class PendingIn(BaseModel):
@@ -203,6 +213,44 @@ class PlanOut(BaseModel):
     canceled: PlanCancelOut | None = None
 
 
+class DeferralPartOut(BaseModel):
+    sequence: int
+    date: dt.date                    # cuándo cuenta
+    days: int | None                 # por días: cuántos cubre
+    amount: Decimal                  # en moneda base
+    move_id: int | None              # su asiento, si ya contó
+    posted: bool
+    canceled: bool                   # no llegó a contar: se canceló lo que faltaba
+
+
+class DeferralCancelOut(BaseModel):
+    move_id: int                     # su asiento: borrarlo la deshace
+    date: dt.date
+    refund: Decimal                  # lo que volvió (o devolviste), en moneda base
+    account: str | None
+    rest: Decimal                    # lo que contó ese día como gasto (o ingreso)
+
+
+class DeferralOut(BaseModel):
+    kind: Literal["expense", "income"]
+    method: Literal["days", "months"]
+    start: dt.date
+    end: dt.date | None
+    months: int | None
+    amount: Decimal
+    category: CategoryOut
+    parts: list[DeferralPartOut]
+    remaining: Decimal               # lo que todavía espera
+    canceled: DeferralCancelOut | None = None
+
+
+class DeferralOfOut(BaseModel):
+    move_id: int                     # el movimiento original
+    ref: str
+    sequence: int | None             # la parte; None = la cancelación
+    parts: int
+
+
 class BankLineOut(BaseModel):
     statement_id: int
     statement: str
@@ -227,6 +275,8 @@ class MoveDetailOut(BaseModel):
     bank: list[BankLineOut] = []     # si vino de un extracto: lo que dijo el banco
     cancels: CancelOfOut | None = None   # cancela las cuotas que faltaban de esta compra
     locked: bool = False                 # en un periodo cerrado: no se cambia ni se borra
+    deferral: DeferralOut | None = None      # repartido en el tiempo: su calendario
+    deferral_of: DeferralOfOut | None = None   # una parte de un reparto o su cancelación
 
 
 class ManualAccountOut(BaseModel):
@@ -354,6 +404,23 @@ def cancel_plan(plan_id: int, body: CancelPlanIn, session: CurrentSession = Depe
     except AccountError as e:
         raise _http(e) from None
     return _detail(session.user_id, purchase)
+
+
+class CancelDeferralIn(BaseModel):
+    date: dt.date | None = None          # None = hoy
+    refund: Amount = Decimal("0.00")     # lo que te devolvieron (o devolviste), en la moneda de la cuenta
+    account_id: int | None = None        # a qué cuenta entró (o de cuál salió); solo si hay algo
+    rate: Rate | None = None             # si esa cuenta no es en moneda base; None = el del día
+
+
+@router.post("/moves/{move_id}/deferral/cancel", summary="Cancelar lo que falta de un movimiento repartido en el tiempo")
+def cancel_deferral(move_id: int, body: CancelDeferralIn,
+                    session: CurrentSession = Depends(current_session)) -> MoveDetailOut:
+    try:
+        moves.cancel_deferral(session.user_id, move_id, body.date, body.refund, body.account_id, body.rate)
+    except AccountError as e:
+        raise _http(e) from None
+    return _detail(session.user_id, move_id)
 
 
 @router.delete("/moves/{move_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Borrar un movimiento")

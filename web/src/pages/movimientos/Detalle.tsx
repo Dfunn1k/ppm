@@ -1,7 +1,8 @@
 // M2 · Detalle de un movimiento: los datos, lo dividido, el costo del cambio (o la ganancia) al cambiar
 // de moneda, con quién (y qué deudas cancela), las líneas de un asiento manual, editar, confirmar o
 // pasar a por confirmar, y borrar. Una compra en cuotas muestra su calendario y no se edita; si es
-// tuya, se pueden cancelar las cuotas que faltan (y borrar esa cancelación la deshace).
+// tuya, se pueden cancelar las cuotas que faltan (y borrar esa cancelación la deshace). Lo repartido
+// en el tiempo muestra sus partes y «Cancelar lo que falta»; sus partes se arman solas.
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -10,6 +11,7 @@ import { MoveAttachments } from "@/components/Attachments";
 import { CancelPlanSheet } from "@/components/CancelPlanSheet";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
+import { DeferralSection, deferralCaption } from "@/components/Deferral";
 import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
@@ -63,14 +65,19 @@ export function DetalleMovimiento() {
   // Las deudas que nacen con este movimiento (no los pagos): cada una puede tener su vencimiento
   const debts = ["lend", "borrow", "opening", "expense"].includes(s.kind)
     ? d.lines.filter((l) => l.partner_id && l.line_id) : [];
-  const sign = f === "in" ? "+ " : f === "out" ? "− " : "";
-  const tone = f === "none" ? "" : toneOf(s.kind);
+  const sign = d.deferral ? (d.deferral.kind === "income" ? "+ " : "− ") : f === "in" ? "+ " : f === "out" ? "− " : "";
+  const tone = d.deferral ? toneOf(d.deferral.kind) : f === "none" ? "" : toneOf(s.kind);
   const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || s.kind === "opening" || d.paid_by_partner_id;
   const partnerId = d.partner_id ?? d.paid_by_partner_id ?? s.partner_id;
   const plan = d.plan;
   const cancels = d.cancels;
   const locked = d.locked;
-  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan && !cancels && !locked;
+  // Repartido en el tiempo: el original (de la cuenta a lo que espera), una parte o su cancelación
+  const deferral = d.deferral;
+  const of = d.deferral_of;
+  const part = of && of.sequence != null;
+  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan && !cancels
+    && !deferral && !of && !locked;
   const canceled = plan?.canceled;
   // Solo una compra tuya (con su categoría) que aún tiene cuotas por facturar
   const cancelable = !!plan && transfer && !!plan.category && !canceled && Number(plan.remaining) > 0 && s.posted;   // aunque la compra esté en un mes cerrado: la cancelación va con su propia fecha
@@ -102,7 +109,7 @@ export function DetalleMovimiento() {
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
         <span className="pr-2.5 text-label text-muted-foreground">
-          {exchange ? "Cambio de moneda" : plan && transfer ? "Gasto en cuotas" : plan && s.kind === "lend" ? "Préstamo en cuotas" : plan ? "Cuotas de antes de PPM" : KIND_NAME[s.kind]}
+          {deferral ? (deferral.kind === "expense" ? "Gasto repartido" : "Ingreso repartido") : exchange ? "Cambio de moneda" : plan && transfer ? "Gasto en cuotas" : plan && s.kind === "lend" ? "Préstamo en cuotas" : plan ? "Cuotas de antes de PPM" : KIND_NAME[s.kind]}
         </span>
       </div>
 
@@ -134,6 +141,16 @@ export function DetalleMovimiento() {
           <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
         </Link>
       )}
+      {of && (
+        <Link to={`/movimientos/${of.move_id}`} className="mt-3 flex items-center gap-2.5 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
+          <Icon name={part ? "date_range" : "event_busy"} />
+          <span className="flex-1 text-[14px]">
+            {part ? `Parte ${of.sequence} de ${of.parts} de «${of.ref}». Se arma sola: para cambiarla, ve al original.`
+              : `Cancela lo que faltaba de «${of.ref}». Para deshacerla, bórrala.`}
+          </span>
+          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        </Link>
+      )}
       {unclassified && (
         <div className="mt-4 flex items-center gap-2.5 rounded-[12px] bg-attention-soft py-2.5 pr-2.5 pl-3.5 text-attention">
           <Icon name="inbox" />
@@ -150,6 +167,11 @@ export function DetalleMovimiento() {
       {plan?.price && plan.installment_amount && (
         <span className="text-caption text-muted-foreground tabular-nums">
           {plan.n_installments} cuotas de {formatAmount(plan.installment_amount, symbolOf(plan.currency), lang)} · precio {formatAmount(plan.price, symbolOf(plan.currency), lang)}
+        </span>
+      )}
+      {deferral && (
+        <span className="text-caption text-muted-foreground tabular-nums">
+          {deferralCaption(deferral, (v) => formatAmount(v, symbolOf(me.currency), lang))}
         </span>
       )}
       {s.currency !== me.currency && !transfer && (
@@ -169,11 +191,15 @@ export function DetalleMovimiento() {
             <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
           </Link>
         )}
-        {(transfer || d.account_id) && s.kind !== "other" && (
+        {deferral ? (
+          deferral.kind === "expense"
+            ? <Field icon={iconOf(from)} label="Salió de" value={from!} />
+            : <Field icon={iconOf(to)} label="Entró a" value={to!} />
+        ) : (transfer || d.account_id) && s.kind !== "other" && (
           <Field icon={iconOf(from)} label={f === "in" ? "Entró a" : "Salió de"} value={from!} />
         )}
         {plan?.category && <Field icon="category" label="En qué" value={plan.category} />}
-        {transfer && !plan && (
+        {transfer && !plan && !deferral && (
           <Field icon={iconOf(to)} label="Entró a"
             value={`${to}${s.to_amount && s.to_currency !== s.currency ? ` · ${formatAmount(s.to_amount, symbolOf(s.to_currency), lang)}` : ""}`} />
         )}
@@ -331,6 +357,8 @@ export function DetalleMovimiento() {
         </section>
       )}
 
+      {deferral && <div className="mt-1"><DeferralSection moveId={s.id} deferral={deferral} title={s.ref} posted={s.posted} locked={locked} /></div>}
+
       {s.fx != null && (d.cost != null || debtBook != null) && (
         <section aria-label={gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}
           className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-card p-3.5">
@@ -385,16 +413,17 @@ export function DetalleMovimiento() {
             <span>Editar</span><Icon name="edit" className="text-[22px]" />
           </Link>
         )}
-        {s.posted && !(plan || cancels) && !locked && (
+        {s.posted && !(plan || cancels || deferral || of) && !locked && (
           <button type="button" disabled={state.isPending} onClick={() => state.mutate(s.posted)}
             className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
             <Icon name={s.posted ? "schedule" : "check"} />
             {s.posted ? "Pasar a por confirmar" : "Confirmar"}
           </button>
         )}
-        {!locked && <button type="button" onClick={() => setConfirmDelete(true)}
+        {!locked && !part && <button type="button" onClick={() => setConfirmDelete(true)}
           className="flex h-11 items-center justify-center gap-1.5 text-[14px] font-semibold text-destructive">
-          <Icon name={cancels ? "undo" : "delete"} />{plan ? "Borrar la compra y sus cuotas" : cancels ? "Deshacer la cancelación" : "Borrar movimiento"}
+          <Icon name={cancels || of ? "undo" : "delete"} />
+          {plan ? "Borrar la compra y sus cuotas" : cancels || of ? "Deshacer la cancelación" : deferral ? "Borrar el movimiento y su reparto" : "Borrar movimiento"}
         </button>}
       </div>
 
@@ -412,18 +441,20 @@ export function DetalleMovimiento() {
           title={dating.owesMe ? `¿Hasta cuándo te paga${s.partner ? ` ${s.partner.split(" ")[0]}` : ""}?` : `¿Hasta cuándo le pagas${s.partner ? ` a ${s.partner.split(" ")[0]}` : ""}?`} />
       )}
 
-      <Sheet title={cancels ? "¿Deshacer la cancelación?" : "¿Borrar este movimiento?"} open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+      <Sheet title={cancels || of ? "¿Deshacer la cancelación?" : "¿Borrar este movimiento?"} open={confirmDelete} onClose={() => setConfirmDelete(false)}>
         <div className="flex flex-col gap-4 px-3">
           <p className="text-muted-foreground">
             {cancels
               ? `Las cuotas que faltaban de «${cancels.ref}» vuelven a su calendario y a la tarjeta.`
-              : `«${s.ref}» desaparece de tus movimientos${plan ? ", con sus cuotas," : ""} y sus montos vuelven a las cuentas. No se puede deshacer.`}
+              : of
+              ? `Las partes que faltaban de «${of.ref}» vuelven a su calendario y lo devuelto sale de la cuenta.`
+              : `«${s.ref}» desaparece de tus movimientos${plan ? ", con sus cuotas," : deferral ? ", con las partes que ya contaron," : ""} y sus montos vuelven a las cuentas. No se puede deshacer.`}
             {bank.length > 0 && " Si vuelves a importar el extracto, regresa: el banco dice que pasó."}
           </p>
           <button type="button" disabled={remove.isPending}
-            onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : cancels ? `/movimientos/${cancels.move_id}` : "/movimientos", { replace: true }) })}
+            onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : cancels ? `/movimientos/${cancels.move_id}` : of ? `/movimientos/${of.move_id}` : "/movimientos", { replace: true }) })}
             className="flex h-14 items-center justify-center gap-2 rounded-xl bg-destructive font-semibold text-destructive-foreground">
-            <Icon name={cancels ? "undo" : "delete"} />{cancels ? "Deshacer la cancelación" : "Borrar movimiento"}
+            <Icon name={cancels || of ? "undo" : "delete"} />{cancels || of ? "Deshacer la cancelación" : "Borrar movimiento"}
           </button>
           <button type="button" onClick={() => setConfirmDelete(false)} className="h-11 text-caption font-semibold text-primary-strong underline">
             Cancelar

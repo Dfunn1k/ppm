@@ -7,6 +7,7 @@ revisa que cuadren, que cada uno vaya en la moneda de su cuenta y que nada futur
 Después de guardar, los pagos y las deudas de cada persona se concilian (de lo más antiguo a lo más
 nuevo), como el cuaderno de fiados: «pagó 60, faltan 40»."""
 
+import calendar
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
 import datetime as dt
@@ -62,6 +63,15 @@ class ManualLine:
 
 
 @dataclass(frozen=True)
+class DeferralInput:
+    """Repartir en el tiempo un gasto pagado por adelantado o un ingreso cobrado por adelantado."""
+    method: str                  # 'days': cada mes según los días que cubre · 'months': partes iguales
+    start: dt.date | None = None    # desde cuándo cuenta; None = la fecha del movimiento
+    end: dt.date | None = None      # por días: el último día que cubre
+    months: int | None = None       # por meses: en cuántos
+
+
+@dataclass(frozen=True)
 class MoveInput:
     kind: str                    # uno de INPUT_KINDS
     account_id: int | None       # la cuenta de dinero: de dónde sale o adónde entra
@@ -83,6 +93,7 @@ class MoveInput:
     later: bool = False                                  # gasto o ingreso: «Lo clasifico después» (a Por clasificar)
     debt_currency: str | None = None                     # cobrar o pagar en otra moneda: la de la deuda…
     debt_amount: Decimal | None = None                   # …y cuánto de ella cancela
+    deferral: DeferralInput | None = None                # gasto o ingreso: repartirlo en el tiempo
 
 
 @dataclass(frozen=True)
@@ -344,6 +355,74 @@ def _lend_in_installments(conn: psycopg.Connection, m: MoveInput, money: _Acc, p
     return lines
 
 
+# --- Repartir en el tiempo --------------------------------------------------------------------
+
+DEFERRAL_ROLE = {"expense": "prepaid", "income": "unearned"}
+MAX_DEFERRAL_DAYS = 1830   # unos cinco años, como el máximo de cuotas
+
+
+def _add_months(on: dt.date, k: int) -> dt.date:
+    """El mismo día k meses después; si ese mes es más corto, su último día (31 ene → 28 feb)."""
+    y, m = divmod(on.month - 1 + k, 12)
+    year, month = on.year + y, m + 1
+    return dt.date(year, month, min(on.day, calendar.monthrange(year, month)[1]))
+
+
+def deferral_schedule(total: Decimal, d: DeferralInput, start: dt.date) -> list[tuple[dt.date, int | None, Decimal]]:
+    """Las partes (fecha, días que cubre, monto). Por días: una por mes, según los días que cubre,
+    con fecha el primer día que cubre; por meses: iguales, el mismo día de cada mes. La última cierra
+    el redondeo."""
+    out: list[tuple[dt.date, int | None, Decimal]] = []
+    if d.method == "days":
+        if d.end is None or d.end <= start:
+            raise AccountError(400, "Elige hasta cuándo cubre: un día después de que empieza")
+        span = (d.end - start).days + 1
+        if span > MAX_DEFERRAL_DAYS:
+            raise AccountError(400, "Se reparte en cinco años como máximo")
+        cur, used = start, ZERO
+        while cur <= d.end:
+            seg_end = min(dt.date(cur.year, cur.month, calendar.monthrange(cur.year, cur.month)[1]), d.end)
+            days = (seg_end - cur).days + 1
+            amount = total - used if seg_end == d.end else _round(total * days / span)
+            out.append((cur, days, amount))
+            used += amount
+            cur = seg_end + dt.timedelta(days=1)
+        if len(out) < 2:
+            raise AccountError(400, "Para repartirlo, que cubra más de un mes")
+    elif d.method == "months":
+        n = d.months or 0
+        if not 2 <= n <= 60:
+            raise AccountError(400, "Se reparte en 2 a 60 meses")
+        part = _round(total / n)
+        out = [(_add_months(start, k), None, part if k < n - 1 else total - part * (n - 1)) for k in range(n)]
+    else:
+        raise AccountError(400, "Elige si se reparte por días o por meses")
+    if any(a <= 0 for _, _, a in out):
+        raise AccountError(400, "Es muy poco para repartirlo en tantas partes")
+    return out
+
+
+def _deferral(conn: psycopg.Connection, m: MoveInput, move_id: int, on: dt.date) -> None:
+    """Guarda el calendario y pasa lo que ya llegó (si empezó antes de hoy)."""
+    d = m.deferral
+    assert d is not None
+    total = conn.execute("SELECT abs(balance) FROM account_move_line WHERE move_id = %s"
+                         " AND account_id = system_account(%s)", (move_id, DEFERRAL_ROLE[m.kind])).fetchone()[0]
+    category = m.splits[0].category_id
+    start = d.start or on
+    parts = deferral_schedule(total, d, start)
+    deferral_id = conn.execute("""
+        INSERT INTO account_deferral (move_id, kind, method, date_start, date_end, n_months, amount, category_account_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                               (move_id, m.kind, d.method, start, d.end if d.method == "days" else None,
+                                d.months if d.method == "months" else None, total, category)).fetchone()[0]
+    with conn.cursor() as cur:
+        cur.executemany("INSERT INTO account_deferral_line (deferral_id, sequence, date, days, amount)"
+                        " VALUES (%s, %s, %s, %s, %s)",
+                        [(deferral_id, i, when, days, amount) for i, (when, days, amount) in enumerate(parts, 1)])
+    conn.execute("SELECT post_deferrals()")
+
+
 def _build_manual(conn: psycopg.Connection, m: MoveInput, base_id: int) -> tuple[str, list[Line]]:
     if len(m.lines) < 2:
         raise AccountError(400, "Un asiento manual necesita al menos dos líneas")
@@ -381,6 +460,8 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         raise AccountError(400, "Elige qué tipo de movimiento es")
     if m.later and m.kind not in ("expense", "income"):
         raise AccountError(400, "«Lo clasifico después» va solo en un gasto o un ingreso")
+    if m.deferral is not None and m.kind not in ("expense", "income"):
+        raise AccountError(400, "Repartir en el tiempo va solo en un gasto o un ingreso")
     base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
     if m.kind == "manual":
         return _build_manual(conn, m, base_id)
@@ -441,7 +522,8 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         cur_id = money.currency_id  # type: ignore[assignment]
         rate = _rate(conn, money, base_id, on, m.rate)
     if m.later:   # «Lo clasifico después»: a Por clasificar, como lo traído del banco; no es gasto ni ingreso aún
-        if m.kind not in ("expense", "income") or paid_by is not None or m.splits or m.installments is not None:
+        if (m.kind not in ("expense", "income") or paid_by is not None or m.splits or m.installments is not None
+                or m.deferral is not None):
             raise AccountError(400, "«Lo clasifico después» va en un gasto o un ingreso entero: sin dividir, sin cuotas"
                                     " y pagado por ti")
         suspense = conn.execute("SELECT system_account('suspense')").fetchone()[0]
@@ -482,6 +564,18 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         raise AccountError(400, "Revisa las partes: con ese tipo de cambio no cuadran")
 
     out = m.kind == "expense"   # el gasto sale de la cuenta (Haber) y va a la categoría (Debe)
+    # Repartido en el tiempo: lo que no se usó (o no se ganó) espera en «Pagos por adelantado» (o en
+    # «Cobrado por adelantado»), en moneda base; cada parte pasa a la categoría al llegar su fecha
+    if m.deferral is not None:
+        if m.kind not in ("expense", "income") or paid_by is not None or m.installments is not None:
+            raise AccountError(400, "Repartir en el tiempo va en un gasto o un ingreso pagado por ti, sin cuotas")
+        if len(m.splits) != 1 or m.splits[0].partner_id is not None:
+            raise AccountError(400, "Al repartir en el tiempo va una sola categoría, sin dividir")
+        deferral_schedule(total_base, m.deferral, m.deferral.start or on)   # que se pueda repartir
+        hold = conn.execute("SELECT system_account(%s)", (DEFERRAL_ROLE[m.kind],)).fetchone()[0]
+        return accs[m.splits[0].category_id].name, [  # type: ignore[index]
+            _side(money.id, total_base, cur_id, m.amount, None, not out),
+            _side(hold, total_base, base_id, total_base, None, out)]
     if m.installment_amount is not None:
         if m.kind != "expense" or paid_by is not None or not card or m.installments is None:
             raise AccountError(400, "El monto de la cuota va solo en un gasto con tarjeta en cuotas")
@@ -583,6 +677,8 @@ def _create(conn: psycopg.Connection, m: MoveInput) -> int:
     _write(conn, move_id, lines)
     if m.installments is not None:
         _installments(conn, m, move_id)
+    if m.deferral is not None:
+        _deferral(conn, m, move_id, on)
     if m.debt_line_id is not None and m.kind in ("collect", "repay"):
         _settle_first(conn, move_id, m.debt_line_id)
     reconcile(conn, _pairs(conn, move_id))
@@ -608,6 +704,21 @@ def _has_plan(conn: psycopg.Connection, move_id: int) -> bool:
 
 
 PLAN_NOT_EDITABLE = "Una compra en cuotas no se edita: bórrala y regístrala de nuevo"
+DEFERRAL_NOT_EDITABLE = {
+    "original": "Un movimiento repartido en el tiempo no se edita: bórralo y regístralo de nuevo",
+    "part": "Una parte de un reparto se arma sola: para cambiarla, cancela lo que falta o borra el movimiento original",
+    "cancel": "Una cancelación de un reparto no se edita: bórrala para deshacerla y vuelve a cancelar"}
+
+
+def _deferral_link(conn: psycopg.Connection, move_id: int) -> str | None:
+    """Qué es el movimiento en un reparto: 'original' (el pago o el cobro), 'part' (una parte que ya
+    contó), 'cancel' (la cancelación de lo que faltaba) o None."""
+    row = conn.execute("""
+        SELECT CASE WHEN EXISTS (SELECT 1 FROM account_deferral WHERE move_id = %(m)s) THEN 'original'
+                    WHEN EXISTS (SELECT 1 FROM account_move WHERE id = %(m)s AND deferral_id IS NOT NULL) THEN 'part'
+                    WHEN EXISTS (SELECT 1 FROM account_deferral WHERE cancel_move_id = %(m)s) THEN 'cancel' END""",
+                       {"m": move_id}).fetchone()
+    return row[0] if row else None
 CANCEL_NOT_EDITABLE = "Una cancelación de cuotas no se edita: bórrala para deshacerla y vuelve a cancelar"
 
 NOT_EDITABLE = {"opening": "Un saldo inicial no se edita aquí: corrígelo desde su cuenta o, si es con una persona, bórralo y vuelve a anotarlo",
@@ -624,6 +735,9 @@ def update(user_id: int, move_id: int, m: MoveInput) -> None:
             raise AccountError(400, PLAN_NOT_EDITABLE)
         if _canceled_plan_of(conn, move_id) is not None:
             raise AccountError(400, CANCEL_NOT_EDITABLE)
+        link = _deferral_link(conn, move_id)
+        if link is not None:
+            raise AccountError(400, DEFERRAL_NOT_EDITABLE[link])
         if kind in NOT_EDITABLE:
             raise AccountError(400, NOT_EDITABLE[kind])
         try:
@@ -648,6 +762,8 @@ def set_pending(user_id: int, move_id: int, pending: bool) -> None:
             raise AccountError(404, "No encontramos ese movimiento")
         if pending and _canceled_plan_of(conn, move_id) is not None:
             raise AccountError(400, "Una cancelación de cuotas no pasa a por confirmar: bórrala para deshacerla")
+        if pending and _deferral_link(conn, move_id) is not None:
+            raise AccountError(400, "Lo repartido en el tiempo no pasa a por confirmar: bórralo si te equivocaste")
         try:
             with conn.transaction():
                 if not pending and _kind_of(conn, move_id) in ("collect", "repay", "custody_out"):
@@ -656,6 +772,8 @@ def set_pending(user_id: int, move_id: int, pending: bool) -> None:
                              ("draft" if pending else "posted", move_id))
                 conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
                 reconcile(conn, _pairs(conn, move_id))
+                if not pending:
+                    conn.execute("SELECT post_deferrals()")   # un pago con fecha futura: ya llegó
         except psycopg.Error as e:
             raise _translate(e) from None
 
@@ -694,11 +812,19 @@ def delete(user_id: int, move_id: int) -> None:
                                " WHERE l.move_id = %s", (move_id,)).fetchone() is not None
         if kind == "opening" and not _pairs(conn, move_id) and not on_card:
             raise AccountError(400, "Un saldo inicial se corrige desde su cuenta")
+        link = _deferral_link(conn, move_id)
+        if link == "part":
+            raise AccountError(400, "Una parte de un reparto no se borra sola: cancela lo que falta o borra el movimiento original")
         pairs = _pairs(conn, move_id)
         try:
             with conn.transaction():
+                if link == "original":   # con su cancelación, si la hay: sin el reparto no tiene sentido
+                    conn.execute("DELETE FROM account_move WHERE id = (SELECT cancel_move_id FROM account_deferral"
+                                 " WHERE move_id = %s)", (move_id,))
                 conn.execute("DELETE FROM account_move WHERE id = %s", (move_id,))
                 reconcile(conn, pairs)
+                if link == "cancel":     # deshacer: vuelven las partes que ya tocaban
+                    conn.execute("SELECT post_deferrals()")
         except psycopg.Error as e:
             raise _translate(e) from None
 
@@ -829,6 +955,49 @@ class PlanDetail:
 
 
 @dataclass(frozen=True)
+class DeferralPart:
+    sequence: int
+    date: dt.date                # cuándo cuenta
+    days: int | None             # por días: cuántos cubre
+    amount: Decimal              # en moneda base
+    move_id: int | None = None   # su asiento, si ya contó
+    posted: bool = False         # ya contó (en un mes cerrado puede quedar por confirmar)
+    canceled: bool = False       # no llegó a contar: se canceló lo que faltaba
+
+
+@dataclass(frozen=True)
+class DeferralCancel:
+    move_id: int                 # su asiento: borrarlo la deshace
+    date: dt.date
+    refund: Decimal              # lo que volvió (o devolviste), en moneda base
+    account: str | None          # a qué cuenta entró (o de cuál salió)
+    rest: Decimal                # lo que contó ese día como gasto (o ingreso)
+
+
+@dataclass(frozen=True)
+class DeferralDetail:
+    kind: str                    # 'expense' | 'income'
+    method: str                  # 'days' | 'months'
+    start: dt.date
+    end: dt.date | None          # por días: el último día que cubre
+    months: int | None           # por meses: en cuántos
+    amount: Decimal              # en moneda base
+    category: Category
+    parts: list[DeferralPart]
+    remaining: Decimal           # lo que todavía espera
+    canceled: DeferralCancel | None = None
+
+
+@dataclass(frozen=True)
+class DeferralOf:
+    """Una parte de un reparto, o su cancelación: el movimiento original."""
+    move_id: int
+    ref: str
+    sequence: int | None         # la parte; None = la cancelación
+    parts: int
+
+
+@dataclass(frozen=True)
 class BankLine:
     """Lo que dice el banco de un movimiento importado: no cambia, aunque cambies la glosa."""
     statement_id: int
@@ -855,6 +1024,8 @@ class MoveDetail:
     bank: list[BankLine] = field(default_factory=list)   # lo que dijo el banco, si vino de un extracto
     cancels: CancelOf | None = None                      # cancela las cuotas que faltaban de esta compra
     locked: bool = False                                 # en un periodo cerrado: no se cambia ni se borra
+    deferral: DeferralDetail | None = None               # repartido en el tiempo: su calendario
+    deferral_of: DeferralOf | None = None                # una parte de un reparto o su cancelación
 
 
 _LINES_SQL = """
@@ -1061,7 +1232,119 @@ def detail(user_id: int, move_id: int) -> MoveDetail:
         d = replace(d, locked=True)
     if of is not None:
         d = replace(d, cancels=CancelOf(*of))
+    with user_transaction(user_id) as conn:
+        d = replace(d, deferral=_deferral_detail(conn, move_id), deferral_of=_deferral_of(conn, move_id))
     return replace(d, bank=bank) if bank else d
+
+
+def _deferral_detail(conn: psycopg.Connection, move_id: int) -> DeferralDetail | None:
+    head = conn.execute("""
+        SELECT d.id, d.kind, d.method, d.date_start, d.date_end, d.n_months, d.amount,
+               a.id, a.name, coalesce(a.icon, p.icon), coalesce(a.color, p.color), d.cancel_move_id
+          FROM account_deferral d JOIN account_account a ON a.id = d.category_account_id
+          LEFT JOIN account_account p ON p.id = a.parent_id
+         WHERE d.move_id = %s""", (move_id,)).fetchone()
+    if head is None:
+        return None
+    did, kind, method, start, end, months, amount, cid, cname, icon, color, cancel_id = head
+    parts = [DeferralPart(seq, on, days, amt, mid, state == "posted", mid is None and cancel_id is not None)
+             for seq, on, days, amt, mid, state in conn.execute("""
+                SELECT l.sequence, l.date, l.days, l.amount, m.id, m.state
+                  FROM account_deferral_line l
+                  LEFT JOIN account_move m ON m.deferral_id = l.deferral_id AND m.deferral_sequence = l.sequence
+                 WHERE l.deferral_id = %s ORDER BY l.sequence""", (did,))]
+    canceled = None
+    if cancel_id is not None:
+        hold = DEFERRAL_ROLE[kind]
+        on, refund, account, rest = conn.execute("""
+            SELECT m.date,
+                   coalesce((SELECT abs(l.balance) FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                              WHERE l.move_id = m.id AND a.account_type IN ('asset', 'liability')
+                                AND a.system_role IS DISTINCT FROM %(r)s), 0),
+                   (SELECT a.name FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                     WHERE l.move_id = m.id AND a.account_type IN ('asset', 'liability')
+                       AND a.system_role IS DISTINCT FROM %(r)s),
+                   coalesce((SELECT abs(l.balance) FROM account_move_line l
+                              WHERE l.move_id = m.id AND l.account_id = %(c)s), 0)
+              FROM account_move m WHERE m.id = %(m)s""", {"m": cancel_id, "r": hold, "c": cid}).fetchone()
+        canceled = DeferralCancel(cancel_id, on, _round(refund), account, _round(rest))
+    remaining = sum((x.amount for x in parts if x.move_id is None and not x.canceled), ZERO)
+    return DeferralDetail(kind, method, start, end, months, amount, Category(cid, cname, icon, color),
+                          parts, remaining, canceled)
+
+
+def _deferral_of(conn: psycopg.Connection, move_id: int) -> DeferralOf | None:
+    row = conn.execute("""
+        SELECT o.id, o.ref, x.deferral_sequence, (SELECT count(*) FROM account_deferral_line l WHERE l.deferral_id = d.id)
+          FROM account_move x
+          JOIN account_deferral d ON d.id = x.deferral_id OR d.cancel_move_id = x.id
+          JOIN account_move o ON o.id = d.move_id
+         WHERE x.id = %s""", (move_id,)).fetchone()
+    return DeferralOf(*row) if row else None
+
+
+def cancel_deferral(user_id: int, move_id: int, on: dt.date | None, refund: Decimal, account_id: int | None,
+                    rate: Decimal | None) -> None:
+    """Cancelar lo que falta de un reparto: lo que te devolvieron (o devolviste) entra a (o sale de) tu
+    cuenta y el resto cuenta ese día como gasto (o ingreso). Las partes que faltaban ya no se generan."""
+    with user_transaction(user_id) as conn:
+        row = conn.execute("""
+            SELECT d.id, d.kind, d.category_account_id, d.cancel_move_id, m.ref, m.state = 'posted'
+              FROM account_deferral d JOIN account_move m ON m.id = d.move_id WHERE d.move_id = %s""",
+                           (move_id,)).fetchone()
+        if row is None:
+            raise AccountError(404, "Ese movimiento no está repartido en el tiempo")
+        did, kind, category, canceled, ref, posted = row
+        if canceled is not None:
+            raise AccountError(400, "Ya cancelaste lo que faltaba: borra esa cancelación para deshacerla")
+        if not posted:
+            raise AccountError(400, "Confírmalo primero: todavía no empezó a contar")
+        try:
+            with conn.transaction():
+                today = conn.execute("SELECT user_today()").fetchone()[0]
+                when = on or today
+                if when > today:
+                    raise AccountError(400, "La fecha no puede ser futura")
+                conn.execute("SELECT post_deferrals()")   # lo que ya tocaba, con su asiento
+                last, remaining = conn.execute("""
+                    SELECT max(l.date) FILTER (WHERE m.id IS NOT NULL),
+                           coalesce(sum(l.amount) FILTER (WHERE m.id IS NULL), 0)
+                      FROM account_deferral_line l
+                      LEFT JOIN account_move m ON m.deferral_id = l.deferral_id AND m.deferral_sequence = l.sequence
+                     WHERE l.deferral_id = %s""", (did,)).fetchone()
+                if remaining == 0:
+                    raise AccountError(400, "Ya contaron todas las partes: no queda nada que cancelar")
+                if last is not None and when < last:
+                    raise AccountError(400, f"Ese día es antes de la parte del {last:%d/%m/%Y}, que ya contó")
+                base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
+                into = kind == "expense"   # en un gasto lo devuelto entra a tu cuenta; en un ingreso sale
+                hold = conn.execute("SELECT system_account(%s)", (DEFERRAL_ROLE[kind],)).fetchone()[0]
+                lines: list[Line] = [_side(hold, remaining, base_id, remaining, None, not into)]
+                back = ZERO
+                if refund > 0:
+                    accs = _accounts(conn, [account_id] if account_id is not None else [])
+                    if account_id is not None and accs.get(account_id) is not None and accs[account_id].card:
+                        raise AccountError(400, "Elige una cuenta, no una tarjeta: si volvió a la tarjeta, regístralo como reembolso")
+                    money = _money_account(accs, account_id, "adonde entró" if into else "de donde salió")
+                    r = _rate(conn, money, base_id, when, rate)
+                    back = _round(refund * r)
+                    if back > remaining:
+                        raise AccountError(400, f"No puede ser más de lo que falta ({fmt(_base_code(conn), remaining)})")
+                    lines.append(_side(money.id, back, money.currency_id, refund, None, into))  # type: ignore[arg-type]
+                rest = remaining - back
+                if rest > 0:
+                    lines.append(_side(category, rest, base_id, rest, None, into))
+                cancel = conn.execute(
+                    "INSERT INTO account_move (date, ref, state) VALUES (%s, %s, 'posted') RETURNING id",
+                    (when, f"{ref} · cancelado")).fetchone()[0]
+                _write(conn, cancel, lines)
+                conn.execute("UPDATE account_deferral SET cancel_move_id = %s WHERE id = %s", (cancel, did))
+        except psycopg.Error as e:
+            raise _translate(e) from None
+
+
+def _base_code(conn: psycopg.Connection) -> str:
+    return conn.execute("SELECT trim(c.name) FROM res_users u JOIN res_currency c ON c.id = u.currency_id").fetchone()[0]
 
 
 def _detail(user_id: int, move_id: int) -> MoveDetail:

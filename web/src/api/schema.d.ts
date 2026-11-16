@@ -830,6 +830,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moves/{move_id}/deferral/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancelar lo que falta de un movimiento repartido en el tiempo */
+        post: operations["cancel_deferral_moves__move_id__deferral_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/partners/overview": {
         parameters: {
             query?: never;
@@ -1622,7 +1639,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cash" | "bank" | "card" | "loan" | "receivable" | "payable" | "suspense" | "installments" | "other";
+            kind: "cash" | "bank" | "card" | "loan" | "receivable" | "payable" | "suspense" | "installments" | "prepaid" | "unearned" | "other";
             /** Currency */
             currency: string | null;
             /** Icon */
@@ -1841,6 +1858,20 @@ export interface components {
              * @description El saldo según el banco, si el archivo no lo trae
              */
             balance_end?: number | string | null;
+        };
+        /** CancelDeferralIn */
+        CancelDeferralIn: {
+            /** Date */
+            date?: string | null;
+            /**
+             * Refund
+             * @default 0.00
+             */
+            refund: number | string;
+            /** Account Id */
+            account_id?: number | null;
+            /** Rate */
+            rate?: number | string | null;
         };
         /** CancelOfOut */
         CancelOfOut: {
@@ -2356,6 +2387,97 @@ export interface components {
             overdue: boolean;
             /** Next Due */
             next_due: string | null;
+        };
+        /** DeferralCancelOut */
+        DeferralCancelOut: {
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Refund */
+            refund: string;
+            /** Account */
+            account: string | null;
+            /** Rest */
+            rest: string;
+        };
+        /** DeferralIn */
+        DeferralIn: {
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "days" | "months";
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+            /** Months */
+            months?: number | null;
+        };
+        /** DeferralOfOut */
+        DeferralOfOut: {
+            /** Move Id */
+            move_id: number;
+            /** Ref */
+            ref: string;
+            /** Sequence */
+            sequence: number | null;
+            /** Parts */
+            parts: number;
+        };
+        /** DeferralOut */
+        DeferralOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "expense" | "income";
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "days" | "months";
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /** End */
+            end: string | null;
+            /** Months */
+            months: number | null;
+            /** Amount */
+            amount: string;
+            category: components["schemas"]["CategoryOut"];
+            /** Parts */
+            parts: components["schemas"]["DeferralPartOut"][];
+            /** Remaining */
+            remaining: string;
+            canceled?: components["schemas"]["DeferralCancelOut"] | null;
+        };
+        /** DeferralPartOut */
+        DeferralPartOut: {
+            /** Sequence */
+            sequence: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Days */
+            days: number | null;
+            /** Amount */
+            amount: string;
+            /** Move Id */
+            move_id: number | null;
+            /** Posted */
+            posted: boolean;
+            /** Canceled */
+            canceled: boolean;
         };
         /** DeleteIn */
         DeleteIn: {
@@ -2982,6 +3104,8 @@ export interface components {
              * @default false
              */
             locked: boolean;
+            deferral?: components["schemas"]["DeferralOut"] | null;
+            deferral_of?: components["schemas"]["DeferralOfOut"] | null;
         };
         /** MoveIn */
         MoveIn: {
@@ -3040,6 +3164,7 @@ export interface components {
             debt_currency?: string | null;
             /** Debt Amount */
             debt_amount?: number | string | null;
+            deferral?: components["schemas"]["DeferralIn"] | null;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
@@ -6224,6 +6349,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CancelPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_deferral_moves__move_id__deferral_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelDeferralIn"];
             };
         };
         responses: {

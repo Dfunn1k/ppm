@@ -630,6 +630,19 @@ export function useCancelPlan(planId: number) {
   });
 }
 
+/** Cancelar lo que falta de un movimiento repartido en el tiempo: con lo que te devolvieron (o devolviste). */
+export function useCancelDeferral(moveId: number) {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (body: components["schemas"]["CancelDeferralIn"]) => {
+      const { data, error, response } = await api.POST("/moves/{move_id}/deferral/cancel", { params: { path: { move_id: moveId } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: (d) => changed(d),
+  });
+}
+
 export function useDeleteMove(id: number) {
   const qc = useQueryClient();
   const changed = useMovesChanged();

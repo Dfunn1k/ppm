@@ -67,6 +67,11 @@ function accountRow(a: AccountRow, base: string, lang: string, negative?: boolea
     return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle="Se vuelven gasto en su corte"
       amount={formatAmount(a.base_total, symbolOf(base), lang)} />;
   }
+  if (a.kind === "prepaid" || a.kind === "unearned") {   // lo repartido en el tiempo: cada parte cuenta cuando llega su fecha
+    return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name}
+      subtitle={a.kind === "prepaid" ? "Se vuelven gasto mes a mes" : "Se vuelven ingreso mes a mes"}
+      amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
+  }
   if (a.kind === "card") {
     const hint = cardHint(a, lang);
     return <Row key={a.id} to={`/tarjetas/${a.id}`} icon="credit_card" name={a.name} subtitle={hint.text} attention={hint.attention}
