@@ -17,7 +17,7 @@ import re
 
 import psycopg
 
-from app import accounts, partners
+from app import accounts, partners, tags
 from app.accounts import ZERO, AccountError
 from app.db import user_transaction
 
@@ -413,6 +413,9 @@ class Summary:
     net_worth_months: list[Decimal]  # 12 cierres, para la línea chica
     owes_me: Decimal
     owed_over_90: Decimal            # lo que te deben hace más de 90 días
+    tagged: Decimal = ZERO           # lo gastado con alguna etiqueta
+    top_tag: str | None = None       # la etiqueta con más gasto del mes
+    top_tag_color: int | None = None
 
 
 def summary(user_id: int, month: str) -> Summary:
@@ -422,8 +425,11 @@ def summary(user_id: int, month: str) -> Summary:
     inc = categories(user_id, "income", month)
     nw = net_worth(user_id)
     pp = people(user_id)
+    tg = tags.report(user_id, month) if tags.any_tags(user_id) else tags.TagReport(month, ZERO, [])
+    top = tg.tags[0] if tg.tags and tg.tags[0].amount > 0 else None
     saved = inc.total - exp.total
     return Summary(month, nw.currency, exp.total, exp.previous,
                    [FlowNode(g.id, g.name, g.icon, g.color, g.amount) for g in exp.groups if g.amount > 0],
                    inc.total, inc.previous, saved, round(saved * 100 / inc.total) if inc.total > 0 else None,
-                   nw.today, nw.months[0].amount, [m.amount for m in nw.months], pp.owes_me, pp.ages[-1])
+                   nw.today, nw.months[0].amount, [m.amount for m in nw.months], pp.owes_me, pp.ages[-1],
+                   tg.total, top.name if top else None, top.color if top else None)

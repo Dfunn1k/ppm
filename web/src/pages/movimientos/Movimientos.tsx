@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation, useSearchParams } from "react-router";
 
-import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth } from "@/api/hooks";
+import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth, useTags } from "@/api/hooks";
 import { CategorySheet } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { BoneRows } from "@/components/Skeleton";
+import { tagColor } from "@/components/Tags";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { useDesktop } from "@/lib/desktop";
@@ -21,7 +22,7 @@ function dayLabel(iso: string) {
   return `${iso === todayISO() ? "HOY, " : ""}${day} ${d}`;
 }
 
-type Sheet = null | "month" | "account" | "category" | "kind";
+type Sheet = null | "month" | "account" | "category" | "kind" | "tag";
 const KIND_OPTIONS = [
   { value: "", label: "Todos" },
   { value: "expense", label: "Gastos" },
@@ -38,6 +39,7 @@ const KIND_OPTIONS = [
 export function Movimientos() {
   const me = useMe().data;
   const accounts = useAccounts().data;
+  const tags = useTags().data ?? [];
   const [params, setParams] = useSearchParams();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [categoryKind, setCategoryKind] = useState<"expense" | "income">("expense");
@@ -50,6 +52,7 @@ export function Movimientos() {
     kind: (params.get("tipo") || undefined) as MonthFilters["kind"],
     q: params.get("q") || undefined,
     pending: params.get("pendientes") === "1" || undefined,
+    tag_id: params.get("etiqueta") ? Number(params.get("etiqueta")) : undefined,
   };
   const month = useMonth(filters);
 
@@ -118,6 +121,12 @@ export function Movimientos() {
           {KIND_OPTIONS.find((k) => k.value === filters.kind)?.label ?? "Tipo"}
           <Icon name={filters.kind ? "close" : "expand_more"} className="text-[18px]" />
         </button>
+        {(tags.length > 0 || filters.tag_id) && (
+          <button type="button" className={chip(!!filters.tag_id)} onClick={() => (filters.tag_id ? set("etiqueta", null) : setSheet("tag"))}>
+            {filters.tag_id ? tags.find((t) => t.id === filters.tag_id)?.name ?? "Etiqueta" : "Etiqueta"}
+            <Icon name={filters.tag_id ? "close" : "expand_more"} className="text-[18px]" />
+          </button>
+        )}
         {(m?.pending_count ?? 0) > 0 || filters.pending ? (
           <button type="button" aria-pressed={!!filters.pending} onClick={() => set("pendientes", filters.pending ? null : "1")}
             className={`flex h-9 flex-none items-center gap-1 rounded-full px-3 text-caption font-semibold ${filters.pending ? "bg-attention text-background" : "bg-attention-soft text-attention"}`}>
@@ -133,7 +142,7 @@ export function Movimientos() {
       )}
       {m && m.days.length === 0 && (
         <p className="mt-8 text-center text-muted-foreground">
-          {filters.q || filters.account_id || filters.category_id || filters.kind || filters.pending
+          {filters.q || filters.account_id || filters.category_id || filters.kind || filters.pending || filters.tag_id
             ? "Nada coincide con lo que buscas en este mes."
             : "Todavía no hay movimientos este mes. Toca + para registrar el primero."}
         </p>
@@ -159,6 +168,18 @@ export function Movimientos() {
       </Sheet>
       <Sheet title="Filtrar por tipo" open={sheet === "kind"} onClose={() => setSheet(null)}>
         <OptionList value={filters.kind ?? ""} options={KIND_OPTIONS} onPick={(v) => { set("tipo", v || null); setSheet(null); }} />
+      </Sheet>
+      <Sheet title="Filtrar por etiqueta" open={sheet === "tag"} onClose={() => setSheet(null)}>
+        <div role="radiogroup" className="flex flex-col">
+          {tags.filter((t) => t.active || t.id === filters.tag_id).map((t) => (
+            <button key={t.id} type="button" role="radio" aria-checked={t.id === filters.tag_id}
+              onClick={() => { set("etiqueta", String(t.id)); setSheet(null); }}
+              className={`flex min-h-14 items-center gap-3 rounded-md px-3 text-left text-[17px] ${t.id === filters.tag_id ? "bg-muted" : ""}`}>
+              <span aria-hidden="true" className="size-3 rounded-full" style={{ background: tagColor(t.color) }} />
+              <span className="flex-1">{t.name}</span>
+            </button>
+          ))}
+        </div>
       </Sheet>
       {sheet === "category" && (
         <div className="fixed inset-x-0 top-3 z-[60] lg:left-[88px] mx-auto flex max-w-md justify-center gap-1">

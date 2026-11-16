@@ -12,6 +12,7 @@ import { CancelPlanSheet } from "@/components/CancelPlanSheet";
 import { CategoryChip } from "@/components/CategorySheet";
 import { ClassifySheet } from "@/components/ClassifySheet";
 import { DeferralSection, deferralCaption } from "@/components/Deferral";
+import { MoveTagsRow } from "@/components/Tags";
 import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
@@ -226,6 +227,16 @@ export function DetalleMovimiento() {
             ))}
           </div>
         )}
+        {d.with_partner_id && d.with_partner && (
+          <Link to={`/personas/${d.with_partner_id}`} className="flex min-h-14 items-center gap-3 border-b border-border">
+            <Avatar name={d.with_partner} />
+            <span className="flex flex-1 flex-col">
+              <span className="text-caption text-muted-foreground">Con quién</span>
+              <span className="font-semibold">{d.with_partner}</span>
+            </span>
+            <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+          </Link>
+        )}
         {s.kind === "other" && d.lines.length > 0 && (
           <div className="flex flex-col border-b border-border py-2">
             <div className="grid grid-cols-[1fr_84px_84px] gap-2 text-label text-muted-foreground">
@@ -256,6 +267,7 @@ export function DetalleMovimiento() {
           <Icon name="event" className="w-9 text-center text-muted-foreground" />
           <span>{fullDate(s.date)}</span>
         </div>
+        {s.kind !== "opening" && <MoveTagsRow moveId={s.id} tags={d.tags} inherited={d.tags_inherited} />}
       </div>
 
       {debts.length > 0 && (

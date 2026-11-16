@@ -638,32 +638,61 @@ Si el reembolso llega en otro mes, ese mes la categoría puede quedar negativa: 
 
 Las etiquetas son otra forma de filtrar, cruzando categorías; se ponen en cada apunte. Los adjuntos guardan la ficha del archivo en la base y el archivo en un filestore, como `ir.attachment` en Odoo.
 
-**Etiquetas.** Son post-its de colores: un recibo vive en una sola carpeta (su categoría), pero el post-it "Viaje a Cusco" puede ir en recibos de Transporte, Comida y Hotel, y luego juntas todos los que lo tienen. Van en el apunte, como la analítica de Odoo, para que en una compra mixta solo la parte del viaje quede etiquetada; la interfaz etiqueta todo el movimiento salvo que digas lo contrario.
+**Etiquetas.** Son post-its de colores: un recibo vive en una sola carpeta (su categoría), pero el post-it "Viaje a Cusco" puede ir en recibos de Transporte, Comida y Hotel, y luego juntas todos los que lo tienen. Van en el movimiento entero (0035): el modelo las ponía en cada apunte, como la analítica de Odoo, pero editar rehace los apuntes y la etiqueta se perdía. Las cuotas y las partes repartidas llevan las de su compra.
 
 ```sql
 CREATE TABLE account_tag (
-  id     smallint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name   text NOT NULL UNIQUE,                 -- 'Viaje a Cusco'
-  color  smallint,                             -- índice de color, como en Odoo
-  active boolean NOT NULL DEFAULT true
+  id      bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id integer NOT NULL DEFAULT current_user_id() REFERENCES res_users (id) ON DELETE CASCADE,
+  name    text NOT NULL CHECK (length(btrim(name)) BETWEEN 1 AND 40),   -- 'Viaje a Cusco'
+  color   smallint NOT NULL DEFAULT 0 CHECK (color BETWEEN 0 AND 11),  -- la paleta de las categorías
+  active  boolean NOT NULL DEFAULT true,                                 -- archivada: no se ofrece
+  UNIQUE (id, user_id)
 );
+CREATE UNIQUE INDEX account_tag_name ON account_tag (user_id, lower(btrim(name)));
 
 -- Many2many con el nombre que le daría Odoo
-CREATE TABLE account_move_line_account_tag_rel (
-  account_move_line_id bigint   NOT NULL REFERENCES account_move_line (id) ON DELETE CASCADE,
-  account_tag_id       smallint NOT NULL REFERENCES account_tag (id) ON DELETE CASCADE,
-  PRIMARY KEY (account_move_line_id, account_tag_id)
+CREATE TABLE account_move_account_tag_rel (
+  account_move_id bigint  NOT NULL,
+  account_tag_id  bigint  NOT NULL,
+  user_id         integer NOT NULL DEFAULT current_user_id() REFERENCES res_users (id) ON DELETE CASCADE,
+  PRIMARY KEY (account_move_id, account_tag_id),
+  FOREIGN KEY (account_move_id, user_id) REFERENCES account_move (id, user_id) ON DELETE CASCADE,
+  FOREIGN KEY (account_tag_id, user_id)  REFERENCES account_tag (id, user_id) ON DELETE CASCADE
 );
 
--- Cuánto gastaste con cada etiqueta, por categoría (solo confirmados)
-CREATE VIEW account_tag_expense AS
-SELECT t.name AS tag, l.account_id, sum(l.balance) AS amount
-  FROM account_tag t
-  JOIN account_move_line_account_tag_rel r ON r.account_tag_id = t.id
-  JOIN account_move_line l ON l.id = r.account_move_line_id
-  JOIN account_move m      ON m.id = l.move_id AND m.state = 'posted'
-  JOIN account_account a   ON a.id = l.account_id AND a.account_type = 'expense'
- GROUP BY t.name, l.account_id;
+-- De qué movimiento toma sus etiquetas: el suyo, o el de la compra que lo originó
+CREATE FUNCTION tag_source(p_move bigint) RETURNS bigint LANGUAGE sql STABLE AS $$
+  SELECT coalesce(
+    (SELECT d.move_id FROM account_deferral d JOIN account_move m ON m.deferral_id = d.id WHERE m.id = p_move),
+    (SELECT d.move_id FROM account_deferral d WHERE d.cancel_move_id = p_move),
+    (SELECT p.move_id FROM account_installment_plan p JOIN account_move m ON m.installment_plan_id = p.id
+      WHERE m.id = p_move),
+    (SELECT p.move_id FROM account_installment_plan p WHERE p.cancel_move_id = p_move),
+    p_move)
+$$;
+
+-- Las etiquetas de cada movimiento, también las heredadas: por conjuntos (una unión por cada origen),
+-- para que un reporte de un año no llame a tag_source fila por fila
+CREATE VIEW account_move_tag_v WITH (security_invoker = true) AS
+SELECT r.account_move_id AS move_id, r.account_tag_id AS tag_id, false AS inherited
+  FROM account_move_account_tag_rel r
+UNION ALL   -- una parte repartida
+SELECT m.id, r.account_tag_id, true
+  FROM account_move m JOIN account_deferral d ON d.id = m.deferral_id
+  JOIN account_move_account_tag_rel r ON r.account_move_id = d.move_id
+UNION ALL   -- la cancelación de un reparto
+SELECT d.cancel_move_id, r.account_tag_id, true
+  FROM account_deferral d JOIN account_move_account_tag_rel r ON r.account_move_id = d.move_id
+ WHERE d.cancel_move_id IS NOT NULL
+UNION ALL   -- una cuota
+SELECT m.id, r.account_tag_id, true
+  FROM account_move m JOIN account_installment_plan p ON p.id = m.installment_plan_id
+  JOIN account_move_account_tag_rel r ON r.account_move_id = p.move_id
+UNION ALL   -- la cancelación de las cuotas
+SELECT p.cancel_move_id, r.account_tag_id, true
+  FROM account_installment_plan p JOIN account_move_account_tag_rel r ON r.account_move_id = p.move_id
+ WHERE p.cancel_move_id IS NOT NULL;
 ```
 
 **Adjuntos.** Es una biblioteca: la ficha del catálogo (nombre, tipo, tamaño, huella) va en la base y el libro, en el estante. El estante es el filestore: cada archivo se guarda en una carpeta según su huella SHA-1 (`ab/ab12…`), así que la misma foto subida dos veces ocupa un solo lugar. Si el estante es un disco local o S3 se decide con la tecnología; el modelo solo define la ficha.
@@ -2635,7 +2664,7 @@ Orden de las rebanadas:
 
 ## Decisiones y preguntas abiertas
 
-Doscientas cuarenta decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
+Doscientas cuarenta y una decisiones sostienen la fase 1; cada una puede revisarse antes de escribir código de la app.
 
 | Decisión | Elegido | Alternativa descartada | Por qué |
 | --- | --- | --- | --- |
@@ -2849,7 +2878,7 @@ Doscientas cuarenta decisiones sostienen la fase 1; cada una puede revisarse ant
 | Inicio a tu medida | En Más › Inicio: qué cuentas se ven en el Inicio y en qué orden (flechas ↑↓), y la cuenta predeterminada con la que arranca Registrar fuera de una cuenta. Modo privado: un ojito en el Inicio esconde todos los montos con «••••» y se recuerda. El + de la barra, dentro de una cuenta o tarjeta, registra con esa cuenta | Esconder solo los saldos de las tarjetas de cuentas; arrastrar para ordenar | Útil en público; las flechas son accesibles. Elegido por Dany |
 | Ajustes de la web (nov-2026) | «Me deben» y «Debo a personas» abren Personas filtrada, con selector Me deben / Les debo / Guardo suyo. El calendario elige mes y año con una vista propia (sin selector del navegador). Elegir persona es un solo campo que busca por nombre mientras escribes, con «Nueva persona». Transiciones con la API View Transitions (deslizar al entrar y volver, fundido entre pestañas, hojas que suben), apagadas con «reducir movimiento» | Librería de animación motion; personas como etiquetas | Sin librerías y ligero; el selector con búsqueda sirve con muchas personas |
 | Adjuntos antes de Reportes | Adjuntar una boleta o foto a un movimiento y verla o borrarla en su detalle, después de estos ajustes y antes de Reportes; las etiquetas quedan para después | Adjuntos y etiquetas juntos; adjuntos después de Reportes | El almacén de archivos ya existe; Dany lo necesita ya |
-| Reportes: cuáles | Cinco reportes con Recharts (gráficos de shadcn): Gastos (dona por grupo y lista que se despliega con las hijas; en año, barras apiladas por mes), Ingresos (barras), Flujo (Sankey de lo que entró a lo que salió más lo guardado, y la línea del % guardado en 12 meses), Patrimonio (área de 12 meses al tipo de cada fin de mes, composición de hoy y diferencia de cambio no realizada) y Personas (totales y antigüedad de lo que te deben por tramos). Por etiqueta llega con las etiquetas; el presupuesto sigue fuera de alcance; el libro mayor ya está en el detalle de cada cuenta | Las cuatro pestañas del boceto gris; sin Flujo | Sale de REP-01, 02, 05 y CON-01 y del Sankey por el que se eligió Recharts; el boceto gris era solo orientativo. Elegido por Dany |
+| Reportes: cuáles | Cinco reportes con Recharts (gráficos de shadcn): Gastos (dona por grupo y lista que se despliega con las hijas; en año, barras apiladas por mes), Ingresos (barras), Flujo (Sankey de lo que entró a lo que salió más lo guardado, y la línea del % guardado en 12 meses), Patrimonio (área de 12 meses al tipo de cada fin de mes, composición de hoy y diferencia de cambio no realizada) y Personas (totales y antigüedad de lo que te deben por tramos). Etiquetas llegó con las etiquetas (#88): lo gastado con cada una, por categoría; el presupuesto sigue fuera de alcance; el libro mayor ya está en el detalle de cada cuenta | Las cuatro pestañas del boceto gris; sin Flujo | Sale de REP-01, 02, 05 y CON-01 y del Sankey por el que se eligió Recharts; el boceto gris era solo orientativo. Elegido por Dany |
 | Reportes: cómo se navegan | Más › Reportes abre un índice con una tarjeta por reporte (su cifra del mes y un mini gráfico); cada reporte tiene Mes / Año con ‹ ›. Una categoría principal se despliega ahí mismo con sus hijas; una hija abre Movimientos filtrado por ella y el periodo. Cada monto se compara con el periodo anterior. El patrimonio de cada mes va al tipo de cambio de su fin de mes. No entran transferencias, pagos de tarjeta ni lo por clasificar (se avisa cuántos); los reembolsos restan y se marcan; las cuotas cuentan en el mes que se facturan | Pestañas deslizables; solo mes o rango libre; comparar con el promedio de 3 meses; todo al tipo de hoy | Se ve el resumen de todo de un vistazo y la comparación se lee fácil. Elegido por Dany |
 | Copias de los artefactos en el repositorio | Este documento y el sistema de diseño tienen una copia en el repo (docs/modelo-contable.md y design-system/). Para leer se usan las copias; las decisiones se escriben en el original de claude.ai y la copia se refresca en el mismo PR. Si no coinciden, manda el original. Los tokens que nacen en el código (age-0 a age-3, attention-soft, destructive-soft) se registran también en el sistema de diseño | Solo los originales en claude.ai; copias que se refrescan cuando alguien se acuerda | Claude Code los lee sin salir del repo y con grep, sin que la copia se vuelva un plano viejo. Elegido por Dany |
 | Cortes del banco al realinear las cuotas | El calendario de cada compra se rehace desde su fecha con los cortes que se conocen, los del banco primero; las cuotas de antes de PPM parten del día siguiente a su asiento y las partes por cobrar siguen a su cuota (0025) | Pasar el corte viejo por card\_closing\_for (0021) | Si el banco cortaba antes del día de la tarjeta, la cuota saltaba al mes siguiente y ese mes quedaba con dos; una compra entre el día de la tarjeta y un corte del banco más tardío no entraba en ese ciclo. Hallado en la revisión de noviembre |
@@ -2879,6 +2908,7 @@ Doscientas cuarenta decisiones sostienen la fase 1; cada una puede revisarse ant
 | Reportes sin filas en cero | Gastos e Ingresos no listan un grupo ni una categoría que en el periodo quedó en cero (solo tuvo movimientos el periodo anterior), salvo que tenga reembolsos. Lo de antes sí cuenta en lo anterior del grupo y del total, y en el año los totales de cada mes siguen completos. Sin migración | Mostrarlas con «—» en vez de «−100 %» | Como un recibo: no imprime lo que no compraste. «S/ 0.00 · −100 %» no dice nada; la baja ya se ve en el grupo. Pedido por Dany |
 | Ingresos y gastos diferidos | Un gasto o un ingreso (una sola categoría, pagado por ti, sin cuotas ni repetir) se puede «Repartir en el tiempo». El pago va de la cuenta a «Pagos por adelantado» (activo, system\_role prepaid) o el cobro de «Cobrado por adelantado» (pasivo, unearned), en moneda base. Por días: una parte por mes según los días que cubre, con fecha el primer día que cubre (de 2 partes a cinco años); por meses: partes iguales el mismo día de cada mes (2 a 60). La última cierra el redondeo. El calendario se guarda (account\_deferral y account\_deferral\_line, 0034) y cada parte se vuelve un asiento confirmado al llegar su fecha (post\_deferrals, al abrir la app, como las cuotas); en un mes cerrado queda por confirmar. Ni el original ni sus partes se editan; borrar el original se lleva todo. «Cancelar lo que falta»: lo que te devolvieron (o devolviste) entra a (o sale de) una cuenta en moneda base y el resto cuenta ese día en la categoría; las partes que faltaban ya no se generan y borrar la cancelación las devuelve | Solo por meses; partes en borrador para confirmar cada mes; una vista en Reportes que reparte sin tocar la contabilidad; incluir los ingresos cobrados por adelantado aparte | Como «Cuotas por venir», pero sin tarjeta: el seguro anual o la suscripción no inflan un mes y los adelantos de un cliente no son tuyos hasta ganarlos. La plata ya se movió: confirmar cada parte sería trabajo de más. Opción B, por días o por meses y con fecha de inicio, elegidas por Dany |
 | Corregir lo de antes de PPM con una persona | «Editar» en su detalle abre el mismo formulario de «De antes de PPM» (con quién, de qué lado, moneda, monto, fecha y nota) y lo guarda en el mismo movimiento (PUT /moves/{id}/opening), así sus adjuntos se quedan. Los cobros o pagos que ya tenía se vuelven a conciliar; si quedarían de más (bajar el monto de lo ya cobrado, otra persona u otra moneda), no se guarda. Reemplaza «se corrige borrándolo» de 0013. El saldo inicial de una cuenta sigue corrigiéndose desde la cuenta | Un botón «Corregir» que borra y abre el formulario lleno; seguir solo con borrar | Como corregir con borrador sobre la misma hoja en vez de arrancarla y copiarla: es lo natural y no pierde adjuntos ni enlaces. Opción A, elegida por Dany |
+| Etiquetas | Van en el movimiento entero (account_move_account_tag_rel, migración 0035), no en cada línea. Lo que se arma solo (las cuotas de una compra, las partes repartidas y sus cancelaciones) lleva las de su compra: tag_source y la vista account_move_tag_v las resuelven al leer, y en esas partes no se cambian. Se ponen al registrar («Etiquetas · opcional») o desde el detalle de cualquier movimiento, también en un mes cerrado porque no cambian saldos; se crean ahí mismo escribiendo el nombre, con el siguiente color de la paleta. Hasta 10 por movimiento, nombre único por persona sin importar mayúsculas. Movimientos tiene el filtro «Etiqueta»; Reportes, «Etiquetas»: lo gastado con cada una en el mes o el año (líneas de gasto, los reembolsos restan, la parte de otra persona no cuenta), desplegado por categoría; un gasto con dos etiquetas cuenta en las dos y una vez en el total. Más › Etiquetas: renombrar, color, archivar (ya no se ofrece, los movimientos la conservan) o eliminar (sale de sus movimientos). Salen en la exportación | En cada línea, como la analítica de Odoo (lo que proponía el modelo); copiar las etiquetas a cada cuota o parte al generarla | Un post-it va en el sobre, no en cada recibo: editar un movimiento rehace sus líneas y la etiqueta se habría perdido, y la interfaz siempre etiquetaba el movimiento entero. Resolver al leer evita tocar las funciones que generan cuotas y partes. Decidido por Claude con la autorización de Dany (16-nov); bocetos en el lienzo «Etiquetas» |
 
 Preguntas para las siguientes sesiones:
 
@@ -2897,14 +2927,14 @@ Preguntas para las siguientes sesiones:
 - [x] Confirmar un borrador recurrente de monto variable cuando el extracto importado traiga un movimiento que coincida: resuelto en la importación (borradores de dos líneas).
 - [ ] Pendiente futuro: presupuesto como capa sobre las categorías (no es una clasificación nueva ni toca los movimientos); elegir entre base cero (YNAB) o plan contra real (Odoo, Wallet). Van con él la edad del dinero y la memoria de categoría por comercio.
 - [ ] Pendiente: otros países. La moneda base es la del país; para abrir uno que no use soles hará falta una fuente de tipo de cambio en su moneda, porque SUNAT publica en soles por unidad.
-- [ ] Pendiente futuro: al clasificar un movimiento de «Por clasificar», ¿se puede elegir también el contacto? Se decide al retomar las importaciones.
+- [x] Al clasificar un movimiento de «Por clasificar», ¿se puede elegir también el contacto? Sí: «Con quién · opcional» en la categoría, desde la rebanada de importaciones; desde #88 se ve en el detalle («Con quién») y no se pierde al editar.
 - [x] Pendiente al terminar la rebanada 6: del despliegue, un usuario de conexión a PostgreSQL que no sea el dueño de las tablas, y monitoreo externo de /api/health.
 
 ## Bitácora de cambios
 
 | Fecha | Cambio |
 | --- | --- |
-| 2026-11-16 | #79: el + arranca con la cuenta predeterminada en cualquier pantalla, no solo en el Inicio (como decía «Inicio a tu medida»). #80: filtros de Movimientos recordados mientras la app esté abierta. #81: cobrar o pagar a una persona en otra moneda, con la diferencia de cambio realizada. Dany autorizó el merge propio de #80 y #81. #82: la cuenta predeterminada también en Me pagaron, Le presté, Reembolso y al cambiar de tipo; Reportes no lista lo que quedó en cero. #83 (0034): ingresos y gastos diferidos, «Repartir en el tiempo» por días o por meses, con «Cancelar lo que falta». #84: «De antes de PPM» también se abre en el panel de Registrar en escritorio (antes no salía nada). #85: lo de antes de PPM con una persona se corrige con «Editar» |
+| 2026-11-16 | #79: el + arranca con la cuenta predeterminada en cualquier pantalla, no solo en el Inicio (como decía «Inicio a tu medida»). #80: filtros de Movimientos recordados mientras la app esté abierta. #81: cobrar o pagar a una persona en otra moneda, con la diferencia de cambio realizada. Dany autorizó el merge propio de #80 y #81. #82: la cuenta predeterminada también en Me pagaron, Le presté, Reembolso y al cambiar de tipo; Reportes no lista lo que quedó en cero. #83 (0034): ingresos y gastos diferidos, «Repartir en el tiempo» por días o por meses, con «Cancelar lo que falta». #84: «De antes de PPM» también se abre en el panel de Registrar en escritorio (antes no salía nada). #85: lo de antes de PPM con una persona se corrige con «Editar». #86: la prueba del tipo de cambio en Inicio no depende de que SUNAT publique hoy; resuelta la pregunta de cómo se ve cada tipo de cuenta sin lenguaje contable. #87: Gastos e Ingresos empiezan en general (plegar un grupo vuelve al total; cambiar de periodo o de reporte también). #88 (0035): etiquetas en el movimiento entero, heredadas por cuotas y partes repartidas, con filtro en Movimientos, reporte Etiquetas y Más › Etiquetas; con quién fue un gasto clasificado se ve en su detalle y ya no se pierde al editar. Dany autorizó el merge propio de #86 a #88 |
 | 2026-11-15 | Exportar mis datos: un ZIP con datos.json, csv/ y adjuntos/ (opcionales), desde Mi cuenta y desde Eliminar mi cuenta. Antes, #76: el lector del PDF BCP vuelve a leer con el ancho de la letra del PDF si la lectura normal no cuadra; #77: Esc cierra el panel de Registrar aunque la hoja de tipos todavía se esté yendo, y los e2e esperan el paso 2 de la bienvenida. Dany autorizó el merge propio de #76 y #77 |
 | 2026-11-14 | Privacidad y Eliminar mi cuenta (#75, 0033): la página pública /privacidad para verificar la marca en Google, y eliminar la cuenta con todo lo suyo al instante, confirmando con la contraseña o el correo |
 | 2026-11-14 | Entrar con Google (#74, 0032): Continuar con Google, unir con la contraseña una cuenta que ya existe, vincular, desvincular y crear contraseña en Mi cuenta. Una Google falsa (google-falsa) para desarrollo y e2e |

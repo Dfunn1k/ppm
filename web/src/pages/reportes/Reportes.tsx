@@ -115,6 +115,14 @@ export function Reportes() {
             {[0, 1, 2, 3].map((i) => <span key={i} className="flex-1 rounded-[3px]" style={{ background: `var(--age-${i})` }} />)}
           </span>
         </Card>
+
+        <Card to={`/mas/reportes/etiquetas${q}`} label="Etiquetas" icon="sell" value={money(s.tagged)}
+          empty={isZero(s.tagged) ? `Nada con etiqueta en ${monthName(month).split(" ")[0]!.toLowerCase()}` : undefined}
+          note={<span className="text-caption text-muted-foreground">{s.top_tag ? `La que más: ${s.top_tag}` : ""}</span>}>
+          <span className="grid size-12 place-items-center rounded-full" style={{ background: catColor(s.top_tag_color), color: "var(--on-category)" }}>
+            <Icon name="sell" />
+          </span>
+        </Card>
       </div>
       <span className="mt-3 text-caption text-muted-foreground">Cada reporte se ve por mes o por año. Lo por clasificar, las transferencias y el pago de la tarjeta no entran.</span>
 

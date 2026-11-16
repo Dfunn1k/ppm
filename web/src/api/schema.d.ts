@@ -1591,6 +1591,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tus etiquetas, las archivadas al final */
+        get: operations["list__tags_get"];
+        put?: never;
+        /** Crear una etiqueta */
+        post: operations["create_tags_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Eliminar una etiqueta: sale de sus movimientos, que no se tocan */
+        delete: operations["delete_tags__tag_id__delete"];
+        options?: never;
+        head?: never;
+        /** Renombrar, cambiar el color, archivar o desarchivar */
+        patch: operations["update_tags__tag_id__patch"];
+        trace?: never;
+    };
+    "/moves/{move_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Las etiquetas de un movimiento (las de antes se reemplazan) */
+        put: operations["set_move_tags_moves__move_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo gastado con cada etiqueta, por categoría */
+        get: operations["report_reports_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -3123,6 +3193,20 @@ export interface components {
             locked: boolean;
             deferral?: components["schemas"]["DeferralOut"] | null;
             deferral_of?: components["schemas"]["DeferralOfOut"] | null;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: components["schemas"]["TagRefOut"][];
+            /**
+             * Tags Inherited
+             * @default false
+             */
+            tags_inherited: boolean;
+            /** With Partner Id */
+            with_partner_id?: number | null;
+            /** With Partner */
+            with_partner?: string | null;
         };
         /** MoveIn */
         MoveIn: {
@@ -3182,6 +3266,8 @@ export interface components {
             /** Debt Amount */
             debt_amount?: number | string | null;
             deferral?: components["schemas"]["DeferralIn"] | null;
+            /** Tag Ids */
+            tag_ids?: number[] | null;
         };
         /** MoveSummaryOut */
         MoveSummaryOut: {
@@ -3223,6 +3309,11 @@ export interface components {
             partner: string | null;
             /** Incoming */
             incoming: boolean | null;
+        };
+        /** MoveTagsIn */
+        MoveTagsIn: {
+            /** Tag Ids */
+            tag_ids: number[];
         };
         /** MovedOut */
         MovedOut: {
@@ -4215,6 +4306,83 @@ export interface components {
             owes_me: string;
             /** Owed Over 90 */
             owed_over_90: string;
+            /** Tagged */
+            tagged: string;
+            /** Top Tag */
+            top_tag: string | null;
+            /** Top Tag Color */
+            top_tag_color: number | null;
+        };
+        /** TagCategoryOut */
+        TagCategoryOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+        };
+        /** TagIn */
+        TagIn: {
+            /** Name */
+            name: string;
+            /** Color */
+            color?: number | null;
+        };
+        /** TagLineOut */
+        TagLineOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Color */
+            color: number;
+            /** Amount */
+            amount: string;
+            /** Moves */
+            moves: number;
+            /** Categories */
+            categories: components["schemas"]["TagCategoryOut"][];
+        };
+        /** TagOut */
+        TagOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Color */
+            color: number;
+            /** Active */
+            active: boolean;
+            /** Moves */
+            moves: number;
+        };
+        /** TagPatch */
+        TagPatch: {
+            /** Name */
+            name?: string | null;
+            /** Color */
+            color?: number | null;
+            /** Active */
+            active?: boolean | null;
+        };
+        /** TagRefOut */
+        TagRefOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Color */
+            color: number;
+        };
+        /** TagReportOut */
+        TagReportOut: {
+            /** Period */
+            period: string;
+            /** Total */
+            total: string;
+            /** Tags */
+            tags: components["schemas"]["TagLineOut"][];
         };
         /** TodayRateOut */
         TodayRateOut: {
@@ -6135,6 +6303,7 @@ export interface operations {
                 kind?: ("expense" | "income" | "transfer" | "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "offset" | "write_off" | "opening" | "unclassified" | "other") | null;
                 q?: string | null;
                 pending?: boolean;
+                tag_id?: number | null;
             };
             header?: never;
             path?: never;
@@ -8333,6 +8502,207 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClosingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list__tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_tags_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_tags__tag_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_tags__tag_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_move_tags_moves__move_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveTagsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_reports_tags_get: {
+        parameters: {
+            query: {
+                /** @description Un mes (2026-10) o un año (2026) */
+                period: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagReportOut"];
                 };
             };
             /** @description Validation Error */

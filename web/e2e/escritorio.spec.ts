@@ -123,3 +123,24 @@ test("en Movimientos el detalle se abre al lado y las flechas pasan al siguiente
   await page.keyboard.press("/");
   await expect(page.getByRole("textbox", { name: "Buscar movimientos" })).toBeFocused();
 });
+
+test("etiquetas en escritorio: el reporte se abre al lado y Más › Etiquetas tiene su pantalla", async ({ page }) => {
+  await readyUser(page);
+  const tag = (await (await page.request.post("/api/tags", { data: { name: "Mudanza" } })).json()).id as number;
+  await page.goto("/registrar");
+  await spend(page, "45", "Cajas");
+  await page.getByRole("button", { name: /Etiquetas · opcional/ }).click();
+  await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("checkbox", { name: "Mudanza" }).click();
+  await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("button", { name: "Listo" }).click();
+  await page.getByRole("button", { name: "Registrar gasto" }).click();
+  await expect(page).toHaveURL("/movimientos");
+
+  await page.goto("/mas/reportes/etiquetas");
+  await expect(page.getByRole("link", { name: /Gastos/ })).toBeVisible();          // el índice sigue al lado
+  await expect(page.getByRole("region", { name: "Por etiqueta" })).toContainText("Mudanza");
+  await page.goto(`/movimientos?etiqueta=${tag}`);
+  await expect(page.getByRole("link", { name: /Cajas/ })).toBeVisible();
+  await page.goto("/mas/etiquetas");
+  await expect(page.getByRole("heading", { name: "Etiquetas" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Mudanza/ })).toContainText("1 movimiento");
+});

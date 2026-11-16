@@ -73,6 +73,7 @@ class MoveIn(BaseModel):
     debt_currency: Annotated[str, Field(min_length=3, max_length=3)] | None = None   # cobrar o pagar en otra moneda: la de la deuda…
     debt_amount: Positive | None = None  # …y cuánto de ella cancela
     deferral: DeferralIn | None = None   # gasto o ingreso: repartirlo en el tiempo
+    tag_ids: list[int] | None = None     # etiquetas; al editar, sin ellas se quedan las que tenía
 
     def logic(self) -> moves.MoveInput:
         return moves.MoveInput(
@@ -83,7 +84,7 @@ class MoveIn(BaseModel):
             self.currency, self.installments, self.installment_amount, self.later,
             self.debt_currency, self.debt_amount,
             moves.DeferralInput(self.deferral.method, self.deferral.start, self.deferral.end, self.deferral.months)
-            if self.deferral else None)
+            if self.deferral else None, self.tag_ids)
 
 
 class PendingIn(BaseModel):
@@ -259,6 +260,12 @@ class BankLineOut(BaseModel):
     operation_number: str | None
 
 
+class TagRefOut(BaseModel):
+    id: int
+    name: str
+    color: int
+
+
 class MoveDetailOut(BaseModel):
     summary: MoveSummaryOut
     account_id: int | None
@@ -277,6 +284,10 @@ class MoveDetailOut(BaseModel):
     locked: bool = False                 # en un periodo cerrado: no se cambia ni se borra
     deferral: DeferralOut | None = None      # repartido en el tiempo: su calendario
     deferral_of: DeferralOfOut | None = None   # una parte de un reparto o su cancelación
+    tags: list[TagRefOut] = []
+    tags_inherited: bool = False           # las lleva de la compra que lo originó: se cambian ahí
+    with_partner_id: int | None = None     # gasto o ingreso: con quién fue (se elige al clasificar)
+    with_partner: str | None = None
 
 
 class ManualAccountOut(BaseModel):
@@ -337,9 +348,10 @@ def month(month: Annotated[str, Query(pattern=r"^\d{4}-\d{2}$")],
           account_id: int | None = None, category_id: int | None = None,
           kind: Kind | None = None,
           q: Annotated[str | None, Query(max_length=80)] = None, pending: bool = False,
+          tag_id: int | None = None,
           session: CurrentSession = Depends(current_session)) -> MonthOut:
     try:
-        m = moves.month(session.user_id, month, account_id, category_id, kind, q, pending)
+        m = moves.month(session.user_id, month, account_id, category_id, kind, q, pending, tag_id)
     except AccountError as e:
         raise _http(e) from None
     return MonthOut.model_validate(asdict(m))
