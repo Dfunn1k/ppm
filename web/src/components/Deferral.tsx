@@ -8,10 +8,11 @@ import { type MoveDetail, useAccounts, useCancelDeferral, useDeleteMove, useMe }
 import { CategoryChip } from "@/components/CategorySheet";
 import { addDays, DateField } from "@/components/DateSheet";
 import { Sheet, SheetSelect } from "@/components/Sheet";
+import { RateField, useRateInput } from "@/components/RateField";
 import { ErrorAlert, Icon, PrimaryButton } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { daysBetween } from "@/lib/deferral";
-import { formatAmount, formatNumber, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 
 type Deferral = NonNullable<MoveDetail["deferral"]>;
 
@@ -41,6 +42,8 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
   const canceled = f.parts.filter((p) => p.canceled).length;
   const thisMonth = todayISO().slice(0, 7);
   const c = f.canceled;
+  const refundText = (x: NonNullable<Deferral["canceled"]>) => x.currency && x.currency !== me?.currency && x.refund_currency
+    ? `${formatAmount(x.refund_currency, symbolOf(x.currency), lang)} (${money(x.refund)})` : money(x.refund);
 
   return (
     <>
@@ -99,8 +102,9 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
             <span className="font-semibold">Lo cancelaste el {longDay(c.date)}</span>
             <span className="text-caption text-muted-foreground">
               {Number(c.refund) > 0
-                ? (expense ? `Te devolvieron ${money(c.refund)} a ${c.account}` : `Devolviste ${money(c.refund)} desde ${c.account}`)
+                ? (expense ? `Te devolvieron ${refundText(c)} a ${c.account}` : `Devolviste ${refundText(c)} desde ${c.account}`)
                   + (Number(c.rest) > 0 ? ` y ${money(c.rest)} contaron como ${expense ? "gasto" : "ingreso"} de «${f.category.name}» ese día.` : ".")
+                  + (Number(c.fx) > 0 ? ` El cambio te dejó ${money(c.fx)} de ganancia.` : Number(c.fx) < 0 ? ` El cambio te costó ${money(c.fx.replace("-", ""))}.` : "")
                 : `Los ${money(c.rest)} que faltaban contaron como ${expense ? "gasto" : "ingreso"} de «${f.category.name}» ese día.`}
             </span>
             {undo.error && <ErrorAlert>{undo.error.message}</ErrorAlert>}
@@ -149,31 +153,43 @@ function CancelDeferralSheet({ moveId, deferral: f, title, open, onClose }: {
   const [date, setDate] = useState(todayISO());
   const [accountId, setAccountId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const refund = typed.trim() ? parseAmount(typed, lang) : "0.00";
-  const rest = refund ? subtract(f.remaining, refund) : null;
-  // En moneda base: lo que espera ya está convertido
-  const accounts = (overview?.have ?? []).filter((a) => ["cash", "bank"].includes(a.kind) && a.currency === base)
-    .sort((x, y) => Number(x.kind !== "bank") - Number(y.kind !== "bank"));
+  // Cualquier cuenta tuya: en otra moneda, con su tipo de cambio (las de soles primero)
+  const accounts = (overview?.have ?? []).filter((a) => ["cash", "bank"].includes(a.kind))
+    .sort((x, y) => Number(x.currency !== base) - Number(y.currency !== base) || Number(x.kind !== "bank") - Number(y.kind !== "bank"));
   const account = accountId ?? (accounts[0] ? String(accounts[0].id) : "");
+  const chosen = accounts.find((a) => String(a.id) === account);
+  const currency = chosen?.currency ?? base;
+  const foreign = currency !== base;
+  const rate = useRateInput(currency, base, date, expense ? "buy" : "sell");
+  const refund = typed.trim() ? parseAmount(typed, lang) : "0.00";
   const some = !!refund && Number(refund) > 0;
+  const inBase = !refund ? null : !foreign ? refund : Number(rate.value) > 0 ? multiply(refund, rate.value) : null;
+  const rest = inBase ? subtract(f.remaining, inBase) : null;
+  const shown = (v: string) => formatAmount(v, symbolOf(currency), lang);
 
   const result: string[] = [`Las ${left.length} partes que faltaban se cancelan; las que ya contaron se quedan.`];
   if (some) {
-    const name = accounts.find((a) => String(a.id) === account)?.name ?? "tu cuenta";
-    result.push(expense ? `${money(refund!)} entran a ${name}: no es ingreso, es lo que no usaste.`
-      : `${money(refund!)} salen de ${name}: no es gasto, es lo que no ganaste.`);
+    const name = chosen?.name ?? "tu cuenta";
+    const what = foreign && inBase ? `${shown(refund!)} (${money(inBase)})` : shown(refund!);
+    result.push(expense ? `${what} entran a ${name}: no es ingreso, es lo que no usaste.`
+      : `${what} salen de ${name}: no es gasto, es lo que no ganaste.`);
   }
   if (rest && Number(rest) > 0) {
-    result.push(`${money(rest)} ${expense ? "que no te devolvieron cuentan como gasto" : "que te quedaste cuentan como ingreso"} de «${f.category.name}» ese día.`);
+    result.push(`${foreign ? "Unos " : ""}${money(rest)} ${expense ? "que no te devolvieron cuentan como gasto" : "que te quedaste cuentan como ingreso"} de «${f.category.name}» ese día.`);
+  }
+  if (some && foreign) {
+    result.push("Si es la moneda en que pagaste, vale lo que costó entonces: la diferencia con el tipo de hoy va a «Ganancia por tipo de cambio» o «Costo del cambio».");
   }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setProblem(null);
     if (refund === null || Number(refund) < 0) return setProblem("Escribe el monto como 600.00, o 0 si no hubo nada");
-    if (Number(refund) > Number(f.remaining)) return setProblem(`No puede pasar de lo que falta: ${money(f.remaining)}`);
+    if (!foreign && Number(refund) > Number(f.remaining)) return setProblem(`No puede pasar de lo que falta: ${money(f.remaining)}`);
     if (some && !account) return setProblem(expense ? "Elige a qué cuenta entró" : "Elige de qué cuenta salió");
-    cancel.mutate({ date, refund: refund ?? "0.00", account_id: some ? Number(account) : null }, { onSuccess: onClose });
+    if (some && foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
+    cancel.mutate({ date, refund: refund ?? "0.00", account_id: some ? Number(account) : null,
+      rate: some && foreign ? rate.value.trim() : null }, { onSuccess: onClose });
   };
 
   const chip = (label: string, value: string) => {
@@ -192,22 +208,24 @@ function CancelDeferralSheet({ moveId, deferral: f, title, open, onClose }: {
         <span className="text-caption text-muted-foreground tabular-nums">
           {title} · faltan {money(f.remaining)} en {left.length === 1 ? "1 parte" : `${left.length} partes`}
         </span>
+        <SheetSelect label={expense ? "Entra a" : "Sale de"} sheetTitle={expense ? "¿A qué cuenta entró?" : "¿De qué cuenta salió?"}
+          value={account} onChange={(v) => { setAccountId(v); setTyped(""); }}
+          options={accounts.map((a) => ({ value: String(a.id), label: a.name, hint: formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency), lang) }))} />
         <label className="flex flex-col gap-1.5 text-caption font-semibold">
           {expense ? "¿Cuánto te devolvieron?" : "¿Cuánto devolviste?"}
           <span className="flex h-11 items-center gap-1.5 border-b-2 border-input-line">
-            <span aria-hidden="true" className="text-muted-foreground">{symbolOf(base)}</span>
+            <span aria-hidden="true" className="text-muted-foreground">{symbolOf(currency)}</span>
             <input inputMode="decimal" placeholder="0.00" value={typed} onChange={(e) => setTyped(e.target.value)}
               className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-[17px] font-normal tabular-nums" />
           </span>
         </label>
         <div className="-mt-1 flex flex-wrap gap-1.5">
           {chip(expense ? "No me devolvieron nada" : "No devolví nada", "0.00")}
-          {chip("Todo lo que falta", f.remaining)}
+          {!foreign && chip("Todo lo que falta", f.remaining)}
         </div>
-        {some && (
-          <SheetSelect label={expense ? "Entra a" : "Sale de"} sheetTitle={expense ? "¿A qué cuenta entró?" : "¿De qué cuenta salió?"}
-            value={account} onChange={setAccountId}
-            options={accounts.map((a) => ({ value: String(a.id), label: a.name, hint: formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(base), lang) }))} />
+        {some && foreign && (
+          <RateField input={rate} currency={currency} side={expense ? "buy" : "sell"}
+            aside={inBase ? <><span className="text-caption text-muted-foreground">Son</span><span className="font-semibold">{money(inBase)}</span></> : undefined} />
         )}
         <DateField label="Fecha" value={date} onChange={setDate} max={todayISO()} min={minDate} booked
           sheetTitle={expense ? "¿Cuándo lo cancelaste?" : "¿Cuándo devolviste el adelanto?"} />
