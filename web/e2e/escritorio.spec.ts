@@ -71,6 +71,15 @@ test("Registrar se abre en un panel y al cerrarlo sigues donde estabas", async (
   await expect(panel).toBeHidden();
   await expect(page).toHaveURL(cuenta);
 
+  // Todos los de «Más» se abren en el panel, también «De antes de PPM»
+  await page.getByRole("link", { name: "Registrar un movimiento" }).click();
+  await page.getByRole("radio", { name: "Más" }).click();
+  await page.getByRole("dialog").getByRole("link", { name: /De antes de PPM/ }).click();
+  await expect(panel.getByRole("heading", { name: "De antes de PPM" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(cuenta);
+
   // Esc apenas elegido el tipo, mientras la hoja de tipos todavía se va: igual cierra el panel.
   // Con el procesador frenado (como en CI) el Esc cae siempre dentro de esos 200 ms
   const cdp = await page.context().newCDPSession(page);
