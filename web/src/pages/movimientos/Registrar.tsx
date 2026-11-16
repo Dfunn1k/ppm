@@ -13,6 +13,7 @@ import {
 import { PendingFiles } from "@/components/Attachments";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { MasTipos } from "@/components/MasTipos";
+import { pickAccount } from "@/lib/startAccount";
 import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
@@ -145,7 +146,8 @@ export function Registrar({ editing, recurring, reminder }: {
   const all: AccountRow[] = overview
     ? [...overview.have, ...overview.owe].filter((a) => ["cash", "bank", "card", "other"].includes(a.kind)) : [];
   const accounts = all.filter((a) => a.kind !== "card" || kind === "expense");
-  const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
+  const account = editing || recurring ? accounts.find((a) => String(a.id) === accountId)
+    : pickAccount(accounts, accountId, search.get("cuenta"), me?.home_account_id);
   const toAccount = all.find((a) => String(a.id) === toAccountId) ?? (toAccountId === "" && rec?.to_account
     ? all.find((a) => a.name === rec.to_account) : undefined);
   const other = kind === "expense" && payer === "other";   // lo pagó otra persona: no sale de tus cuentas
@@ -643,7 +645,7 @@ export function Registrar({ editing, recurring, reminder }: {
       )}
       <PersonaSheet key={String(adding)} open={adding} onClose={() => setAdding(false)}
         onCreated={(id, name) => addPartner({ id, name })} />
-      <MasTipos open={mas} onClose={() => setMas(false)} />
+      <MasTipos open={mas} onClose={() => setMas(false)} account={other ? undefined : account?.id} />
       {kind !== "transfer" && (
         <CategorySheet kind={kind} open={sheetFor !== null} onClose={() => setSheetFor(null)} onPick={pickCategory}
           selected={sheetFor !== null && !isLater ? parts[sheetFor]?.category?.id : null}

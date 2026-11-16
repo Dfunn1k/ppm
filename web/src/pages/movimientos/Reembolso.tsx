@@ -1,11 +1,12 @@
 // R1 · Reembolso: te devolvieron plata de un gasto. Entra a tu cuenta y resta de la categoría de
 // ese gasto, como una nota de crédito: tu gasto queda neto y tus ingresos no se inflan.
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 
 import { type AccountRow, type Category, type MoveDetail, useAccounts, useMe, useSaveMove } from "@/api/hooks";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { MasHeader } from "@/components/MasTipos";
+import { pickAccount } from "@/lib/startAccount";
 import { RateField, useRateInput } from "@/components/RateField";
 import { SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
@@ -17,6 +18,7 @@ import { useBack } from "@/lib/transitions";
 export function Reembolso({ editing }: { editing?: MoveDetail }) {
   const navigate = useNavigate();
   const back = useBack();
+  const [search] = useSearchParams();
   const me = useMe().data;
   const overview = useAccounts().data;
   const save = useSaveMove(editing?.summary.id);
@@ -32,7 +34,8 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
 
   const base = me?.currency ?? "PEN";
   const accounts: AccountRow[] = overview ? overview.have.filter((a) => a.kind === "cash" || a.kind === "bank") : [];
-  const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
+  const account = editing ? accounts.find((a) => String(a.id) === accountId)
+    : pickAccount(accounts, accountId, search.get("cuenta"), me?.home_account_id);
   const currency = account?.currency ?? base;
   const rate = useRateInput(currency, base, date, "buy", editing?.rate ? Number(editing.rate).toFixed(3) : null);
   if (!me?.currency || !overview) return <Spinner />;
@@ -61,7 +64,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
-        <MasHeader kind="refund" locked={!!editing} />
+        <MasHeader kind="refund" locked={!!editing} account={account?.id} />
         <label className="mt-3 flex flex-col gap-0.5 text-caption font-semibold">
           ¿Cuánto te devolvieron?
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">

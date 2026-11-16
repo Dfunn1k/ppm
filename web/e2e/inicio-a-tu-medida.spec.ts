@@ -47,6 +47,21 @@ test("elegir qué cuentas se ven, su orden y la cuenta del +", async ({ page }) 
   await page.getByRole("link", { name: "Registrar un movimiento" }).click();
   await expect(page).toHaveURL(`/registrar?cuenta=${bcp}`);
   await expect(page.getByRole("button", { name: /^Sale de/ })).toContainText("BCP");
+
+
+  // Y la conservan los otros formularios: Más › Me pagaron, Reembolso, y de vuelta a Ingreso
+  await page.getByRole("radiogroup", { name: "Tipo de movimiento" }).getByRole("radio", { name: "Más" }).click();
+  await page.getByRole("link", { name: /Me pagaron lo que me debían/ }).click();
+  await expect(page.getByRole("button", { name: /^Entra a/ })).toContainText("BCP");
+  await page.getByRole("button", { name: /cambiar el tipo/ }).click();
+  await page.getByRole("link", { name: /^Reembolso/ }).click();
+  await expect(page.getByRole("button", { name: /^Entra a/ })).toContainText("BCP");
+  await page.getByRole("radio", { name: "Ingreso" }).click();
+  await expect(page.getByRole("button", { name: /^Entra a/ })).toContainText("BCP");
+
+  // Directo a un formulario sin ?cuenta= (como el aviso de Recurrentes): también la del +
+  await page.goto("/registrar/persona/lend");
+  await expect(page.getByRole("button", { name: /^Sale de/ })).toContainText("BCP");
 });
 
 test("el ojo esconde los montos del Inicio y se recuerda", async ({ page }) => {

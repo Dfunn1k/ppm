@@ -54,6 +54,18 @@ def test_gastos_por_grupo_con_sus_hijas_y_el_mes_anterior(ana: Ana):
     assert r["months"] == []
 
 
+def test_lo_que_quedo_en_cero_no_se_lista_pero_cuenta_en_lo_anterior(ana: Ana):
+    gasto(ana, "Supermercado y mercado", "50.00")
+    gasto(ana, "Restaurantes y delivery", "40.00", when=ANTES)     # el mes pasado sí, este no
+    gasto(ana, "Taxi y apps", "25.00", when=ANTES)                 # todo un grupo que este mes quedó en cero
+
+    r = reporte(ana, "expenses", period=MES)
+    assert (r["total"], r["previous"]) == ("50.00", "65.00")
+    [comida] = r["groups"]
+    assert (comida["amount"], comida["previous"]) == ("50.00", "40.00")
+    assert [k["name"] for k in comida["children"]] == ["Supermercado y mercado"]
+
+
 def test_el_anio_trae_los_doce_meses(ana: Ana):
     gasto(ana, "Taxi y apps", "30.00")
     gasto(ana, "Taxi y apps", "10.00", when=ANTES)

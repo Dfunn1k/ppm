@@ -7,6 +7,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 
 import { type AccountRow, type MoveDetail, type MoveIn, type PartnerRow, useAccounts, useMe, usePartner, usePartnersOverview, useSaveMove } from "@/api/hooks";
 import { MasHeader } from "@/components/MasTipos";
+import { pickAccount } from "@/lib/startAccount";
 import { PersonPicker } from "@/components/PersonPicker";
 import { Installments } from "@/components/Installments";
 import { RateField, useRateInput } from "@/components/RateField";
@@ -39,6 +40,7 @@ export function RegistrarPersona({ editing }: { editing?: MoveDetail }) {
 function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: MoveDetail; initialPerson: number | null }) {
   const navigate = useNavigate();
   const back = useBack();
+  const [search] = useSearchParams();
   const me = useMe().data;
   const overview = useAccounts().data;
   const people = usePartnersOverview().data;
@@ -68,7 +70,8 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   // Prestar la tarjeta: la persona compra con ella; el banco te cobra a ti y ella te debe a ti
   const kinds = kind === "lend" ? ["cash", "bank", "other", "card"] : ["cash", "bank", "other"];
   const accounts: AccountRow[] = overview ? [...overview.have, ...overview.owe].filter((a) => kinds.includes(a.kind)) : [];
-  const account = accounts.find((a) => String(a.id) === accountId) ?? (accountId === "" ? accounts[0] : undefined);
+  const account = editing ? accounts.find((a) => String(a.id) === accountId)
+    : pickAccount(accounts, accountId, search.get("cuenta"), me?.home_account_id);
   const isCard = account?.kind === "card";
   const currency = isCard ? cardCurrency || base : account?.currency ?? base;
   const rate = useRateInput(currency, base, date, account?.kind === "other" || isCard ? "sell" : "buy", editing?.rate ? Number(editing.rate).toFixed(3) : null);
@@ -162,7 +165,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
-        <MasHeader kind={kind} locked={!!editing} />
+        <MasHeader kind={kind} locked={!!editing} account={account?.id} />
 
         <label className="mt-3 flex flex-col gap-0.5 text-caption font-semibold">
           {t.ask}

@@ -158,17 +158,22 @@ def categories(user_id: int, kind: str, period: str) -> CategoryReport:
         amount = sum((k.amount for k in kids), ZERO) if kids else mine[0]
         previous = sum((k.previous for k in kids), ZERO) if kids else mine[1]
         if amount or previous:
+            # Lo que en este periodo quedó en cero (solo tuvo movimientos el periodo anterior) no se lista:
+            # un «S/ 0.00 · −100 %» no dice nada. Sí cuenta en lo anterior del grupo y del total.
+            kids = [k for k in kids if k.amount or k.refunded]
             groups.append(GroupLine(g, name, icon, color, amount, previous, kids))
     groups.sort(key=lambda g: (-g.amount, g.name))
+    every = groups
+    groups = [g for g in every if g.amount or any(k.refunded for k in g.children)]
     months = []
     if p.year:
         cells = {(m, g): v * sign for m, g, v in by_month}
         for i in range(12):
             key = f"{p.start.year}-{i + 1:02d}"
-            vals = [cells.get((key, g.id), ZERO) for g in groups]
-            months.append(MonthAmounts(key, sum(vals, ZERO), vals))
+            months.append(MonthAmounts(key, sum((cells.get((key, g.id), ZERO) for g in every), ZERO),
+                                       [cells.get((key, g.id), ZERO) for g in groups]))
     return CategoryReport(kind, period, p.start, p.end - dt.timedelta(days=1),
-                          sum((g.amount for g in groups), ZERO), sum((g.previous for g in groups), ZERO),
+                          sum((g.amount for g in groups), ZERO), sum((g.previous for g in every), ZERO),
                           groups, months, Unclassified(unc[0], unc[1]))
 
 
