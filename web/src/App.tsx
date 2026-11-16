@@ -47,6 +47,8 @@ const ReporteFlujo = lazy(() => import("./pages/reportes/Flujo").then((m) => ({ 
 const ReportePatrimonio = lazy(() => import("./pages/reportes/Patrimonio").then((m) => ({ default: m.ReportePatrimonio })));
 const ReportePersonas = lazy(() => import("./pages/reportes/Personas").then((m) => ({ default: m.ReportePersonas })));
 const Reportes = lazy(() => import("./pages/reportes/Reportes").then((m) => ({ default: m.Reportes })));
+const ReporteEtiquetas = lazy(() => import("./pages/reportes/Etiquetas").then((m) => ({ default: m.ReporteEtiquetas })));
+const Etiquetas = lazy(() => import("./pages/mas/Etiquetas").then((m) => ({ default: m.Etiquetas })));
 const Mas = lazy(() => import("./pages/mas/Mas").then((m) => ({ default: m.Mas })));
 const Monedas = lazy(() => import("./pages/mas/Monedas").then((m) => ({ default: m.Monedas })));
 const MiCuenta = lazy(() => import("./pages/mas/MiCuenta").then((m) => ({ default: m.MiCuenta })));
@@ -168,6 +170,7 @@ export function App() {
           <Route path="/mas" element={<Mas />} />
           <Route path="/pendientes" element={<Pendientes />} />
           <Route path="/mas/categorias" element={<Categorias />} />
+          <Route path="/mas/etiquetas" element={<Etiquetas />} />
           <Route path="/mas/recurrentes" element={<Recurrentes />} />
         </Route>
         {/* Lista y detalle: en escritorio lado a lado; en el celular, cada una en su pantalla */}
@@ -200,6 +203,7 @@ export function App() {
           <Route path="/mas/reportes/flujo" element={<ReporteFlujo />} />
           <Route path="/mas/reportes/patrimonio" element={<ReportePatrimonio />} />
           <Route path="/mas/reportes/personas" element={<ReportePersonas />} />
+          <Route path="/mas/reportes/etiquetas" element={<ReporteEtiquetas />} />
         </Route>
         <Route path="/mas/cuenta" element={<MiCuenta />} />
         <Route path="/mas/cuenta/exportar" element={<ExportarDatos />} />

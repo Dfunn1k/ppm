@@ -197,15 +197,19 @@ def _sheets(conn: psycopg.Cursor) -> dict[str, tuple[list[str], list[tuple[Any, 
             WHERE a.account_type IN ('income', 'expense') AND a.system_role IS NULL
             ORDER BY a.account_type, p.name NULLS FIRST, a.name""")),
         "movimientos": (["movimiento", "fecha", "referencia", "estado", "cuenta o categoría", "persona", "detalle",
-                         "monto", "moneda", "monto en moneda principal"], q("""
+                         "monto", "moneda", "monto en moneda principal", "etiquetas"], q("""
             SELECT m.id, m.date, m.ref, CASE m.state WHEN 'posted' THEN 'confirmado' ELSE 'por confirmar' END,
-                   a.name, p.name, l.name, l.amount_currency, trim(c.name), l.balance
+                   a.name, p.name, l.name, l.amount_currency, trim(c.name), l.balance,
+                   (SELECT string_agg(t.name, ', ' ORDER BY lower(t.name)) FROM account_move_tag_v v
+                      JOIN account_tag t ON t.id = v.tag_id WHERE v.move_id = m.id)
             FROM account_move_line l
             JOIN account_move m ON m.id = l.move_id
             JOIN account_account a ON a.id = l.account_id
             LEFT JOIN res_partner p ON p.id = l.partner_id
             LEFT JOIN res_currency c ON c.id = l.currency_id
             ORDER BY m.date, m.id, l.id""")),
+        "etiquetas": (["id", "nombre", "color", "activa"], q("""
+            SELECT id, name, color, active FROM account_tag ORDER BY lower(name)""")),
         "personas": (["id", "nombre", "correo", "teléfono", "activa", "creada"], q("""
             SELECT id, name, email, phone, active, create_date FROM res_partner ORDER BY name""")),
         "recurrentes": (["id", "nombre", "cada", "unidad", "desde", "hasta", "estado", "cuenta o categoría",

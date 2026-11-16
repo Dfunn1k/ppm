@@ -158,6 +158,9 @@ class SummaryOut(BaseModel):
     net_worth_months: list[Decimal]
     owes_me: Decimal
     owed_over_90: Decimal
+    tagged: Decimal                  # lo gastado con alguna etiqueta en el mes
+    top_tag: str | None
+    top_tag_color: int | None
 
 
 @router.get("/reports/summary", summary="El índice de Reportes: la cifra de cada reporte en un mes")

@@ -83,6 +83,14 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </Link>
+      <Link to="/mas/etiquetas" className="flex min-h-16 items-center gap-3.5 border-b border-border">
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="sell" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Etiquetas</span>
+          <span className="text-caption text-muted-foreground">Viaje a Cusco, la boda, la mudanza</span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+      </Link>
       <Link to="/mas/cierre" className="flex min-h-16 items-center gap-3.5 border-b border-border">
         <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="lock_clock" className="text-[22px]" /></span>
         <span className="flex flex-1 flex-col">

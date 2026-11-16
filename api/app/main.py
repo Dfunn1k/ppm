@@ -9,7 +9,7 @@ from app import rates as rates_logic
 from app.config import get_settings
 from app.db import close_pool, get_pool
 from app.routes import (accounts, attachments, auth, cards, closing, home, me, moves, partners, pending, rates, recurring, reports,
-                        statements)
+                        statements, tags)
 
 
 @asynccontextmanager
@@ -36,6 +36,7 @@ app.include_router(pending.router)
 app.include_router(attachments.router)
 app.include_router(reports.router)
 app.include_router(closing.router)
+app.include_router(tags.router)
 
 
 class HealthOut(BaseModel):

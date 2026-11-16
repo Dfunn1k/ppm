@@ -15,6 +15,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 import psycopg
 
+from app import tags as tags_
 from app.accounts import AccountError, _translate
 from app.db import user_transaction
 
@@ -94,6 +95,7 @@ class MoveInput:
     debt_currency: str | None = None                     # cobrar o pagar en otra moneda: la de la deuda…
     debt_amount: Decimal | None = None                   # …y cuánto de ella cancela
     deferral: DeferralInput | None = None                # gasto o ingreso: repartirlo en el tiempo
+    tag_ids: list[int] | None = None                     # etiquetas; None al editar = las que tenía
 
 
 @dataclass(frozen=True)
@@ -675,6 +677,8 @@ def _create(conn: psycopg.Connection, m: MoveInput) -> int:
         "INSERT INTO account_move (date, ref, state) VALUES (%s, %s, %s) RETURNING id",
         (on, (m.ref or "").strip() or default_ref, state)).fetchone()[0]
     _write(conn, move_id, lines)
+    if m.tag_ids:
+        tags_.write_tags(conn, move_id, m.tag_ids)
     if m.installments is not None:
         _installments(conn, m, move_id)
     if m.deferral is not None:
@@ -745,15 +749,34 @@ def update(user_id: int, move_id: int, m: MoveInput) -> None:
                 before = _pairs(conn, move_id)
                 on, state = _state(conn, m)
                 default_ref, lines = _build(conn, m, on, move_id)
+                kept = _with_partners(conn, move_id)
                 conn.execute("DELETE FROM account_move_line WHERE move_id = %s", (move_id,))
                 conn.execute("UPDATE account_move SET date = %s, ref = %s, state = %s WHERE id = %s",
                              (on, (m.ref or "").strip() or default_ref, state, move_id))
                 _write(conn, move_id, lines)
+                _keep_with_partners(conn, move_id, kept)
+                if m.tag_ids is not None:
+                    tags_.write_tags(conn, move_id, m.tag_ids)
                 if m.debt_line_id is not None and m.kind in ("collect", "repay"):
                     _settle_first(conn, move_id, m.debt_line_id)
                 reconcile(conn, before | _pairs(conn, move_id))
         except psycopg.Error as e:
             raise _translate(e) from None
+
+
+def _with_partners(conn: psycopg.Connection, move_id: int) -> dict[int, int]:
+    """Con quién fue cada categoría (lo que se elige al clasificar): el formulario no lo muestra, así
+    que editar no debe borrarlo."""
+    return dict(conn.execute("""
+        SELECT l.account_id, min(l.partner_id) FROM account_move_line l
+          JOIN account_account a ON a.id = l.account_id AND a.account_type IN ('income', 'expense')
+         WHERE l.move_id = %s AND l.partner_id IS NOT NULL GROUP BY l.account_id""", (move_id,)).fetchall())
+
+
+def _keep_with_partners(conn: psycopg.Connection, move_id: int, kept: dict[int, int]) -> None:
+    for account_id, partner_id in kept.items():
+        conn.execute("UPDATE account_move_line SET partner_id = %s"
+                     " WHERE move_id = %s AND account_id = %s AND partner_id IS NULL", (partner_id, move_id, account_id))
 
 
 def set_pending(user_id: int, move_id: int, pending: bool) -> None:
@@ -1026,6 +1049,10 @@ class MoveDetail:
     locked: bool = False                                 # en un periodo cerrado: no se cambia ni se borra
     deferral: DeferralDetail | None = None               # repartido en el tiempo: su calendario
     deferral_of: DeferralOf | None = None                # una parte de un reparto o su cancelación
+    tags: list[tags_.TagRef] = field(default_factory=list)
+    tags_inherited: bool = False                         # las lleva de la compra que lo originó
+    with_partner_id: int | None = None                   # gasto o ingreso: con quién fue (opcional)
+    with_partner: str | None = None
 
 
 _LINES_SQL = """
@@ -1171,7 +1198,8 @@ def signed(s: MoveSummary) -> Decimal:
 
 
 def month(user_id: int, ym: str, account_id: int | None = None, category_id: int | None = None,
-          kind: str | None = None, q: str | None = None, pending_only: bool = False) -> Month:
+          kind: str | None = None, q: str | None = None, pending_only: bool = False,
+          tag_id: int | None = None) -> Month:
     try:
         first = dt.date.fromisoformat(f"{ym}-01")
     except ValueError:
@@ -1188,8 +1216,11 @@ def month(user_id: int, ym: str, account_id: int | None = None, category_id: int
                AND (%s::bigint IS NULL OR EXISTS (SELECT 1 FROM account_move_line l
                                                     JOIN account_account a ON a.id = l.account_id
                                                    WHERE l.move_id = m.id AND (a.id = %s OR a.parent_id = %s)))
+               AND (%s::bigint IS NULL OR EXISTS (SELECT 1 FROM account_move_account_tag_rel r
+                                                   WHERE r.account_move_id = tag_source(m.id) AND r.account_tag_id = %s))
              ORDER BY m.date DESC, m.id DESC""",
-                             (first, nxt, account_id, account_id, category_id, category_id, category_id)).fetchall()
+                             (first, nxt, account_id, account_id, category_id, category_id, category_id,
+                              tag_id, tag_id)).fetchall()
         found = [s for s in summaries(conn, heads) if s.kind != "opening"]
     if kind:
         found = [s for s in found if s.kind == kind]
@@ -1234,6 +1265,14 @@ def detail(user_id: int, move_id: int) -> MoveDetail:
         d = replace(d, cancels=CancelOf(*of))
     with user_transaction(user_id) as conn:
         d = replace(d, deferral=_deferral_detail(conn, move_id), deferral_of=_deferral_of(conn, move_id))
+        tag_list, inherited = tags_.move_tags(conn, move_id)
+        who = conn.execute("""
+            SELECT p.id, p.name FROM account_move_line l
+              JOIN account_account a ON a.id = l.account_id AND a.account_type IN ('income', 'expense')
+              JOIN res_partner p ON p.id = l.partner_id
+             WHERE l.move_id = %s ORDER BY l.id LIMIT 1""", (move_id,)).fetchone()
+    d = replace(d, tags=tag_list, tags_inherited=inherited,
+                with_partner_id=who[0] if who else None, with_partner=who[1] if who else None)
     return replace(d, bank=bank) if bank else d
 
 

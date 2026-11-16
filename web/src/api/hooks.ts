@@ -518,6 +518,7 @@ export type MonthFilters = {
   kind?: MoveSummary["kind"];
   q?: string;
   pending?: boolean;
+  tag_id?: number;
 };
 
 const MOVES = ["moves"] as const;
@@ -1593,5 +1594,83 @@ export function useSetLock() {
       return data;
     },
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ["closing"] }), qc.invalidateQueries({ queryKey: ["me"] }), changed()]),
+  });
+}
+
+// --- Etiquetas ----------------------------------------------------------------------------------
+
+export type Tag = components["schemas"]["TagOut"];
+export type TagRef = components["schemas"]["TagRefOut"];
+export type TagReport = components["schemas"]["TagReportOut"];
+type TagPatch = components["schemas"]["TagPatch"];
+
+const TAGS = ["tags"] as const;
+
+export function useTags() {
+  return useQuery({
+    queryKey: TAGS,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/tags");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useCreateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const { data, error, response } = await api.POST("/tags", { body: { name } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: TAGS }),
+  });
+}
+
+/** Renombrar, color o archivar: también cambia cómo se ven los movimientos que la llevan. */
+export function useUpdateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: TagPatch & { id: number }) => {
+      const { error, response } = await api.PATCH("/tags/{tag_id}", { params: { path: { tag_id: id } }, body });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: TAGS }), qc.invalidateQueries({ queryKey: MOVES })]),
+  });
+}
+
+export function useDeleteTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error, response } = await api.DELETE("/tags/{tag_id}", { params: { path: { tag_id: id } } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: TAGS }), qc.invalidateQueries({ queryKey: MOVES })]),
+  });
+}
+
+export function useSetMoveTags(moveId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (tag_ids: number[]) => {
+      const { error, response } = await api.PUT("/moves/{move_id}/tags", { params: { path: { move_id: moveId } }, body: { tag_ids } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: TAGS }), qc.invalidateQueries({ queryKey: MOVES })]),
+  });
+}
+
+export function useTagReport(period: string) {
+  return useQuery({
+    queryKey: [...REPORTS, "tags", period],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/reports/tags", { params: { query: { period } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    placeholderData: (previous) => previous,
   });
 }
