@@ -84,3 +84,45 @@ test("una etiqueta: se crea al registrar, filtra Movimientos, tiene su reporte y
   await expect(editar).toBeHidden();
   await expect(page.getByRole("button", { name: /Cusco 2026/ })).toContainText("1 movimiento");
 });
+
+test("una recurrente con etiqueta y «Con quién» al registrar, que se cambia desde el detalle", async ({ page }) => {
+  const bcp = await readyUser(page);
+  await page.request.post("/api/tags", { data: { name: "Ocio" } });
+  await page.request.post("/api/partners", { data: { name: "Juan Pérez" } });
+
+  // Se repite, con su etiqueta
+  await page.getByRole("link", { name: "Registrar un movimiento" }).click();
+  await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("44.90");
+  await page.getByRole("button", { name: /^Sale de/ }).click();
+  await page.getByRole("radio", { name: /^BCP/ }).click();
+  await page.getByRole("button", { name: /En qué/ }).first().click();
+  await page.getByRole("dialog").getByRole("radio", { name: "Software y apps" }).click();
+  await page.getByLabel("Nota").fill("Netflix");
+  await page.getByRole("switch", { name: /Se repite/ }).check();
+  await page.getByRole("button", { name: /Etiquetas · opcional/ }).click();
+  await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("checkbox", { name: "Ocio" }).click();
+  await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("button", { name: "Listo" }).click();
+  await page.getByRole("button", { name: "Guardar recurrente" }).click();
+  await expect(page).toHaveURL(/\/mas\/recurrentes\/\d+$/);
+  await expect(page.getByText("Ocio")).toBeVisible();
+
+  // Un gasto con «Con quién», solo informativo
+  await page.goto(`/registrar?cuenta=${bcp}`);
+  await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("80");
+  await page.getByRole("button", { name: /En qué/ }).first().click();
+  await page.getByRole("dialog").getByRole("radio", { name: "Restaurantes y delivery" }).click();
+  await page.getByLabel("Nota").fill("Cena");
+  await page.getByRole("button", { name: /Con quién · opcional/ }).click();
+  await page.getByRole("combobox", { name: "Con quién · opcional" }).fill("Juan");
+  await page.getByRole("option", { name: /Juan Pérez/ }).click();
+  await page.getByRole("button", { name: "Registrar gasto" }).click();
+  await expect(page).toHaveURL("/movimientos");
+  await page.getByRole("link", { name: /Cena/ }).click();
+  const fila = page.getByRole("button", { name: /Con quién/ });
+  await expect(fila).toContainText("Juan Pérez");
+
+  // Quitarlo desde el detalle
+  await fila.click();
+  await page.getByRole("dialog", { name: "Con quién" }).getByRole("button", { name: /Quitar/ }).click();
+  await expect(fila).toContainText("Nadie");
+});

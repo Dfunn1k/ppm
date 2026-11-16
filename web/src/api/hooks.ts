@@ -1674,3 +1674,16 @@ export function useTagReport(period: string) {
     placeholderData: (previous) => previous,
   });
 }
+
+/** «Con quién» de un gasto o un ingreso: solo informativo. */
+export function useSetWithPartner(moveId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (partner_id: number | null) => {
+      const { data, error, response } = await api.PUT("/moves/{move_id}/with-partner", { params: { path: { move_id: moveId } }, body: { partner_id } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: MOVES }),
+  });
+}

@@ -24,6 +24,7 @@ import { Installments } from "@/components/Installments";
 import { DeferralFields, NO_DEFERRAL, type DeferralState, deferralBody, deferralValues } from "@/components/DeferralFields";
 import { deferralSchedule } from "@/lib/deferral";
 import { TagField } from "@/components/Tags";
+import { WithPartnerField } from "@/components/WithPartner";
 import { shortDate, todayISO } from "@/lib/dates";
 import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
@@ -135,7 +136,8 @@ export function Registrar({ editing, recurring, reminder }: {
   const [later, setLater] = useState(false);   // «Lo clasifico después»: a Por clasificar
   const [files, setFiles] = useState<File[]>([]);   // adjuntos: se suben al guardar
   const [defer, setDefer] = useState<DeferralState>(NO_DEFERRAL);   // repartir en el tiempo
-  const [tagIds, setTagIds] = useState<number[]>(editing?.tags.map((t) => t.id) ?? []);
+  const [tagIds, setTagIds] = useState<number[]>((editing?.tags ?? source?.tags ?? []).map((t) => t.id));
+  const [withPartner, setWithPartner] = useState<number | null>(editing?.with_partner_id ?? null);
   const upload = useUploadAttachment();
   const partners = usePartners().data ?? [];
   const rule = recurring?.rule;
@@ -219,6 +221,7 @@ export function Registrar({ editing, recurring, reminder }: {
       installments: card && inInstallments && kind === "expense" ? installments : null,
       installment_amount: card && inInstallments && kind === "expense" ? cuotaValue : null,
       tag_ids: tagIds,
+      ...(kind === "expense" || kind === "income" ? { with_partner_id: withPartner } : {}),
     };
     // De otra persona: no es tu gasto, le prestaste la tarjeta en cuotas (te debe el precio y, con
     // cada cuota facturada, su interés)
@@ -565,7 +568,10 @@ export function Registrar({ editing, recurring, reminder }: {
               total={total && Number(total) > 0 ? (foreign ? (Number(rate.value) > 0 ? multiply(total, rate.value) : null) : total) : null}
               symbol={symbolOf(base)} lang={lang} />
           )}
-          {!recurring && !repeating && <TagField value={tagIds} onChange={setTagIds} />}
+          {(kind === "expense" || kind === "income") && !repeating && !recurring && !(card && inInstallments) && !deferring && (
+            <WithPartnerField value={withPartner} onChange={setWithPartner} />
+          )}
+          <TagField value={tagIds} onChange={setTagIds} />
           {!editing && !recurring && (
             <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
               <Icon name="repeat" className="w-9 text-center text-muted-foreground" />
