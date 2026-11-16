@@ -260,6 +260,47 @@ def test_ya_me_debia_desde_hace_meses(ana: Con):
     assert [i["open"] for i in ana.detail(luis)["owes_me"]] == ["200.00"]
 
 
+def test_lo_de_antes_de_ppm_se_corrige_en_el_mismo_movimiento(ana: Con):
+    luis, rosa = ana.person("Luis Pérez"), ana.person("Rosa Díaz")
+    move = ana.c.post(f"/partners/{luis}/opening", json={"side": "owes_me", "currency": "PEN", "amount": "300.00",
+                                                        "date": HACE_MESES, "ref": "Lo del celular"}).json()["move_id"]
+    ana.register(kind="collect", account_id=ana.bcp, amount="100.00", partner_id=luis)
+
+    def edit(**body) -> object:
+        base = {"partner_id": luis, "side": "owes_me", "currency": "PEN", "amount": "300.00", "date": HACE_MESES}
+        return ana.c.put(f"/moves/{move}/opening", json={**base, **body})
+
+    r = edit(amount="50.00")                                         # ya te pagó 100
+    assert r.status_code == 400 and "menor que lo ya cobrado" in r.json()["detail"]
+    assert [i["open"] for i in ana.detail(luis)["owes_me"]] == ["200.00"]   # no cambió nada
+
+    assert edit(amount="250.00", date=AYER, ref="El celular y la funda").status_code == 204
+    m = ana.c.get(f"/moves/{move}").json()
+    assert (m["summary"]["id"], m["summary"]["amount"], m["summary"]["date"], m["summary"]["ref"]) == \
+        (move, "250.00", AYER, "El celular y la funda")
+    assert [(i["amount"], i["open"]) for i in ana.detail(luis)["owes_me"]] == [("250.00", "150.00")]
+
+    # Con otra persona o en otra moneda, el cobro de Luis se quedaría sin deuda: no se puede
+    assert edit(partner_id=rosa).status_code == 400
+    r = ana.c.put(f"/moves/{move}/opening", json={"partner_id": luis, "side": "owes_me", "currency": "USD",
+                                                  "amount": "100.00", "rate": "3.70", "date": HACE_MESES})
+    assert r.status_code == 400                                       # el cobro en soles se queda sin deuda
+
+
+def test_corregir_quien_y_de_que_lado(ana: Con):
+    luis, rosa = ana.person("Luis Pérez"), ana.person("Rosa Díaz")
+    move = ana.c.post(f"/partners/{luis}/opening", json={"side": "owes_me", "currency": "PEN", "amount": "80.00",
+                                                        "date": HACE_MESES}).json()["move_id"]
+    r = ana.c.put(f"/moves/{move}/opening", json={"partner_id": rosa, "side": "i_owe", "currency": "PEN",
+                                                  "amount": "80.00", "date": HACE_MESES})
+    assert r.status_code == 204, r.text
+    assert ana.detail(luis)["owes_me"] == []
+    assert [i["open"] for i in ana.detail(rosa)["i_owe"]] == ["80.00"]
+    r = ana.c.put(f"/moves/{ana.register(kind='lend', account_id=ana.bcp, amount='5', partner_id=rosa)['summary']['id']}/opening",
+                  json={"partner_id": rosa, "side": "i_owe", "currency": "PEN", "amount": "1"})
+    assert r.status_code == 404
+
+
 def test_ya_le_debia_y_se_corrige_borrandolo(ana: Con):
     maria = ana.person("María")
     r = ana.c.post(f"/partners/{maria}/opening", json={"side": "i_owe", "currency": "PEN", "amount": "80.00",

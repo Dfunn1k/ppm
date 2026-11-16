@@ -14,7 +14,7 @@ import psycopg
 
 from app.accounts import ZERO, AccountError, Money, _currency_id, _today, _today_rates, _translate
 from app.db import user_transaction
-from app.moves import _first, owed, reconcile
+from app.moves import _first, _pairs, owed, reconcile
 
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -203,31 +203,39 @@ def update(user_id: int, partner_id: int, name: str, phone: str | None, email: s
 
 # --- Saldo inicial con una persona --------------------------------------------------------------
 
-def add_opening(user_id: int, partner_id: int, side: str, currency: str, amount: Decimal,
-                on: dt.date | None = None, rate: Decimal | None = None, ref: str | None = None) -> int:
-    """«Ya me debía» o «Ya le debía»: lo que había con esa persona antes de empezar a usar PPM.
-    Va contra Saldos iniciales y no mueve tus cuentas; queda como una deuda abierta con su fecha."""
+def _opening_args(conn: psycopg.Connection, partner_id: int, side: str, currency: str, amount: Decimal,
+                  on: dt.date | None, rate: Decimal | None) -> tuple[str, int, dt.date, Decimal]:
+    """Lo que piden «Ya me debía» y «Ya le debía»: el rol, la moneda, la fecha y el tipo de cambio."""
     if side not in ("owes_me", "i_owe"):
         raise AccountError(400, "Elige si te debía o si le debías")
     if amount <= 0:
         raise AccountError(400, "Escribe un monto mayor que cero")
     role = "receivable" if side == "owes_me" else "payable"
+    _name(conn, partner_id)
+    cur_id = _currency_id(conn, currency)
+    today = conn.execute("SELECT user_today()").fetchone()[0]
+    on = on or today
+    if on > today:
+        raise AccountError(400, "Un saldo inicial es de hoy o de antes: elige otra fecha")
+    base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
+    if cur_id == base_id:
+        rate = Decimal(1)
+    elif rate is None:
+        try:
+            with conn.transaction():
+                rate = conn.execute("SELECT get_rate(%s, %s, %s)",
+                                    (cur_id, on, "buy" if role == "receivable" else "sell")).fetchone()[0]
+        except psycopg.errors.NoDataFound:
+            raise AccountError(400, f"Falta el tipo de cambio de {currency.upper()}: escríbelo") from None
+    return role, cur_id, on, rate  # type: ignore[return-value]
+
+
+def add_opening(user_id: int, partner_id: int, side: str, currency: str, amount: Decimal,
+                on: dt.date | None = None, rate: Decimal | None = None, ref: str | None = None) -> int:
+    """«Ya me debía» o «Ya le debía»: lo que había con esa persona antes de empezar a usar PPM.
+    Va contra Saldos iniciales y no mueve tus cuentas; queda como una deuda abierta con su fecha."""
     with user_transaction(user_id) as conn:
-        _name(conn, partner_id)
-        cur_id = _currency_id(conn, currency)
-        on = on or conn.execute("SELECT user_today()").fetchone()[0]
-        if on > conn.execute("SELECT user_today()").fetchone()[0]:
-            raise AccountError(400, "Un saldo inicial es de hoy o de antes: elige otra fecha")
-        base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
-        if cur_id == base_id:
-            rate = Decimal(1)
-        elif rate is None:
-            try:
-                with conn.transaction():
-                    rate = conn.execute("SELECT get_rate(%s, %s, %s)",
-                                        (cur_id, on, "buy" if role == "receivable" else "sell")).fetchone()[0]
-            except psycopg.errors.NoDataFound:
-                raise AccountError(400, f"Falta el tipo de cambio de {currency.upper()}: escríbelo") from None
+        role, cur_id, on, rate = _opening_args(conn, partner_id, side, currency, amount, on, rate)
         try:
             with conn.transaction():
                 move_id = conn.execute("SELECT post_partner_opening(%s, %s, %s, %s, %s, %s, %s)",
@@ -235,6 +243,49 @@ def add_opening(user_id: int, partner_id: int, side: str, currency: str, amount:
                 conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
                 reconcile(conn, {(partner_id, conn.execute("SELECT system_account(%s)", (role,)).fetchone()[0])})
                 return move_id
+        except psycopg.Error as e:
+            raise _translate(e) from None
+
+
+def update_opening(user_id: int, move_id: int, partner_id: int, side: str, currency: str, amount: Decimal,
+                   on: dt.date | None = None, rate: Decimal | None = None, ref: str | None = None) -> None:
+    """Corregir lo que había con una persona antes de PPM, en el mismo movimiento (sus adjuntos y su
+    nota se quedan). Los cobros o pagos que ya tenía se vuelven a conciliar; no puede quedar debajo
+    de lo ya cobrado o pagado."""
+    with user_transaction(user_id) as conn:
+        found = conn.execute("""
+            SELECT 1 FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+             WHERE l.move_id = %s AND a.system_role IN ('receivable', 'payable') AND l.partner_id IS NOT NULL
+               AND EXISTS (SELECT 1 FROM account_move_line o JOIN account_account oa ON oa.id = o.account_id
+                            WHERE o.move_id = l.move_id AND oa.system_role = 'opening')""", (move_id,)).fetchone()
+        if found is None:
+            raise AccountError(404, "Ese movimiento no es lo que había con una persona antes de PPM")
+        role, cur_id, on, rate = _opening_args(conn, partner_id, side, currency, amount, on, rate)
+        before = _pairs(conn, move_id)
+        try:
+            with conn.transaction():
+                # Se arma de nuevo con la misma función y sus apuntes pasan al movimiento de siempre
+                fresh = conn.execute("SELECT post_partner_opening(%s, %s, %s, %s, %s, %s, %s)",
+                                     (role, partner_id, cur_id, amount, on, rate, ref)).fetchone()[0]
+                conn.execute("DELETE FROM account_move_line WHERE move_id = %s", (move_id,))
+                conn.execute("UPDATE account_move_line SET move_id = %s WHERE move_id = %s", (move_id, fresh))
+                conn.execute("UPDATE account_move m SET date = f.date, ref = f.ref FROM account_move f"
+                             " WHERE m.id = %s AND f.id = %s", (move_id, fresh))
+                conn.execute("DELETE FROM account_move WHERE id = %s", (fresh,))
+                conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
+                after = _pairs(conn, move_id)
+                reconcile(conn, before | after)
+                for partner, account in before | after:
+                    left = conn.execute("""
+                        SELECT a.system_role, l.currency_id, coalesce(sum(l.amount_currency), 0)
+                          FROM account_move_line l JOIN account_move m ON m.id = l.move_id AND m.state = 'posted'
+                          JOIN account_account a ON a.id = l.account_id
+                         WHERE l.partner_id = %s AND l.account_id = %s
+                         GROUP BY a.system_role, l.currency_id""", (partner, account)).fetchall()
+                    for r, _cur, total in left:
+                        if (r == "receivable" and total < 0) or (r == "payable" and total > 0):
+                            raise AccountError(400, "Ya hay cobros o pagos de más para ese monto: "
+                                                    "no puede ser menor que lo ya cobrado o pagado")
         except psycopg.Error as e:
             raise _translate(e) from None
 

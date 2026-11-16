@@ -721,7 +721,7 @@ def _deferral_link(conn: psycopg.Connection, move_id: int) -> str | None:
     return row[0] if row else None
 CANCEL_NOT_EDITABLE = "Una cancelación de cuotas no se edita: bórrala para deshacerla y vuelve a cancelar"
 
-NOT_EDITABLE = {"opening": "Un saldo inicial no se edita aquí: corrígelo desde su cuenta o, si es con una persona, bórralo y vuelve a anotarlo",
+NOT_EDITABLE = {"opening": "Un saldo inicial no se edita aquí: corrígelo desde su cuenta o, si es con una persona, con «Editar» en su detalle",
                 "offset": "Una compensación no se edita: bórrala y vuelve a compensar",
                 "write_off": "Una deuda dada por perdida no se edita: bórrala si te equivocaste"}
 

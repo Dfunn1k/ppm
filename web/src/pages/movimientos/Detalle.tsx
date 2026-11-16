@@ -76,7 +76,8 @@ export function DetalleMovimiento() {
   const deferral = d.deferral;
   const of = d.deferral_of;
   const part = of && of.sequence != null;
-  const editable = s.kind !== "offset" && s.kind !== "write_off" && s.kind !== "opening" && !unclassified && !plan && !cancels
+  // Lo de antes de PPM con una persona se corrige en su formulario; el saldo inicial de una cuenta, desde la cuenta
+  const editable = s.kind !== "offset" && s.kind !== "write_off" && (s.kind !== "opening" || !!s.partner) && !unclassified && !plan && !cancels
     && !deferral && !of && !locked;
   const canceled = plan?.canceled;
   // Solo una compra tuya (con su categoría) que aún tiene cuotas por facturar
@@ -159,7 +160,7 @@ export function DetalleMovimiento() {
             className="h-10 flex-none rounded-full bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground">Clasificar</button>
         </div>
       )}
-      {opening && <p className="mt-2 text-caption text-muted-foreground">{opening} Para corregirlo, bórralo y vuelve a anotarlo desde la persona.</p>}
+      {opening && <p className="mt-2 text-caption text-muted-foreground">{opening}</p>}
       <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-[32px] leading-10 font-semibold tracking-[-0.02em] tabular-nums whitespace-nowrap" : "text-amount-hero"} ${tone}`}>
         {sign}{formatAmount(s.amount, symbolOf(s.currency), lang)}
         {exchange && <><Icon name="arrow_forward" aria-label="a" className="text-[26px] text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}

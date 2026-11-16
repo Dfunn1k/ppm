@@ -1,40 +1,53 @@
 // C6 · «Ya me debía» o «Ya le debía»: lo que había con una persona antes de empezar a usar PPM.
 // Es la foto del cuaderno de fiados el día que lo abriste: no mueve tus cuentas (esa plata ya había
 // salido o entrado) y queda como una deuda abierta desde su fecha, que se cancela con los pagos.
-// Desde una persona ya viene elegida; desde «Más» en Registrar, se elige (o se crea) aquí.
+// Desde una persona ya viene elegida; desde «Más» en Registrar, se elige (o se crea) aquí. También se
+// corrige con este mismo formulario («Editar» en su detalle), en el mismo movimiento.
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 
-import { useMe, usePartner, usePartnerOpening } from "@/api/hooks";
+import { type MoveDetail, useEditOpening, useMe, usePartner, usePartnerOpening } from "@/api/hooks";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput } from "@/components/RateField";
 import { CurrencyChoice, Segmented } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
-import { currencyLabel, parseAmount, symbolOf } from "@/lib/money";
+import { currencyLabel, divide, formatNumber, parseAmount, symbolOf } from "@/lib/money";
 import { AmountField } from "@/pages/cuentas/CuentaForm";
 import { useBack } from "@/lib/transitions";
 
 type Side = "owes_me" | "i_owe";
 
-export function YaDebia() {
-  const fixed = Number(useParams().id) || 0;
-  const [chosen, setChosen] = useState<number | null>(null);
+/** Lo que dice un saldo inicial ya guardado: de qué lado, la nota y el tipo de cambio. */
+function fromMove(d: MoveDetail) {
+  const line = d.lines.find((l) => l.partner_id);
+  const side: Side = line && Number(line.debit) > 0 ? "owes_me" : "i_owe";
+  const base = line ? (Number(line.debit) > 0 ? line.debit : line.credit) : null;
+  const rate = line && base ? divide(base, line.amount.replace("-", ""), 3) : null;   // en soles es 1.000 y no se usa
+  return { side, rate, note: d.summary.ref === "Saldo inicial" ? "" : d.summary.ref };
+}
+
+export function YaDebia({ editing }: { editing?: MoveDetail }) {
+  const fixed = editing ? 0 : Number(useParams().id) || 0;
+  const was = editing ? fromMove(editing) : null;
+  const [chosen, setChosen] = useState<number | null>(editing?.summary.partner_id ?? null);
   const id = fixed || chosen || 0;
   const navigate = useNavigate();
   const back = useBack();
   const [search] = useSearchParams();
   const me = useMe().data;
   const person = usePartner(id);
-  const save = usePartnerOpening(id);
-  const [side, setSide] = useState<Side>(search.get("lado") === "i_owe" ? "i_owe" : "owes_me");
-  const [currency, setCurrency] = useState(me?.currency ?? "PEN");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(todayISO());
-  const [note, setNote] = useState("");
+  const add = usePartnerOpening(id);
+  const edit = useEditOpening(editing?.summary.id ?? 0);
+  const save = editing ? edit : add;
+  const [side, setSide] = useState<Side>(was?.side ?? (search.get("lado") === "i_owe" ? "i_owe" : "owes_me"));
+  const [currency, setCurrency] = useState(editing?.summary.currency ?? me?.currency ?? "PEN");
+  const [amount, setAmount] = useState(editing ? formatNumber(editing.summary.amount, me?.lang ?? "es-PE") : "");
+  const [date, setDate] = useState(editing?.summary.date ?? todayISO());
+  const [note, setNote] = useState(was?.note ?? "");
   const [problem, setProblem] = useState<string | null>(null);
-  const rate = useRateInput(currency, me?.currency ?? "PEN", date, side === "owes_me" ? "buy" : "sell");
+  const rate = useRateInput(currency, me?.currency ?? "PEN", date, side === "owes_me" ? "buy" : "sell", was?.rate ?? null);
   if (!me?.currency || (fixed && person.isPending)) return <Spinner />;
   if (person.isError) return <Screen><ErrorAlert>{person.error.message}</ErrorAlert></Screen>;
 
@@ -48,8 +61,12 @@ export function YaDebia() {
     if (!value || Number(value) <= 0) return setProblem("Escribe un monto mayor que cero");
     if (date > todayISO()) return setProblem("Un saldo inicial es de hoy o de antes: elige otra fecha");
     if (foreign && !(Number(rate.value) > 0)) return setProblem("Escribe el tipo de cambio, como 3.443");
-    save.mutate({ side, currency, amount: value, date, rate: foreign ? rate.value.trim() : null, ref: note.trim() || null },
-      { onSuccess: () => navigate(`/personas/${id}`, { replace: true }) });
+    const body = { side, currency, amount: value, date, rate: foreign ? rate.value.trim() : null, ref: note.trim() || null };
+    if (editing) {
+      edit.mutate({ ...body, partner_id: id }, { onSuccess: () => navigate(`/movimientos/${editing.summary.id}`, { replace: true }) });
+    } else {
+      add.mutate(body, { onSuccess: () => navigate(`/personas/${id}`, { replace: true }) });
+    }
   };
 
   return (
@@ -58,7 +75,7 @@ export function YaDebia() {
         <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </button>
-        <span className="pr-2.5 text-label text-muted-foreground">Saldo inicial</span>
+        <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Saldo inicial"}</span>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
         <h1 className="mt-4 text-title-hero">De antes de PPM</h1>
@@ -86,7 +103,7 @@ export function YaDebia() {
         <div className="min-h-6 flex-1" />
         <div className="flex flex-col gap-3">
           {(problem || save.error) && <ErrorAlert>{problem ?? save.error?.message}</ErrorAlert>}
-          <PrimaryButton pending={save.isPending}>{side === "owes_me" ? "Anotar lo que me debía" : "Anotar lo que le debía"}</PrimaryButton>
+          <PrimaryButton pending={save.isPending}>{editing ? "Guardar cambios" : side === "owes_me" ? "Anotar lo que me debía" : "Anotar lo que le debía"}</PrimaryButton>
         </div>
       </form>
     </Screen>

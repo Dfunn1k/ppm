@@ -464,6 +464,18 @@ export function usePartnerOpening(id: number) {
   });
 }
 
+/** Corregir lo que había con una persona antes de PPM, en el mismo movimiento. */
+export function useEditOpening(moveId: number) {
+  const changed = useMovesChanged();
+  return useMutation({
+    mutationFn: async (body: components["schemas"]["PartnerOpeningEditIn"]) => {
+      const { error, response } = await api.PUT("/moves/{move_id}/opening", { params: { path: { move_id: moveId } }, body });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
 /** Compensar o dar por perdido: es un movimiento más, y cambia saldos y listas. */
 export function usePartnerAction(id: number, action: "offset" | "write-off") {
   const changed = useMovesChanged();

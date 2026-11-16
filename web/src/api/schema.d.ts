@@ -933,6 +933,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moves/{move_id}/opening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Corregir lo que había con una persona antes de PPM */
+        put: operations["update_opening_moves__move_id__opening_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/home": {
         parameters: {
             query?: never;
@@ -3456,6 +3473,26 @@ export interface components {
             phone?: string | null;
             /** Email */
             email?: string | null;
+        };
+        /** PartnerOpeningEditIn */
+        PartnerOpeningEditIn: {
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "owes_me" | "i_owe";
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: number | string;
+            /** Date */
+            date?: string | null;
+            /** Rate */
+            rate?: number | string | null;
+            /** Ref */
+            ref?: string | null;
+            /** Partner Id */
+            partner_id: number;
         };
         /** PartnerOpeningIn */
         PartnerOpeningIn: {
@@ -6599,6 +6636,41 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MovedOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_opening_moves__move_id__opening_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartnerOpeningEditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
