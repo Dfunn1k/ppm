@@ -12,11 +12,16 @@ import { matches, openShortcutsHelp, useShortcuts } from "@/lib/shortcuts";
 import { registerLink } from "./AppNav";
 
 /** Lo que se abre al lado de cada lista; Cuentas abre cuentas, tarjetas y préstamos. */
-const DETAIL = /^\/(movimientos|cuentas|tarjetas|prestamos|personas)\/\d+$|^\/mas\/reportes\/[a-z]+$/;
-const GROUP: Record<string, string> = { cuentas: "cuentas", tarjetas: "cuentas", prestamos: "cuentas", movimientos: "movimientos", personas: "personas", mas: "reportes" };
-const LIST: Record<string, string> = { cuentas: "/cuentas", movimientos: "/movimientos", personas: "/personas" };
+const DETAIL = /^\/(movimientos|cuentas|tarjetas|prestamos|personas)\/\d+$|^\/mas\/(reportes\/[a-z]+|recurrentes\/\d+|[a-z-]+)$/;
+const GROUP: Record<string, string> = { cuentas: "cuentas", tarjetas: "cuentas", prestamos: "cuentas", movimientos: "movimientos", personas: "personas" };
+const LIST: Record<string, string> = { cuentas: "/cuentas", movimientos: "/movimientos", personas: "/personas", recurrentes: "/mas/recurrentes" };
 
-const groupOf = (path: string) => GROUP[path.split("/")[1] ?? ""];
+/** Qué lista de la izquierda manda: en /mas/… son tres (Reportes, Recurrentes y los ajustes de Más). */
+function groupOf(path: string) {
+  const [, first = "", second = ""] = path.split("/");
+  if (first !== "mas") return GROUP[first];
+  return second === "reportes" || second === "recurrentes" ? second : "ajustes";
+}
 
 function typing(t: EventTarget | null) {
   const el = t as HTMLElement | null;

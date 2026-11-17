@@ -170,12 +170,7 @@ export function App() {
         <Route element={<WithNav />}>
           <Route path="/inicio" element={<Inicio />} />
           <Route path="/por-clasificar" element={<PorClasificar />} />
-          <Route path="/mas" element={<Mas />} />
           <Route path="/pendientes" element={<Pendientes />} />
-          <Route path="/mas/categorias" element={<Categorias />} />
-          <Route path="/mas/etiquetas" element={<Etiquetas />} />
-          <Route path="/mas/atajos" element={<Atajos />} />
-          <Route path="/mas/recurrentes" element={<Recurrentes />} />
         </Route>
         {/* Lista y detalle: en escritorio lado a lado; en el celular, cada una en su pantalla */}
         <Route element={<Split list={<Movimientos />} />}>
@@ -209,20 +204,34 @@ export function App() {
           <Route path="/mas/reportes/personas" element={<ReportePersonas />} />
           <Route path="/mas/reportes/etiquetas" element={<ReporteEtiquetas />} />
         </Route>
-        <Route path="/mas/cuenta" element={<MiCuenta />} />
-        <Route path="/mas/cuenta/exportar" element={<ExportarDatos />} />
-        <Route path="/mas/cuenta/eliminar" element={<EliminarCuenta />} />
-        <Route path="/mas/apariencia" element={<Apariencia />} />
-        <Route path="/mas/monedas" element={<Monedas />} />
-        <Route path="/mas/cierre" element={<Cierre />} />
-        <Route path="/mas/inicio" element={<InicioAjustes />} />
-        <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />
-        <Route path="/mas/recurrentes/:id" element={<Recurrente />} />
+        <Route element={<Split list={<Recurrentes />} />}>
+          <Route element={<WithNav />}>
+            <Route path="/mas/recurrentes" element={<SplitIndex icon="event_repeat" title="Elige una recurrente">Aquí al lado ves sus próximas fechas, lo ya registrado y la pausas o la terminas.</SplitIndex>} />
+          </Route>
+          <Route path="/mas/recurrentes/:id" element={<Recurrente />} />
+        </Route>
+        {/* Más como los Ajustes de la computadora: el índice a la izquierda y el ajuste elegido al lado */}
+        <Route element={<Split list={<Mas />} />}>
+          <Route element={<WithNav />}>
+            <Route path="/mas" element={<SplitIndex to="/mas/cuenta" />} />
+            <Route path="/mas/categorias" element={<Categorias />} />
+            <Route path="/mas/etiquetas" element={<Etiquetas />} />
+            <Route path="/mas/atajos" element={<Atajos />} />
+          </Route>
+          <Route path="/mas/cuenta" element={<MiCuenta />} />
+          <Route path="/mas/cuenta/exportar" element={<ExportarDatos />} />
+          <Route path="/mas/cuenta/eliminar" element={<EliminarCuenta />} />
+          <Route path="/mas/apariencia" element={<Apariencia />} />
+          <Route path="/mas/monedas" element={<Monedas />} />
+          <Route path="/mas/cierre" element={<Cierre />} />
+          <Route path="/mas/inicio" element={<InicioAjustes />} />
+          <Route path="/mas/categorias/nueva" element={<NuevaCategoria />} />
+          <Route path="/mas/tipo-de-cambio" element={<TipoCambio />} />
+        </Route>
         <Route path="/mas/recurrentes/:id/editar" element={<EditarRecurrente />} />
         <Route path="/registrar/aviso/:id/:occurrence" element={<RegistrarAviso />} />
         <Route path="/cuentas/nueva/prestamo" element={<NuevoPrestamo />} />
         <Route path="/prestamos/:id/pagar" element={<PagarCuota />} />
-        <Route path="/mas/tipo-de-cambio" element={<TipoCambio />} />
         <Route path="/registrar" element={<Registrar />} />
         <Route path="/registrar/persona/:kind" element={<RegistrarPersona />} />
         <Route path="/registrar/reembolso" element={<Reembolso />} />

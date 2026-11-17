@@ -198,3 +198,41 @@ test("atajos: ? muestra todos, se cambia una tecla y las pistas se apagan", asyn
   await page.getByRole("button", { name: /Volver a los de fábrica/ }).click();
   await expect(page.getByRole("button", { name: /Volver a los de fábrica/ })).toBeHidden();
 });
+
+test("Recurrentes y Más en dos paneles, y Pendientes en tres columnas", async ({ page }) => {
+  await readyUser(page);
+  await page.goto("/registrar?repite=1");
+  await page.getByRole("textbox", { name: "¿Cuánto es?" }).fill("44.90");
+  await page.getByRole("button", { name: /^Sale de/ }).click();
+  await page.getByRole("radio", { name: /^BCP/ }).click();
+  await page.getByRole("button", { name: /En qué/ }).first().click();
+  await page.getByRole("dialog").getByRole("radio", { name: "Software y apps" }).click();
+  await page.getByLabel("Nota").fill("Netflix");
+  await page.getByRole("button", { name: "Guardar recurrente" }).click();
+
+  // La recurrente se abre al lado de la lista, con sus acciones arriba
+  await expect(page).toHaveURL(/\/mas\/recurrentes\/\d+$/);
+  await expect(page.getByRole("heading", { name: "Recurrentes" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Netflix" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Netflix/ })).toHaveAttribute("aria-current", "page");
+  await page.getByRole("button", { name: "Pausar" }).click();
+  await expect(page.getByRole("button", { name: "Reanudar" })).toBeVisible();
+
+  // Más abre Mi cuenta al lado de su índice; lo que ya está en el riel no se repite
+  const riel = page.getByRole("navigation", { name: "Navegación principal" });
+  await riel.getByRole("link", { name: "Más" }).click();
+  await expect(page).toHaveURL("/mas/cuenta");
+  await expect(page.getByRole("heading", { name: "Más" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ana" })).toBeVisible();
+  const indice = page.locator(".pane-list");
+  await expect(indice.getByRole("link", { name: /Reportes|Recurrentes|Pendientes/ })).toHaveCount(0);
+  await expect(indice.getByText("BETA")).toBeVisible();
+  await indice.getByRole("link", { name: /Apariencia/ }).click();
+  await expect(page).toHaveURL("/mas/apariencia");
+  await expect(indice.getByRole("link", { name: /Apariencia/ })).toHaveAttribute("aria-current", "page");
+
+  // Pendientes: las tres columnas siempre, aunque alguna esté vacía
+  await riel.getByRole("link", { name: "Pendientes" }).click();
+  for (const name of ["Vencidos", "Hoy", "Próximos días"]) await expect(page.getByRole("region", { name })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Escribir un recordatorio" })).toBeVisible();
+});
