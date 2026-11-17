@@ -185,7 +185,7 @@ export function Inicio() {
       </section>
 
       <Sheet title="Elige el mes" open={picking} onClose={() => setPicking(false)}>
-        <OptionList value={month} options={monthOptions().map((v) => ({ value: v, label: monthName(v) }))}
+        <OptionList search={false} value={month} options={monthOptions().map((v) => ({ value: v, label: monthName(v) }))}
           onPick={(v) => {
             setParams(v === todayISO().slice(0, 7) ? {} : { mes: v }, { replace: true });
             setPicking(false);

@@ -127,7 +127,7 @@ export function Reportes() {
       <span className="mt-3 text-caption text-muted-foreground">Cada reporte se ve por mes o por año. Lo por clasificar, las transferencias y el pago de la tarjeta no entran.</span>
 
       <Sheet title="Elige el mes" open={picking} onClose={() => setPicking(false)}>
-        <OptionList value={month} options={monthOptions().slice(1).map((v) => ({ value: v, label: monthName(v) }))}
+        <OptionList search={false} value={month} options={monthOptions().slice(1).map((v) => ({ value: v, label: monthName(v) }))}
           onPick={(v) => { setParams(v === thisMonth ? {} : { mes: v }, { replace: true }); setPicking(false); }} />
       </Sheet>
     </main>

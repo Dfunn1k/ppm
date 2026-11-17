@@ -4,7 +4,8 @@ import { useNavigate } from "react-router";
 
 import { ApiError, useAddCustody, useCreatePartner, useMe, usePartners } from "@/api/hooks";
 import { RateField, useRateInput } from "@/components/RateField";
-import { CurrencyChoice } from "@/components/Sheet";
+import { PersonPicker } from "@/components/PersonPicker";
+import { CurrencyChoice, SEARCH_FROM } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
@@ -67,6 +68,12 @@ export function NuevaGuardo() {
           La tienes tú, pero no es tuya: no suma a lo que realmente tienes hasta que la devuelvas.
         </p>
 
+        {/* Con más de 8 personas, el buscador de personas de siempre en vez de los botones (decisión «Listas largas») */}
+        {partners.length >= SEARCH_FROM ? (
+          <div className="mt-6">
+            <PersonPicker label="Persona" value={typeof chosen === "number" ? chosen : null} onChange={setWho} />
+          </div>
+        ) : (
         <div role="radiogroup" aria-label="Persona" className="mt-6 flex flex-wrap gap-2">
           {partners.map((p) => (
             <button key={p.id} type="button" role="radio" aria-checked={chosen === p.id} onClick={() => setWho(p.id)}
@@ -80,6 +87,7 @@ export function NuevaGuardo() {
             Nueva persona
           </button>
         </div>
+        )}
         {chosen === "new" && (
           <div className="mt-4">
             <LineField label="¿Cómo se llama?" autoComplete="off" value={newName} onChange={(e) => setNewName(e.target.value)} />
