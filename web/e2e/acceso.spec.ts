@@ -86,9 +86,9 @@ test("cerrar sesión y volver a entrar", async ({ page }) => {
   // Las monedas se buscan; la marcada (el dólar) no se pierde al buscar otra
   await page.getByRole("searchbox", { name: "Buscar moneda" }).fill("eur");
   await expect(page.getByRole("checkbox", { name: /Euro/ })).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: /Dólar/ })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: /Dólar estadounidense/ })).toHaveCount(0);
   await page.getByRole("searchbox", { name: "Buscar moneda" }).fill("");
-  await expect(page.getByRole("checkbox", { name: /Dólar/ })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /Dólar estadounidense/ })).toBeChecked();
   await page.getByRole("button", { name: "Siguiente" }).click();
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
   await expect(page).toHaveURL("/inicio");
