@@ -1,0 +1,48 @@
+name: Versión
+
+# Una sola versión para todo PPM (decisión «Versiones de PPM»). En cada PR revisa que la api y la web
+# digan el mismo número; al entrar a main crea la etiqueta vX.Y.Z si todavía no existe.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: La api y la web dicen la misma versión
+        id: v
+        run: |
+          api=$(sed -n 's/^version = "\(.*\)"/\1/p' api/pyproject.toml | head -1)
+          fastapi=$(sed -n 's/.*FastAPI(.*version="\([^"]*\)".*/\1/p' api/app/main.py)
+          lock=$(awk '/^name = "ppm-api"/{getline; print}' api/uv.lock | sed -n 's/version = "\(.*\)"/\1/p')
+          web=$(sed -n 's/^  "version": "\(.*\)",/\1/p' web/package.json)
+          echo "pyproject=$api fastapi=$fastapi uv.lock=$lock package.json=$web"
+          if [ -z "$api" ] || [ "$api" != "$fastapi" ] || [ "$api" != "$lock" ] || [ "$api" != "$web" ]; then
+            echo "::error::Las versiones no coinciden: pyproject=$api, FastAPI=$fastapi, uv.lock=$lock, package.json=$web"
+            exit 1
+          fi
+          echo "version=$api" >> "$GITHUB_OUTPUT"
+
+      - name: Etiquetar main
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag ya existe; nada que etiquetar"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "PPM $VERSION"
+          git push origin "$tag"
