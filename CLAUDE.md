@@ -12,3 +12,4 @@ Repositorio único: `api/` (PostgreSQL, dbmate, FastAPI) y `web/` (React + TypeS
 - Pruebas con pytest contra PostgreSQL real.
 - Web: React + TypeScript con Vite, Tailwind con los tokens del sistema de diseño «PPM» (claude.ai) en `web/src/styles.css`, componentes de shadcn/ui, TanStack Query, React Hook Form + Zod. La API se llama solo con `web/src/api/client.ts`, con tipos generados (`pnpm gen:api`); nunca se escriben a mano. Node no está instalado en la máquina: todo corre en Docker.
 - Cada paso va en una rama con su pull request; Dany aprueba con merge.
+- Versión única para todo PPM (beta en 0.x; v1.0.0 = lanzamiento al público). Cada PR que entra a main la sube en `api/pyproject.toml`, `api/uv.lock`, `api/app/main.py` y `web/package.json`: función nueva, el número del medio (0.15.0); arreglo, el último (0.14.1). El CI revisa que coincidan y, al entrar a main, crea la etiqueta `vX.Y.Z`.
