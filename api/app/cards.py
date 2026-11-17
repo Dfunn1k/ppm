@@ -185,7 +185,11 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
               FROM account_move_line x
               JOIN account_account a ON a.id = x.account_id
               LEFT JOIN account_account pa ON pa.id = a.parent_id
-             WHERE x.move_id = l.move_id AND x.id <> l.id) o
+             WHERE x.move_id = l.move_id AND x.id <> l.id
+               -- la parte de otra persona (gasto dividido) no es otra categoría: se nombra la tuya
+               AND NOT (a.system_role IS NOT DISTINCT FROM 'receivable' AND EXISTS (
+                        SELECT 1 FROM account_move_line y JOIN account_account b ON b.id = y.account_id
+                         WHERE y.move_id = l.move_id AND b.account_type IN ('income', 'expense')))) o
          WHERE l.account_id = %(card)s
            AND NOT EXISTS (SELECT 1 FROM account_installment_plan p WHERE p.move_id = m.id)
            AND m.installment_plan_id IS NULL          -- el interés de una cuota va con su cuota
@@ -193,7 +197,14 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
          ORDER BY m.date DESC, m.id DESC""", {"card": card_id, "oldest": oldest}):
         items[closing].append(CycleItem(*item[:-1], bank=item[-1]))
     for closing, *item in conn.execute("""
-        SELECT pl.closing_date, m.id, m.date, m.ref, true,
+        -- La fecha de cada cuota: la 1, la de la compra; las demás, el día después del corte anterior
+        -- (el primer día del ciclo que la cobra), para no ver en el ciclo de hoy una compra de hace meses
+        SELECT pl.closing_date, m.id,
+               CASE WHEN pl.sequence = 1 THEN m.date
+                    ELSE greatest(m.date, coalesce((SELECT prev.closing_date + 1 FROM account_installment_plan_line prev
+                                                     WHERE prev.plan_id = pl.plan_id AND prev.sequence = pl.sequence - 1),
+                                                    m.date)) END,
+               m.ref, true,
                CASE WHEN o.role = 'opening' THEN 'opening' ELSE 'installment' END,
                trim(c.name), pl.principal, o.name, o.icon, o.color, pl.sequence, p.n_installments, pl.interest
           FROM account_installment_plan_line pl

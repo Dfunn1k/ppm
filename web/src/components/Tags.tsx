@@ -108,7 +108,7 @@ function TagSheetBody({ value, onDone, pending, error }: { value: number[]; onDo
         )}
       </div>
       {(create.error || error) && <ErrorAlert>{create.error?.message ?? error}</ErrorAlert>}
-      <button type="button" disabled={pending} onClick={() => onDone(picked)}
+      <button type="button" disabled={pending || create.isPending} onClick={() => onDone(picked)}
         className="mx-1 mt-1 flex h-13 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
         Listo
       </button>

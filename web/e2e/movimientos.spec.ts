@@ -172,3 +172,18 @@ test("buscar y filtrar en el mes", async ({ page }) => {
   await nav.getByRole("link", { name: "Movimientos" }).click();
   await expect(page).toHaveURL("/movimientos");
 });
+
+test("registrar desde una cuenta vuelve a esa cuenta", async ({ page }) => {
+  await readyUser(page);
+  await page.getByRole("link", { name: "Cuentas" }).click();
+  await page.getByRole("link", { name: /BCP/ }).first().click();
+  await expect(page).toHaveURL(/\/cuentas\/\d+$/);
+  const cuenta = new URL(page.url()).pathname;
+  await page.getByRole("link", { name: "Registrar un movimiento" }).click();
+  await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("12");
+  await chooseCategory(page, /En qué/, "Restaurantes y delivery");
+  await page.getByLabel("Nota").fill("Café desde la cuenta");
+  await page.getByRole("button", { name: "Registrar gasto" }).click();
+  await expect(page).toHaveURL(cuenta);
+  await expect(page.getByText("Café desde la cuenta")).toBeVisible();
+});

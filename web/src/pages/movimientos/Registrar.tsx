@@ -4,7 +4,7 @@
 // costo del cambio o la ganancia; con tarjeta, en soles o dólares y en cuotas; por confirmar.
 // «Se repite» lo vuelve una recurrente (X1): la regla, hasta cuándo y cómo se registra.
 import { useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 
 import {
   type AccountRow, type Category, type MoveDetail, type MoveIn, type RecurringDetail, type RuleIn, useAccounts, useMe, useMove,
@@ -13,7 +13,7 @@ import {
 import { PendingFiles } from "@/components/Attachments";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { MasTipos } from "@/components/MasTipos";
-import { pickAccount } from "@/lib/startAccount";
+import { afterRegister, pickAccount } from "@/lib/startAccount";
 import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
@@ -87,6 +87,7 @@ export function Registrar({ editing, recurring, reminder }: {
   reminder?: { detail: RecurringDetail; occurrence: string };
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const back = useBack();
   const me = useMe().data;
   const overview = useAccounts().data;
@@ -289,7 +290,7 @@ export function Registrar({ editing, recurring, reminder }: {
           // El movimiento ya quedó: el detalle deja volver a adjuntar lo que faltó
           return navigate(`/movimientos/${d.summary.id}`, { replace: true });
         }
-        navigate(editing ? `/movimientos/${d.summary.id}` : "/movimientos", { replace: true });
+        navigate(editing ? `/movimientos/${d.summary.id}` : afterRegister(location.state), { replace: true });
       },
     });
   };
