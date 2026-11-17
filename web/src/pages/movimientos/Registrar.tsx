@@ -36,6 +36,7 @@ import { AsientoManual } from "./AsientoManual";
 import { Reembolso } from "./Reembolso";
 import { RegistrarPersona } from "./RegistrarPersona";
 import { YaDebia } from "@/pages/personas/YaDebia";
+import { useDesktopFocus } from "@/lib/desktop";
 
 type Kind = Extract<MoveIn["kind"], "expense" | "income" | "transfer">;
 type Part = { category: Category | null; partner?: { id: number; name: string } | null; amount: string };
@@ -112,6 +113,7 @@ export function Registrar({ editing, recurring, reminder }: {
   const [ofOther, setOfOther] = useState(false);
   const [toAccountId, setToAccountId] = useState<string>(editing?.to_account_id ? String(editing.to_account_id) : "");
   const [amount, setAmount] = useState(editing ? fmt(editing.summary.amount) : rec ? fmt(rec.amount.replace("-", "")) : "");
+  const focusAmount = useDesktopFocus<HTMLInputElement>();
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
   const [parts, setParts] = useState<Part[]>(
     editing?.splits.length
@@ -356,7 +358,7 @@ export function Registrar({ editing, recurring, reminder }: {
             : kind === "expense" ? (sharing ? "¿Cuánto costó en total?" : "¿Cuánto gastaste?") : kind === "income" ? "¿Cuánto entró?" : "¿Cuánto pasas?"}
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
-            <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
+            <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
               aria-description={`En ${symbolOf(currency)}`}
               className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[48px] leading-[56px] font-semibold tracking-[-0.02em] tabular-nums" />
           </span>

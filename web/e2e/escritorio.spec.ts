@@ -55,6 +55,7 @@ test("Registrar se abre en un panel y al cerrarlo sigues donde estabas", async (
   const panel = page.getByRole("dialog", { name: "Registrar" });
   await expect(panel).toBeVisible();
   await expect(page.getByRole("heading", { name: "BCP" })).toBeVisible();   // la cuenta sigue detrás
+  await expect(panel.getByRole("textbox", { name: /¿Cuánto gastaste\?/ })).toBeFocused();   // se escribe el monto de una
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await expect(page).toHaveURL(cuenta);
@@ -65,7 +66,7 @@ test("Registrar se abre en un panel y al cerrarlo sigues donde estabas", async (
   await expect(panel).toBeVisible();
   await page.getByRole("radio", { name: "Más" }).click();
   await page.getByRole("dialog").getByRole("link").first().click();
-  await expect(panel.getByRole("textbox", { name: "¿Cuánto le prestaste?" })).toBeVisible();
+  await expect(panel.getByRole("textbox", { name: "¿Cuánto le prestaste?" })).toBeFocused();
   await expect(page.getByRole("heading", { name: "BCP" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();

@@ -14,6 +14,7 @@ import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
+import { useDesktopFocus } from "@/lib/desktop";
 
 export function Reembolso({ editing }: { editing?: MoveDetail }) {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
   const lang = me?.lang ?? "es-PE";
   const [accountId, setAccountId] = useState(editing?.account_id ? String(editing.account_id) : "");
   const [amount, setAmount] = useState(editing ? formatNumber(editing.summary.amount, lang) : "");
+  const focusAmount = useDesktopFocus<HTMLInputElement>();
   const [category, setCategory] = useState<Category | null>(editing?.splits[0]?.category ?? null);
   const [picking, setPicking] = useState(false);
   const [date, setDate] = useState(editing?.summary.date ?? todayISO());
@@ -70,7 +72,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
           ¿Cuánto te devolvieron?
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
-            <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
+            <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
               className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[48px] leading-[56px] font-semibold tracking-[-0.02em] tabular-nums" />
           </span>
         </label>
