@@ -14,7 +14,8 @@ from app.accounts import AccountError
 from app.db import user_transaction
 from app.statements import collect
 
-MAX_BYTES = 5 * 1024 * 1024
+MAX_BYTES = 5 * 1024 * 1024            # un PDF
+MAX_PHOTO_BYTES = 20 * 1024 * 1024     # una foto: se achica al guardarla, así que puede llegar pesada
 
 # Lo que se acepta, reconocido por los primeros bytes (no por la extensión ni lo que diga el navegador)
 _KINDS = [
@@ -75,14 +76,21 @@ def _pages(content: bytes) -> int | None:
 
 
 def add(user_id: int, move_id: int, content: bytes, name: str | None) -> Attachment:
-    if len(content) > MAX_BYTES:
-        raise AccountError(400, "El archivo pesa más de 5 MB: toma la foto con menos resolución o súbelo como PDF")
     if not content:
         raise AccountError(400, "El archivo está vacío")
     mime = _mimetype(content)
     if mime is None:
         raise AccountError(400, "Adjunta una foto (JPG, PNG, WEBP o HEIC) o un PDF")
+    if mime == "application/pdf" and len(content) > MAX_BYTES:
+        raise AccountError(400, "El PDF pesa más de 5 MB: descárgalo del banco con menos páginas")
+    if len(content) > MAX_PHOTO_BYTES:
+        raise AccountError(400, "La foto pesa más de 20 MB: tómala con menos resolución")
     clean = (name or "").strip().replace("/", "-")[:120] or ("adjunto.pdf" if mime == "application/pdf" else "foto.jpg")
+    if mime in previews.PHOTOS:
+        # Como Odoo: la foto se guarda achicada; el nombre lleva la extensión de lo que de verdad es
+        content, shrunk = previews.shrink(content, mime)
+        if shrunk != mime:
+            mime, clean = shrunk, f"{clean.rsplit('.', 1)[0] if '.' in clean else clean}.webp"
     with user_transaction(user_id) as conn:
         _own_move(conn, move_id)
         stored = filestore.save(user_id, content)
@@ -129,7 +137,7 @@ def view(user_id: int, attachment_id: int, page: int = 1) -> tuple[bytes, str]:
     checksum, mime, pages, data = _source(user_id, attachment_id)
     if mime == "application/pdf" and not 1 <= page <= (pages or 1):
         raise AccountError(404, "Ese PDF no tiene esa página")
-    if mime in previews.SHOWABLE:
+    if mime in previews.SHOWABLE and len(data) <= previews.LIGHT:
         return data, mime
     kind = f"p{page}.webp" if mime == "application/pdf" else "view.webp"
     try:

@@ -63,12 +63,15 @@ def test_la_misma_foto_ocupa_un_solo_lugar_y_se_va_con_el_movimiento(ana: Ana):
     assert stored(ana) == []
 
 
-def test_solo_fotos_o_pdf_de_hasta_5_mb(ana: Ana):
+def test_solo_fotos_de_hasta_20_mb_o_pdf_de_hasta_5_mb(ana: Ana):
     m = gasto(ana)
     r = subir(ana, m, b"hola, soy un texto", "nota.txt", status=400)
     assert r["detail"] == "Adjunta una foto (JPG, PNG, WEBP o HEIC) o un PDF"
-    r = subir(ana, m, b"\xff\xd8\xff" + b"x" * (5 * 1024 * 1024), "enorme.jpg", status=400)
+    r = subir(ana, m, b"%PDF-1.7\n" + b"x" * (5 * 1024 * 1024), "enorme.pdf", status=400)
     assert "5 MB" in r["detail"]
+    subir(ana, m, b"\xff\xd8\xff" + b"x" * (6 * 1024 * 1024), "pesada.jpg")          # una foto de 6 MB sí entra
+    r = subir(ana, m, b"\xff\xd8\xff" + b"x" * (20 * 1024 * 1024), "enorme.jpg", status=400)
+    assert "20 MB" in r["detail"]
 
 
 def test_los_adjuntos_son_de_quien_los_sube(ana: Ana):
@@ -82,9 +85,9 @@ def test_los_adjuntos_son_de_quien_los_sube(ana: Ana):
 
 # --- Miniaturas y visor (0030) ----------------------------------------------------------------
 
-def _foto(fmt: str, size=(1200, 1600), exif_rotate=False) -> bytes:
+def _foto(fmt: str, size=(1200, 1600), exif_rotate=False, noise=False) -> bytes:
     from PIL import Image
-    img = Image.new("RGB", size, (232, 176, 75))
+    img = Image.effect_noise(size, 60).convert("RGB") if noise else Image.new("RGB", size, (232, 176, 75))
     out = io.BytesIO()
     if fmt == "HEIF":
         from pillow_heif import from_pillow
@@ -126,18 +129,48 @@ def test_la_miniatura_es_un_webp_liviano_y_se_guarda(ana: Ana):
 def test_una_foto_heic_se_ve(ana: Ana):
     m = gasto(ana)
     heic = subir(ana, m, _foto("HEIF"), "IMG_0001.HEIC")
-    assert heic["mimetype"] == "image/heic"
+    assert (heic["name"], heic["mimetype"]) == ("IMG_0001.webp", "image/webp")      # se guarda ya convertida
     assert ana.c.get(f"/attachments/{heic['id']}/thumb").headers["content-type"] == "image/webp"
     r = ana.c.get(f"/attachments/{heic['id']}/view")
     assert (r.headers["content-type"], _size(r.content)) == ("image/webp", (1200, 1600))
 
 
-def test_una_foto_que_el_navegador_muestra_va_tal_cual(ana: Ana):
+def test_una_foto_grande_se_guarda_achicada_como_en_odoo(ana: Ana):
     m = gasto(ana)
-    png = _foto("PNG")
+    jpg = _foto("JPEG", size=(4000, 3000), exif_rotate=True, noise=True)
+    a = subir(ana, m, jpg, "boleta.jpg")
+    assert (a["name"], a["mimetype"]) == ("boleta.webp", "image/webp")
+    assert a["file_size"] < len(jpg) / 3
+    r = ana.c.get(f"/attachments/{a['id']}/file")
+    assert _size(r.content) == (1440, 1920)                      # girada según su EXIF y de 1920 px a lo más
+    from PIL import Image
+    assert not Image.open(io.BytesIO(r.content)).getexif()      # sin EXIF: tampoco la ubicación
+
+
+def test_una_foto_que_ya_es_liviana_va_tal_cual(ana: Ana):
+    m = gasto(ana)
+    png = _foto("PNG", size=(40, 40), noise=True)
     a = subir(ana, m, png, "captura.png")
+    assert a["mimetype"] == "image/png"                          # en WebP pesaría más: se queda como está
     r = ana.c.get(f"/attachments/{a['id']}/view")
     assert (r.headers["content-type"], r.content) == ("image/png", png)
+
+
+def test_una_foto_pesada_de_antes_se_ve_liviana(ana: Ana):
+    from app import attachments, filestore
+    m = gasto(ana)
+    a = subir(ana, m, _foto("PNG", size=(40, 40), noise=True), "vieja.png")
+    pesada = _foto("PNG", size=(2600, 2600), noise=True)         # como las subidas antes de achicarlas
+    uid = ana.c.get("/me").json()["id"]
+    nueva = filestore.save(uid, pesada)
+    from app.db import user_transaction
+    with user_transaction(uid) as conn:
+        conn.execute("UPDATE ir_attachment SET checksum = %s, store_fname = %s, file_size = %s WHERE id = %s",
+                     (nueva.checksum, nueva.store_fname, nueva.file_size, a["id"]))
+    assert len(pesada) > attachments.previews.LIGHT
+    r = ana.c.get(f"/attachments/{a['id']}/view")
+    assert (r.headers["content-type"], max(_size(r.content))) == ("image/webp", 2000)
+    assert ana.c.get(f"/attachments/{a['id']}/file").content == pesada   # descargar da lo guardado
 
 
 def test_un_pdf_se_ve_pagina_por_pagina(ana: Ana):
