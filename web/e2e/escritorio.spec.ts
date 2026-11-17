@@ -163,8 +163,14 @@ test("atajos: ? muestra todos, se cambia una tecla y las pistas se apagan", asyn
   // C · Más › Atajos: cambiar Registrar a R
   await hoja.getByRole("link", { name: /Cambiar teclas/ }).click();
   await expect(page).toHaveURL("/mas/atajos");
+  // A · la tecla es el botón: al tocarla espera la nueva; las fijas no se tocan
+  await expect(page.getByRole("button", { name: "Cambiar la tecla de Registrar" })).toHaveText(/^N/);   // la tecla y el lápiz
+  await expect(page.getByRole("region", { name: "Fijas" })).toContainText("Esc");
+  await expect(page.getByRole("region", { name: "Fijas" }).getByRole("button")).toHaveCount(0);
   await page.getByRole("button", { name: "Cambiar la tecla de Registrar" }).click();
+  await expect(page.getByRole("button", { name: "Cambiar la tecla de Registrar" })).toContainText("Aprieta una tecla…");
   await page.keyboard.press("r");
+  await expect(page.getByRole("button", { name: "Cambiar la tecla de Registrar" })).toHaveText(/^R/);
   await expect(page.getByRole("button", { name: /Volver a los de fábrica/ })).toBeVisible();
   await page.getByRole("button", { name: "Cambiar la tecla de Buscar" }).click();
   await page.keyboard.press("r");                                    // ya la usa Registrar

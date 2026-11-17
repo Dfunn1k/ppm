@@ -15,8 +15,8 @@ export function Kbd({ children, dark }: { children: React.ReactNode; dark?: bool
   );
 }
 
-/** La tabla de atajos, con las teclas de la persona. `action` pone algo al costado (Cambiar, en Más). */
-export function ShortcutTable({ action }: { action?: (a: "register" | "search" | "edit" | "help") => React.ReactNode }) {
+/** La tabla de atajos, con las teclas de la persona. */
+export function ShortcutTable() {
   const { keys } = useShortcuts();
   return (
     <div className="flex flex-col">
@@ -30,7 +30,6 @@ export function ShortcutTable({ action }: { action?: (a: "register" | "search" |
                 {"action" in r ? <Kbd>{keyLabel(keys[r.action])}</Kbd>
                   : r.fixed.map((k, i) => <span key={k} className="flex items-center gap-1">{i > 0 && r.fixed[0] === "Ctrl" && <span className="text-caption text-muted-foreground">+</span>}<Kbd>{k}</Kbd></span>)}
               </span>
-              {action && <span className="w-24 text-right">{"action" in r ? action(r.action) : <span className="text-caption text-muted-foreground">Fija</span>}</span>}
             </div>
           ))}
         </section>
