@@ -17,7 +17,7 @@ import { afterRegister, pickAccount } from "@/lib/startAccount";
 import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
-import { CurrencyChoice, OptionList, Segmented, Sheet, SheetSelect } from "@/components/Sheet";
+import { CurrencyChoice, Segmented, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
@@ -25,11 +25,11 @@ import { DeferralFields, NO_DEFERRAL, type DeferralState, deferralBody, deferral
 import { deferralSchedule } from "@/lib/deferral";
 import { TagField } from "@/components/Tags";
 import { WithPartnerField } from "@/components/WithPartner";
+import { NO_SHARED, SharedBlock, type SharedState, shares } from "@/components/Shared";
 import { shortDate, todayISO } from "@/lib/dates";
 import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
 import { currencyLabel, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
-import { PersonaSheet } from "@/pages/personas/PersonaForm";
 import { useBack } from "@/lib/transitions";
 
 import { AsientoManual } from "./AsientoManual";
@@ -38,8 +38,7 @@ import { RegistrarPersona } from "./RegistrarPersona";
 import { YaDebia } from "@/pages/personas/YaDebia";
 
 type Kind = Extract<MoveIn["kind"], "expense" | "income" | "transfer">;
-type Who = { id: number; name: string };
-type Part = { category: Category | null; partner?: Who | null; amount: string };
+type Part = { category: Category | null; partner?: { id: number; name: string } | null; amount: string };
 
 const KIND_LABEL: Record<Kind, string> = { expense: "Gasto", income: "Ingreso", transfer: "Transferir" };
 const SUBMIT: Record<Kind, string> = { expense: "Registrar gasto", income: "Registrar ingreso", transfer: "Registrar transferencia" };
@@ -116,12 +115,12 @@ export function Registrar({ editing, recurring, reminder }: {
   const [toAmount, setToAmount] = useState(editing?.summary.to_amount ? fmt(editing.summary.to_amount) : "");
   const [parts, setParts] = useState<Part[]>(
     editing?.splits.length
-      ? editing.splits.map((s) => ({ category: s.category, partner: s.partner_id ? { id: s.partner_id, name: s.partner ?? "" } : null, amount: fmt(s.amount) }))
+      ? editing.splits.filter((s) => !s.partner_id).map((s) => ({ category: s.category, partner: null, amount: fmt(s.amount) }))
       : source?.categories.length
         ? source.categories.map((c, i) => ({ category: c, amount: fmt(source.splits[i] ?? "0") }))
         : [{ category: null, amount: "" }],
   );
-  const [split, setSplit] = useState((editing?.splits.length ?? source?.categories.length ?? 0) > 1);
+  const [split, setSplit] = useState((editing?.splits.filter((s) => !s.partner_id).length ?? source?.categories.length ?? 0) > 1);
   const [date, setDate] = useState(editing?.summary.date ?? recurring?.rule.start ?? todayISO());
   const [dateOpen, setDateOpen] = useState(false);
   const [note, setNote] = useState(editing && editing.summary.ref !== editing.splits[0]?.category?.name ? editing.summary.ref
@@ -129,11 +128,15 @@ export function Registrar({ editing, recurring, reminder }: {
   const [pending, setPending] = useState(editing ? !editing.summary.posted : false);
   const [sheetFor, setSheetFor] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const [paidBy, setPaidBy] = useState<number | null>(editing?.paid_by_partner_id ?? null);
-  const [payer, setPayer] = useState<"me" | "other">(editing?.paid_by_partner_id ? "other" : "me");
+  // Compartido: al editar, lo que pagó otra persona o la parte de alguien vuelven al bloque
+  const [shared, setShared] = useState<SharedState>(() => {
+    if (editing?.paid_by_partner_id) {
+      return { on: true, payer: editing.paid_by_partner_id, people: [{ id: editing.paid_by_partner_id, amount: "" }], mode: "amounts", mine: fmt(editing.summary.amount) };
+    }
+    const owed = editing?.splits.filter((x) => x.partner_id) ?? [];
+    return owed.length ? { on: true, payer: "me", people: owed.map((x) => ({ id: x.partner_id!, amount: fmt(x.amount) })), mode: "amounts", mine: "" } : NO_SHARED;
+  });
   const [mas, setMas] = useState(false);
-  const [partFor, setPartFor] = useState(false);
-  const [adding, setAdding] = useState(false);
   const [later, setLater] = useState(false);   // «Lo clasifico después»: a Por clasificar
   const [files, setFiles] = useState<File[]>([]);   // adjuntos: se suben al guardar
   const [defer, setDefer] = useState<DeferralState>(NO_DEFERRAL);   // repartir en el tiempo
@@ -160,7 +163,9 @@ export function Registrar({ editing, recurring, reminder }: {
     : pickAccount(accounts, accountId, search.get("cuenta"), me?.home_account_id);
   const toAccount = all.find((a) => String(a.id) === toAccountId) ?? (toAccountId === "" && rec?.to_account
     ? all.find((a) => a.name === rec.to_account) : undefined);
-  const other = kind === "expense" && payer === "other";   // lo pagó otra persona: no sale de tus cuentas
+  const sharing = kind === "expense" && shared.on && !(repeat && !editing);
+  const other = sharing && shared.payer !== "me";   // lo pagó otra persona: no sale de tus cuentas
+  const paidBy = other ? (shared.payer as number) : null;
   const card = !other && account?.kind === "card";
   const currency = other ? base : card ? (cardCurrency ?? base) : account?.currency ?? base;
   const side = account?.kind === "other" || card ? "sell" : "buy";   // compra para lo que tienes, venta para lo que debes
@@ -175,9 +180,9 @@ export function Registrar({ editing, recurring, reminder }: {
   const repeating = repeat && !editing;
   // «Lo clasifico después» va en un gasto o ingreso entero, pagado por ti, sin cuotas y sin repetir
   // Repartir en el tiempo: un gasto o un ingreso entero, pagado por ti, sin cuotas, sin repetir y nuevo
-  const canDefer = (kind === "expense" || kind === "income") && !split && !other && !(card && inInstallments) && !repeating && !editing && !later;
+  const canDefer = (kind === "expense" || kind === "income") && !split && !sharing && !(card && inInstallments) && !repeating && !editing && !later;
   const deferring = canDefer && defer.on;
-  const canLater = (kind === "expense" || kind === "income") && !split && !other && !(card && inInstallments) && !repeating && !editing && !deferring;
+  const canLater = (kind === "expense" || kind === "income") && !split && !sharing && !(card && inInstallments) && !repeating && !editing && !deferring;
   const isLater = later && canLater;
   const future = date > todayISO() && !repeating;
   // El tipo de cambio se escribe solo si nada lo da: en una transferencia que toca la moneda base, sale de los dos montos
@@ -191,15 +196,23 @@ export function Registrar({ editing, recurring, reminder }: {
     }));
 
   const total = parseAmount(amount || "0", lang);
+  // Compartido: «tu parte» es lo que va a tus categorías; lo demás es de las otras personas
+  const split$ = shares(shared, total, (v) => parseAmount(v, lang));
+  const own = sharing ? (split$.mine / 100).toFixed(2) : total;
   const partsTotal = parts.reduce((s, p) => s + Math.round(Number(parseAmount(p.amount || "0", lang) ?? "NaN") * 100), 0);
-  const remaining = total !== null ? Math.round(Number(total) * 100) - partsTotal : NaN;
+  const remaining = own !== null ? Math.round(Number(own) * 100) - partsTotal : NaN;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setProblem(null);
     if (!account && !other) return setProblem("Elige la cuenta");
-    if (other && !paidBy) return setProblem("Elige quién pagó");
     if (total === null || Number(total) <= 0) return setProblem("Escribe un monto mayor que cero");
+    if (sharing) {
+      if (shared.people.length === 0) return setProblem("Agrega con quién lo compartiste");
+      if (split$.mine <= 0) return setProblem("Tu parte tiene que ser mayor que cero");
+      if (other && split$.mine > Math.round(Number(total) * 100)) return setProblem("Tu parte no puede pasar del total");
+      if (!other && split$.theirs.some((c) => c <= 0)) return setProblem("Cada parte tiene que ser mayor que cero");
+    }
     if (needRate && !(Number(rate.value) > 0))
       return setProblem("Escribe el tipo de cambio, como 3.443");
     const cuotaValue = cuota.trim() ? parseAmount(cuota, lang) : null;
@@ -208,7 +221,7 @@ export function Registrar({ editing, recurring, reminder }: {
       lines: [],
       kind,
       account_id: other ? null : account!.id,
-      amount: total,
+      amount: other ? own! : total,
       date,
       ref: note.trim() || null,
       pending,
@@ -222,7 +235,7 @@ export function Registrar({ editing, recurring, reminder }: {
       installments: card && inInstallments && kind === "expense" ? installments : null,
       installment_amount: card && inInstallments && kind === "expense" ? cuotaValue : null,
       tag_ids: tagIds,
-      ...(kind === "expense" || kind === "income" ? { with_partner_id: withPartner } : {}),
+      ...(kind === "expense" || kind === "income" ? { with_partner_id: sharing ? null : withPartner } : {}),
     };
     // De otra persona: no es tu gasto, le prestaste la tarjeta en cuotas (te debe el precio y, con
     // cada cuota facturada, su interés)
@@ -251,13 +264,14 @@ export function Registrar({ editing, recurring, reminder }: {
         }
         body.deferral = deferralBody(defer, date);
       }
-      const chosen = split ? parts : [{ ...parts[0]!, amount: total }];
-      if (chosen.some((p) => !p.category && !p.partner)) return setProblem(kind === "expense" ? "Elige en qué gastaste" : "Elige de qué es el ingreso");
-      if (!chosen.some((p) => p.category)) return setProblem("Al dividir, al menos una parte es tuya: elige su categoría");
-      if (split && remaining !== 0) return setProblem("Las partes tienen que sumar el total");
-      body.splits = chosen.map((p) => p.partner
-        ? { partner_id: p.partner.id, amount: parseAmount(p.amount, lang) ?? p.amount }
-        : { category_id: p.category!.id, amount: parseAmount(p.amount, lang) ?? p.amount });
+      const chosen = split ? parts : [{ ...parts[0]!, amount: own! }];
+      if (chosen.some((p) => !p.category)) return setProblem(kind === "expense" ? "Elige en qué gastaste" : "Elige de qué es el ingreso");
+      if (split && remaining !== 0) return setProblem(sharing ? "Las categorías tienen que sumar tu parte" : "Las partes tienen que sumar el total");
+      body.splits = chosen.map((p) => ({ category_id: p.category!.id, amount: parseAmount(p.amount, lang) ?? p.amount }));
+      // Pagaste tú: la parte de cada persona queda como lo que te debe
+      if (sharing && !other) {
+        body.splits.push(...shared.people.map((p, i) => ({ partner_id: p.id, amount: (split$.theirs[i]! / 100).toFixed(2) })));
+      }
     }
     if (repeating) {
       if (crossCurrency) return setProblem("Un cambio de moneda no se repite: el tipo de cambio es de cada día");
@@ -312,12 +326,7 @@ export function Registrar({ editing, recurring, reminder }: {
     setLater(false);
     setParts([{ category: null, amount: "" }]);
     setSplit(false);
-    setPayer("me");
-  };
-  const addPartner = (w: Who) => {
-    setParts((ps) => (split ? [...ps, { category: null, partner: w, amount: "" }] : [{ ...ps[0]!, amount }, { category: null, partner: w, amount: "" }]));
-    setSplit(true);
-    setPartFor(false);
+    setShared(NO_SHARED);
   };
 
   return (
@@ -344,7 +353,7 @@ export function Registrar({ editing, recurring, reminder }: {
 
         <label className="mt-5 flex flex-col gap-0.5 text-caption font-semibold">
           {repeating ? (mode === "draft" ? "¿Cuánto es, más o menos?" : "¿Cuánto es?")
-            : kind === "expense" ? "¿Cuánto gastaste?" : kind === "income" ? "¿Cuánto entró?" : "¿Cuánto pasas?"}
+            : kind === "expense" ? (sharing ? "¿Cuánto costó en total?" : "¿Cuánto gastaste?") : kind === "income" ? "¿Cuánto entró?" : "¿Cuánto pasas?"}
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
             <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
@@ -352,23 +361,6 @@ export function Registrar({ editing, recurring, reminder }: {
               className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[48px] leading-[56px] font-semibold tracking-[-0.02em] tabular-nums" />
           </span>
         </label>
-
-        {kind === "expense" && !repeating && (
-          <div className="mt-3 flex flex-col gap-3">
-            <Segmented label="¿Quién pagó?" size="sm" value={payer} onChange={(v) => { setPayer(v as "me" | "other"); if (v === "other") setParts((ps) => ps.filter((p) => !p.partner)); }}
-              options={[{ value: "me", label: "Yo" }, { value: "other", label: "Otra persona" }]} />
-            {other && (
-              <>
-                <PersonPicker label="¿Quién pagó por ti?" value={paidBy} onChange={setPaidBy} />
-                {paidBy && total && (
-                  <span className="text-caption text-muted-foreground tabular-nums">
-                    No sale de tus cuentas: queda que le debes {formatAmount(total, symbolOf(base), lang)} a {partners.find((p) => p.id === paidBy)?.name.split(" ")[0]}.
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-        )}
 
         <div className="mt-2 flex flex-col">
           {!other && (
@@ -487,11 +479,7 @@ export function Registrar({ editing, recurring, reminder }: {
                     className="flex items-center gap-1 font-semibold text-primary-strong">
                     <Icon name="add" />Categoría
                   </button>
-                  {kind === "expense" && !other && !repeating && (
-                    <button type="button" onClick={() => setPartFor(true)} className="flex items-center gap-1 font-semibold text-primary-strong">
-                      <Icon name="person_add" />Parte de alguien
-                    </button>
-                  )}
+
                 </span>
                 <span className={`flex items-center gap-1 text-caption font-semibold ${remaining === 0 ? "text-income" : "text-attention"}`}>
                   <Icon name={remaining === 0 ? "check_circle" : "info"} fill={remaining === 0} className="text-[18px]" />
@@ -504,6 +492,11 @@ export function Registrar({ editing, recurring, reminder }: {
             </div>
           )}
 
+          {kind === "expense" && !repeating && !(card && inInstallments) && !deferring && !isLater && (
+            <SharedBlock value={shared} onChange={setShared} total={total} category={split ? null : parts[0]?.category?.name ?? null}
+              account={other ? null : account?.name ?? null} format={(v) => formatAmount(v, symbolOf(currency), lang)}
+              parse={(v) => parseAmount(v, lang)} />
+          )}
           <div className={`grid min-h-[52px] ${repeating ? "grid-cols-1" : "grid-cols-[auto_1fr]"} items-center gap-3 border-b border-border`}>
             {!repeating && (
               <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
@@ -530,7 +523,7 @@ export function Registrar({ editing, recurring, reminder }: {
                 }} />
             </label>
           )}
-          {card && kind === "expense" && !editing && !repeating && (
+          {card && kind === "expense" && !editing && !repeating && !sharing && (
             <>
               <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
                 <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
@@ -569,18 +562,17 @@ export function Registrar({ editing, recurring, reminder }: {
               total={total && Number(total) > 0 ? (foreign ? (Number(rate.value) > 0 ? multiply(total, rate.value) : null) : total) : null}
               symbol={symbolOf(base)} lang={lang} />
           )}
-          {(kind === "expense" || kind === "income") && !repeating && !recurring && !(card && inInstallments) && !deferring && (
+          {(kind === "expense" || kind === "income") && !repeating && !recurring && !(card && inInstallments) && !deferring && !sharing && (
             <WithPartnerField value={withPartner} onChange={setWithPartner} />
           )}
-          <TagField value={tagIds} onChange={setTagIds} />
-          {!editing && !recurring && (
+          {!editing && !recurring && !sharing && (
             <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
               <Icon name="repeat" className="w-9 text-center text-muted-foreground" />
               <span className="flex flex-1 flex-col">
                 <span>Se repite</span>
                 <span className="text-caption text-muted-foreground">El sueldo, el alquiler, Netflix: PPM lo registra cada vez</span>
               </span>
-              <input type="checkbox" role="switch" checked={repeat} onChange={() => { setRepeat(!repeat); setInInstallments(false); setPayer("me"); }}
+              <input type="checkbox" role="switch" checked={repeat} onChange={() => { setRepeat(!repeat); setInInstallments(false); setShared(NO_SHARED); }}
                 className="size-[22px] accent-primary" />
             </label>
           )}
@@ -652,6 +644,7 @@ export function Registrar({ editing, recurring, reminder }: {
               className="size-[22px] accent-primary" />
           </label>
           )}
+          <TagField value={tagIds} onChange={setTagIds} />
         </div>
 
         <div className="min-h-4 flex-1" />
@@ -660,23 +653,12 @@ export function Registrar({ editing, recurring, reminder }: {
           <PrimaryButton pending={save.isPending || saveRecurring.isPending || upload.isPending}>
             {editing || recurring ? "Guardar cambios" : repeating ? (mode === "reminder" ? "Guardar recordatorio" : "Guardar recurrente")
               : editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar"
-              : card && inInstallments && kind === "expense" ? `Registrar gasto en ${installments} cuotas` : SUBMIT[kind]}
+              : card && inInstallments && kind === "expense" ? `Registrar gasto en ${installments} cuotas`
+              : sharing ? (other ? "Registrar lo que le debo" : "Registrar gasto compartido") : SUBMIT[kind]}
           </PrimaryButton>
         </div>
       </form>
 
-      {kind === "expense" && (
-        <Sheet title="¿De quién es esta parte?" open={partFor} onClose={() => setPartFor(false)}>
-          <OptionList value="" options={partners.map((p) => ({ value: String(p.id), label: p.name, hint: "Te la queda debiendo" }))}
-            onPick={(v) => { const p = partners.find((x) => String(x.id) === v); if (p) addPartner({ id: p.id, name: p.name }); }} />
-          <button type="button" onClick={() => { setPartFor(false); setAdding(true); }}
-            className="mx-3 mt-2 flex h-12 items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
-            <Icon name="person_add" />Nueva persona
-          </button>
-        </Sheet>
-      )}
-      <PersonaSheet key={String(adding)} open={adding} onClose={() => setAdding(false)}
-        onCreated={(id, name) => addPartner({ id, name })} />
       <MasTipos open={mas} onClose={() => setMas(false)} account={other ? undefined : account?.id} />
       {kind !== "transfer" && (
         <CategorySheet kind={kind} open={sheetFor !== null} onClose={() => setSheetFor(null)} onPick={pickCategory}
