@@ -1,6 +1,6 @@
 """Leer el estado de cuenta de una tarjeta en PDF: se extrae el texto con su disposición (pdfplumber)
 y un lector por banco lo recorre con expresiones regulares, sin IA. Cada lector dice si reconoce el
-texto (`detect`) y lo convierte en un `ParsedStatement`. Para agregar un banco: un módulo con
+texto (`detect`) y lo convierte en un `ParsedStatement`. Hoy: BCP y BBVA. Para agregar un banco: un módulo con
 `detect` y `parse`, y su entrada en PARSERS.
 
 La suma de los movimientos leídos se compara con el subtotal del banco en cada moneda; si no
@@ -23,7 +23,8 @@ class ParsedLine:
     name: str
     amount: Decimal              # + cargo, − abono
     currency: str
-    kind: str = "move"           # 'move' (consumo, cuota, pago) o 'fee' (cargo del banco)
+    kind: str = "move"           # 'move' (consumo, cuota; el pago en el BCP), 'payment' (pago, BBVA)
+                                 # o 'fee' (cargo del banco)
 
 
 @dataclass(frozen=True)
@@ -72,8 +73,8 @@ class Parser:
 
 
 def _parsers() -> list[Parser]:
-    from app.card_pdf import bcp
-    return [Parser("BCP", bcp.detect, bcp.parse)]
+    from app.card_pdf import bbva, bcp
+    return [Parser("BCP", bcp.detect, bcp.parse), Parser("BBVA", bbva.detect, bbva.parse)]
 
 
 def pdf_text(data: bytes, fit: bool = False) -> str:
@@ -109,7 +110,7 @@ def parse_text(text: str) -> ParsedStatement:
     for p in _parsers():
         if p.detect(text):
             return p.parse(text)
-    raise AccountError(400, "No reconocemos ese estado de cuenta. Por ahora PPM lee los de tarjetas BCP")
+    raise AccountError(400, "No reconocemos ese estado de cuenta. Por ahora PPM lee los de tarjetas BCP y BBVA")
 
 
 def parse_pdf(data: bytes) -> ParsedStatement:

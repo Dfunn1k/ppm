@@ -223,6 +223,7 @@ class StatementLine:
     amount: Decimal              # + cargo, − abono
     currency: str
     move_id: int | None = None   # su par en PPM
+    payment: bool = False        # un pago (BBVA lo marca): no entra en el subtotal
 
 
 @dataclass(frozen=True)
@@ -309,6 +310,7 @@ class _Item:
     amount: Decimal
     currency: str
     closing: dt.date | None      # cuota: su corte
+    payment: bool = False
 
 
 def _match(bank: list[StatementLine], items: list[_Item]) -> tuple[list[StatementLine], list[_Item]]:
@@ -325,7 +327,7 @@ def _match(bank: list[StatementLine], items: list[_Item]) -> tuple[list[Statemen
                 best = (gap, i)
         if best:
             free.remove(best[1])
-            out.append(StatementLine(b.date, b.name, b.amount, b.currency, best[1].move_id))
+            out.append(StatementLine(b.date, b.name, b.amount, b.currency, best[1].move_id, b.payment))
         else:
             out.append(b)
     return out, free
@@ -378,7 +380,7 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
         plans = out
 
     fees = [StatementFee(n, a, c) for _, n, a, c, k in rows if k == "fee"]
-    bank_lines = [StatementLine(d, n, a, c) for d, n, a, c, k in rows if k == "move"]
+    bank_lines = [StatementLine(d, n, a, c, payment=k == "payment") for d, n, a, c, k in rows if k != "fee"]
 
     # Lo que dice PPM del ciclo: compras y cuotas (subtotal) y cargos del banco, por moneda
     subtotal: dict[str, Decimal] = defaultdict(lambda: ZERO)
@@ -391,15 +393,20 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
             (charges if i.bank else subtotal)[i.currency] += i.amount
         if not i.bank:
             items.append(_Item(i.move_id, i.date, i.ref, i.amount, i.currency,
-                               closing if i.kind == "installment" else None))
+                               closing if i.kind == "installment" else None, i.kind == "payment"))
     read: dict[str, Decimal] = defaultdict(lambda: ZERO)
     for b in bank_lines:
-        read[b.currency] += b.amount
+        if not b.payment:
+            read[b.currency] += b.amount
     currencies = [StatementCurrency(cur, _cents(subtotal[cur]), sub, billed, inst, read[cur])
                   for cur, sub, billed, inst in bank_cur]
     lines, free = _match(bank_lines, items)
     unmatched = [Unmatched(i.move_id, i.date, i.ref, i.amount, i.currency) for i in free]
-    explain = _explain(currencies, lines, unmatched, fees, charges, unread)
+    # Lo que explica una diferencia del subtotal: sin los pagos del banco (si los marca) ni los de PPM
+    explain = _explain(currencies, [x for x in lines if not x.payment],
+                       [Unmatched(i.move_id, i.date, i.ref, i.amount, i.currency) for i in free
+                        if not (i.payment and any(b.payment for b in bank_lines))],
+                       fees, charges, unread)
     explain += [f"{x.name} · cuota {x.sequence}/{x.n_installments}: cae en un periodo cerrado y no se dividió en capital e "
                 "interés. Reabre el periodo y vuelve a importar el PDF para dividirla."
                 for x in plans if x.not_split]
