@@ -253,7 +253,7 @@ export function Tarjeta() {
             Lo que compres con la tarjeta aparece aquí, agrupado por ciclo como en tu estado de cuenta.
           </span>
         )}
-        <Link to={`/registrar?cuenta=${id}`}
+        <Link to={`/registrar?cuenta=${id}`} state={{ from: `/tarjetas/${id}` }} data-from={`/tarjetas/${id}`}
           className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
           <Icon name="percent" />Intereses o comisiones del banco
         </Link>

@@ -77,7 +77,7 @@ export function AppNav() {
       <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
         <Tab item={ITEMS[1]!} to={movesLink(me?.id)} />
-        <Link to={registerLink(path, homeAccount)} aria-label="Registrar un movimiento"
+        <Link to={registerLink(path, homeAccount)} state={{ from: path }} data-from={path} aria-label="Registrar un movimiento"
           className="-mt-7 grid size-14 place-items-center justify-self-center rounded-full bg-primary text-primary-foreground shadow-lg">
           <Icon name="add" className="text-[28px]" />
         </Link>

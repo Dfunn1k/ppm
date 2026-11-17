@@ -73,7 +73,12 @@ export function ViewTransitions() {
       const to = url.pathname + url.search + url.hash;
       if (to === window.location.pathname + window.location.search + window.location.hash) return;
       e.preventDefault();   // el Link ya no navega (su onClick sí corre); navegamos aquí, dentro de la transición
-      run!(url.pathname, () => navigate(to, { replace: a.dataset.replace === "true" }));
+      // El estado del enlace no llega por aquí: «data-from» lo lleva (adónde volver al registrar) y al
+      // reemplazar (cambiar de tipo en Registrar) se conserva el de la pantalla actual
+      const replace = a.dataset.replace === "true";
+      const state = a.dataset.from ? { from: a.dataset.from }
+        : replace ? (window.history.state as { usr?: unknown } | null)?.usr : undefined;
+      run!(url.pathname, () => navigate(to, { replace, state }));
     };
     document.addEventListener("click", onClick, true);
     return () => {

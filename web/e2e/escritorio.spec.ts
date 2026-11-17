@@ -97,8 +97,8 @@ test("Registrar se abre en un panel y al cerrarlo sigues donde estabas", async (
   await expect(panel).toBeVisible();
   await page.getByLabel("Nota").press("Control+Enter");   // Ctrl + Enter guarda
   await expect(panel).toBeHidden();
-  await expect(page).toHaveURL("/movimientos");
-  await expect(page.getByRole("link", { name: /Almuerzo del viernes/ })).toBeVisible();
+  await expect(page).toHaveURL(cuenta);                     // vuelve a la cuenta desde donde registraste
+  await expect(page.getByText("Almuerzo del viernes")).toBeVisible();
 });
 
 test("en Movimientos el detalle se abre al lado y las flechas pasan al siguiente", async ({ page }) => {

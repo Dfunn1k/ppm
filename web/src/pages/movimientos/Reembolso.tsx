@@ -1,12 +1,12 @@
 // R1 · Reembolso: te devolvieron plata de un gasto. Entra a tu cuenta y resta de la categoría de
 // ese gasto, como una nota de crédito: tu gasto queda neto y tus ingresos no se inflan.
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useSearchParams } from "react-router";
 
 import { type AccountRow, type Category, type MoveDetail, useAccounts, useMe, useSaveMove } from "@/api/hooks";
 import { CategoryChip, CategorySheet } from "@/components/CategorySheet";
 import { MasHeader } from "@/components/MasTipos";
-import { pickAccount } from "@/lib/startAccount";
+import { afterRegister, pickAccount } from "@/lib/startAccount";
 import { RateField, useRateInput } from "@/components/RateField";
 import { SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
@@ -17,6 +17,7 @@ import { useBack } from "@/lib/transitions";
 
 export function Reembolso({ editing }: { editing?: MoveDetail }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const back = useBack();
   const [search] = useSearchParams();
   const me = useMe().data;
@@ -52,7 +53,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
     save.mutate({
       kind: "refund", account_id: account.id, amount: value, date, ref: note.trim() || null, pending: false, later: false,
       rate: foreign ? rate.value.trim() : null, splits: [{ category_id: category.id, amount: value }], lines: [],
-    }, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : "/movimientos", { replace: true }) });
+    }, { onSuccess: (d) => navigate(editing ? `/movimientos/${d.summary.id}` : afterRegister(location.state), { replace: true }) });
   };
 
   return (
