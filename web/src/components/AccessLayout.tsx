@@ -1,5 +1,6 @@
 // La portada de acceso en la computadora (desde 1024 px): a la izquierda, sobre el panel oscuro, el
-// refrán grande, el año entero y lo que hace PPM; a la derecha, el formulario de la pantalla. En el
+// refrán grande, el año entero y lo que hace PPM (todo en un lugar, los
+// reportes y los avisos); a la derecha, el formulario de la pantalla. En el
 // celular no cambia nada: solo se ve la pantalla de siempre (decisión «Entrar en la computadora»).
 import type { ReactNode } from "react";
 
@@ -10,8 +11,8 @@ const MAYO = 4;
 
 const FEATURES = [
   { icon: "account_balance_wallet", title: "Todo en un lugar", text: "Cuentas, efectivo, tarjetas y lo que te deben" },
-  { icon: "currency_exchange", title: "Soles y dólares", text: "Con el cambio de SUNAT de cada día" },
-  { icon: "credit_card", title: "Tarjetas claras", text: "Cuotas, ciclo y tu estado de cuenta en PDF" },
+  { icon: "bar_chart", title: "En qué se va la plata", text: "Gastos, ingresos, flujo y patrimonio, mes a mes" },
+  { icon: "notifications", title: "Nada se te pasa", text: "Te avisa el pago de la tarjeta, las cuotas y lo que vence" },
 ];
 
 function Panel() {

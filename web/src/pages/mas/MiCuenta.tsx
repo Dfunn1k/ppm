@@ -60,7 +60,8 @@ export function MiCuenta() {
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
       </div>
-      <h1 className="mt-6 text-title-hero">{me.name}</h1>
+      <span className="mt-6 hidden text-label text-muted-foreground lg:block">Mi cuenta</span>
+      <h1 className="mt-6 text-title-hero lg:mt-1">{me.name}</h1>
       <span className="mt-2 text-muted-foreground">{me.email} · {currencies}</span>
       {(done ?? (news && !news[0] ? news[1] : null)) && (
         <div role="status" className="mt-4 flex items-start gap-2 rounded-md bg-muted p-3 text-caption">
@@ -70,7 +71,11 @@ export function MiCuenta() {
       {news?.[0] && !done && <div className="mt-4"><ErrorAlert>{news[1]}</ErrorAlert></div>}
       {unlink.error && <div className="mt-4"><ErrorAlert>{unlink.error.message}</ErrorAlert></div>}
 
-      <div className="mt-6 flex flex-col">
+      {/* En la computadora, dos tarjetas lado a lado: cómo entras y tus datos */}
+      <div className="mt-6 flex flex-col lg:mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+      <section aria-label="Cómo entras" className="flex flex-col lg:gap-2">
+        <span className="hidden text-label text-muted-foreground lg:block">Cómo entras</span>
+        <div className="flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
         {me.google_email ? (
           <div className="flex min-h-[60px] items-center gap-3.5 border-b border-border py-2">
             <span className="grid w-9 place-items-center"><GoogleMark /></span>
@@ -101,6 +106,11 @@ export function MiCuenta() {
           ? <Row icon="key" title="Cambiar contraseña" hint="Cierra tus otras sesiones; esta sigue abierta" onClick={() => setSheet("password")} />
           : <Row icon="key" title="Crear contraseña" hint="Para entrar también con tu correo, sin Google" onClick={() => setSheet("password")} />}
         <Row icon="devices" title="Cerrar sesión en todos lados" hint="Si dejaste tu cuenta abierta en otro equipo" onClick={() => setSheet("everywhere")} />
+        </div>
+      </section>
+      <section aria-label="Tus datos" className="flex flex-col lg:gap-2">
+        <span className="hidden text-label text-muted-foreground lg:block">Tus datos</span>
+        <div className="flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
         <Link to="/mas/cuenta/exportar" className="flex min-h-[60px] items-center gap-3.5 border-b border-border">
           <Icon name="download" className="w-9 text-center text-[22px] text-muted-foreground" />
           <span className="flex flex-1 flex-col">
@@ -117,6 +127,8 @@ export function MiCuenta() {
           </span>
           <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
         </Link>
+        </div>
+      </section>
       </div>
       {!me.google_email && google && (
         <span className="mt-3 text-caption text-muted-foreground">
@@ -128,7 +140,7 @@ export function MiCuenta() {
       {logout.error && <ErrorAlert>{logout.error.message}</ErrorAlert>}
       <button type="button" disabled={logout.isPending}
         onClick={() => logout.mutate(undefined, { onSuccess: () => navigate("/entrar", { replace: true }) })}
-        className="flex h-14 items-center justify-center gap-2 rounded-xl border border-input-line font-semibold">
+        className="flex h-14 items-center justify-center gap-2 rounded-xl border border-input-line font-semibold lg:w-72 lg:self-start">
         <Icon name="logout" className="text-[22px]" />Cerrar sesión
       </button>
 

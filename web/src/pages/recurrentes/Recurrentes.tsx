@@ -1,7 +1,7 @@
 // X1 · Recurrentes: lo que entra y sale en 30 días y las recurrentes por su próxima fecha; el detalle
 // de una (lo que viene, «solo esta vez», lo ya registrado, pausar y terminar).
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, NavLink, useNavigate, useParams } from "react-router";
 
 import { type RecurringNext, type RecurringRow, useMe, useOccurrence, useRecurring, useRecurringList, useRecurringState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
@@ -56,10 +56,16 @@ export function Recurrentes() {
   const sym = symbolOf(list.data.currency);
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center justify-between">
+      <div className="-mx-2.5 flex items-center justify-between lg:hidden">
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
       </div>
-      <h1 className="mt-1 text-title-hero">Recurrentes</h1>
+      <div className="flex items-center justify-between gap-3 lg:pt-4">
+        <h1 className="mt-1 text-title-hero lg:mt-0 lg:text-[36px] lg:leading-10">Recurrentes</h1>
+        <Link to="/registrar?repite=1"
+          className="hidden h-10 flex-none items-center gap-1.5 rounded-[10px] border border-border bg-card px-3.5 text-[14px] font-semibold lg:flex">
+          <Icon name="add" className="text-[20px]" />Nuevo recurrente
+        </Link>
+      </div>
       {rows.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <span className="grid size-16 place-items-center rounded-full bg-muted"><Icon name="repeat" className="text-[30px]" /></span>
@@ -79,12 +85,12 @@ export function Recurrentes() {
               <span className="font-semibold text-expense">− {formatAmount(list.data.outgoing, sym, lang)}</span>
             </span>
           </section>
-          <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Activas · por fecha</span>
+          <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Activas, por fecha</span>
           <ul className="flex flex-col">
             {rows.map((r) => (
               <li key={r.id}>
-                <Link to={r.loan_account_id ? `/prestamos/${r.loan_account_id}` : `/mas/recurrentes/${r.id}`}
-                  className={`flex min-h-16 items-center gap-3 border-b border-border ${r.state === "paused" ? "opacity-55" : ""}`}>
+                <NavLink to={r.loan_account_id ? `/prestamos/${r.loan_account_id}` : `/mas/recurrentes/${r.id}`}
+                  className={`flex min-h-16 items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)] ${r.state === "paused" ? "opacity-55" : ""}`}>
                   <RowIcon row={r} />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">{r.name}</span>
@@ -96,19 +102,21 @@ export function Recurrentes() {
                     </span>
                     <ModeChip row={r} />
                   </span>
-                </Link>
+                </NavLink>
               </li>
             ))}
           </ul>
         </>
       )}
       <Link to="/registrar?repite=1"
-        className="mt-5 flex h-12 items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
+        className="mt-5 flex h-12 items-center lg:hidden justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
         <Icon name="add" />Nuevo recurrente
       </Link>
     </main>
   );
 }
+
+const DESK_BTN = "flex h-10 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3.5 text-[14px] font-semibold";
 
 export function Recurrente() {
   const id = Number(useParams().id);
@@ -131,20 +139,36 @@ export function Recurrente() {
     : `${rec.data.categories.map((c) => c.name).join(", ")} · ${row.kind === "income" ? "entra a" : "sale de"} ${row.account}`;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center justify-between">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8 lg:pt-8">
+      <div className="-mx-2.5 flex items-center justify-between lg:hidden">
         <Link to="/mas/recurrentes" aria-label="Volver a Recurrentes" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
         {!done && (
-          <Link to={`/mas/recurrentes/${id}/editar`} aria-label="Cambiar la recurrente" className="grid size-11 place-items-center rounded-full"><Icon name="edit" className="text-[24px]" /></Link>
+          <Link to={`/mas/recurrentes/${id}/editar`} aria-label="Cambiar la recurrente" className="grid size-11 place-items-center rounded-full lg:hidden"><Icon name="edit" className="text-[24px]" /></Link>
         )}
       </div>
-      <span className="mt-1 text-label text-muted-foreground">{label}</span>
-      <h1 className="mt-1 text-title-hero">{row.name}</h1>
-      <span className="mt-2 text-[28px] leading-9 font-semibold tabular-nums">
-        {row.kind === "transfer" ? "" : isNegative(row.amount) ? "− " : "+ "}{money(row.amount)}
-        {row.mode === "draft" && <span className="ml-2 text-caption font-normal text-muted-foreground">más o menos</span>}
-      </span>
-      <span className="text-caption text-muted-foreground">{where} · desde el {shortDate(rule.start)}</span>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <span className="mt-1 text-label text-muted-foreground lg:mt-0">{label}</span>
+        {/* En la computadora las acciones van arriba, como en el detalle de una cuenta */}
+        {!done && (
+          <span className="hidden flex-none gap-2 lg:flex">
+            <Link to={`/mas/recurrentes/${id}/editar`} className={DESK_BTN}><Icon name="edit" className="text-[20px]" />Cambiar</Link>
+            <button type="button" onClick={() => state.mutate(paused ? "resume" : "pause")} className={DESK_BTN}>
+              <Icon name={paused ? "play_circle" : "pause_circle"} className="text-[20px]" />{paused ? "Reanudar" : "Pausar"}
+            </button>
+            <button type="button" onClick={() => setEnding(true)} className={`${DESK_BTN} text-destructive`}>
+              <Icon name="stop_circle" className="text-[20px]" />Terminar
+            </button>
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col lg:mt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-x-6">
+        <h1 className="mt-1 text-title-hero lg:col-start-1 lg:row-start-1 lg:mt-0">{row.name}</h1>
+        <span className="mt-2 text-[28px] leading-9 font-semibold tabular-nums lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:text-[36px] lg:leading-10">
+          {row.kind === "transfer" ? "" : isNegative(row.amount) ? "− " : "+ "}{money(row.amount)}
+          {row.mode === "draft" && <span className="ml-2 text-caption font-normal text-muted-foreground">más o menos</span>}
+        </span>
+        <span className="text-caption text-muted-foreground lg:col-start-1 lg:row-start-2 lg:mt-1">{where} · desde el {shortDate(rule.start)}</span>
+      </div>
       {rec.data.tags.length > 0 && <div className="mt-2"><TagChips tags={rec.data.tags} small /></div>}
 
       {paused && (
@@ -154,9 +178,11 @@ export function Recurrente() {
         </div>
       )}
 
+      {/* Próximas fechas y lo ya registrado: una debajo de otra en el celular, lado a lado en la computadora */}
+      <div className="flex flex-col lg:mt-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
       {!done && rec.data.next.length > 0 && (
-        <>
-          <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Próximas fechas · toca una para cambiarla</span>
+        <div className="flex flex-col">
+          <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Próximas fechas, toca una para cambiarla</span>
           <ul className={paused ? "opacity-45" : ""}>
             {rec.data.next.map((n) => (
               <li key={n.occurrence}>
@@ -176,11 +202,11 @@ export function Recurrente() {
               </li>
             ))}
           </ul>
-        </>
+        </div>
       )}
 
       {rec.data.done.length > 0 && (
-        <>
+        <div className="flex flex-col">
           <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Ya registradas</span>
           <ul>
             {rec.data.done.map((d) => (
@@ -197,13 +223,14 @@ export function Recurrente() {
               </li>
             ))}
           </ul>
-        </>
+        </div>
       )}
+      </div>
 
       {!done && (
         <>
           <p className="mt-4 text-caption text-muted-foreground">Si cambias el monto o la regla, aplica desde la próxima fecha; lo ya registrado no cambia.</p>
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:hidden">
             <button type="button" onClick={() => state.mutate(paused ? "resume" : "pause")}
               className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-border font-semibold">
               <Icon name={paused ? "play_circle" : "pause_circle"} />{paused ? "Reanudar" : "Pausar"}
