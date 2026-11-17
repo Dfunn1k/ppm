@@ -152,9 +152,16 @@ export function Mas() {
         </div>
         <InstallSheet open={installing} onClose={() => setInstalling(false)} />
       </section>
-      <p className="mt-6 text-center text-caption text-muted-foreground">
+      {/* Al pie: Privacidad, la versión y que PPM está en beta (decisión «Versiones de PPM») */}
+      <div className="mt-6 flex flex-col items-center gap-1 text-center text-caption text-muted-foreground">
         <Link to="/privacidad" className="underline">Privacidad</Link>
-      </p>
+        <span className="mt-1 tabular-nums">v{__PPM_VERSION__}</span>
+        {__PPM_VERSION__.startsWith("0.") && (
+          <span className="inline-flex h-5 items-center rounded-full border border-border bg-muted px-2 text-[11px] leading-[14px] font-semibold tracking-[0.06em]">
+            BETA
+          </span>
+        )}
+      </div>
 
     </main>
   );

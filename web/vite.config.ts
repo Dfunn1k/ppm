@@ -19,8 +19,12 @@ function iconFont(): Plugin {
   return { name: "ppm-icon-font", transformIndexHtml: (html) => html.replace("%PPM_ICON_FONT%", iconFontUrl(icons)) };
 }
 
+// La versión de PPM (una sola para todo, decisión «Versiones de PPM»): la de package.json, al pie de Más
+const version = (JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string }).version;
+
 export default defineConfig({
   plugins: [react(), tailwindcss(), iconFont()],
+  define: { __PPM_VERSION__: JSON.stringify(version) },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
