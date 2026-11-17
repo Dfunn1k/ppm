@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
 
 import { ApiError, useConfirmReset } from "@/api/hooks";
+import { AccessLayout } from "@/components/AccessLayout";
 import { ErrorAlert, Icon, Note, PasswordField, PrimaryButton, PrimaryLink, Screen } from "@/components/ui";
 
 const schema = z.object({
@@ -26,7 +27,8 @@ export function Restablecer() {
   );
 
   return (
-    <Screen>
+    <AccessLayout>
+    <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
       <span className="text-label text-muted-foreground">PPM</span>
       {expired ? (
         <div className="flex flex-1 flex-col pt-11">
@@ -61,5 +63,6 @@ export function Restablecer() {
         </form>
       )}
     </Screen>
+    </AccessLayout>
   );
 }

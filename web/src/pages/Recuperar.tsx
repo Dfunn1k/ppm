@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { z } from "zod";
 
 import { useRequestReset } from "@/api/hooks";
+import { AccessLayout } from "@/components/AccessLayout";
 import { ErrorAlert, Icon, LineField, Note, PrimaryButton, PrimaryLink, Screen } from "@/components/ui";
 
 const schema = z.object({ email: z.email({ error: "Escribe un correo válido, como tu@correo.com" }) });
@@ -17,12 +18,13 @@ export function Recuperar() {
   const onSubmit = form.handleSubmit(({ email }) => reset.mutate(email, { onSuccess: () => setSentTo(email) }));
 
   return (
-    <Screen className="pt-4">
+    <AccessLayout>
+    <Screen className="pt-4 lg:min-h-0 lg:max-w-[480px] lg:py-16">
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/entrar" aria-label="Volver a iniciar sesión" className="grid size-11 place-items-center rounded-full">
           <Icon name="arrow_back" className="text-[24px]" />
         </Link>
-        <span className="pr-2.5 text-label text-muted-foreground">PPM</span>
+        <span className="pr-2.5 text-label text-muted-foreground lg:hidden">PPM</span>
       </div>
 
       {sentTo === null ? (
@@ -70,5 +72,6 @@ export function Recuperar() {
         </div>
       )}
     </Screen>
+    </AccessLayout>
   );
 }

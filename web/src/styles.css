@@ -245,6 +245,11 @@
   --color-trigo: var(--trigo);
   --color-on-trigo: var(--on-trigo);
   --color-on-category: var(--on-category);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-line: var(--panel-line);
+  --color-panel-chip: var(--panel-chip);
 
   --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -372,6 +377,14 @@
   :root:not([data-theme="light"]) { --age-0: #4a3a1c; --age-1: #8a6526; --age-2: #c8902f; --age-3: #f3c56a; }
 }
 :root[data-theme="dark"] { --age-0: #4a3a1c; --age-1: #8a6526; --age-2: #c8902f; --age-3: #f3c56a; }
+
+/* El panel de la portada de acceso en la computadora (Entrar, Crear cuenta, Recuperar): siempre
+   oscuro, con «mayo.» en trigo; en el tema oscuro, un negro tibio para separarlo del fondo */
+:root { --panel: #171717; --panel-foreground: #fafafa; --panel-muted: #b5b5b5; --panel-line: #3a3a3a; --panel-chip: #262626; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --panel: #1c1a16; --panel-line: #3a3631; --panel-chip: #2b2822; }
+}
+:root[data-theme="dark"] { --panel: #1c1a16; --panel-line: #3a3631; --panel-chip: #2b2822; }
 
 /* Transiciones (lib/transitions.tsx): entrar desliza desde la derecha y lo de atrás se corre un poco;
    volver, al revés; entre pestañas, un fundido corto. La barra de abajo queda quieta. Las hojas suben y

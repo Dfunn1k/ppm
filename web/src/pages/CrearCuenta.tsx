@@ -3,7 +3,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { Link, useNavigate } from "react-router";
 import { z } from "zod";
 
-import { ApiError, useSignup } from "@/api/hooks";
+import { ApiError, useSignup, useProviders } from "@/api/hooks";
+import { AccessLayout, AccessTitle } from "@/components/AccessLayout";
 import { GoogleButton } from "@/components/GoogleButton";
 import { Refran } from "@/components/Refran";
 import { ErrorAlert, Icon, LineField, PasswordField, PrimaryButton, Screen, TextLink } from "@/components/ui";
@@ -29,6 +30,7 @@ export function passwordHint(length: number) {
 }
 
 export function CrearCuenta() {
+  const google = useProviders().data?.google;
   const navigate = useNavigate();
   const signup = useSignup();
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { name: "", email: "", password: "" } });
@@ -41,10 +43,14 @@ export function CrearCuenta() {
   );
 
   return (
-    <Screen>
-      <Refran label="PPM · Crear cuenta" />
-      <div className="flex-1" />
-      <form noValidate onSubmit={onSubmit} className="mt-8 flex flex-col gap-3">
+    <AccessLayout>
+    <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
+      <div className="flex flex-col lg:hidden">
+        <Refran label="PPM · Crear cuenta" />
+      </div>
+      <div className="flex-1 lg:hidden" />
+      <form noValidate onSubmit={onSubmit} className="mt-8 flex flex-col gap-3 lg:mt-0">
+        <AccessTitle title="Crear cuenta" lead={google ? "En un minuto, con tu correo o con Google." : "En un minuto, con tu correo."} />
         {taken && (
           <ErrorAlert>
             Ese correo ya tiene una cuenta. <TextLink to="/entrar" className="text-inherit">Inicia sesión</TextLink> o{" "}
@@ -82,5 +88,6 @@ export function CrearCuenta() {
         </p>
       </form>
     </Screen>
+    </AccessLayout>
   );
 }
