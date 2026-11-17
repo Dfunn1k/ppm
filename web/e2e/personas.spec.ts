@@ -66,33 +66,40 @@ test("prestar desde Más, cobrar sin pasarse y verlo en Personas", async ({ page
   await expect(page.getByRole("region", { name: "Me deben" }).getByRole("link", { name: /Sandra Machado/ })).toContainText("S/ 39.00");
 });
 
-test("un gasto dividido con alguien y uno que pagó otra persona se compensan", async ({ page }) => {
+test("un gasto compartido con alguien y uno que pagó otra persona se compensan", async ({ page }) => {
   await readyUser(page);
+  // Pagaste tú S/ 100 y Luis pone la mitad
   await page.goto("/registrar");
   await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("100");
   await chooseAccount(page, "Sale de", "BCP");
-  await page.getByRole("switch", { name: /Dividir/ }).check();
-  await page.getByRole("button", { name: /Elige una categoría/ }).first().click();
+  await page.getByRole("button", { name: /En qué/ }).click();
   await page.getByRole("dialog").getByRole("radio", { name: "Restaurantes y delivery" }).click();
-  await page.getByRole("textbox", { name: /Monto para Restaurantes/ }).fill("50");
-  await page.getByRole("button", { name: "Quitar esta parte" }).click();
-  await page.getByRole("button", { name: "Parte de alguien" }).click();
+  await page.getByRole("switch", { name: /Compartido/ }).check();
+  await expect(page.getByRole("textbox", { name: "¿Cuánto costó en total?" })).toHaveValue("100");
+  await page.getByRole("button", { name: "Agregar a alguien" }).click();
   await page.getByRole("button", { name: "Nueva persona" }).click();
   await page.getByRole("dialog").getByLabel("¿Cómo se llama?").fill("Luis Pérez");
   await page.getByRole("button", { name: "Guardar persona" }).click();
-  await page.getByRole("textbox", { name: "Monto para la parte 2" }).fill("50");
-  await page.getByRole("button", { name: "Registrar gasto" }).click();
+  const bloque = page.getByRole("region", { name: "Compartido" });
+  await expect(bloque.getByRole("status")).toContainText("S/ 50.00 son gasto tuyo en Restaurantes y delivery; Luis te debe S/ 50.00");
+  await page.getByRole("button", { name: "Registrar gasto compartido" }).click();
   await expect(page).toHaveURL("/movimientos");
   await expect(page.getByText("Salió − S/ 50.00")).toBeVisible();      // tu gasto es tu parte
 
+  // Pagó Luis S/ 60, mitad y mitad: le debes S/ 30
   await page.goto("/registrar");
-  await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("30");
-  await page.getByRole("radio", { name: "Otra persona" }).click();
-  await page.getByRole("combobox", { name: /pagó por ti/ }).fill("luis");      // sin tilde ni mayúscula
-  await page.getByRole("option", { name: /Luis Pérez/ }).click();
+  await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("60");
   await page.getByRole("button", { name: /En qué/ }).click();
   await page.getByRole("dialog").getByRole("radio", { name: "Cafés y bares" }).click();
-  await page.getByRole("button", { name: "Registrar gasto" }).click();
+  await page.getByRole("switch", { name: /Compartido/ }).check();
+  await page.getByRole("button", { name: "Agregar a alguien" }).click();
+  await page.getByRole("dialog").getByRole("combobox").fill("luis");      // sin tilde ni mayúscula
+  await page.getByRole("option", { name: /Luis Pérez/ }).click();
+  await bloque.getByRole("radio", { name: "Luis" }).click();
+  await expect(page.getByRole("button", { name: /^Sale de/ })).toHaveCount(0);   // de tus cuentas no sale nada
+  await expect(bloque.getByRole("status")).toContainText("Tu parte, S/ 30.00, es gasto en Cafés y bares y se la debes a Luis");
+  await page.getByRole("button", { name: "Registrar lo que le debo" }).click();
+  await expect(page).toHaveURL("/movimientos");
 
   await page.goto("/personas");
   await page.getByRole("link", { name: /Luis Pérez/ }).click();
