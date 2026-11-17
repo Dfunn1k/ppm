@@ -18,6 +18,7 @@ import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
 import { CURRENCY_NAME, add, currencyLabel, divide, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
+import { useDesktopFocus } from "@/lib/desktop";
 
 const TEXT: Record<PersonKind, { ask: string; who: string; into: boolean; submit: string; role: "owes_me" | "i_owe" | "keep" }> = {
   lend: { ask: "¿Cuánto le prestaste?", who: "¿A quién?", into: false, submit: "Registrar préstamo", role: "owes_me" },
@@ -51,6 +52,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   const [who, setWho] = useState<number | null>(editing?.partner_id ?? initialPerson);
   const [accountId, setAccountId] = useState(editing?.account_id ? String(editing.account_id) : "");
   const [amount, setAmount] = useState(editing ? formatNumber(editing.summary.amount, lang) : "");
+  const focusAmount = useDesktopFocus<HTMLInputElement>();
   const [date, setDate] = useState(editing?.summary.date ?? todayISO());
   const [dateOpen, setDateOpen] = useState(false);
   const [note, setNote] = useState(editing?.summary.ref ?? "");
@@ -171,7 +173,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           {t.ask}
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
-            <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
+            <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
               className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[48px] leading-[56px] font-semibold tracking-[-0.02em] tabular-nums" />
           </span>
         </label>

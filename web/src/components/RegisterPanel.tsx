@@ -13,7 +13,8 @@ export function RegisterPanel({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
-    panel.current?.focus();
+    // Si el formulario ya enfocó su campo (el monto), se queda ahí; si no, el panel
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       // Una hoja o el visor abiertos dentro del panel se cierran primero (ellos mismos escuchan Esc)
       if (e.key === "Escape" && document.querySelectorAll('[role="dialog"][aria-modal="true"]').length === 1) { e.preventDefault(); close.current(); }
