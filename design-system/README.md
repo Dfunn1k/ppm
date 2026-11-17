@@ -26,12 +26,13 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 - `destructive` es solo para borrar, archivar y errores. `destructive-soft` y `attention-soft` son sus fondos tenues: la tarjeta de un error o de un aviso, con el texto en su color.
 - `cat-0` a `cat-11` son los 12 colores de categoría, el índice de `account_account.color`. Se usan solo como fondo del chip de categoría, con el ícono en `on-category`.
 - `age-0` a `age-3` son los tramos de antigüedad de lo que te deben (0–30, 31–60, 61–90 y más de 90 días): un solo tono que se intensifica con los días. Van siempre con la etiqueta del tramo; el tramo vencido se marca además con `attention` e ícono.
+- `panel`, `panel-foreground`, `panel-muted`, `panel-line` y `panel-chip` son el panel de la portada de acceso en la computadora (desde 1024px): siempre oscuro, a la izquierda, con el refrán, el año y lo que hace PPM. En el tema oscuro el panel es un negro tibio para separarse del fondo. No se usan en ningún otro lugar.
 - Los grises son neutros, sin tinte: el color lo ponen el acento, los montos, las categorías y el trigo, nunca el fondo.
 - Hay un tema claro y uno oscuro con los mismos tokens; el oscuro no es el claro invertido. Comprueba cada combinación en los dos.
 
 ## Tipografía
 
-- `title-display` es el refrán de la portada: «Pan / para / mayo.» en tres líneas, Bricolage Grotesque a 84px, con «mayo.» sobre un relleno de `trigo`. Solo en Iniciar sesión y Crear cuenta.
+- `title-display` es el refrán de la portada: «Pan / para / mayo.» en tres líneas, Bricolage Grotesque a 84px, con «mayo.» sobre un relleno de `trigo`. Solo en la portada de acceso. En la computadora crece con la ventana (hasta 176px) dentro del `panel`, y el formulario de la derecha lleva su título en `title-hero`.
 - `title-hero` (48px) es el título grande de las pantallas de un solo propósito: recuperar la contraseña y los pasos de la configuración. Mismo estilo que el refrán, sin trigo.
 - `title-1` y `title-2` usan Bricolage Grotesque, solo para títulos: uno por pantalla y los de sección.
 - Todo lo demás va en IBM Plex Sans: `body`, `body-strong`, `caption`, `label`, `amount-hero` y `amount`.
@@ -49,7 +50,7 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 - En acceso y configuración los campos son de una sola línea: la etiqueta arriba y una línea de 2px en `input-line` abajo, sin caja. Dentro de la app, los formularios usan caja con borde `input`.
 - El botón principal mide 56px de alto, con radio de 14px, el texto a la izquierda y `arrow_forward` a la derecha.
 - Los pasos 2 y 3 de la configuración llevan `arrow_back` arriba a la izquierda para volver; el paso 1 no, porque la cuenta ya existe.
-- Elegir de una lista (país, idioma, banco…) nunca usa el selector del navegador: el campo de una línea muestra lo elegido con `expand_more`, y al tocarlo sube una hoja desde abajo (`radius-lg` arriba, `shadow-lg`) con un título en `title-2` y una fila de 56px por opción: nombre, una ayuda corta debajo y `check_circle` relleno en la elegida, sobre `muted`. Sin logos ni iniciales de marcas.
+- Elegir de una lista (país, idioma, banco…) nunca usa el selector del navegador: el campo de una línea muestra lo elegido con `expand_more`, y al tocarlo sube una hoja desde abajo (`radius-lg` arriba, `shadow-lg`) con un título en `title-2` y una fila de 56px por opción: nombre, una ayuda corta debajo y `check_circle` relleno en la elegida, sobre `muted`. Con más de 8 opciones, la hoja lleva un buscador fijo arriba (fondo `muted`, ícono `search`) y la elegida va primero; los meses no, porque su orden es el dato. Sin logos ni iniciales de marcas.
 
 ## Íconos
 

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, expect, test, vi } from "vitest";
 
@@ -26,8 +26,8 @@ afterEach(() => vi.unstubAllGlobals());
 
 test("muestra el refrán con «mayo» en trigo", () => {
   renderEntrar();
-  expect(screen.getByRole("heading", { name: "Pan para mayo" })).toBeInTheDocument();
-  expect(screen.getByText("mayo.")).toHaveClass("bg-trigo");
+  const refran = screen.getByRole("heading", { name: "Pan para mayo" });
+  expect(within(refran).getByText("mayo.")).toHaveClass("bg-trigo");
 });
 
 test("revisa el correo antes de llamar a la API", async () => {

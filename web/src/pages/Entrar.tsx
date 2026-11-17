@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
 
-import { ApiError, useLogin } from "@/api/hooks";
+import { ApiError, useLogin, useProviders } from "@/api/hooks";
+import { AccessLayout, AccessTitle } from "@/components/AccessLayout";
 import { GoogleButton, googleProblem } from "@/components/GoogleButton";
 import { Refran } from "@/components/Refran";
 import { ErrorAlert, Icon, LineField, PasswordField, PrimaryButton, Screen, TextLink } from "@/components/ui";
@@ -14,6 +15,7 @@ const schema = z.object({
 });
 
 export function Entrar() {
+  const google = useProviders().data?.google;
   const navigate = useNavigate();
   const passwordChanged = (useLocation().state as { passwordChanged?: boolean } | null)?.passwordChanged;
   const login = useLogin();
@@ -30,13 +32,17 @@ export function Entrar() {
   );
 
   return (
-    <Screen>
-      <Refran />
-      <p className="mt-5 text-muted-foreground">
-        Guarda hoy lo que vas a necesitar mañana. Tus cuentas claras, sin saber contabilidad.
-      </p>
-      <div className="flex-1" />
-      <form noValidate onSubmit={onSubmit} className="mt-8 flex flex-col gap-3">
+    <AccessLayout>
+    <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
+      <div className="flex flex-col lg:hidden">
+        <Refran />
+        <p className="mt-5 text-muted-foreground">
+          Guarda hoy lo que vas a necesitar mañana. Tus cuentas claras, sin saber contabilidad.
+        </p>
+      </div>
+      <div className="flex-1 lg:hidden" />
+      <form noValidate onSubmit={onSubmit} className="mt-8 flex flex-col gap-3 lg:mt-0">
+        <AccessTitle title="Iniciar sesión" lead={google ? "Entra con tu correo o con Google." : "Entra con tu correo."} />
         {deleted && !login.error && (
           <div role="status" className="flex items-start gap-2 rounded-md bg-muted p-3 text-caption">
             <Icon name="check_circle" fill className="text-income" />
@@ -77,5 +83,6 @@ export function Entrar() {
         </p>
       </form>
     </Screen>
+    </AccessLayout>
   );
 }
