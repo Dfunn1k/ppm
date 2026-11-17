@@ -162,7 +162,7 @@ export function Movimientos() {
       ))}
 
       <Sheet title="Elige el mes" open={sheet === "month"} onClose={() => setSheet(null)}>
-        <OptionList value={filters.month} options={monthOptions().map((v) => ({ value: v, label: monthName(v) }))}
+        <OptionList search={false} value={filters.month} options={monthOptions().map((v) => ({ value: v, label: monthName(v) }))}
           onPick={(v) => { set("mes", v); setSheet(null); }} />
       </Sheet>
       <Sheet title="Filtrar por cuenta" open={sheet === "account"} onClose={() => setSheet(null)}>

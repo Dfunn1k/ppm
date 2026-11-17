@@ -70,29 +70,64 @@ export function Sheet({ title, open, onClose, children }: {
 
 export type Option = { value: string; label: string; hint?: string };
 
-/** Las opciones de una hoja: nombre, ayuda corta debajo y check en la elegida. */
-export function OptionList({ options, value, onPick }: { options: Option[]; value: string; onPick: (v: string) => void }) {
+/** Desde cuántas opciones la lista trae buscador y sube la elegida primero (decisión «Listas largas»). */
+export const SEARCH_FROM = 9;
+
+const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+
+/** Las opciones de una hoja: nombre, ayuda corta debajo y check en la elegida. Con más de 8, un buscador
+ * arriba (queda a la vista mientras la lista se desliza) y la elegida primero; `search={false}` lo apaga
+ * donde el orden es el dato, como los meses. */
+export function OptionList({ options, value, onPick, search, searchLabel = "Buscar" }: {
+  options: Option[];
+  value: string;
+  onPick: (v: string) => void;
+  search?: boolean;
+  searchLabel?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const searchable = search ?? options.length >= SEARCH_FROM;
+  let shown = options;
+  if (searchable) {
+    const q = plain(query.trim());
+    shown = options.filter((o) => !q || plain(o.label).includes(q) || (o.hint ? plain(o.hint).includes(q) : false));
+    const i = shown.findIndex((o) => o.value === value);
+    if (i > 0) shown = [shown[i]!, ...shown.slice(0, i), ...shown.slice(i + 1)];
+  }
   return (
-    <div role="radiogroup" className="flex flex-col">
-      {options.map((o) => {
-        const selected = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onPick(o.value)}
-            className={`flex min-h-14 items-center gap-3 rounded-md px-3 text-left text-[17px] leading-6 ${selected ? "bg-muted" : ""}`}
-          >
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="font-semibold">{o.label}</span>
-              {o.hint && <span className="text-caption text-muted-foreground">{o.hint}</span>}
-            </span>
-            {selected && <Icon name="check_circle" fill className="text-[22px]" />}
-          </button>
-        );
-      })}
+    <div className="flex flex-col">
+      {searchable && (
+        <div className="sticky top-0 z-10 -mx-1 bg-card px-1 pb-2">
+          <label className="mx-2 flex h-11 items-center gap-2 rounded-md bg-muted px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
+            <Icon name="search" className="text-muted-foreground" />
+            <input type="search" aria-label={searchLabel} placeholder={searchLabel} value={query} autoComplete="off"
+              onChange={(e) => setQuery(e.target.value)}
+              className="min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
+          </label>
+        </div>
+      )}
+      <div role="radiogroup" className="flex flex-col">
+        {shown.map((o) => {
+          const selected = o.value === value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onPick(o.value)}
+              className={`flex min-h-14 items-center gap-3 rounded-md px-3 text-left text-[17px] leading-6 ${selected ? "bg-muted" : ""}`}
+            >
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="font-semibold">{o.label}</span>
+                {o.hint && <span className="text-caption text-muted-foreground">{o.hint}</span>}
+              </span>
+              {selected && <Icon name="check_circle" fill className="text-[22px]" />}
+            </button>
+          );
+        })}
+      </div>
+      {shown.length === 0 && <span className="px-3 py-3 text-caption text-muted-foreground">Nada se llama así.</span>}
     </div>
   );
 }
