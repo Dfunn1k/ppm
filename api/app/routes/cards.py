@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app import card_statements, cards, recurring
 from app.accounts import AccountError
-from app.routes.accounts import AccountRowOut, Currency, Name, Rate
+from app.routes.accounts import AccountRowOut, Currency, Name, Rate, TagRefOut
 from app.routes.deps import CurrentSession, current_session
 
 router = APIRouter(tags=["tarjetas"])
@@ -67,6 +67,8 @@ class CycleItemOut(BaseModel):
     n_installments: int | None
     interest: Decimal | None
     bank: bool
+    tags: list[TagRefOut]
+    attachments: int
 
 
 class CycleAmountOut(BaseModel):

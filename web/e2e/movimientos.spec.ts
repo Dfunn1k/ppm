@@ -43,7 +43,9 @@ test("un gasto simple: aparece en el mes y baja la cuenta", async ({ page }) => 
 
   await expect(page).toHaveURL("/movimientos");
   const fila = page.getByRole("link", { name: /Almuerzo con el equipo/ });
-  await expect(fila).toContainText("Restaurantes y delivery · BCP");
+  await expect(fila).toContainText("BCP");                          // la cuenta; la categoría ya es el ícono
+  await expect(fila).not.toContainText("Restaurantes y delivery");
+  await expect(fila).not.toContainText("·");
   await expect(fila).toContainText("− 35.50");
   await expect(page.getByText("Salió − S/ 35.50")).toBeVisible();
 
@@ -98,7 +100,8 @@ test("cambiar soles a dólares con los dos montos", async ({ page }) => {
   await page.getByRole("button", { name: "Registrar transferencia" }).click();
 
   const fila = page.getByRole("link", { name: /Transferencia a BBVA dólares/ });
-  await expect(fila).toContainText("BCP → BBVA dólares · US$ 100.00");
+  await expect(fila).toContainText("BCP → BBVA dólares");
+  await expect(fila).toContainText("US$ 100.00 a 3.750");            // lo que llegó y a cuánto
   await expect(page.getByText("Salió − S/ 0.00")).toBeVisible();   // una transferencia no es gasto
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /BBVA dólares.*US\$ 300\.00/ })).toBeVisible();

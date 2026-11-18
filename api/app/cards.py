@@ -14,8 +14,8 @@ from decimal import Decimal
 import psycopg
 
 from app.accounts import (ZERO, AccountError, AccountRow, _balances, _ACCOUNTS_SQL, _bank, _currency_id,
-                          _row, _today, _today_rates, _translate, card_briefs)
-from app import card_statements
+                          _row, _today, _today_rates, _translate, card_briefs, is_money, money_icon)
+from app import card_statements, move_marks
 from app.db import user_transaction
 
 PAST_CYCLES = 6   # cuántos ciclos ya cerrados se muestran, además del que toca pagar
@@ -61,6 +61,8 @@ class CycleItem:
     n_installments: int | None = None   # …de cuántas
     interest: Decimal | None = None     # cuota: su interés, dentro de amount (del estado de cuenta; None = sin dato)
     bank: bool = False                  # cargo del banco (desgravamen, comisiones): va al total facturado
+    tags: list = field(default_factory=list)   # list[tags.TagRef]
+    attachments: int = 0
 
 
 @dataclass(frozen=True)
@@ -165,7 +167,7 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
     cuenta: cada compra en su ciclo y, de una compra en cuotas, cada cuota en el suyo."""
     oldest = conn.execute("SELECT (%s::date - make_interval(months => %s))::date", (last, PAST_CYCLES)).fetchone()[0]
     items: dict[dt.date, list[CycleItem]] = defaultdict(list)
-    for closing, *item in conn.execute("""
+    for closing, *item in conn.execute(f"""
         SELECT card_closing_for(%(card)s, m.date), m.id, m.date, m.ref, m.state = 'posted',
                CASE WHEN o.role = 'opening' THEN 'opening'
                     WHEN l.credit > 0 THEN 'charge'
@@ -178,7 +180,8 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
           JOIN res_currency c ON c.id = l.currency_id
           CROSS JOIN LATERAL (
             SELECT CASE WHEN count(*) = 1 THEN min(a.name) END AS name,
-                   CASE WHEN count(*) = 1 THEN min(coalesce(a.icon, pa.icon)) END AS icon,
+                   CASE WHEN count(*) = 1 THEN min(CASE WHEN {is_money("a")} THEN {money_icon("a")}
+                                                        ELSE coalesce(a.icon, pa.icon) END) END AS icon,
                    CASE WHEN count(*) = 1 THEN min(coalesce(a.color, pa.color)) END AS color,
                    min(a.system_role) AS role, min(a.account_type) AS type,
                    coalesce(bool_or(pa.name = 'Gastos financieros'), false) AS bank
@@ -226,6 +229,10 @@ def _cycles(conn: psycopg.Connection, card_id: int, last: dt.date, nxt: dt.date,
          ORDER BY pl.closing_date DESC, m.date DESC""", {"card": card_id, "oldest": oldest, "next": nxt}):
         items[closing].append(CycleItem(*item))
 
+    ids = list({i.move_id for rows in items.values() for i in rows})
+    tags, files = move_marks.tags(conn, ids), move_marks.attachments(conn, ids)
+    for closing in items:
+        items[closing] = [replace(i, tags=tags.get(i.move_id, []), attachments=files.get(i.move_id, 0)) for i in items[closing]]
     imported = {r[0] for r in conn.execute(
         "SELECT closing_date FROM account_credit_card_statement WHERE card_account_id = %s", (card_id,))}
     cycles = []

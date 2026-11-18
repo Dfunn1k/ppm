@@ -6,7 +6,7 @@ import { Link, useLocation, useSearchParams } from "react-router";
 
 import { useHome, useMe, usePending, useUpdateMe } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
-import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
+import { MoveAmount, MoveIcon, MoveLine, moveBits } from "@/components/MoveBits";
 import { activityCaption, noticeView, sectionOf } from "@/components/Pending";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon } from "@/components/ui";
@@ -171,13 +171,11 @@ export function Inicio() {
         <Heading label="Últimos movimientos" to="/movimientos" link="Ver todos" />
         {h.recent.length === 0 && <span className="py-3 text-caption text-muted-foreground">Todavía no registras nada. Toca + para empezar.</span>}
         {h.recent.map((x) => (
-          <Link key={x.id} to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+          <Link key={x.id} to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border py-2">
             <MoveIcon move={x} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-semibold">{x.ref}</span>
-              <span className="truncate text-caption text-muted-foreground">
-                {x.date === todayISO() ? "Hoy" : shortDate(x.date)} · {moveCaption(x, lang)}
-              </span>
+              <MoveLine bits={moveBits(x, h.currency, lang, x.date === todayISO() ? "Hoy" : shortDate(x.date))} tags={x.tags} />
             </span>
             {hidden ? <span className="text-amount text-muted-foreground">••••</span> : <MoveAmount move={x} base={h.currency} lang={lang} />}
           </Link>
