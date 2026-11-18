@@ -38,6 +38,7 @@ test("adjuntar la boleta al registrar y verla en el detalle", async ({ page }) =
   await expect(adjuntos.getByRole("button", { name: "Adjuntar otro" })).toBeVisible();
   await page.getByRole("button", { name: "Registrar gasto" }).click();
   await expect(page).toHaveURL("/movimientos");
+  await expect(page.getByRole("link", { name: /Plaza Vea/ }).getByLabel("Tiene adjunto")).toBeVisible();   // el clip en la fila
 
   await page.getByRole("link", { name: /Plaza Vea/ }).click();
   const seccion = page.getByRole("region", { name: "Adjuntos" });

@@ -119,6 +119,9 @@ class Line:
     counterpart_icon: str | None
     counterpart_color: int | None
     counterpart_role: str | None  # 'opening' para el saldo inicial, 'suspense' para Por clasificar
+    counterpart_money: bool = False   # del otro lado hay otra cuenta tuya (una transferencia)
+    tags: list = field(default_factory=list)   # list[tags.TagRef]
+    attachments: int = 0
 
 
 @dataclass(frozen=True)
@@ -184,6 +187,19 @@ def _balances(conn: psycopg.Connection, account_ids: list[int],
     ):
         out[acc].append(Money(cur, amount, _today(amount, book, rates.get(cur), owed), book))
     return out
+
+
+def money_icon(a: str) -> str:
+    """El ícono de una cuenta de dinero en SQL, el mismo que en Cuentas: la tarjeta, la tarjeta; si no,
+    el que eligió la persona; si no, el banco o la billetera."""
+    return (f"CASE WHEN EXISTS (SELECT 1 FROM account_credit_card k WHERE k.account_id = {a}.id) THEN 'credit_card'"
+            f" ELSE coalesce({a}.icon, CASE WHEN EXISTS (SELECT 1 FROM res_partner_bank k WHERE k.account_id = {a}.id)"
+            f" THEN 'account_balance' ELSE 'payments' END) END")
+
+
+def is_money(a: str) -> str:
+    """Una cuenta de dinero tuya (no una del sistema, como Por cobrar o Por clasificar)."""
+    return f"({a}.account_type IN ('asset', 'liability') AND {a}.system_role IS NULL)"
 
 
 _ACCOUNTS_SQL = """
@@ -340,15 +356,17 @@ def detail(user_id: int, account_id: int, limit: int = 200) -> AccountDetail:
         lines = [
             Line(lid, mid, d, ref, state == "posted", cur, amount, running,
                  cname if n == 1 else None, cicon if n == 1 else None, ccolor if n == 1 else None,
-                 crole if n == 1 else None)
-            for lid, mid, d, ref, state, cur, amount, running, n, cname, cicon, ccolor, crole in conn.execute("""
+                 crole if n == 1 else None, n == 1 and money)
+            for lid, mid, d, ref, state, cur, amount, running, n, cname, cicon, ccolor, crole, money in conn.execute(f"""
                 SELECT r.id, r.move_id, r.date, r.ref, r.state, trim(c.name), r.amount_currency,
-                       r.running_amount_currency, o.n, o.name, o.icon, o.color, o.role
+                       r.running_amount_currency, o.n, o.name, o.icon, o.color, o.role, o.money
                   FROM account_move_line_running r
                   JOIN res_currency c ON c.id = r.currency_id
                   CROSS JOIN LATERAL (
-                    SELECT count(*) AS n, min(a.name) AS name, min(coalesce(a.icon, p.icon)) AS icon,
-                           min(coalesce(a.color, p.color)) AS color, min(a.system_role) AS role
+                    SELECT count(*) AS n, min(a.name) AS name,
+                           min(CASE WHEN {is_money("a")} THEN {money_icon("a")} ELSE coalesce(a.icon, p.icon) END) AS icon,
+                           min(coalesce(a.color, p.color)) AS color, min(a.system_role) AS role,
+                           bool_and({is_money("a")}) AS money
                       FROM account_move_line x
                       JOIN account_account a ON a.id = x.account_id
                       LEFT JOIN account_account p ON p.id = a.parent_id
@@ -357,6 +375,10 @@ def detail(user_id: int, account_id: int, limit: int = 200) -> AccountDetail:
                  ORDER BY r.date DESC, r.move_id DESC, r.id DESC
                  LIMIT %s""", (account_id, limit))
         ]
+        from app import move_marks   # aquí: move_marks usa tags, que usa este módulo
+        ids = list({x.move_id for x in lines})
+        tags, files = move_marks.tags(conn, ids), move_marks.attachments(conn, ids)
+        lines = [replace(x, tags=tags.get(x.move_id, []), attachments=files.get(x.move_id, 0)) for x in lines]
         unclassified = conn.execute("""
             SELECT count(DISTINCT s.move_id) FROM account_move_line s
               JOIN account_move_line x ON x.move_id = s.move_id AND x.account_id = %s

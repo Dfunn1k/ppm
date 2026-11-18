@@ -15,8 +15,9 @@ from decimal import ROUND_HALF_UP, Decimal
 
 import psycopg
 
+from app import move_marks
 from app import tags as tags_
-from app.accounts import AccountError, _translate
+from app.accounts import AccountError, _translate, is_money, money_icon
 from app.db import user_transaction
 
 CENT = Decimal("0.01")
@@ -899,6 +900,9 @@ class MoveSummary:
     partner_id: int | None = None   # con quién, si es con otra persona
     partner: str | None = None
     incoming: bool | None = None    # por clasificar: entró (True) o salió (False) de la cuenta
+    account_icon: str | None = None  # el de la cuenta de dinero (la de donde sale, en una transferencia)
+    tags: list[tags_.TagRef] = field(default_factory=list)
+    attachments: int = 0
 
 
 @dataclass(frozen=True)
@@ -1075,9 +1079,9 @@ class MoveDetail:
     with_partner: str | None = None
 
 
-_LINES_SQL = """
+_LINES_SQL = f"""
 SELECT l.move_id, l.account_id, a.name, a.account_type, a.system_role,
-       coalesce(a.icon, p.icon), coalesce(a.color, p.color), trim(c.name), l.amount_currency, l.balance,
+       CASE WHEN {is_money("a")} THEN {money_icon("a")} ELSE coalesce(a.icon, p.icon) END, coalesce(a.color, p.color), trim(c.name), l.amount_currency, l.balance,
        l.partner_id, rp.name, l.id, l.debit, l.credit,
        coalesce(l.date_maturity, cy.date_due), l.date_maturity, l.maturity_closing
   FROM account_move_line l
@@ -1189,6 +1193,9 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
     else:
         s = MoveSummary(move_id, on, ref, posted, kind, lines[0][7], abs(lines[0][8]),
                         abs(lines[0][9]), lines[0][2], categories, partner_id=pid, partner=pname)
+    own = next((x for x in cash if x[8] < 0), cash[0]) if kind == "transfer" else cash[0] if cash else None
+    if own is not None and kind not in ("offset", "write_off", "opening"):
+        s = replace(s, account_icon=own[5])
     return s, cash
 
 
@@ -1197,7 +1204,10 @@ def summaries(conn: psycopg.Connection, heads: list[tuple]) -> list[MoveSummary]
     by_move: dict[int, list[tuple]] = defaultdict(list)
     for row in conn.execute(_LINES_SQL, ([h[0] for h in heads],)):
         by_move[row[0]].append(row)
-    return [_classify(h, by_move[h[0]])[0] for h in heads if by_move[h[0]]]
+    found = [_classify(h, by_move[h[0]])[0] for h in heads if by_move[h[0]]]
+    ids = [x.id for x in found]
+    tags, files = move_marks.tags(conn, ids), move_marks.attachments(conn, ids)
+    return [replace(x, tags=tags.get(x.id, []), attachments=files.get(x.id, 0)) for x in found]
 
 
 def _kind_of(conn: psycopg.Connection, move_id: int) -> str:

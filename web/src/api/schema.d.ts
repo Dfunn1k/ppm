@@ -2443,6 +2443,10 @@ export interface components {
             interest: string | null;
             /** Bank */
             bank: boolean;
+            /** Tags */
+            tags: components["schemas"]["TagRefOut"][];
+            /** Attachments */
+            attachments: number;
         };
         /** CycleOut */
         CycleOut: {
@@ -3355,6 +3359,12 @@ export interface components {
             partner: string | null;
             /** Incoming */
             incoming: boolean | null;
+            /** Account Icon */
+            account_icon: string | null;
+            /** Tags */
+            tags: components["schemas"]["TagRefOut"][];
+            /** Attachments */
+            attachments: number;
         };
         /** MoveTagsIn */
         MoveTagsIn: {
@@ -4592,6 +4602,12 @@ export interface components {
             counterpart_color: number | null;
             /** Counterpart Role */
             counterpart_role: string | null;
+            /** Counterpart Money */
+            counterpart_money: boolean;
+            /** Tags */
+            tags: components["schemas"]["TagRefOut"][];
+            /** Attachments */
+            attachments: number;
         };
         /** PendingIn */
         app__routes__auth__PendingIn: {

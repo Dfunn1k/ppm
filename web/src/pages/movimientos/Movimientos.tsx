@@ -4,7 +4,7 @@ import { NavLink, useLocation, useSearchParams } from "react-router";
 
 import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth, useTags } from "@/api/hooks";
 import { CategorySheet } from "@/components/CategorySheet";
-import { MoveAmount, MoveIcon, moveCaption } from "@/components/MoveBits";
+import { MoveAmount, MoveIcon, MoveLine, moveBits } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { BoneRows } from "@/components/Skeleton";
 import { Kbd } from "@/components/ShortcutsHelp";
@@ -205,19 +205,16 @@ export function Movimientos() {
 }
 
 function MoveRow({ move: x, lang, base }: { move: MoveSummary; lang: string; base: string }) {
-  const caption = moveCaption(x, lang);
   // En escritorio la lista sigue al lado: el detalle se abre sin perder el mes, la búsqueda ni los filtros
   const search = useLocation().search;
   const desktop = useDesktop();
   return (
     <NavLink to={{ pathname: `/movimientos/${x.id}`, search: desktop ? search : "" }}
-      className="flex min-h-[60px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
+      className="flex min-h-[60px] items-center gap-3 border-b border-border py-2 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
       <MoveIcon move={x} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{x.ref}</span>
-        <span className={`truncate text-caption ${x.posted ? "text-muted-foreground" : "font-semibold text-attention"}`}>
-          {x.posted ? caption : `Por confirmar · ${caption}`}
-        </span>
+        <MoveLine bits={moveBits(x, base, lang)} tags={x.tags} />
       </span>
       <MoveAmount move={x} base={base} lang={lang} />
     </NavLink>

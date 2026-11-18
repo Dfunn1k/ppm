@@ -46,6 +46,7 @@ test("una etiqueta: se crea al registrar, filtra Movimientos, tiene su reporte y
   await expect(page.getByRole("button", { name: /Etiquetas · opcional/ })).toContainText("Viaje a Cusco");
   await page.getByRole("button", { name: "Registrar gasto" }).click();
   await expect(page).toHaveURL("/movimientos");
+  await expect(page.getByRole("link", { name: /Cena en Cusco/ })).toContainText("Viaje a Cusco");   // en la fila
 
   // Filtrar por la etiqueta: solo la cena
   await page.getByRole("button", { name: "Etiqueta" }).click();
