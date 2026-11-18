@@ -1,4 +1,5 @@
-// Adjuntos de un movimiento: la boleta, el voucher o el recibo, en foto o PDF de hasta 5 MB.
+// Adjuntos de un movimiento: la boleta, el voucher o el recibo, en foto (hasta 20 MB; el servidor la
+// guarda achicada, como Odoo) o PDF de hasta 5 MB.
 // En Registrar se eligen antes de guardar y se suben al guardar; en el detalle se ven en miniaturas,
 // se abren en el visor (AttachmentViewer) y se descargan o borran (pide confirmar).
 import { useRef, useState } from "react";
@@ -11,7 +12,8 @@ import { AttachmentViewer, fileSize, kindOf, Thumb } from "./AttachmentViewer";
 import { Sheet } from "./Sheet";
 import { ErrorAlert, Icon } from "./ui";
 
-const MAX = 5 * 1024 * 1024;
+const MAX_PDF = 5 * 1024 * 1024;
+const MAX_PHOTO = 20 * 1024 * 1024;
 const OK = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/;
 
 export { fileSize };
@@ -19,7 +21,9 @@ export { fileSize };
 /** Lo que no se puede adjuntar, dicho para la persona; null si se puede. */
 export function fileProblem(f: File) {
   if (f.type && !OK.test(f.type)) return `«${f.name}» no es una foto ni un PDF`;
-  if (f.size > MAX) return `«${f.name}» pesa más de 5 MB`;
+  const pdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+  if (pdf && f.size > MAX_PDF) return `«${f.name}» pesa más de 5 MB`;
+  if (f.size > MAX_PHOTO) return `«${f.name}» pesa más de 20 MB`;
   return null;
 }
 
@@ -49,7 +53,7 @@ export function AttachSheet({ open, onClose, onFiles }: { open: boolean; onClose
         <button type="button" onClick={() => picker.current?.click()} className={option}>
           <Icon name="folder_open" className="text-[24px]" />
           <span className="flex flex-col"><span className="font-semibold">Elegir un archivo</span>
-            <span className="text-caption text-muted-foreground">Foto o PDF de hasta 5 MB</span></span>
+            <span className="text-caption text-muted-foreground">Foto de hasta 20 MB o PDF de hasta 5 MB</span></span>
         </button>
       </Sheet>
     </>
@@ -134,7 +138,7 @@ export function MoveAttachments({ moveId, caption }: { moveId: number; caption?:
           </button>
         ))}
       </div>
-      <span className="mt-2 text-caption text-muted-foreground">Foto o PDF de hasta 5 MB. Se guardan en tu carpeta, con el respaldo diario.</span>
+      <span className="mt-2 text-caption text-muted-foreground">Foto de hasta 20 MB o PDF de hasta 5 MB. Las fotos se guardan livianas, en tu carpeta y con el respaldo diario.</span>
       {problem && <div className="mt-2"><ErrorAlert>{problem}</ErrorAlert></div>}
       <AttachSheet open={open} onClose={() => setOpen(false)} onFiles={add} />
 

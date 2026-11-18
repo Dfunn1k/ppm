@@ -1412,7 +1412,7 @@ export interface paths {
         /** Los adjuntos de un movimiento */
         get: operations["of_move_moves__move_id__attachments_get"];
         put?: never;
-        /** Adjuntar una foto o un PDF (hasta 5 MB) */
+        /** Adjuntar una foto (hasta 20 MB, se guarda achicada) o un PDF (hasta 5 MB) */
         post: operations["add_moves__move_id__attachments_post"];
         delete?: never;
         options?: never;
