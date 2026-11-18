@@ -37,10 +37,10 @@ def of_move(move_id: int, session: CurrentSession = Depends(current_session)) ->
 
 
 @router.post("/moves/{move_id}/attachments", status_code=status.HTTP_201_CREATED,
-             summary="Adjuntar una foto o un PDF (hasta 5 MB)")
+             summary="Adjuntar una foto (hasta 20 MB, se guarda achicada) o un PDF (hasta 5 MB)")
 def add(move_id: int, file: Annotated[UploadFile, File()],
         session: CurrentSession = Depends(current_session)) -> AttachmentOut:
-    content = file.file.read(attachments.MAX_BYTES + 1)
+    content = file.file.read(attachments.MAX_PHOTO_BYTES + 1)
     try:
         return AttachmentOut.model_validate(asdict(attachments.add(session.user_id, move_id, content, file.filename)))
     except AccountError as e:
