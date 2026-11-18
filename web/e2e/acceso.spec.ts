@@ -66,7 +66,7 @@ test("crear cuenta, los 3 pasos y llegar al inicio", async ({ page }) => {
   await page.getByRole("button", { name: "Guardar y empezar" }).click();
 
   await expect(page).toHaveURL("/inicio");
-  await expect(page.getByText("Lo que realmente tengo · hoy")).toBeVisible();
+  await expect(page.getByText("Lo que realmente tengo hoy")).toBeVisible();
   await page.getByRole("link", { name: "Más" }).click();
   await page.getByRole("link", { name: /Ana/ }).click();
   await expect(page.getByRole("heading", { name: "Ana" })).toBeVisible();

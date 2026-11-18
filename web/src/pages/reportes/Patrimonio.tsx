@@ -50,7 +50,7 @@ export function ReportePatrimonio() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10">
       <ReportHeader title="Patrimonio" />
 
-      <span className="mt-4 text-caption text-muted-foreground">Lo que realmente tengo · hoy</span>
+      <span className="mt-4 text-caption text-muted-foreground">Lo que realmente tengo hoy</span>
       <span className="font-display text-[34px] leading-[38px] font-extrabold tracking-[-0.02em] tabular-nums">{money(r.today)}</span>
       <span className="mt-0.5 flex items-center gap-0.5 text-caption text-muted-foreground tabular-nums">
         <Icon name={change >= 0 ? "north_east" : "south_east"} className="text-[16px]" />
@@ -111,7 +111,7 @@ export function ReportePatrimonio() {
 
       {r.foreign.map((f) => (
         <section key={f.currency} aria-label={`Tus ${f.currency}: diferencia de cambio`} className="mt-6 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4">
-          <span className="text-label text-muted-foreground">Tus {f.currency === "USD" ? "dólares" : f.currency} · diferencia de cambio</span>
+          <span className="text-label text-muted-foreground">La diferencia de cambio de tus {f.currency === "USD" ? "dólares" : f.currency}</span>
           <span className="flex justify-between tabular-nums"><span>Tienes</span><b>{formatAmount(f.amount, symbolOf(f.currency), lang)}</b></span>
           <span className="flex justify-between tabular-nums"><span>Te costaron</span><span>{money(f.book)}</span></span>
           <span className="flex justify-between tabular-nums"><span>Valen hoy (compra {rateText(f.rate)})</span><span>{money(f.today)}</span></span>

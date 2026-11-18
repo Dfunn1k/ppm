@@ -59,7 +59,7 @@ export function Tarjeta() {
     ? favor.length ? "Tienes saldo a favor" : "Nada por pagar ahora"
     : d.date_due
       ? `A pagar antes del ${shortDate(d.date_due)}${dueIn(d.date_due)}`
-      : `A pagar · ciclo que cerró el ${shortDate(d.last_closing)}`;
+      : `A pagar del ciclo que cerró el ${shortDate(d.last_closing)}`;
   const hero = owed.length === 0 && favor.length ? favor[0]!.to_pay.replace("-", "") : Number(main.to_pay) > 0 ? main.to_pay : "0.00";
   const heroCur = owed.length === 0 && favor.length ? favor[0]!.currency : main.currency;
   const nextOthers = d.status.filter((s) => s.currency !== main.currency && Number(s.next_bill) > 0);
@@ -67,7 +67,7 @@ export function Tarjeta() {
   const foreignRates = d.rates.filter((r) => r.currency !== d.limit_currency
     && d.status.some((s) => s.currency === r.currency && Number(s.total_debt) !== 0));
   const pct = Number(d.credit_limit) > 0 ? Math.min(100, Math.max(0, Math.round((Number(d.used) / Number(d.credit_limit)) * 100))) : 0;
-  const label = [d.account.subtitle, `Corte el ${d.closing_day}`].filter(Boolean).join(" · ");
+  const label = d.account.subtitle ? `${d.account.subtitle} con corte el ${d.closing_day}` : `Corte el ${d.closing_day}`;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
@@ -112,8 +112,9 @@ export function Tarjeta() {
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-0.5 rounded-lg border border-border bg-card p-3">
-          <span className="text-caption text-muted-foreground">Por facturar · cierra {shortDate(d.next_closing)}</span>
+          <span className="text-caption text-muted-foreground">Por facturar</span>
           <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(main.next_bill, main.currency)}</span>
+          <span className="text-caption text-muted-foreground">Cierra el {shortDate(d.next_closing)}</span>
           {nextOthers.map((s) => (
             <span key={s.currency} className="text-caption text-muted-foreground tabular-nums">y {money(s.next_bill, s.currency)}</span>
           ))}

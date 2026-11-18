@@ -163,7 +163,7 @@ function StatementCard({ detail: d, lang }: { detail: AccountDetail; lang: strin
       ) : (
       <div className="mt-4 flex items-center gap-3 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
         <Link to={`/extractos/${last.id}`} className="flex min-w-0 flex-1 flex-col">
-          <span className="text-caption text-muted-foreground">Último extracto{last.date_to ? ` · hasta el ${shortDate(last.date_to)}` : ""}</span>
+          <span className="text-caption text-muted-foreground">Último extracto{last.date_to ? ` hasta el ${shortDate(last.date_to)}` : ""}</span>
           <span className={`flex items-center gap-1 truncate font-semibold ${status!.cls}`}><Icon name={status!.icon} className="text-[18px]" />{status!.text}</span>
         </Link>
         <Link to={`/cuentas/${d.account.id}/importar`}

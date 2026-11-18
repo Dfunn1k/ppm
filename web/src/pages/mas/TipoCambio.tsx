@@ -48,7 +48,7 @@ export function TipoCambio() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-        <span className="pr-2.5 text-label text-muted-foreground">Tipo de cambio · administrador</span>
+        <span className="pr-2.5 text-label text-muted-foreground">Solo administrador</span>
       </div>
       <h1 className="mt-4 text-title-hero">Tipo de cambio</h1>
       <p className="mt-2.5 text-muted-foreground">Lo usa todo PPM. El dólar llega solo desde SUNAT; aquí corriges un día o cargas lo que falte.</p>
@@ -57,7 +57,7 @@ export function TipoCambio() {
         {currencies.map((c) => (
           <section key={c.currency} aria-label={NAME[c.currency] ?? c.currency} className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3.5">
             <span className="flex items-center justify-between">
-              <span className="font-semibold">{NAME[c.currency] ?? c.currency} · {symbolOf(c.currency)}</span>
+              <span className="flex items-baseline gap-1.5"><span className="font-semibold">{NAME[c.currency] ?? c.currency}</span><span className="text-caption text-muted-foreground">{symbolOf(c.currency)}</span></span>
               <span className={`flex h-6 items-center gap-1 rounded-full px-2 text-[12px] leading-4 font-semibold ${c.stale ? "bg-attention-soft text-attention" : "bg-muted text-income"}`}>
                 <Icon name={c.stale ? "schedule" : "check_circle"} className="text-[16px]" />
                 {c.stale ? (c.days == null ? "Sin tipo" : `Hace ${c.days} días`) : "Al día"}
@@ -75,8 +75,8 @@ export function TipoCambio() {
       </div>
 
       {codes.filter((code) => history.some((h) => h.currency === code)).map((code) => (
-        <section key={code} aria-label={`Últimos días · ${NAME[code] ?? code}`} className="mt-5 flex flex-col">
-          <span className="border-b border-border pb-1 text-label text-muted-foreground">Últimos días · {NAME[code] ?? code}</span>
+        <section key={code} aria-label={`Últimos días del ${(NAME[code] ?? code).toLowerCase()}`} className="mt-5 flex flex-col">
+          <span className="border-b border-border pb-1 text-label text-muted-foreground">Últimos días del {(NAME[code] ?? code).toLowerCase()}</span>
           {history.filter((h) => h.currency === code).map((h) => (
             <div key={h.date} className="grid min-h-11 grid-cols-[1fr_64px_64px_76px] items-center gap-2 border-b border-border tabular-nums">
               <span>{dayLabel(h.date)}</span>

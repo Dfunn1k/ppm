@@ -120,7 +120,7 @@ export function ReporteFlujo() {
       </section>
 
       {savings.some((m) => m.pct !== null) && <section aria-label="Cuánto guardas" className="mt-6 flex flex-col gap-1.5">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Cuánto guardas · para mayo</span><span>12 meses</span></div>
+        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Cuánto guardas para mayo</span><span>12 meses</span></div>
         <div className="h-[170px]" role="img" aria-label={`Porcentaje guardado: ${savings.map((m) => `${monthName(m.month)} ${m.pct ?? "sin ingresos"}${m.pct === null ? "" : " %"}`).join(", ")}`}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={savings} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>

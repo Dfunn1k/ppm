@@ -11,6 +11,7 @@ import { shortDate } from "@/lib/dates";
 
 import { ReportHeader, useMoney } from "./common";
 import { ReportBones } from "@/components/Skeleton";
+import { Pill } from "@/components/Pill";
 
 const TRAMOS = [
   { label: "0–30 días", from: 0, to: 30 },
@@ -72,7 +73,7 @@ export function ReportePersonas() {
 
       <section aria-label="Quién te debe" className="mt-6 flex flex-col">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-          <span>{t ? `Te deben · ${t.label}` : "Quién te debe"}</span><span>Lo más antiguo</span>
+          <span className="flex items-center gap-1.5">{t ? <>Te deben<Pill>{t.label.endsWith("días") ? t.label : `${t.label} días`}</Pill></> : "Quién te debe"}</span><span>Lo más antiguo</span>
         </div>
         {debtors.map((d) => (
           <Link key={d.partner_id} to={`/personas/${d.partner_id}`} className="flex min-h-[68px] items-center gap-3 border-b border-border">
