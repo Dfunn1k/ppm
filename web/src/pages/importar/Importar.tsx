@@ -19,6 +19,7 @@ import { OptionList, Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
+import { Pill } from "@/components/Pill";
 
 type Step = "file" | "columns" | "review";
 type FieldKey = keyof ImportMapping["columns"];
@@ -59,7 +60,8 @@ export function Importar() {
     });
   };
   const back = step === "file" ? `/cuentas/${id}` : null;
-  const label = step === "file" ? `${name} · 1 de 3` : `${result?.file_name ?? ""} · ${step === "columns" ? 2 : 3} de 3`;
+  const label = step === "file" ? name : result?.file_name ?? "";
+  const stepNo = step === "file" ? 1 : step === "columns" ? 2 : 3;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
@@ -70,7 +72,7 @@ export function Importar() {
           <button type="button" aria-label="Volver" onClick={() => setStep(step === "review" ? "columns" : "file")}
             className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></button>
         )}
-        <span className="truncate pr-2.5 text-label text-muted-foreground uppercase">{label}</span>
+        <span className="flex min-w-0 items-center gap-1.5 pr-2.5 text-label text-muted-foreground uppercase"><span className="truncate">{label}</span><Pill>{stepNo} de 3</Pill></span>
       </div>
 
       {step === "file" && (
@@ -93,8 +95,8 @@ export function Importar() {
                 hint="El archivo no lo trae. Con él comprobamos que no falte ningún movimiento." />
             </div>
           )}
-          <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">
-            Así lo leemos · {Math.min(result.sample.length, 3)} de {result.total_rows} filas
+          <span className="mt-5 flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
+            <span>Así lo leemos</span><span className="text-caption normal-case">{Math.min(result.sample.length, 3)} de {result.total_rows} filas</span>
           </span>
           {result.sample.length === 0 && (
             <span className="py-3 text-caption text-muted-foreground">Elige la fecha, la descripción y el monto para ver cómo se leen.</span>

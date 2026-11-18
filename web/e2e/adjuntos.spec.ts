@@ -96,7 +96,7 @@ test("el visor: miniaturas, pasar al siguiente, el PDF por páginas y la vista d
 
   await page.goto(`/movimientos/${id}`);
   const seccion = page.getByRole("region", { name: "Adjuntos" });
-  await expect(seccion).toContainText("Adjuntos · 2");
+  await expect(seccion).toContainText("Adjuntos2");
   const thumbs = seccion.locator("img");
   await expect(thumbs).toHaveCount(2);
   await expect.poll(() => thumbs.first().evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);

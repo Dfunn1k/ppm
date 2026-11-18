@@ -12,7 +12,8 @@ import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, formatAmount, isNegative, isZero, rateText, symbolOf } from "@/lib/money";
-import { monthName, monthOnly, monthOptions } from "@/lib/months";
+import { monthName, monthOptions } from "@/lib/months";
+import { Pill } from "@/components/Pill";
 import { HomeSkeleton } from "@/components/Skeleton";
 
 const ONE: Record<string, string> = { USD: "dólar", EUR: "euro" };
@@ -75,7 +76,7 @@ export function Inicio() {
       <div className="flex flex-col lg:min-w-0 lg:flex-1">
       {notice && <div className="mt-4 lg:mt-0 lg:mb-4"><ErrorAlert>{notice}</ErrorAlert></div>}
 
-      <span className="mt-5 text-caption text-muted-foreground lg:mt-0">Lo que realmente tengo · hoy</span>
+      <span className="mt-5 text-caption text-muted-foreground lg:mt-0">Lo que realmente tengo hoy</span>
       <h1 className="font-display text-[48px] leading-[50px] font-extrabold tracking-[-0.03em] tabular-nums">{money(h.real_total)}</h1>
       <span className="mt-1 text-caption text-muted-foreground tabular-nums">{today}</span>
       {h.foreign.map((f) => (
@@ -100,7 +101,7 @@ export function Inicio() {
 
       <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:p-5">
         <div className="flex items-baseline justify-between">
-          <span className="text-label text-muted-foreground">Para mayo · {monthOnly(month)}</span>
+          <span className="text-label text-muted-foreground">Para mayo</span>
           <span className="text-caption text-muted-foreground tabular-nums">{h.saved_percent === null ? "" : `${hidden ? "••" : percent} % de lo que entró`}</span>
         </div>
         <div role="img" aria-label={hidden ? "Barra de ahorro del mes" : negative || percent === 0 ? "Este mes no hubo ahorro" : `Guardaste el ${percent} % de lo que entró`}
@@ -215,8 +216,8 @@ function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
   if (items.length === 0) return null;
   return (
     <section aria-label="Pendientes" className="mt-5 flex flex-col rounded-lg border border-border bg-card px-4 pt-3 pb-1 lg:col-start-3 lg:row-start-2 lg:mt-0 lg:px-5">
-      <span className="text-label text-muted-foreground">
-        Pendientes · {items.length}{box.late > 0 && <span className="text-attention"> · {box.late === 1 ? "1 vencido" : `${box.late} vencidos`}</span>}
+      <span className="flex items-center gap-1.5 text-label text-muted-foreground">
+        Pendientes<Pill>{items.length}</Pill>{box.late > 0 && <Pill attention>{box.late === 1 ? "1 vencido" : `${box.late} vencidos`}</Pill>}
       </span>
       {items.slice(0, 3).map((i) => (
         <Link key={i.key} to={i.to} className="flex min-h-[52px] items-center gap-2.5 border-b border-border">

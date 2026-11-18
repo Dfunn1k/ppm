@@ -57,7 +57,7 @@ export function HomeSkeleton() {
   return (
     <Loading className="pt-6">
       <div className="flex items-center justify-between"><Bone className="h-7 w-44" /><Bone className="size-9 rounded-full" /></div>
-      <span className="mt-6 text-caption text-muted-foreground">Lo que realmente tengo · hoy</span>
+      <span className="mt-6 text-caption text-muted-foreground">Lo que realmente tengo hoy</span>
       <Bone className="mt-1.5 h-11 w-3/4 rounded-lg" />
       <Bone className="mt-2.5 h-3.5 w-1/2" />
       <div aria-hidden="true" className="mt-5 flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4">

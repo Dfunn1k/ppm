@@ -40,7 +40,7 @@ test("lo vencido va arriba y posponerlo lo esconde hasta su fecha", async ({ pag
 
   await page.goto("/inicio");
   const card = page.getByRole("region", { name: "Pendientes" });
-  await expect(card).toContainText("Pendientes · 1 · 1 vencido");
+  await expect(card).toContainText("Pendientes11 vencido");
   await expect(card).toContainText("Luis Pérez te debe S/ 50.00");
   await card.getByRole("link", { name: "Ver todo" }).click();
 

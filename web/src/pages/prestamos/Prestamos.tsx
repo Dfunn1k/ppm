@@ -158,7 +158,7 @@ export function Prestamo() {
       <div className="-mx-2.5 flex items-center">
         <Link to="/cuentas" aria-label="Volver a cuentas" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
       </div>
-      <span className="mt-1 text-label text-muted-foreground">{l.bank} · Préstamo en {l.currency === "PEN" ? "soles" : l.currency === "USD" ? "dólares" : l.currency}</span>
+      <span className="mt-1 text-label text-muted-foreground">Préstamo en {l.currency === "PEN" ? "soles" : l.currency === "USD" ? "dólares" : l.currency}{l.bank ? ` del ${l.bank}` : ""}</span>
       <h1 className="mt-1 text-title-hero">{l.name}</h1>
       <span className="mt-3 text-caption text-muted-foreground">Debes hoy · solo capital</span>
       <span className="text-[40px] leading-[44px] font-semibold tracking-[-0.02em] tabular-nums">{money(l.debt)}</span>
@@ -171,7 +171,7 @@ export function Prestamo() {
 
       {l.next && !paidOff && (
         <section aria-label="Próxima cuota" className="mt-4 flex flex-col gap-1.5 rounded-md border border-border bg-card px-3.5 py-3 tabular-nums">
-          <span className="flex items-baseline justify-between"><b>Próxima cuota · {shortDate(l.next.occurrence)}</b><b>{money(l.next.total)}</b></span>
+          <span className="flex items-baseline justify-between"><b>Próxima cuota el {shortDate(l.next.occurrence)}</b><b>{money(l.next.total)}</b></span>
           <span className="grid grid-cols-[1fr_auto] gap-y-0.5 text-caption text-muted-foreground">
             {l.next.parts.map((p) => (
               <span key={p.name} className="contents">
@@ -259,7 +259,7 @@ export function PagarCuota() {
 
   return (
     <Screen className="pt-4">
-      <FormHeader back={`/prestamos/${id}`} label={`Cuota · faltan ${l.left_count}`} icon="close" />
+      <FormHeader back={`/prestamos/${id}`} label={l.left_count === 1 ? "Queda 1 cuota" : `Quedan ${l.left_count} cuotas`} icon="close" />
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
         <h1 className="mt-2 text-title-hero">{l.name}</h1>
         <span className="mt-1 text-caption text-muted-foreground">La del {shortDate(l.next.occurrence)}. Copia los montos de tu boleta.</span>
