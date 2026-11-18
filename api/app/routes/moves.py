@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from app import moves, statements
 from app.accounts import AccountError
+from app.routes.accounts import TagRefOut
 from app.routes.deps import CurrentSession, current_session
 
 router = APIRouter(tags=["movimientos"])
@@ -132,6 +133,9 @@ class MoveSummaryOut(BaseModel):
     partner_id: int | None
     partner: str | None
     incoming: bool | None            # por clasificar: entró (True) o salió (False) de la cuenta
+    account_icon: str | None         # el de la cuenta de dinero (la de donde sale, en una transferencia)
+    tags: list[TagRefOut]
+    attachments: int
 
 
 class DayOut(BaseModel):
@@ -263,12 +267,6 @@ class BankLineOut(BaseModel):
     account_id: int
     payment_ref: str                 # lo que dice el banco: no cambia
     operation_number: str | None
-
-
-class TagRefOut(BaseModel):
-    id: int
-    name: str
-    color: int
 
 
 class MoveDetailOut(BaseModel):

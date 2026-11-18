@@ -110,6 +110,12 @@ class OpeningOut(BaseModel):
     rate: Decimal | None
 
 
+class TagRefOut(BaseModel):
+    id: int
+    name: str
+    color: int
+
+
 class LineOut(BaseModel):
     id: int
     move_id: int
@@ -123,6 +129,9 @@ class LineOut(BaseModel):
     counterpart_icon: str | None
     counterpart_color: int | None
     counterpart_role: str | None
+    counterpart_money: bool          # del otro lado hay otra cuenta tuya (una transferencia)
+    tags: list[TagRefOut]
+    attachments: int
 
 
 class LastStatementOut(BaseModel):

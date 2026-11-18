@@ -12,6 +12,7 @@ import {
   useSetOpening,
   useUpdateAccount,
 } from "@/api/hooks";
+import { type Bit, MoveLine, clipBit, pendingBit } from "@/components/MoveBits";
 import { Activities, ActivitySheet } from "@/components/Pending";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Sheet } from "@/components/Sheet";
@@ -26,7 +27,7 @@ import { DetailSkeleton } from "@/components/Skeleton";
 import { useDesktop } from "@/lib/desktop";
 
 /** En escritorio los movimientos van en tabla: fecha, movimiento, categoría, monto y saldo. */
-const TABLE = "grid grid-cols-[64px_minmax(0,1.4fr)_minmax(0,1fr)_112px_112px] items-center gap-3";
+const TABLE = "grid grid-cols-[64px_minmax(0,1fr)_120px_112px] items-center gap-3";
 
 function CopyRow({ label, value, display, last }: { label: string; value: string; display: string; last?: boolean }) {
   const [copied, setCopied] = useState(false);
@@ -109,7 +110,7 @@ export function Detalle() {
       <section aria-label="Movimientos" className="mt-5 flex flex-col">
         {table ? (
           <div className={`${TABLE} border-b border-border pb-1 text-label text-muted-foreground`}>
-            <span>Fecha</span><span>Movimiento</span><span>Categoría</span><span className="text-right">Monto</span><span className="text-right">Saldo</span>
+            <span>Fecha</span><span>Movimiento</span><span className="text-right">Monto</span><span className="text-right">Saldo</span>
           </div>
         ) : (
           <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
@@ -193,8 +194,18 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
     ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "flag" }
     : suspense
       ? { bg: "var(--attention-soft)", fg: "var(--attention)", icon: "inbox" }
-      : { bg: `var(--cat-${l.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: l.counterpart_icon ?? "category" };
-  const caption = opening ? "lo que tenía al empezar" : suspense ? "Por clasificar" : (l.counterpart ?? "Varias categorías");
+      : l.counterpart_money
+        ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "sync_alt" }
+        : { bg: `var(--cat-${l.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: l.counterpart_icon ?? "category" };
+  // La línea chica, la misma de Movimientos: dentro de la cuenta no se repite la cuenta; en una
+  // transferencia va la otra. La categoría ya es el ícono.
+  const bits: Bit[] = [];
+  if (!l.posted) bits.push(pendingBit);
+  if (!table) bits.push({ text: shortDate(l.date) });
+  if (opening) bits.push({ text: "Lo que tenía al empezar" });
+  else if (suspense) bits.push({ text: "Por clasificar", attention: true });
+  else if (l.counterpart_money) bits.push({ icon: l.counterpart_icon ?? "payments", text: `${out ? "A" : "De"} ${l.counterpart}`, shrink: true });
+  if (l.attachments > 0) bits.push(clipBit);
   const Row = opening ? "div" : Link;
   const amount = opening ? (
     <span className="text-amount">{formatNumber(l.amount, lang)}</span>
@@ -204,6 +215,7 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
       {out ? "− " : "+ "}{formatNumber(l.amount.replace("-", ""), lang)}
     </span>
   );
+  const name = opening ? "Saldo inicial" : l.ref;
   if (table) {
     return (
       <Row to={`/movimientos/${l.move_id}`} className={`${TABLE} min-h-[52px] border-b border-border hover:bg-muted/60`}>
@@ -212,27 +224,24 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
           <span className="grid size-8 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
             <Icon name={chip.icon} className="text-[18px]" />
           </span>
-          <span className="truncate font-semibold">{opening ? "Saldo inicial" : l.ref}</span>
-          {!l.posted && <span className="flex-none rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">Por confirmar</span>}
+          <span className="max-w-[45%] flex-none truncate font-semibold">{name}</span>
+          <MoveLine bits={bits} tags={l.tags} wide />
         </span>
-        <span className={`truncate text-caption ${suspense ? "font-semibold text-attention" : "text-muted-foreground"}`}>{caption}</span>
         <span className="text-right tabular-nums">{amount}</span>
         <span className="text-right text-caption text-muted-foreground tabular-nums">{l.running !== null ? formatNumber(l.running, lang) : ""}</span>
       </Row>
     );
   }
   return (
-    <Row to={`/movimientos/${l.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+    <Row to={`/movimientos/${l.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border py-2">
       <span className="grid size-9 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
         <Icon name={chip.icon} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="font-semibold">{opening ? "Saldo inicial" : l.ref}</span>
-        <span className={`text-caption ${suspense ? "font-semibold text-attention" : "text-muted-foreground"}`}>
-          {shortDate(l.date)} · {caption}{l.posted ? "" : " · por confirmar"}
-        </span>
+        <span className="truncate font-semibold">{name}</span>
+        <MoveLine bits={bits} tags={l.tags} />
       </span>
-      <span className="flex flex-col items-end tabular-nums">
+      <span className="flex flex-none flex-col items-end tabular-nums">
         {amount}
         {l.running !== null && <span className="text-caption text-muted-foreground">{formatNumber(l.running, lang)}</span>}
       </span>

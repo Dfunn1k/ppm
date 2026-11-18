@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useCardRate, useMe, useUpdateCard } from "@/api/hooks";
+import { type Bit, MoveLine, clipBit, pendingBit } from "@/components/MoveBits";
 import { Activities, ActivitySheet } from "@/components/Pending";
 import { Segmented, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
@@ -243,7 +244,7 @@ export function Tarjeta() {
             )}
             {table && cycle.items.length > 0 && (
               <div className={`${TABLE} border-b border-border py-1 text-label text-muted-foreground`}>
-                <span>Fecha</span><span>Movimiento</span><span>Detalle</span><span className="text-right">Monto</span>
+                <span>Fecha</span><span>Movimiento</span><span className="text-right">Monto</span>
               </div>
             )}
             {cycle.items.map((i, n) => <ItemRow key={`${i.move_id}-${i.sequence ?? n}`} item={i} base={base} lang={lang} table={table} />)}
@@ -375,28 +376,35 @@ function plansTotal(d: CardDetail, lang: string) {
   return [...by].map(([cur, cents]) => formatAmount((cents / 100).toFixed(2), symbolOf(cur), lang)).join(" · ");
 }
 
-/** En escritorio el ciclo va en tabla: fecha, movimiento, detalle y monto. */
-const TABLE = "grid grid-cols-[64px_minmax(0,1.3fr)_minmax(0,1fr)_120px] items-center gap-3";
+/** En escritorio el ciclo va en tabla, como una cuenta: fecha, movimiento y monto. */
+const TABLE = "grid grid-cols-[64px_minmax(0,1fr)_120px] items-center gap-3";
 
 function ItemRow({ item: i, base, lang, table }: { item: Item; base: string; lang: string; table: boolean }) {
   const up = Number(i.amount) > 0;   // sube la deuda: una compra, una cuota, un cargo
   const chip = i.kind === "payment"
-    ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "credit_card" }
+    ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "sync_alt" }
     : i.kind === "opening"
       ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "flag" }
       : { bg: `var(--cat-${i.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: i.counterpart_icon ?? "category" };
-  const hint = i.kind === "installment"
-    ? `Cuota ${i.sequence} de ${i.n_installments}${Number(i.interest ?? 0) > 0 ? ` · incluye ${formatNumber(i.interest!, lang)} de interés` : ` · compra del ${shortDate(i.date)}`}`
-    : i.kind === "opening"
-      ? i.sequence ? `Cuota ${i.sequence} de ${i.n_installments} · de antes de PPM` : "Lo que tocaba pagar al empezar"
-      : i.kind === "payment"
-        ? `${shortDate(i.date)} · desde ${i.counterpart ?? "varias cuentas"}`
-        : `${shortDate(i.date)} · ${i.counterpart ?? "Varias categorías"}`;
+  // La línea chica, la misma de Movimientos: dentro de la tarjeta no se repite la tarjeta; en un pago
+  // va de qué cuenta salió. La categoría ya es el ícono.
+  const bits: Bit[] = [];
+  if (!i.posted) bits.push(pendingBit);
+  if (!table) bits.push({ text: shortDate(i.date) });
+  if (i.sequence) bits.push({ icon: "event_repeat", text: `Cuota ${i.sequence} de ${i.n_installments}` });
+  if (i.kind === "installment" && Number(i.interest ?? 0) > 0) bits.push({ icon: "percent", text: `${formatNumber(i.interest!, lang)} de interés` });
+  if (i.kind === "opening") bits.push({ text: i.sequence ? "De antes de PPM" : "Lo que tocaba pagar al empezar" });
+  if (i.kind === "payment") bits.push({ icon: i.counterpart ? (i.counterpart_icon ?? "account_balance") : "account_balance", text: i.counterpart ?? "Varias cuentas", shrink: true });
+  if (i.attachments > 0) bits.push(clipBit);
+  const name = i.kind === "opening" && !i.sequence ? "Saldo inicial" : i.ref;
   const value = (i.currency === base ? "" : `${symbolOf(i.currency)} `) + formatNumber(i.amount.replace("-", ""), lang);
+  const amount = (
+    <span className={`flex items-center justify-end gap-0.5 text-amount ${up ? "text-expense" : "text-income"}`}>
+      <Icon name={up ? "north_east" : "south_west"} className="text-[16px]" />
+      {value}
+    </span>
+  );
   if (table) {
-    // La fecha va en su columna: el detalle dice el resto (cuota, desde qué cuenta, categoría)
-    const detail = i.kind === "payment" ? `Desde ${i.counterpart ?? "varias cuentas"}`
-      : i.kind === "installment" || i.kind === "opening" ? hint : (i.counterpart ?? "Varias categorías");
     return (
       <Link to={`/movimientos/${i.move_id}`} className={`${TABLE} min-h-[52px] border-b border-border hover:bg-muted/60`}>
         <span className="text-caption text-muted-foreground tabular-nums">{shortDate(i.date)}</span>
@@ -404,33 +412,23 @@ function ItemRow({ item: i, base, lang, table }: { item: Item; base: string; lan
           <span className="grid size-8 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
             <Icon name={chip.icon} className="text-[18px]" />
           </span>
-          <span className="truncate font-semibold">{i.kind === "opening" && !i.sequence ? "Saldo inicial" : i.ref}</span>
-          {!i.posted && <span className="flex-none rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">Por confirmar</span>}
+          <span className="max-w-[45%] flex-none truncate font-semibold">{name}</span>
+          <MoveLine bits={bits} tags={i.tags} wide />
         </span>
-        <span className="truncate text-caption text-muted-foreground">{detail}</span>
-        <span className={`flex items-center justify-end gap-0.5 text-amount ${up ? "text-expense" : "text-income"}`}>
-          <Icon name={up ? "north_east" : "south_west"} className="text-[16px]" />
-          {value}
-        </span>
+        {amount}
       </Link>
     );
   }
   return (
-    <Link to={`/movimientos/${i.move_id}`} className="flex min-h-[58px] items-center gap-3 border-b border-border">
+    <Link to={`/movimientos/${i.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border py-2">
       <span className="grid size-9 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
         <Icon name={chip.icon} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="flex items-center gap-1.5">
-          <span className="truncate font-semibold">{i.kind === "opening" && !i.sequence ? "Saldo inicial" : i.ref}</span>
-          {!i.posted && <span className="flex-none rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">Por confirmar</span>}
-        </span>
-        <span className="text-caption text-muted-foreground">{hint}{i.posted ? "" : " · no cuenta todavía"}</span>
+        <span className="truncate font-semibold">{name}</span>
+        <MoveLine bits={bits} tags={i.tags} />
       </span>
-      <span className={`flex items-center gap-0.5 text-amount ${up ? "text-expense" : "text-income"}`}>
-        <Icon name={up ? "north_east" : "south_west"} className="text-[16px]" />
-        {value}
-      </span>
+      {amount}
     </Link>
   );
 }
