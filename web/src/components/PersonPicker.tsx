@@ -7,12 +7,13 @@ import { usePartners } from "@/api/hooks";
 import { PersonaSheet } from "@/pages/personas/PersonaForm";
 
 import { Avatar } from "./MoveBits";
-import { Icon } from "./ui";
+import { Icon, Optional } from "./ui";
 
 const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
-export function PersonPicker({ label, value, onChange, only, canAdd = true }: {
+export function PersonPicker({ label, value, onChange, only, canAdd = true, optional }: {
   label: string;
+  optional?: boolean;
   value: number | null;
   onChange: (id: number) => void;
   only?: number[];
@@ -51,7 +52,7 @@ export function PersonPicker({ label, value, onChange, only, canAdd = true }: {
 
   return (
     <div className="relative flex flex-col gap-1.5">
-      <label htmlFor={`${id}-input`} className="text-caption font-semibold">{label}</label>
+      <label htmlFor={`${id}-input`} className="flex justify-between gap-2 text-caption font-semibold">{label}{optional && <Optional />}</label>
       <div className="flex h-11 items-center gap-2 border-b-2 border-input-line focus-within:border-foreground">
         {chosen && query === null && <Avatar name={chosen.name} size={28} />}
         <input id={`${id}-input`} role="combobox" aria-expanded={open} aria-controls={`${id}-list`} aria-autocomplete="list"

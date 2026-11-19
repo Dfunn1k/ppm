@@ -483,7 +483,7 @@ function EditSheet({ open, onClose, card, lang }: { open: boolean; onClose: () =
         </div>
         <Segmented label="Marca" size="sm" value={brand} onChange={setBrand}
           options={["Visa", "Mastercard", "Amex", "Diners"].map((b) => ({ value: b, label: b }))} />
-        <LineField label="Últimos 4 (opcional)" inputMode="numeric" maxLength={4} value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, ""))} />
+        <LineField label="Últimos 4" optional inputMode="numeric" maxLength={4} value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, ""))} />
         {(problem || update.error) && <ErrorAlert>{problem ?? update.error?.message}</ErrorAlert>}
         <PrimaryButton pending={update.isPending}>Guardar</PrimaryButton>
       </form>

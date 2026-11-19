@@ -108,7 +108,7 @@ export function NuevaGuardo() {
           <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
             className="flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold">
             <Icon name="event" className="text-[18px]" />
-            {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : "Hoy · otra fecha"}
+            {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" className="text-[18px] text-muted-foreground" /></>}
           </button>
           {dateOpen && <DateField label="Te la dio el" max={todayISO()} value={date} onChange={setDate} booked />}
           {(problem || failure) && (

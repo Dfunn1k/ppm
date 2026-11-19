@@ -97,7 +97,7 @@ export function YaDebia({ editing }: { editing?: MoveDetail }) {
           <DateField label="¿Desde cuándo?" max={todayISO()} value={date} onChange={setDate} booked
             hint="La fecha de la deuda: con ella se ve cuánto tiempo tiene." />
           {foreign && <RateField input={rate} currency={currency} side={side === "owes_me" ? "buy" : "sell"} />}
-          <LineField label="Nota (opcional)" placeholder="Lo del celular" maxLength={120} value={note} onChange={(e) => setNote(e.target.value)} />
+          <LineField label="Nota" optional placeholder="Lo del celular" maxLength={120} value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
 
         <div className="min-h-6 flex-1" />

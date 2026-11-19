@@ -94,21 +94,21 @@ export function NuevoPrestamo() {
           <Segmented label="Cómo empiezas" size="sm" value={fresh ? "fresh" : "paying"} onChange={(v) => setFresh(v === "fresh")}
             options={[{ value: "paying", label: "Ya lo venía pagando" }, { value: "fresh", label: "Recién me lo dieron" }]} />
           <label className="flex flex-col gap-0.5 text-caption font-semibold">
-            {fresh ? "¿Cuánto te dieron?" : "¿Cuánto debes hoy? · solo capital"}
+            {fresh ? "¿Cuánto te dieron?" : "¿Cuánto debes hoy?"}
             <span className="flex items-baseline gap-2 border-b-2 border-input-line">
               <span aria-hidden="true" className="text-[20px] font-semibold text-muted-foreground">{sym}</span>
               <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
                 className="h-12 min-w-0 flex-1 border-0 bg-transparent p-0 text-[30px] font-semibold tabular-nums" />
             </span>
             <span className="font-normal text-muted-foreground">
-              {fresh ? "Entra a tu cuenta y nace la deuda: no es un ingreso." : "Míralo en tu cronograma o en la app del banco. Tus cuentas no se mueven."}
+              {fresh ? "Entra a tu cuenta y nace la deuda: no es un ingreso." : "Solo el capital. Míralo en tu cronograma o en la app del banco. Tus cuentas no se mueven."}
             </span>
           </label>
-          <SheetSelect label={fresh ? "¿A qué cuenta entró? · de ahí pagas la cuota" : "¿De qué cuenta pagas la cuota?"}
+          <SheetSelect label={fresh ? "¿A qué cuenta entró?" : "¿De qué cuenta pagas la cuota?"} hint={fresh ? "De ahí pagas la cuota" : undefined}
             sheetTitle="Elige la cuenta" value={pay ? String(pay.id) : ""} onChange={setPayId}
             options={pays.map((a) => ({ value: String(a.id), label: a.name, hint: a.subtitle ?? undefined }))} />
 
-          <span className="mt-2 border-b border-border pb-1 text-label text-muted-foreground">La cuota · se repite cada mes</span>
+          <span className="mt-2 flex flex-col border-b border-border pb-1"><span className="text-label text-muted-foreground">La cuota</span><span className="text-caption text-muted-foreground">Se repite cada mes</span></span>
           <div className="grid grid-cols-2 gap-4">
             <label className="flex flex-col gap-0.5 text-caption font-semibold">
               Se paga el día
@@ -122,10 +122,10 @@ export function NuevoPrestamo() {
             </label>
           </div>
           <PartField label="Capital" hint="Baja lo que debes" value={capital} onChange={setCapital} symbol={sym} />
-          <PartField label="Interés" hint="Gasto · Gastos financieros" value={interest} onChange={setInterest} symbol={sym} />
-          <PartField label="Seguro" hint="Gasto · desgravamen" value={insurance} onChange={setInsurance} symbol={sym} />
+          <PartField label="Interés" hint="Es gasto, en Gastos financieros" value={interest} onChange={setInterest} symbol={sym} />
+          <PartField label="Seguro" hint="Es gasto, el desgravamen" value={insurance} onChange={setInsurance} symbol={sym} />
           <div role="status" className="flex flex-col gap-0.5 rounded-md bg-muted px-3 py-2.5 tabular-nums">
-            <span className="font-semibold">Cuota de {formatAmount(total, sym, lang)} · el {day || "…"} de cada mes</span>
+            <span className="font-semibold">Cuota de {formatAmount(total, sym, lang)} el {day || "…"} de cada mes</span>
             <span className="text-caption text-muted-foreground">
               Copia el reparto de tu cronograma. Cada mes se crea por confirmar y lo corriges con la boleta: el interés y el seguro son gasto; el capital baja lo que debes.
             </span>
@@ -160,8 +160,9 @@ export function Prestamo() {
       </div>
       <span className="mt-1 text-label text-muted-foreground">Préstamo en {l.currency === "PEN" ? "soles" : l.currency === "USD" ? "dólares" : l.currency}{l.bank ? ` del ${l.bank}` : ""}</span>
       <h1 className="mt-1 text-title-hero">{l.name}</h1>
-      <span className="mt-3 text-caption text-muted-foreground">Debes hoy · solo capital</span>
+      <span className="mt-3 text-caption text-muted-foreground">Debes hoy</span>
       <span className="text-[40px] leading-[44px] font-semibold tracking-[-0.02em] tabular-nums">{money(l.debt)}</span>
+      <span className="text-caption text-muted-foreground">Solo el capital, sin los intereses que faltan</span>
       <div className="mt-2 flex flex-col gap-1.5">
         <div role="img" aria-label={progressText} className="h-2.5 overflow-hidden rounded-full bg-muted">
           <div className="h-2.5 rounded-full bg-primary" style={{ width: `${paidOff ? 100 : progress}%` }} />
@@ -175,7 +176,7 @@ export function Prestamo() {
           <span className="grid grid-cols-[1fr_auto] gap-y-0.5 text-caption text-muted-foreground">
             {l.next.parts.map((p) => (
               <span key={p.name} className="contents">
-                <span>{p.name} · {p.name === "Capital" ? "baja lo que debes" : "es gasto"}</span><span>{formatNumber(p.amount, lang)}</span>
+                <span className="flex flex-col"><span className="text-foreground">{p.name}</span><span className="text-[12px] leading-4">{p.name === "Capital" ? "Baja lo que debes" : "Es gasto"}</span></span><span>{formatNumber(p.amount, lang)}</span>
               </span>
             ))}
           </span>
@@ -265,8 +266,8 @@ export function PagarCuota() {
         <span className="mt-1 text-caption text-muted-foreground">La del {shortDate(l.next.occurrence)}. Copia los montos de tu boleta.</span>
         <div className="mt-5 flex flex-col gap-3.5">
           <PartField label="Capital" hint="Baja lo que debes" value={v.Capital ?? ""} onChange={set("Capital")} symbol={sym} />
-          <PartField label="Interés" hint="Gasto · Gastos financieros" value={v["Interés"] ?? ""} onChange={set("Interés")} symbol={sym} />
-          <PartField label="Seguro" hint="Gasto · desgravamen" value={v.Seguro ?? ""} onChange={set("Seguro")} symbol={sym} />
+          <PartField label="Interés" hint="Es gasto, en Gastos financieros" value={v["Interés"] ?? ""} onChange={set("Interés")} symbol={sym} />
+          <PartField label="Seguro" hint="Es gasto, el desgravamen" value={v.Seguro ?? ""} onChange={set("Seguro")} symbol={sym} />
         </div>
         <div role="status" className="mt-4 flex items-baseline justify-between rounded-md bg-muted px-3.5 py-3 tabular-nums">
           <span className="font-semibold">Pagas</span><span className="text-[22px] font-semibold">{formatAmount(total, sym, lang)}</span>

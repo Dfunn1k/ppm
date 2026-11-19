@@ -32,7 +32,7 @@ export function Mas() {
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-display text-[22px] leading-7 font-bold">{me?.name}</span>
-          <span className="truncate text-caption text-muted-foreground">{me?.email}<span className="lg:hidden"> · Mi cuenta</span></span>
+          <span className="truncate text-caption text-muted-foreground">{me?.email}</span>
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
       </NavLink>
@@ -91,7 +91,7 @@ export function Mas() {
         <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="category" className="text-[22px]" /></span>
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">Categorías</span>
-          <span className="text-caption text-muted-foreground">Las de gasto y de ingreso · crear nuevas</span>
+          <span className="text-caption text-muted-foreground">Las de gasto y de ingreso, y crea las tuyas</span>
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
       </NavLink>
@@ -137,8 +137,8 @@ export function Mas() {
         <NavLink to="/mas/tipo-de-cambio" className={ROW}>
           <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="currency_exchange" className="text-[22px]" /></span>
           <span className="flex flex-1 flex-col">
-            <span className="font-semibold">Tipo de cambio</span>
-            <span className="text-caption text-muted-foreground">Solo administrador · SUNAT y a mano</span>
+            <span className="flex justify-between gap-2"><span className="font-semibold">Tipo de cambio</span><span className="flex-none text-[12px] leading-[22px] font-semibold text-muted-foreground">Solo administrador</span></span>
+            <span className="text-caption text-muted-foreground">De SUNAT o a mano</span>
           </span>
           <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
         </NavLink>

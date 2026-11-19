@@ -18,7 +18,7 @@ import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { CurrencyChoice, Segmented, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
 import { DeferralFields, NO_DEFERRAL, type DeferralState, deferralBody, deferralValues } from "@/components/DeferralFields";
@@ -513,8 +513,8 @@ export function Registrar({ editing, recurring, reminder }: {
                 {dateLabel(date)}
               </button>
             )}
-            <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
-              className="h-10 min-w-0 border-0 bg-transparent p-0" />
+            <span className="flex min-w-0 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
+              className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title={repeating ? "¿Desde cuándo?" : "¿Cuándo fue?"} value={date}
             onChange={setDate} booked />
