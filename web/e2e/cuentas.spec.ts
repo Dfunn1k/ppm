@@ -45,7 +45,7 @@ test("el paso 3 guarda el efectivo y crea los bancos al empezar", async ({ page 
   await pickBank(page, "BCP");
   await page.getByLabel("¿Cuánto tiene hoy?").fill("8,240.30");
   await page.getByRole("button", { name: "Número y CCI" }).click();
-  await page.getByLabel("CCI (opcional, 20 dígitos)").fill("002-191-001234567890-12");
+  await page.getByLabel("CCI").fill("002-191-001234567890-12");
   await page.getByRole("button", { name: "Agregar" }).click();
 
   await expect(page).toHaveURL("/bienvenida/3");
@@ -88,7 +88,7 @@ test("un CCI de otro banco se avisa antes de enviar", async ({ page }) => {
   await page.getByLabel("Nombre").fill("Cuenta BCP");
   await pickBank(page, "BCP");
   await page.getByRole("button", { name: "Número y CCI" }).click();
-  await page.getByLabel("CCI (opcional, 20 dígitos)").fill("01100101234567890123");
+  await page.getByLabel("CCI").fill("01100101234567890123");
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(page.getByText("Ese CCI no es de BCP: los de BCP empiezan con 002")).toBeVisible();
   await expect(page).toHaveURL("/cuentas/nueva/banco");
@@ -122,7 +122,7 @@ test("el detalle: copiar el CCI, renombrar, corregir el saldo y archivar", async
   await pickBank(page, "Interbank");
   await page.getByLabel("¿Cuánto tiene hoy?").fill("1000");
   await page.getByRole("button", { name: "Número y CCI" }).click();
-  await page.getByLabel("CCI (opcional, 20 dígitos)").fill("00312345678901234567");
+  await page.getByLabel("CCI").fill("00312345678901234567");
   await page.getByRole("button", { name: "Crear cuenta" }).click();
 
   await expect(page.getByText("003-123-456789012345-67")).toBeVisible();

@@ -8,7 +8,7 @@ import { useMe } from "@/api/hooks";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
 
 import { Sheet } from "./Sheet";
-import { Icon } from "./ui";
+import { Icon, Optional } from "./ui";
 
 const DayGrid = lazy(() => import("./DayGrid"));   // el calendario, solo al abrir una fecha
 
@@ -182,8 +182,9 @@ export function dateLabel(iso: string) {
 }
 
 /** Un campo de fecha de una línea (etiqueta arriba) que abre el calendario. */
-export function DateField({ label, value, onChange, min, max, shortcuts, placeholder = "Elige una fecha", hint, sheetTitle, booked }: {
+export function DateField({ label, value, onChange, min, max, shortcuts, placeholder = "Elige una fecha", hint, sheetTitle, booked, optional }: {
   label: string;
+  optional?: boolean;
   value: string | null;
   onChange: (iso: string) => void;
   min?: string;
@@ -198,7 +199,7 @@ export function DateField({ label, value, onChange, min, max, shortcuts, placeho
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={`${id}-label`} className="text-caption font-semibold">{label}</span>
+      <span className="flex justify-between gap-2"><span id={`${id}-label`} className="text-caption font-semibold">{label}</span>{optional && <Optional />}</span>
       <button type="button" aria-labelledby={`${id}-label ${id}-value`} aria-haspopup="dialog" onClick={() => setOpen(true)}
         className="flex h-11 items-center gap-2 border-b-2 border-input-line text-left text-[17px] leading-6">
         <span id={`${id}-value`} className={`min-w-0 flex-1 truncate ${value ? "" : "text-muted-foreground"}`}>

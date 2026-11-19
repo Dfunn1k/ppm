@@ -7,7 +7,7 @@ import { useNavigate } from "react-router";
 import { type ManualAccount, type MoveDetail, useManualAccounts, useMe, usePartners, useSaveMove } from "@/api/hooks";
 import { MasHeader } from "@/components/MasTipos";
 import { OptionList, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
@@ -125,8 +125,8 @@ export function AsientoManual({ editing }: { editing?: MoveDetail }) {
             className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
             <Icon name="event" className="text-[18px]" />{dateLabel(date)}
           </button>
-          <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
-            className="h-10 min-w-0 border-0 bg-transparent p-0" />
+          <span className="flex min-w-0 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
+            className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
         </div>
         <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} max={todayISO()} booked />
 

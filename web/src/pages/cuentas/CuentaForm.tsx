@@ -199,9 +199,9 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       )}
       {kind === "bank" && moreOpen && (
         <div className="mt-3 flex flex-col gap-3">
-          <LineField label="Número de cuenta (opcional)" inputMode="numeric" className="font-mono text-[15px]"
+          <LineField label="Número de cuenta" optional inputMode="numeric" className="font-mono text-[15px]"
             error={errors.accNumber?.message} {...form.register("accNumber")} />
-          <LineField label="CCI (opcional, 20 dígitos)" inputMode="numeric" className="font-mono text-[15px]"
+          <LineField label="CCI" optional hint="20 dígitos" inputMode="numeric" className="font-mono text-[15px]"
             error={errors.cci?.message} {...form.register("cci")} />
         </div>
       )}

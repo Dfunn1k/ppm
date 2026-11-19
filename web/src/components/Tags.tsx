@@ -6,7 +6,7 @@ import { useState } from "react";
 import { type TagRef, useCreateTag, useSetMoveTags, useTags } from "@/api/hooks";
 
 import { Sheet } from "./Sheet";
-import { ErrorAlert, Icon } from "./ui";
+import { ErrorAlert, Icon, Optional } from "./ui";
 
 const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
 
@@ -26,7 +26,7 @@ export function TagChips({ tags, small }: { tags: TagRef[]; small?: boolean }) {
   );
 }
 
-/** La fila «Etiquetas · opcional» que abre la hoja (en Registrar). */
+/** La fila «Etiquetas», opcional, que abre la hoja (en Registrar). */
 export function TagField({ value, onChange }: { value: number[]; onChange: (ids: number[]) => void }) {
   const all = useTags().data ?? [];
   const [open, setOpen] = useState(false);
@@ -37,7 +37,7 @@ export function TagField({ value, onChange }: { value: number[]; onChange: (ids:
         className="flex min-h-13 items-center gap-3 border-b border-border py-2 text-left">
         <Icon name="sell" className="w-8 text-center text-[20px] text-muted-foreground" />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-caption text-muted-foreground">Etiquetas · opcional</span>
+          <span className="flex justify-between gap-2 text-caption text-muted-foreground">Etiquetas<Optional /></span>
           {chosen.length ? <TagChips tags={chosen} small /> : <span className="font-semibold">Ninguna</span>}
         </span>
         <Icon name="expand_more" className="text-[20px] text-muted-foreground" />

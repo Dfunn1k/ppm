@@ -137,7 +137,7 @@ test("lo que una persona ya me debía antes de PPM queda como deuda abierta con 
   await page.getByRole("textbox", { name: "¿Cuánto te debía?" }).fill("300");
   const hace = new Date(Date.now() - 140 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Lima" });
   await pickDate(page, /¿Desde cuándo\?/, hace);
-  await page.getByLabel("Nota (opcional)").fill("Lo del celular");
+  await page.getByLabel("Nota").fill("Lo del celular");
   await page.getByRole("button", { name: "Anotar lo que me debía" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
@@ -150,9 +150,9 @@ test("lo que una persona ya me debía antes de PPM queda como deuda abierta con 
   await page.getByRole("link", { name: "Editar" }).click();
   await expect(page.getByText("Editar movimiento")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "¿Cuánto te debía?" })).toHaveValue("300.00");
-  await expect(page.getByLabel("Nota (opcional)")).toHaveValue("Lo del celular");
+  await expect(page.getByLabel("Nota")).toHaveValue("Lo del celular");
   await page.getByRole("textbox", { name: "¿Cuánto te debía?" }).fill("250");
-  await page.getByLabel("Nota (opcional)").fill("El celular");
+  await page.getByLabel("Nota").fill("El celular");
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page).toHaveURL(/\/movimientos\/\d+$/);
   await expect(page.getByRole("heading", { name: "El celular" })).toBeVisible();

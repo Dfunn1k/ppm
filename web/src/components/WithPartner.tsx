@@ -8,9 +8,9 @@ import { usePartners, useSetWithPartner } from "@/api/hooks";
 import { Avatar } from "./MoveBits";
 import { PersonPicker } from "./PersonPicker";
 import { Sheet } from "./Sheet";
-import { ErrorAlert, Icon } from "./ui";
+import { ErrorAlert, Icon, Optional } from "./ui";
 
-/** En Registrar: una fila «Con quién · opcional» que se abre en el buscador de personas. */
+/** En Registrar: una fila «Con quién», opcional, que se abre en el buscador de personas. */
 export function WithPartnerField({ value, onChange }: { value: number | null; onChange: (id: number | null) => void }) {
   const [open, setOpen] = useState(value !== null);
   if (!open) {
@@ -18,7 +18,7 @@ export function WithPartnerField({ value, onChange }: { value: number | null; on
       <button type="button" onClick={() => setOpen(true)} className="flex min-h-[52px] items-center gap-3 border-b border-border text-left">
         <Icon name="person" className="w-9 text-center text-muted-foreground" />
         <span className="flex flex-1 flex-col">
-          <span className="text-caption text-muted-foreground">Con quién · opcional</span>
+          <span className="flex justify-between gap-2 text-caption text-muted-foreground">Con quién<Optional /></span>
           <span className="font-semibold">Nadie</span>
         </span>
         <Icon name="expand_more" className="text-muted-foreground" />
@@ -27,7 +27,7 @@ export function WithPartnerField({ value, onChange }: { value: number | null; on
   }
   return (
     <div className="flex flex-col gap-1 border-b border-border pb-3">
-      <PersonPicker label="Con quién · opcional" value={value} onChange={onChange} />
+      <PersonPicker label="Con quién" optional value={value} onChange={onChange} />
       <span className="flex items-center justify-between gap-2 text-caption text-muted-foreground">
         Solo para recordarlo: no es una deuda.
         <button type="button" onClick={() => { onChange(null); setOpen(false); }} className="min-h-9 font-semibold text-foreground">Nadie</button>
@@ -48,7 +48,7 @@ export function WithPartnerRow({ moveId, partnerId, partner, locked }: {
     <>
       {partner ? <Avatar name={partner} /> : <Icon name="person" className="w-9 text-center text-muted-foreground" />}
       <span className="flex flex-1 flex-col">
-        <span className="text-caption text-muted-foreground">{partner ? "Con quién" : "Con quién · opcional"}</span>
+        <span className="flex justify-between gap-2 text-caption text-muted-foreground">Con quién{!partner && <Optional />}</span>
         <span className="font-semibold">{partner ?? "Nadie"}</span>
       </span>
     </>
