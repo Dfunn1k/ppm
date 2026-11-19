@@ -86,7 +86,7 @@ export function NuevaTarjeta() {
         <div className="mt-4 grid grid-cols-2 gap-4">
           <SheetSelect label="Banco" sheetTitle="Elige el banco" value={bankId} onChange={setBankId}
             options={banks.map((b) => ({ value: String(b.id), label: b.name }))} />
-          <LineField label="Últimos 4 (opcional)" inputMode="numeric" maxLength={4} value={last4}
+          <LineField label="Últimos 4" optional inputMode="numeric" maxLength={4} value={last4}
             onChange={(e) => setLast4(e.target.value.replace(/\D/g, ""))} className="tracking-[0.08em] tabular-nums" />
         </div>
         <div className="mt-4">
@@ -110,7 +110,7 @@ export function NuevaTarjeta() {
             <LineField label={`Y en ${other === "USD" ? "dólares" : other} (${symbolOf(other)})`} inputMode="decimal" placeholder="0.00"
               value={usd} onChange={(e) => setUsd(e.target.value)} className="tabular-nums" />
           )}
-          <DateField label="Pagar hasta (opcional)" min={corte ?? undefined} value={due || null} onChange={setDue} placeholder="Sin fecha" />
+          <DateField label="Pagar hasta" optional min={corte ?? undefined} value={due || null} onChange={setDue} placeholder="Sin fecha" />
         </div>
         {other && hasUsd && (
           <div className="mt-3">

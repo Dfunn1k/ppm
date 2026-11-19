@@ -10,7 +10,7 @@ import { formatAmount, symbolOf } from "@/lib/money";
 import { CategoryChip } from "./CategorySheet";
 import { PersonPicker } from "./PersonPicker";
 import { Segmented, Sheet } from "./Sheet";
-import { ErrorAlert, Icon, PrimaryButton } from "./ui";
+import { ErrorAlert, Icon, Optional, PrimaryButton } from "./ui";
 
 /** Lo que hace falta saber de cada movimiento para clasificarlo. */
 export type ToClassify = { move_id: number; title: string; caption: string; account_id: number; currency: string; amount: string };
@@ -85,13 +85,13 @@ export function ClassifySheet({ open, onClose, items, onDone }: {
             )}
             <CategoryList kind={catKind} selected={category?.id ?? null} onPick={setCategory} />
             {withWho ? (
-              <div className="mx-3"><PersonPicker label="Con quién · opcional" value={partnerId} onChange={setPartnerId} /></div>
+              <div className="mx-3"><PersonPicker label="Con quién" optional value={partnerId} onChange={setPartnerId} /></div>
             ) : (
               <button type="button" onClick={() => setWithWho(true)}
                 className="mx-3 flex min-h-12 items-center gap-2.5 border-t border-border text-left">
                 <Icon name="person" className="text-muted-foreground" />
                 <span className="flex flex-1 flex-col">
-                  <span className="text-caption text-muted-foreground">Con quién · opcional</span>
+                  <span className="flex justify-between gap-2 text-caption text-muted-foreground">Con quién<Optional /></span>
                   <span className="font-semibold">Nadie</span>
                 </span>
                 <Icon name="expand_more" className="text-muted-foreground" />

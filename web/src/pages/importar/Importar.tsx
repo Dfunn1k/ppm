@@ -90,7 +90,7 @@ export function Importar() {
           <ColumnsEditor result={result} mapping={mapping} onChange={(m) => { setMapping(m); read(file, m); }} />
           {!mapping.columns.balance && (
             <div className="mt-4">
-              <LineField label={`Saldo según tu banco${result.date_to ? ` al ${shortDate(result.date_to)}` : ""} · opcional`}
+              <LineField label={`Saldo según tu banco${result.date_to ? ` al ${shortDate(result.date_to)}` : ""}`} optional
                 inputMode="decimal" placeholder="0.00" value={balance} onChange={(e) => setBalance(e.target.value)}
                 hint="El archivo no lo trae. Con él comprobamos que no falte ningún movimiento." />
             </div>
