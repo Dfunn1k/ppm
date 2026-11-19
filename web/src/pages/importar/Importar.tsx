@@ -24,10 +24,10 @@ import { Pill } from "@/components/Pill";
 type Step = "file" | "columns" | "review";
 type FieldKey = keyof ImportMapping["columns"];
 
-const FIELDS: { key: FieldKey; name: string; help: string }[] = [
+const FIELDS: { key: FieldKey; name: string; help: string; more?: string }[] = [
   { key: "date", name: "Fecha", help: "Obligatoria" },
-  { key: "payment_ref", name: "Descripción del banco", help: "Obligatoria · nunca cambia" },
-  { key: "amount", name: "Monto", help: "Obligatorio · lo que sale, en negativo" },
+  { key: "payment_ref", name: "Descripción del banco", help: "Obligatoria", more: "Nunca cambia" },
+  { key: "amount", name: "Monto", help: "Obligatorio", more: "Lo que sale, en negativo" },
   { key: "debit", name: "Cargo", help: "Lo que sale" },
   { key: "credit", name: "Abono", help: "Lo que entra" },
   { key: "operation_number", name: "N.º de operación", help: "Evita importar dos veces lo mismo" },
@@ -157,7 +157,8 @@ function FileStep({ accountId, pending, error, onFile, lang }: {
         className="mt-5 flex h-[132px] flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-input-line bg-card">
         <Icon name={pending ? "progress_activity" : "upload_file"} className={`text-[32px] ${pending ? "animate-spin" : ""}`} />
         <span className="font-semibold">{pending ? "Leyendo el archivo…" : "Elegir archivo"}</span>
-        <span className="text-caption text-muted-foreground">.xlsx, .xls o .csv · hasta 5 MB</span>
+        <span className="text-caption text-muted-foreground">.xlsx, .xls o .csv</span>
+        <span className="-mt-1.5 text-caption text-muted-foreground">Hasta 5 MB</span>
       </button>
       {error && <div className="mt-3"><ErrorAlert>{error}</ErrorAlert></div>}
       {past.length === 0 ? (
@@ -223,7 +224,7 @@ function ColumnsEditor({ result, mapping, onChange }: { result: ImportResult; ma
         const col = mapping.columns[f.key];
         return (
           <div key={f.key} className="flex min-h-[52px] items-center justify-between gap-3 border-b border-border">
-            <span className="flex flex-col"><span className="font-semibold">{f.name}</span><span className="text-[12px] leading-4 text-muted-foreground">{f.help}</span></span>
+            <span className="flex flex-col"><span className="font-semibold">{f.name}</span><span className="text-[12px] leading-4 text-muted-foreground">{f.help}</span>{f.more && <span className="text-[12px] leading-4 text-muted-foreground">{f.more}</span>}</span>
             <button type="button" aria-label={`${f.name}: ${col ? `columna ${col}` : "no está en el archivo"}. Cambiar`} onClick={() => setEditing(f.key)}
               className={`flex h-9 max-w-[190px] items-center gap-1 rounded-full border pr-2 pl-3 text-caption font-semibold ${col ? "border-foreground bg-card" : "border-border text-muted-foreground"}`}>
               <span className="truncate">{col ? `«${col}»` : "No está"}</span><Icon name="expand_more" className="text-[18px]" />

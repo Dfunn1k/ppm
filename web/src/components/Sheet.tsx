@@ -133,8 +133,9 @@ export function OptionList({ options, value, onPick, search, searchLabel = "Busc
 }
 
 /** Campo de una línea que muestra lo elegido y abre la hoja con las opciones. */
-export function SheetSelect({ label, sheetTitle, options, value, onChange, error }: {
+export function SheetSelect({ label, sheetTitle, options, value, onChange, error, hint }: {
   label: string;
+  hint?: string;
   sheetTitle?: string;
   options: Option[];
   value: string;
@@ -162,6 +163,7 @@ export function SheetSelect({ label, sheetTitle, options, value, onChange, error
         </span>
         <Icon name="expand_more" className="text-[22px] text-muted-foreground" />
       </button>
+      {hint && !error && <span className="text-caption text-muted-foreground">{hint}</span>}
       {error && (
         <span className="flex items-center gap-1 text-caption text-destructive">
           <Icon name="error" className="text-[18px]" />

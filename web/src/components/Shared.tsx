@@ -96,7 +96,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
               <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-[12px] font-semibold">Tú</span>
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">Tú</span>
-                <span className="text-caption text-muted-foreground">Tu parte · gasto {where}</span>
+                <span className="text-caption text-muted-foreground">Tu parte es gasto {where}</span>
               </span>
               {s.mode === "amounts" && !mePaid ? (
                 <input inputMode="decimal" aria-label="Tu parte" placeholder="0.00" value={s.mine} onChange={(e) => set({ mine: e.target.value })}

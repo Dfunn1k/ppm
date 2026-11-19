@@ -132,7 +132,7 @@ export function PagarTarjeta() {
             <span className="mt-2 text-caption text-muted-foreground">{hint}</span>
 
             <div className="mt-4">
-              <SheetSelect label={`Sale de · solo cuentas en ${name}`} sheetTitle="¿De qué cuenta sale?"
+              <SheetSelect label="Sale de" hint={`Solo cuentas en ${name}`} sheetTitle="¿De qué cuenta sale?"
                 value={source ? String(source.id) : ""} onChange={setAccountId}
                 options={sources.map((a) => ({ value: String(a.id), label: a.name,
                   hint: formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(cur), lang) }))} />

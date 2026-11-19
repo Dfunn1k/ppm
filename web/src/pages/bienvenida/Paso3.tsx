@@ -73,7 +73,7 @@ export function Paso3() {
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">{b.name}</span>
-                <span className="text-caption text-muted-foreground">Banco · se crea al empezar</span>
+                <span className="text-caption text-muted-foreground">Cuenta de banco que se crea al empezar</span>
               </span>
               <span className="text-amount">{formatAmount(b.opening?.amount ?? "0", symbolOf(b.currency), choices.lang)}</span>
               <button type="button" aria-label={`Quitar ${b.name}`} onClick={() => update({ banks: choices.banks.filter((_, j) => j !== i) })}

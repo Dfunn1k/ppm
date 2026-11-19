@@ -36,7 +36,7 @@ test("crear una de gasto en un grupo, otra con un grupo nuevo y usarla al regist
   await page.getByLabel("Nombre", { exact: true }).fill("Panadería");
   await chooseGroup(page, "Comida y bebida");
   await chooseIcon(page, "pan", "bakery_dining");
-  await expect(page.getByRole("status")).toContainText("Gasto · dentro de Comida y bebida · su color");
+  await expect(page.getByRole("status")).toContainText("Gasto dentro de Comida y bebida, con el color del grupo");
   await page.getByRole("button", { name: "Crear categoría" }).click();
   await expect(page).toHaveURL("/mas/categorias");
   const comida = page.getByRole("listitem").filter({ hasText: "Comida y bebida" });
@@ -48,7 +48,7 @@ test("crear una de gasto en un grupo, otra con un grupo nuevo y usarla al regist
   await page.getByLabel("Nombre", { exact: true }).fill("Veterinario");
   await chooseIcon(page, "perro", "pets");
   await page.getByRole("radio", { name: "frambuesa" }).click();
-  await expect(page.getByRole("status")).toContainText("Gasto · dentro de Mascotas, grupo nuevo");
+  await expect(page.getByRole("status")).toContainText("Gasto dentro de Mascotas, que es nuevo");
   await page.getByRole("button", { name: "Crear categoría" }).click();
   const mascotas = page.getByRole("listitem").filter({ has: page.getByText("Mascotas", { exact: true }) });
   await expect(mascotas).toContainText("1 categoría");
