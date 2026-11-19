@@ -138,9 +138,9 @@ export function NuevaCategoria() {
     }
   };
 
-  const preview = income ? "Ingreso · suelta"
-    : fresh ? `Gasto · dentro de ${groupName.trim() || "un grupo nuevo"}, grupo nuevo`
-    : `Gasto · dentro de ${group?.name ?? ""}${ownColor === null ? " · su color" : ""}`;
+  const preview = income ? "Ingreso, sin grupo"
+    : fresh ? `Gasto dentro de ${groupName.trim() || "un grupo nuevo"}, que es nuevo`
+    : `Gasto dentro de ${group?.name ?? ""}${ownColor === null ? ", con el color del grupo" : ""}`;
 
   return (
     <Screen className="pt-4">

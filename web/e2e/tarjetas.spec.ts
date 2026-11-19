@@ -50,7 +50,7 @@ test("crear una tarjeta con lo que toca pagar y escribir después la fecha de pa
   await page.getByRole("button", { name: /^Banco/ }).click();
   await page.getByRole("dialog").getByRole("radio", { name: "BBVA" }).click();
   await expect(page.getByLabel("Nombre")).toHaveValue("Visa BBVA");
-  await page.getByLabel("Últimos 4 (opcional)").fill("4417");
+  await page.getByLabel("Últimos 4").fill("4417");
   await page.getByLabel("Día de corte").fill(String(CORTE_DIA));
   await page.getByLabel(/Línea de crédito/).fill("5,000");
   await page.getByRole("textbox", { name: "¿Cuánto toca pagar?" }).fill("1284.90");

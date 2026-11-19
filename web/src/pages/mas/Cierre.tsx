@@ -46,7 +46,7 @@ export function Cierre() {
       <div role="radiogroup" aria-label="Cerrar hasta" className="mt-2.5 flex flex-wrap gap-2">
         <button type="button" role="radio" aria-checked={!custom} onClick={() => setDate(null)}
           className={`flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${!custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-          {shortDate(c.suggested)} · fin del mes pasado
+          Fin del mes pasado, {shortDate(c.suggested)}
         </button>
         <button type="button" role="radio" aria-checked={custom} onClick={() => setPicking("close")}
           className={`flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>

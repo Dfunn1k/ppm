@@ -62,9 +62,9 @@ function Form({ id, bank, banks }: {
           <Segmented label="Tipo" size="sm" value={kind} onChange={setKind}
             options={[{ value: "savings", label: "Ahorros" }, { value: "checking", label: "Corriente" }]} />
         </div>
-        <LineField label="Número de cuenta (opcional)" inputMode="numeric" className="font-mono text-[15px]"
+        <LineField label="Número de cuenta" optional inputMode="numeric" className="font-mono text-[15px]"
           value={number} onChange={(e) => setNumber(e.target.value)} />
-        <LineField label="CCI (opcional, 20 dígitos)" inputMode="numeric" className="font-mono text-[15px]"
+        <LineField label="CCI" optional hint="20 dígitos" inputMode="numeric" className="font-mono text-[15px]"
           value={cci} onChange={(e) => setCci(e.target.value)} />
         <div className="flex-1" />
         {(problem || update.error) && <ErrorAlert>{problem ?? update.error?.message}</ErrorAlert>}

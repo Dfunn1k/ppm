@@ -183,7 +183,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)} className={chip}>
           <Icon name="event" className="text-[18px]" />
-          {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : "Hoy · otra fecha"}
+          {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" className="text-[18px] text-muted-foreground" /></>}
         </button>
         {kind === "bank" && (
           <button type="button" aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)} className={chip}>
@@ -199,9 +199,9 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       )}
       {kind === "bank" && moreOpen && (
         <div className="mt-3 flex flex-col gap-3">
-          <LineField label="Número de cuenta (opcional)" inputMode="numeric" className="font-mono text-[15px]"
+          <LineField label="Número de cuenta" optional inputMode="numeric" className="font-mono text-[15px]"
             error={errors.accNumber?.message} {...form.register("accNumber")} />
-          <LineField label="CCI (opcional, 20 dígitos)" inputMode="numeric" className="font-mono text-[15px]"
+          <LineField label="CCI" optional hint="20 dígitos" inputMode="numeric" className="font-mono text-[15px]"
             error={errors.cci?.message} {...form.register("cci")} />
         </div>
       )}

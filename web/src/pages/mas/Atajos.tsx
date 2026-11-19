@@ -77,8 +77,9 @@ export function Atajos() {
               <span className="flex flex-1 flex-col">
                 <span className="text-[14px] leading-5">{r.label}</span>
                 {on && (
-                  <span role="status" className="flex flex-wrap items-center gap-1 text-caption text-muted-foreground">
-                    <Kbd>Esc</Kbd> para dejarla en <Kbd>{keyLabel(keys[r.action])}</Kbd> · una letra, un número o un símbolo
+                  <span role="status" className="flex flex-col text-caption text-muted-foreground">
+                    <span className="flex flex-wrap items-center gap-1"><Kbd>Esc</Kbd> para dejarla en <Kbd>{keyLabel(keys[r.action])}</Kbd></span>
+                    <span>Sirve una letra, un número o un símbolo</span>
                   </span>
                 )}
               </span>
@@ -96,7 +97,7 @@ export function Atajos() {
       </section>
 
       <section aria-label="Fijas" className="mt-6 flex flex-col">
-        <span className="text-label text-muted-foreground uppercase">Fijas · las respeta todo programa</span>
+        <span className="flex flex-col"><span className="text-label text-muted-foreground uppercase">Fijas</span><span className="text-caption text-muted-foreground">Las respeta todo programa</span></span>
         {FIXED.map((r) => (
           <div key={r.label} className="flex min-h-11 items-center gap-4 border-b border-border">
             <span className="flex-1 text-[14px] leading-5 text-muted-foreground">{r.label}</span>

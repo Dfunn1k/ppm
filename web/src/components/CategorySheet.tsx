@@ -89,7 +89,7 @@ export function CategorySheet({ kind, open, onClose, onPick, selected, allowGrou
               <button type="button" onClick={() => pick({ id: g.id!, name: g.name, icon: null, color: g.color })}
                 className="mx-1 mt-3 mb-0.5 flex items-center gap-2 text-left text-label text-muted-foreground">
                 <span className="size-2.5 rounded-full" style={{ background: `var(--cat-${g.color ?? 0})` }} />
-                {g.name} · todo el grupo
+                Todo {g.name}
               </button>
             ) : (
               <span className="mx-1 mt-3 mb-0.5 flex items-center gap-2 text-label text-muted-foreground">
