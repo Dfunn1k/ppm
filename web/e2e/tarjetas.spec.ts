@@ -96,7 +96,14 @@ test("pagar la tarjeta desde el banco deja nada por pagar", async ({ page }) => 
   const id = await card(page, "300");
   await page.goto(`/tarjetas/${id}`);
   await page.getByRole("link", { name: "Pagar tarjeta" }).click();
-  await expect(page.getByRole("textbox", { name: "¿Cuánto pagas?" })).toHaveValue("300.00");
+  // Como en el banco: «Total del mes» viene elegido; «Otro monto» abre el campo
+  await expect(page.getByRole("radio", { name: "Total del mes" })).toBeChecked();
+  await page.getByRole("radio", { name: "Otro monto" }).click();
+  await page.getByRole("textbox", { name: "Otro monto" }).fill("120");
+  await expect(page.getByRole("button", { name: "Pagar S/ 120.00" })).toBeVisible();
+  await page.getByRole("button", { name: "Pagar toda la deuda" }).click();
+  await expect(page.getByRole("textbox", { name: "Otro monto" })).toHaveValue("300.00");
+  await page.getByRole("radio", { name: "Total del mes" }).click();
   await page.getByRole("button", { name: "Pagar S/ 300.00" }).click();
 
   await expect(page).toHaveURL(`/tarjetas/${id}`);

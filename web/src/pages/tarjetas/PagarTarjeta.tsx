@@ -22,7 +22,9 @@ export function PagarTarjeta() {
   const save = useSaveMove();
   const [search] = useSearchParams();
   const [side, setSide] = useState<string | null>(search.get("moneda"));
-  const [amount, setAmount] = useState<string | null>(null);
+  // Como en la app del banco: «Total del mes» u «Otro monto». Sin estado de cuenta por pagar, solo «Otro monto».
+  const [mode, setMode] = useState<"month" | "other" | null>(null);
+  const [amount, setAmount] = useState("");
   const [accountId, setAccountId] = useState("");
   const [date, setDate] = useState(todayISO());
   const [dateOpen, setDateOpen] = useState(false);
@@ -38,8 +40,8 @@ export function PagarTarjeta() {
   const cur = current.currency;
   const name = CURRENCY_NAME[cur] ?? cur;
   const dueNow = Number(current.to_pay) > 0 ? current.to_pay : null;
-  const typed = amount ?? formatNumber(dueNow ?? current.total_debt, lang);
-  const value = parseAmount(typed || "", lang);
+  const chosen = dueNow ? mode ?? "month" : "other";
+  const value = chosen === "month" ? dueNow : parseAmount(amount, lang);
   // Primero los bancos: una tarjeta se paga casi siempre desde el banco
   const sources = [...overview.have].filter((a) => ["cash", "bank"].includes(a.kind) && a.currency === cur)
     .sort((x, y) => Number(x.kind !== "bank") - Number(y.kind !== "bank"));
@@ -47,16 +49,17 @@ export function PagarTarjeta() {
   const source = sources.find((a) => String(a.id) === accountId) ?? funded[0] ?? sources[0];
   const noMoney = funded.length === 0;
 
-  const pick = (v: string) => setAmount(formatNumber(v, lang));
-  const chips = [
-    ...(dueNow ? [{ label: `Lo del mes · ${money(dueNow, cur)}`, value: dueNow }] : []),
-    { label: `Toda la deuda · ${money(current.total_debt, cur)}`, value: current.total_debt },
+  const hint = chosen === "month"
+    ? `Cubre el estado de cuenta del ${shortDate(d.last_closing)}.`
+    : value === current.total_debt
+      ? "Incluye lo que falta facturar y las cuotas que vienen. La línea queda libre."
+      : dueNow
+        ? "Si pagas menos que el total del mes, lo que falte sigue por pagar."
+        : "Lo que pagues baja lo que debes en la tarjeta.";
+  const options = [
+    { key: "month" as const, label: "Total del mes", help: dueNow ? null : "No hay estado de cuenta por pagar", disabled: !dueNow },
+    { key: "other" as const, label: "Otro monto", help: null, disabled: false },
   ];
-  const hint = value === current.total_debt
-    ? "Incluye lo que falta facturar y las cuotas que vienen. La línea queda libre."
-    : dueNow
-      ? `Cubre el estado de cuenta del ${shortDate(d.last_closing)}. Si pagas menos, lo que falte sigue en «a pagar».`
-      : "Lo que pagues baja lo que debes en la tarjeta.";
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +92,7 @@ export function PagarTarjeta() {
             style={{ gridTemplateColumns: `repeat(${sides.length}, minmax(0, 1fr))` }}>
             {sides.map((s) => (
               <button key={s.currency} type="button" role="radio" aria-checked={s.currency === cur}
-                onClick={() => { setSide(s.currency); setAmount(null); setAccountId(""); }}
+                onClick={() => { setSide(s.currency); setMode(null); setAmount(""); setAccountId(""); }}
                 className={`flex h-[52px] flex-col items-center justify-center rounded-[8px] ${s.currency === cur ? "bg-selected text-selected-foreground shadow-sm" : ""}`}>
                 <span className="text-[14px] font-semibold">{(CURRENCY_NAME[s.currency] ?? s.currency).replace(/^./, (c) => c.toUpperCase())}</span>
                 <span className="text-caption text-muted-foreground tabular-nums">Toca {money(Number(s.to_pay) > 0 ? s.to_pay : "0.00", s.currency)}</span>
@@ -110,26 +113,39 @@ export function PagarTarjeta() {
           </div>
         ) : (
           <>
-            <label className="mt-5 flex flex-col gap-0.5 text-caption font-semibold">
-              ¿Cuánto pagas?
-              <span className="flex items-baseline gap-2 border-b-2 border-input-line">
-                <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(cur)}</span>
-                <input inputMode="decimal" placeholder="0.00" value={typed} onChange={(e) => setAmount(e.target.value)}
-                  className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[44px] leading-[52px] font-semibold tracking-[-0.02em] tabular-nums" />
-              </span>
-            </label>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {chips.map((c) => {
-                const on = value === c.value;
+            <span id="cuanto" className="mt-5 text-caption font-semibold">¿Cuánto pagas?</span>
+            <div role="radiogroup" aria-labelledby="cuanto" className="mt-2 flex flex-col overflow-hidden rounded-[14px] border border-border bg-card">
+              {options.map((o, i) => {
+                const on = chosen === o.key;
                 return (
-                  <button key={c.label} type="button" aria-pressed={on} onClick={() => pick(c.value)}
-                    className={`flex h-9 items-center rounded-full border px-3 text-caption font-semibold tabular-nums ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-                    {c.label}
+                  <button key={o.key} type="button" role="radio" aria-checked={on} disabled={o.disabled} onClick={() => setMode(o.key)}
+                    className={`flex min-h-14 items-center gap-3 px-3.5 py-2 text-left disabled:opacity-50 ${i > 0 ? "border-t border-border" : ""} ${on ? "bg-muted" : ""}`}>
+                    <Icon name={on ? "radio_button_checked" : "radio_button_unchecked"} fill={on} className={`text-[24px] ${on ? "" : "text-muted-foreground"}`} />
+                    <span className="flex flex-1 flex-col">
+                      <span className="font-semibold">{o.label}</span>
+                      {o.help && <span className="text-caption text-muted-foreground">{o.help}</span>}
+                    </span>
                   </button>
                 );
               })}
             </div>
+            {chosen === "month" ? (
+              <span className="mt-3.5 text-[44px] leading-[52px] font-semibold tracking-[-0.02em] tabular-nums">{money(dueNow!, cur)}</span>
+            ) : (
+              <label className="mt-3.5 flex items-baseline gap-2 border-b-2 border-input-line">
+                <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(cur)}</span>
+                <input inputMode="decimal" placeholder="0.00" aria-label="Otro monto" value={amount} onChange={(e) => setAmount(e.target.value)}
+                  autoFocus={mode === "other"}
+                  className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[44px] leading-[52px] font-semibold tracking-[-0.02em] tabular-nums" />
+              </label>
+            )}
             <span className="mt-2 text-caption text-muted-foreground">{hint}</span>
+            {chosen === "other" && Number(current.total_debt) > 0 && (
+              <button type="button" onClick={() => setAmount(formatNumber(current.total_debt, lang))}
+                className="mt-1.5 flex min-h-9 items-center gap-1 self-start text-[14px] font-semibold">
+                <Icon name="done_all" className="text-[18px]" />Pagar toda la deuda
+              </button>
+            )}
 
             <div className="mt-4">
               <SheetSelect label="Sale de" hint={`Solo cuentas en ${name}`} sheetTitle="¿De qué cuenta sale?"
