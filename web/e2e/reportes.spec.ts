@@ -48,8 +48,14 @@ test("los reportes: índice, gastos por grupo, flujo, patrimonio y personas", as
   await expect(dona).toContainText("Total");                       // sin elegir nada: el general
   await grupos.getByRole("button", { name: /Comida y bebida/ }).click();
   await expect(dona).toContainText("Comida");
+  await grupos.getByRole("button", { name: /Transporte/ }).click();     // con dos abiertos, la dona suma los dos
+  await expect(dona).toContainText("2 grupos");
+  await expect(dona).toContainText("S/ 400.00");
   await grupos.getByRole("button", { name: /Comida y bebida/ }).click();
-  await expect(dona).toContainText("Total");                       // al plegarlo vuelve al general
+  await expect(dona).toContainText("Transporte");
+  await expect(dona).toContainText("S/ 100.00");
+  await grupos.getByRole("button", { name: /Transporte/ }).click();
+  await expect(dona).toContainText("Total");                       // al plegarlos vuelve al general
   await page.getByRole("radio", { name: "Año" }).click();
   await page.getByRole("radio", { name: "Mes" }).click();
   await expect(dona).toContainText("Total");
