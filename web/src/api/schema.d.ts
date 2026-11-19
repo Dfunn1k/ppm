@@ -4019,6 +4019,15 @@ export interface components {
             next: components["schemas"]["NextOut"] | null;
             /** Loan Account Id */
             loan_account_id: number | null;
+            /** Paid By Partner Id */
+            paid_by_partner_id?: number | null;
+            /** Paid By */
+            paid_by?: string | null;
+            /**
+             * Shares
+             * @default []
+             */
+            shares: components["schemas"]["ShareOut"][];
         };
         /** RejectGuessIn */
         RejectGuessIn: {
@@ -4171,6 +4180,17 @@ export interface components {
             lang?: string | null;
             /** Tz */
             tz?: string | null;
+        };
+        /** ShareOut */
+        ShareOut: {
+            /** Partner Id */
+            partner_id: number;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+            /** Owes Me */
+            owes_me: boolean;
         };
         /** SignupIn */
         SignupIn: {

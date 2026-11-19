@@ -39,27 +39,35 @@ class Rule:
 # --- Crear y editar ---------------------------------------------------------------------------
 
 def _template(conn: psycopg.Connection, m: moves.MoveInput, today: dt.date) -> tuple[str, int, list[tuple]]:
-    """El molde de la recurrente a partir del movimiento: (nombre, moneda, [(cuenta, monto)]) con + al
-    debe y − al haber, en la moneda de la cuenta de dinero, que va primero. Lo valida Registrar."""
+    """El molde de la recurrente a partir del movimiento: (nombre, moneda, [(cuenta, monto, persona)]) con
+    + al debe y − al haber. La cuenta de dinero va primero, en su moneda; si lo paga (o lo cobra) otra
+    persona, va primero lo que le debes (o te debe), en moneda base. Lo valida Registrar."""
     if m.kind not in ("expense", "income", "transfer"):
         raise AccountError(400, "Se repite un gasto, un ingreso o una transferencia")
-    if m.installments is not None or m.paid_by_partner_id is not None:
-        raise AccountError(400, "Un gasto en cuotas o que pagó otra persona no se repite")
-    if any(s.partner_id is not None for s in m.splits):
-        raise AccountError(400, "La parte de otra persona no se repite: divide solo en categorías")
+    if m.installments is not None:
+        raise AccountError(400, "Un gasto en cuotas no se repite")
     default_ref, _ = moves._build(conn, replace(m, date=today, pending=False), today)
+    base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
+    sign = -1 if m.kind == "expense" else 1
+    if m.paid_by_partner_id is not None:   # gasto que paga o ingreso que cobra otra persona
+        role = "payable" if m.kind == "expense" else "receivable"
+        who = conn.execute("SELECT system_account(%s)", (role,)).fetchone()[0]
+        lines = [(who, sign * m.amount, m.paid_by_partner_id), *((s.category_id, -sign * s.amount, None) for s in m.splits)]
+        return (m.ref or "").strip() or default_ref, base_id, lines
     accs = moves._accounts(conn, [x for x in [m.account_id, m.to_account_id] if x is not None])
     money = accs[m.account_id]  # type: ignore[index]
-    base_id = conn.execute("SELECT currency_id FROM res_users").fetchone()[0]
     currency = moves._use_currency(conn, m.currency, base_id)[0] if money.card else money.currency_id
     if m.kind == "transfer":
         dst = accs[m.to_account_id]  # type: ignore[index]
         if dst.currency_id is not None and dst.currency_id != currency:
             raise AccountError(400, "Un cambio de moneda no se repite: el tipo de cambio es de cada día")
-        lines = [(money.id, -m.amount), (dst.id, m.amount)]
+        lines = [(money.id, -m.amount, None), (dst.id, m.amount, None)]
     else:
-        sign = -1 if m.kind == "expense" else 1
-        lines = [(money.id, sign * m.amount), *((s.category_id, -sign * s.amount) for s in m.splits)]
+        # La parte de otra persona: en un gasto te la debe (Por cobrar), en un ingreso se la debes (Por pagar)
+        person = conn.execute("SELECT system_account(%s)", ("receivable" if m.kind == "expense" else "payable",)).fetchone()[0]
+        lines = [(money.id, sign * m.amount, None),
+                 *((person, -sign * s.amount, s.partner_id) if s.partner_id is not None else (s.category_id, -sign * s.amount, None)
+                   for s in m.splits)]
     return (m.ref or "").strip() or default_ref, currency, lines
 
 
@@ -88,9 +96,9 @@ def _rule_values(rule: Rule, today: dt.date) -> tuple:
 
 def _save_lines(conn: psycopg.Connection, rec_id: int, lines: list[tuple]) -> None:
     conn.execute("DELETE FROM account_recurring_line WHERE recurring_id = %s", (rec_id,))
-    for acc, amount in lines:
-        conn.execute("INSERT INTO account_recurring_line (recurring_id, account_id, amount) VALUES (%s, %s, %s)",
-                     (rec_id, acc, amount))
+    for acc, amount, *rest in lines:
+        conn.execute("INSERT INTO account_recurring_line (recurring_id, account_id, amount, partner_id) VALUES (%s, %s, %s, %s)",
+                     (rec_id, acc, amount, rest[0] if rest else None))
     conn.execute("SET CONSTRAINTS ALL IMMEDIATE")
 
 
@@ -295,6 +303,14 @@ class Next:
 
 
 @dataclass(frozen=True)
+class Share:
+    partner_id: int
+    name: str
+    amount: Decimal              # cada vez, en la moneda de la recurrente
+    owes_me: bool                # True: te debe su parte (o tu parte, si cobró él); False: le debes
+
+
+@dataclass(frozen=True)
 class Row:
     id: int
     name: str
@@ -309,6 +325,9 @@ class Row:
     category: moves.Category | None   # la primera categoría (ícono y color de la fila)
     next: Next | None
     loan_account_id: int | None  # la cuota de un préstamo
+    paid_by_partner_id: int | None = None   # la paga (o la cobra) otra persona: no toca tus cuentas
+    paid_by: str | None = None
+    shares: list[Share] = field(default_factory=list)   # compartida: lo que se deben con cada persona
 
 
 @dataclass(frozen=True)
@@ -323,12 +342,14 @@ _ROWS_SQL = """
 SELECT r.id, r.name, r.post_mode, r.state, trim(c.name), r.generated_until, lo.account_id,
        array_agg(l.account_id ORDER BY l.id), array_agg(l.amount ORDER BY l.id),
        array_agg(a.account_type ORDER BY l.id), array_agg(a.name ORDER BY l.id),
-       array_agg(coalesce(a.icon, p.icon) ORDER BY l.id), array_agg(coalesce(a.color, p.color) ORDER BY l.id)
+       array_agg(coalesce(a.icon, p.icon) ORDER BY l.id), array_agg(coalesce(a.color, p.color) ORDER BY l.id),
+       array_agg(a.system_role ORDER BY l.id), array_agg(l.partner_id ORDER BY l.id), array_agg(rp.name ORDER BY l.id)
   FROM account_recurring r
   JOIN res_currency c ON c.id = r.currency_id
   JOIN account_recurring_line l ON l.recurring_id = r.id
   JOIN account_account a ON a.id = l.account_id
   LEFT JOIN account_account p ON p.id = a.parent_id
+  LEFT JOIN res_partner rp ON rp.id = l.partner_id
   LEFT JOIN account_loan lo ON lo.recurring_id = r.id
 """
 
@@ -357,17 +378,21 @@ def _next_dates(conn: psycopg.Connection, rec_id: int, money_amount: Decimal, li
 
 
 def _row(conn: psycopg.Connection, r: tuple) -> Row:
-    rid, name, mode, state, cur, _until, loan, accs, amounts, types, names, icons, colors = r
+    rid, name, mode, state, cur, _until, loan, accs, amounts, types, names, icons, colors, roles, partners, pnames = r
     money = 0
+    person = [i for i in range(len(accs)) if roles[i] in moves.RECONCILED_ROLES and partners[i] is not None]
+    payer = money if money in person else None
+    shares = [Share(partners[i], pnames[i], abs(amounts[i]), amounts[i] > 0) for i in person]
     cats = [i for i, t in enumerate(types) if t in ("income", "expense")]
-    others = [i for i in range(len(accs)) if i != money and types[i] in ("asset", "liability")]
+    others = [i for i in range(len(accs)) if i != money and types[i] in ("asset", "liability") and i not in person]
     kind = "transfer" if not cats else "income" if types[cats[0]] == "income" else "expense"
     first = cats[0] if cats else None
     category = moves.Category(accs[first], names[first], icons[first], colors[first]) if first is not None else None
     nxt = _next_dates(conn, rid, amounts[money], 1, False) if state == "active" else []
     return Row(rid, name, kind, mode, state, cur, amounts[money], accs[money], names[money],
                names[others[0]] if kind == "transfer" and others else None, category,
-               nxt[0] if nxt else None, loan)
+               nxt[0] if nxt else None, loan, partners[payer] if payer is not None else None,
+               pnames[payer] if payer is not None else None, shares)
 
 
 def overview(user_id: int) -> Overview:
@@ -438,7 +463,7 @@ def detail(user_id: int, rec_id: int) -> Detail:
         tag_list = [tags_.TagRef(*t) for t in conn.execute("""
             SELECT t.id, t.name, t.color FROM account_recurring_account_tag_rel r JOIN account_tag t ON t.id = r.account_tag_id
              WHERE r.recurring_id = %s ORDER BY lower(t.name)""", (rec_id,))]
-    accs, amounts, types, names, icons, colors = r[7], r[8], r[9], r[10], r[11], r[12]
+    accs, amounts, types, names, icons, colors = r[7], r[8], r[9], r[10], r[11], r[12]  # el resto: personas
     cats = [i for i, t in enumerate(types) if t in ("income", "expense")]
     return Detail(row, Rule(*rule), [moves.Category(accs[i], names[i], icons[i], colors[i]) for i in cats],
                   [abs(amounts[i]) for i in cats], nxt, done, reminder, tag_list)

@@ -1,6 +1,8 @@
 // R1 · «Compartido» (opción B, como Splitwise): quién pagó, entre quiénes y cómo se reparte. Por
 // dentro es lo de siempre: si pagaste tú, tu parte va a la categoría y la de cada persona queda como
 // algo que te debe; si pagó otro, de tus cuentas no sale nada, tu parte es tu gasto y se la debes.
+// En un ingreso es el espejo: si cobraste tú, la parte de cada persona se la debes; si cobró otro, de
+// tus cuentas no entra nada y te debe tu parte. También en una recurrente: cada vez que se registra.
 import { useState } from "react";
 
 import { usePartners } from "@/api/hooks";
@@ -29,8 +31,10 @@ export function shares(s: SharedState, total: string | null, parse: (v: string) 
   return { mine: s.payer === "me" ? t - theirs.reduce((a, b) => a + b, 0) : cents(parse(s.mine || "0")), theirs };
 }
 
-export function SharedBlock({ value: s, onChange, total, category, account, format, parse }: {
+export function SharedBlock({ value: s, onChange, total, category, account, format, parse, income = false, repeating = false }: {
   value: SharedState;
+  income?: boolean;              // un ingreso: quién cobró y cuánto es de cada uno
+  repeating?: boolean;           // una recurrente: «cada vez»
   onChange: (s: SharedState) => void;
   total: string | null;          // lo que costó en total
   category: string | null;       // tu categoría, para decir dónde va tu parte
@@ -52,14 +56,18 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
   const { mine, theirs } = shares(s, total, parse);
   const mePaid = s.payer === "me";
   const where = category ? `en ${category}` : "de tu categoría";
+  const what = income ? "ingreso" : "gasto";
+  const each = repeating ? "Cada vez" : "";
 
   let result = "Agrega a con quién lo compartiste.";
   if (s.people.length > 0 && cents(total) > 0) {
     if (mePaid) {
-      const owe = s.people.map((p, i) => `${first(p.id)} te debe ${format(money2(theirs[i]!))}`);
-      result = `Sale ${format(money2(cents(total)))}${account ? ` de ${account}` : ""}. ${format(money2(mine))} son gasto tuyo ${where}; ${owe.join(", ")}.`;
+      const owe = s.people.map((p, i) => income ? `le debes ${format(money2(theirs[i]!))} a ${first(p.id)}` : `${first(p.id)} te debe ${format(money2(theirs[i]!))}`);
+      const flow = income ? `entra ${format(money2(cents(total)))}${account ? ` a ${account}` : ""}` : `sale ${format(money2(cents(total)))}${account ? ` de ${account}` : ""}`;
+      result = `${each ? `${each} ${flow}` : flow.replace(/^./, (c) => c.toUpperCase())}. ${format(money2(mine))} son ${what} tuyo ${where}; ${owe.join(", ")}.`;
     } else {
-      result = `No sale nada de tus cuentas. Tu parte, ${format(money2(mine))}, es gasto ${where} y se la debes a ${first(s.payer as number)}.`;
+      const none = income ? "no entra nada a tus cuentas" : "no sale nada de tus cuentas";
+      result = `${each ? `${each} ${none}` : none.replace(/^./, (c) => c.toUpperCase())}. Tu parte, ${format(money2(mine))}, es ${what} ${where} y ${income ? `${first(s.payer as number)} te la debe` : `se la debes a ${first(s.payer as number)}`}.`;
     }
   }
 
@@ -69,14 +77,14 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
         <Icon name="group" className="text-[22px]" />
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">Compartido</span>
-          <span className="text-caption text-muted-foreground">Con una o varias personas: quién pagó y cuánto pone cada uno</span>
+          <span className="text-caption text-muted-foreground">{income ? "Con una o varias personas: quién cobró y cuánto es de cada uno" : "Con una o varias personas: quién pagó y cuánto pone cada uno"}</span>
         </span>
         <input type="checkbox" role="switch" checked={s.on} onChange={() => set({ on: !s.on })} className="size-[22px] accent-primary" />
       </label>
       {s.on && (
         <>
-          <div role="radiogroup" aria-label="¿Quién pagó?" className="flex flex-col gap-1.5">
-            <span className="text-caption font-semibold">¿Quién pagó?</span>
+          <div role="radiogroup" aria-label={income ? "¿Quién cobró?" : "¿Quién pagó?"} className="flex flex-col gap-1.5">
+            <span className="text-caption font-semibold">{income ? "¿Quién cobró?" : "¿Quién pagó?"}</span>
             <div className="flex flex-wrap gap-1.5">
               {[{ id: "me" as const, label: "Yo" }, ...s.people.map((p) => ({ id: p.id, label: first(p.id) }))].map((o) => (
                 <button key={String(o.id)} type="button" role="radio" aria-checked={s.payer === o.id} onClick={() => set({ payer: o.id })}
@@ -96,7 +104,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
               <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-[12px] font-semibold">Tú</span>
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">Tú</span>
-                <span className="text-caption text-muted-foreground">Tu parte · gasto {where}</span>
+                <span className="text-caption text-muted-foreground">Tu parte es {what} {where}</span>
               </span>
               {s.mode === "amounts" && !mePaid ? (
                 <input inputMode="decimal" aria-label="Tu parte" placeholder="0.00" value={s.mine} onChange={(e) => set({ mine: e.target.value })}
@@ -110,8 +118,9 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
                   <Avatar name={name(p.id)} size={32} />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">{name(p.id)}</span>
-                    <span className={`text-caption ${mePaid ? "text-income" : "text-muted-foreground"}`}>
-                      {mePaid ? "Te debe" : isPayer ? "Pagó todo" : `Le debe a ${first(s.payer as number)}`}
+                    <span className={`text-caption ${mePaid ? (income ? "text-expense" : "text-income") : "text-muted-foreground"}`}>
+                      {mePaid ? (income ? "Le debes" : "Te debe") : isPayer ? (income ? "Cobró todo" : "Pagó todo")
+                        : income ? `${first(s.payer as number)} le debe` : `Le debe a ${first(s.payer as number)}`}
                     </span>
                   </span>
                   {mePaid && s.mode === "amounts" ? (
@@ -136,7 +145,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
         </>
       )}
 
-      <Sheet title={picking === "payer" ? "¿Quién pagó?" : "¿Con quién lo compartiste?"} open={picking !== null} onClose={() => setPicking(null)}>
+      <Sheet title={picking === "payer" ? (income ? "¿Quién cobró?" : "¿Quién pagó?") : "¿Con quién lo compartiste?"} open={picking !== null} onClose={() => setPicking(null)}>
         <div className="flex flex-col gap-3 px-3 pb-2">
           <PersonPicker label="Busca por nombre" value={null} canAdd={false}
             only={partners.filter((p) => !s.people.some((x) => x.id === p.id) || picking === "payer").map((p) => p.id)}

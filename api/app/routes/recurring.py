@@ -91,6 +91,13 @@ class NextOut(BaseModel):
     changed: bool
 
 
+class ShareOut(BaseModel):
+    partner_id: int
+    name: str
+    amount: Decimal
+    owes_me: bool
+
+
 class RecurringRowOut(BaseModel):
     id: int
     name: str
@@ -105,6 +112,9 @@ class RecurringRowOut(BaseModel):
     category: CategoryOut | None
     next: NextOut | None
     loan_account_id: int | None
+    paid_by_partner_id: int | None = None
+    paid_by: str | None = None
+    shares: list[ShareOut] = []
 
 
 class RecurringListOut(BaseModel):

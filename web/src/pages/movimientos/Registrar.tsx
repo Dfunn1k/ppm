@@ -135,8 +135,13 @@ export function Registrar({ editing, recurring, reminder }: {
     if (editing?.paid_by_partner_id) {
       return { on: true, payer: editing.paid_by_partner_id, people: [{ id: editing.paid_by_partner_id, amount: "" }], mode: "amounts", mine: fmt(editing.summary.amount) };
     }
-    const owed = editing?.splits.filter((x) => x.partner_id) ?? [];
-    return owed.length ? { on: true, payer: "me", people: owed.map((x) => ({ id: x.partner_id!, amount: fmt(x.amount) })), mode: "amounts", mine: "" } : NO_SHARED;
+    // Una recurrente compartida: la paga (o la cobra) otra persona, o lo que se deben cada vez
+    if (rec?.paid_by_partner_id) {
+      return { on: true, payer: rec.paid_by_partner_id, people: [{ id: rec.paid_by_partner_id, amount: "" }], mode: "amounts", mine: fmt(rec.amount.replace("-", "")) };
+    }
+    const owed = editing?.splits.filter((x) => x.partner_id).map((x) => ({ id: x.partner_id!, amount: x.amount }))
+      ?? rec?.shares?.map((x) => ({ id: x.partner_id, amount: x.amount })) ?? [];
+    return owed.length ? { on: true, payer: "me", people: owed.map((x) => ({ id: x.id, amount: fmt(x.amount) })), mode: "amounts", mine: "" } : NO_SHARED;
   });
   const [mas, setMas] = useState(false);
   const [later, setLater] = useState(false);   // «Lo clasifico después»: a Por clasificar
@@ -165,8 +170,9 @@ export function Registrar({ editing, recurring, reminder }: {
     : pickAccount(accounts, accountId, search.get("cuenta"), me?.home_account_id);
   const toAccount = all.find((a) => String(a.id) === toAccountId) ?? (toAccountId === "" && rec?.to_account
     ? all.find((a) => a.name === rec.to_account) : undefined);
-  const sharing = kind === "expense" && shared.on && !(repeat && !editing);
-  const other = sharing && shared.payer !== "me";   // lo pagó otra persona: no sale de tus cuentas
+  // Compartido: un gasto o un ingreso, también uno que se repite
+  const sharing = (kind === "expense" || kind === "income") && shared.on;
+  const other = sharing && shared.payer !== "me";   // lo pagó (o lo cobró) otra persona: no toca tus cuentas
   const paidBy = other ? (shared.payer as number) : null;
   const card = !other && account?.kind === "card";
   const currency = other ? base : card ? (cardCurrency ?? base) : account?.currency ?? base;
@@ -355,7 +361,7 @@ export function Registrar({ editing, recurring, reminder }: {
 
         <label className="mt-5 flex flex-col gap-0.5 text-caption font-semibold">
           {repeating ? (mode === "draft" ? "¿Cuánto es, más o menos?" : "¿Cuánto es?")
-            : kind === "expense" ? (sharing ? "¿Cuánto costó en total?" : "¿Cuánto gastaste?") : kind === "income" ? "¿Cuánto entró?" : "¿Cuánto pasas?"}
+            : kind === "expense" ? (sharing ? "¿Cuánto costó en total?" : "¿Cuánto gastaste?") : kind === "income" ? (sharing ? "¿Cuánto entró en total?" : "¿Cuánto entró?") : "¿Cuánto pasas?"}
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
             <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
@@ -494,10 +500,10 @@ export function Registrar({ editing, recurring, reminder }: {
             </div>
           )}
 
-          {kind === "expense" && !repeating && !(card && inInstallments) && !deferring && !isLater && (
+          {(kind === "expense" || kind === "income") && !(card && inInstallments) && !deferring && !isLater && (
             <SharedBlock value={shared} onChange={setShared} total={total} category={split ? null : parts[0]?.category?.name ?? null}
               account={other ? null : account?.name ?? null} format={(v) => formatAmount(v, symbolOf(currency), lang)}
-              parse={(v) => parseAmount(v, lang)} />
+              parse={(v) => parseAmount(v, lang)} income={kind === "income"} repeating={repeating} />
           )}
           <div className={`grid min-h-[52px] ${repeating ? "grid-cols-1" : "grid-cols-[auto_1fr]"} items-center gap-3 border-b border-border`}>
             {!repeating && (
@@ -567,14 +573,14 @@ export function Registrar({ editing, recurring, reminder }: {
           {(kind === "expense" || kind === "income") && !repeating && !recurring && !(card && inInstallments) && !deferring && !sharing && (
             <WithPartnerField value={withPartner} onChange={setWithPartner} />
           )}
-          {!editing && !recurring && !sharing && (
+          {!editing && !recurring && (
             <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
               <Icon name="repeat" className="w-9 text-center text-muted-foreground" />
               <span className="flex flex-1 flex-col">
                 <span>Se repite</span>
                 <span className="text-caption text-muted-foreground">El sueldo, el alquiler, Netflix: PPM lo registra cada vez</span>
               </span>
-              <input type="checkbox" role="switch" checked={repeat} onChange={() => { setRepeat(!repeat); setInInstallments(false); setShared(NO_SHARED); }}
+              <input type="checkbox" role="switch" checked={repeat} onChange={() => { setRepeat(!repeat); setInInstallments(false); }}
                 className="size-[22px] accent-primary" />
             </label>
           )}
@@ -656,7 +662,8 @@ export function Registrar({ editing, recurring, reminder }: {
             {editing || recurring ? "Guardar cambios" : repeating ? (mode === "reminder" ? "Guardar recordatorio" : "Guardar recurrente")
               : editing ? "Guardar cambios" : pending || future ? "Guardar por confirmar"
               : card && inInstallments && kind === "expense" ? `Registrar gasto en ${installments} cuotas`
-              : sharing ? (other ? "Registrar lo que le debo" : "Registrar gasto compartido") : SUBMIT[kind]}
+              : sharing ? (kind === "income" ? (other ? "Registrar lo que me debe" : "Registrar ingreso compartido")
+                : other ? "Registrar lo que le debo" : "Registrar gasto compartido") : SUBMIT[kind]}
           </PrimaryButton>
         </div>
       </form>

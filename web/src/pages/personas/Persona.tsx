@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 
-import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction } from "@/api/hooks";
+import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction, useRecurringList } from "@/api/hooks";
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
@@ -172,6 +172,7 @@ export function Persona() {
         </div>
       </div>
 
+      <Repeats partnerId={p.id} first={first ?? p.name} lang={lang} />
       <Activities target={{ partner_id: p.id }} />
 
       <Sheet title="¿Qué pasó?" open={hoja === "pago"} onClose={() => setHoja(null)}>
@@ -311,5 +312,34 @@ function Confirm({ open, onClose, title, text, action, icon, destructive, pendin
         <button type="button" onClick={onClose} className="h-11 font-semibold">Cancelar</button>
       </div>
     </Sheet>
+  );
+}
+
+
+/** Las recurrentes que compartes con esta persona: qué toca cada vez y quién le debe a quién. */
+function Repeats({ partnerId, first, lang }: { partnerId: number; first: string; lang: string }) {
+  const rows = (useRecurringList().data?.rows ?? []).filter((r) => r.state !== "done" && r.shares.some((x) => x.partner_id === partnerId));
+  if (rows.length === 0) return null;
+  return (
+    <section aria-label={`Se repite con ${first}`} className="mt-6 flex flex-col">
+      <span className="border-b border-border pb-1 text-label text-muted-foreground">Se repite con {first}</span>
+      {rows.map((r) => {
+        const x = r.shares.find((s) => s.partner_id === partnerId)!;
+        const who = r.paid_by_partner_id === partnerId ? `${r.kind === "income" ? "cobra" : "paga"} ${first}, ` : "";
+        return (
+          <Link key={r.id} to={`/mas/recurrentes/${r.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+            <Icon name="event_repeat" className="text-[22px] text-muted-foreground" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate font-semibold">{r.name}</span>
+              <span className={`text-caption ${x.owes_me ? "text-income" : "text-expense"}`}>
+                {r.state === "paused" ? "Pausada" : r.next ? `El ${shortDate(r.next.date)}` : "Sin próximas fechas"}; {who}{x.owes_me ? "te debe" : "le debes"}
+              </span>
+            </span>
+            <span className="font-semibold tabular-nums">{formatAmount(x.amount, symbolOf(r.currency), lang)}</span>
+            <Icon name="chevron_right" className="text-[20px] text-muted-foreground" />
+          </Link>
+        );
+      })}
+    </section>
   );
 }
