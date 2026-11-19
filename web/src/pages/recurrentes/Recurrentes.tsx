@@ -5,6 +5,7 @@ import { Link, NavLink, useNavigate, useParams } from "react-router";
 
 import { type RecurringNext, type RecurringRow, useMe, useOccurrence, useRecurring, useRecurringList, useRecurringState } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
+import { Avatar } from "@/components/MoveBits";
 import { TagChips } from "@/components/Tags";
 import { DateField } from "@/components/DateSheet";
 import { Segmented, Sheet } from "@/components/Sheet";
@@ -39,11 +40,16 @@ function ModeChip({ row }: { row: RecurringRow }) {
   );
 }
 
+/** La paga (o la cobra) otra persona: «Paga Luis», «Cobra Luis». */
+function payer(row: RecurringRow) {
+  return `${row.kind === "income" ? "Cobra" : "Paga"} ${row.paid_by!.split(" ")[0]}`;
+}
+
 function caption(row: RecurringRow) {
   if (row.state === "paused") return "Pausada";
   const when = row.next ? shortDate(row.next.date) : "Sin próximas fechas";
   if (row.mode === "reminder") return `${when} · te avisamos`;
-  return `${when} · ${row.kind === "transfer" ? `a ${row.to_account}` : row.account}`;
+  return `${when} · ${row.kind === "transfer" ? `a ${row.to_account}` : row.paid_by ? payer(row) : row.account}`;
 }
 
 export function Recurrentes() {
@@ -136,7 +142,8 @@ export function Recurrente() {
   const done = row.state === "done";
   const label = `${paused ? "Pausada" : done ? "Terminada" : MODE_NAME[row.mode]} · ${ruleText(rule).toLowerCase()}`;
   const where = row.kind === "transfer" ? `de ${row.account} a ${row.to_account}`
-    : `${rec.data.categories.map((c) => c.name).join(", ")} · ${row.kind === "income" ? "entra a" : "sale de"} ${row.account}`;
+    : `${rec.data.categories.map((c) => c.name).join(", ")} · ${row.paid_by ? `${row.kind === "income" ? "la cobra" : "la paga"} ${row.paid_by.split(" ")[0]}` : `${row.kind === "income" ? "entra a" : "sale de"} ${row.account}`}`;
+  const mine = rec.data.splits.reduce((t, v) => t + Math.round(Number(v) * 100), 0) / 100;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8 lg:pt-8">
@@ -170,6 +177,33 @@ export function Recurrente() {
         <span className="text-caption text-muted-foreground lg:col-start-1 lg:row-start-2 lg:mt-1">{where} · desde el {shortDate(rule.start)}</span>
       </div>
       {rec.data.tags.length > 0 && <div className="mt-2"><TagChips tags={rec.data.tags} small /></div>}
+
+      {row.shares.length > 0 && (
+        <section aria-label="Compartido" className="mt-5 flex flex-col">
+          <span className="border-b border-border pb-1 text-label text-muted-foreground">Compartido</span>
+          <div className="flex min-h-[52px] items-center gap-2.5 border-b border-border">
+            <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-[12px] font-semibold">Tú</span>
+            <span className="flex flex-1 flex-col">
+              <span className="font-semibold">Tú</span>
+              <span className="text-caption text-muted-foreground">Tu parte, {row.kind === "income" ? "ingreso" : "gasto"} tuyo</span>
+            </span>
+            <span className="font-semibold tabular-nums">{money(mine.toFixed(2))}</span>
+          </div>
+          {row.shares.map((x) => (
+            <Link key={x.partner_id} to={`/personas/${x.partner_id}`} className="flex min-h-[52px] items-center gap-2.5 border-b border-border">
+              <Avatar name={x.name} size={32} />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-semibold">{x.name}</span>
+                <span className={`text-caption ${x.owes_me ? "text-income" : "text-expense"}`}>
+                  {row.paid_by_partner_id === x.partner_id ? (row.kind === "income" ? "La cobra; cada vez te debe tu parte" : "La paga; cada vez le debes tu parte")
+                    : x.owes_me ? "Cada vez te debe" : "Cada vez le debes"}
+                </span>
+              </span>
+              {row.paid_by_partner_id !== x.partner_id && <span className="font-semibold tabular-nums">{money(x.amount)}</span>}
+            </Link>
+          ))}
+        </section>
+      )}
 
       {paused && (
         <div role="status" className="mt-4 flex gap-2.5 rounded-md bg-muted p-3 text-caption">

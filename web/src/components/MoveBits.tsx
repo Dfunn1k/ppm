@@ -86,7 +86,7 @@ export function moveBits(x: MoveSummary, base: string, lang: string, date?: stri
   if (x.kind === "unclassified") bits.push({ text: "Por clasificar" }, account);
   else if (x.kind === "offset" || x.kind === "write_off") bits.push(x.partner ? person : account);
   else if (isPersonKind(x.kind)) bits.push(person, account);
-  else if (x.kind === "expense" && !x.account_icon) bits.push({ icon: "person", text: x.account, shrink: true });   // «Pagó Juan»
+  else if ((x.kind === "expense" || x.kind === "income") && !x.account_icon) bits.push({ icon: "person", text: x.account, shrink: true });   // «Pagó Juan», «Cobró Juan»
   else bits.push(account);
   const fx = x.kind === "transfer" ? rate(x, base, lang) : null;
   if (fx) bits.push({ icon: "currency_exchange", text: fx });

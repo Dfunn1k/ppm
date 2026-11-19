@@ -108,3 +108,32 @@ test("un préstamo que ya venía pagando: crearlo y pagar la cuota con la boleta
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /Préstamo vehicular/ })).toContainText("Préstamo en soles · BCP");
 });
+
+test("un gasto que se repite, compartido con Luis: cada vez te debe su parte", async ({ page }) => {
+  await readyUser(page);
+  await page.request.post("/api/partners", { data: { name: "Luis Pérez" } });
+  await page.goto("/registrar?repite=1");
+  await page.getByRole("textbox", { name: "¿Cuánto es?" }).fill("120");
+  await page.getByRole("button", { name: /^Sale de/ }).click();
+  await page.getByRole("radio", { name: /^BCP/ }).click();
+  await page.getByRole("button", { name: /En qué/ }).first().click();
+  await page.getByRole("dialog").getByRole("radio", { name: "Internet" }).click();
+  await page.getByLabel("Nota").fill("Internet");
+  await page.getByRole("switch", { name: /Compartido/ }).check();
+  await page.getByRole("button", { name: "Agregar a alguien" }).click();
+  await page.getByRole("dialog").getByRole("combobox").fill("luis");
+  await page.getByRole("option", { name: /Luis Pérez/ }).click();
+  const bloque = page.getByRole("region", { name: "Compartido" });
+  await expect(bloque.getByRole("status")).toContainText("Cada vez sale S/ 120.00 de BCP. S/ 60.00 son gasto tuyo en Internet; Luis te debe S/ 60.00");
+  await expect(page.getByRole("switch", { name: /Se repite/ })).toBeChecked();
+  await page.getByRole("button", { name: "Guardar recurrente" }).click();
+
+  await expect(page).toHaveURL(/\/mas\/recurrentes\/\d+$/);
+  const compartido = page.getByRole("region", { name: "Compartido" });
+  await expect(compartido).toContainText("Luis Pérez");
+  await expect(compartido).toContainText("Cada vez te debe");
+  await compartido.getByRole("link", { name: /Luis Pérez/ }).click();
+
+  await expect(page.getByRole("region", { name: "Te debe" })).toContainText("S/ 60.00");     // la de hoy ya se registró
+  await expect(page.getByRole("region", { name: "Se repite con Luis" })).toContainText("Internet");
+});

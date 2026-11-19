@@ -87,7 +87,7 @@ class MoveInput:
     to_amount: Decimal | None = None                     # transferencia entre monedas: lo que entró
     partner_id: int | None = None                        # con otra persona: con quién
     debt_line_id: int | None = None                      # cobrar o pagar: qué deuda cancela primero
-    paid_by_partner_id: int | None = None                # gasto que pagó otra persona: le debes tu parte
+    paid_by_partner_id: int | None = None                # gasto que pagó (o ingreso que cobró) otra persona
     lines: list[ManualLine] = field(default_factory=list)   # asiento manual
     currency: str | None = None                          # con una tarjeta (multimoneda): en qué moneda; None = la base
     installments: int | None = None                      # gasto o préstamo con tarjeta: en cuántas cuotas
@@ -511,11 +511,13 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
 
     # Gasto, ingreso o reembolso. El reembolso es plata que vuelve a tu cuenta desde la categoría
     # de un gasto (como una nota de crédito): la categoría baja y no cuenta como ingreso.
-    paid_by = m.paid_by_partner_id if m.kind == "expense" else None
-    if m.paid_by_partner_id is not None and m.kind != "expense":
-        raise AccountError(400, "Solo un gasto lo puede pagar otra persona")
+    # Lo pagó (un gasto) o lo cobró (un ingreso) otra persona: de tus cuentas no sale ni entra nada;
+    # en un gasto le debes tu parte, en un ingreso te la debe
+    paid_by = m.paid_by_partner_id if m.kind in ("expense", "income") else None
+    if m.paid_by_partner_id is not None and paid_by is None:
+        raise AccountError(400, "Solo un gasto lo puede pagar otra persona, o un ingreso cobrarlo")
     if paid_by is not None:
-        payer = _partner(conn, paid_by, "quién pagó")
+        payer = _partner(conn, paid_by, "quién pagó" if m.kind == "expense" else "quién cobró")
         cur_id = base_id
         rate = Decimal(1)
     else:
@@ -541,10 +543,10 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
     wanted = "income" if m.kind == "income" else "expense"
     for s in m.splits:
         if s.partner_id is not None:
-            if m.kind != "expense" or s.category_id is not None:
-                raise AccountError(400, "La parte de otra persona va solo en un gasto, sin categoría")
+            if m.kind not in ("expense", "income") or s.category_id is not None:
+                raise AccountError(400, "La parte de otra persona va solo en un gasto o un ingreso, sin categoría")
             if paid_by is not None:
-                raise AccountError(400, "Si pagó otra persona, divide solo en categorías")
+                raise AccountError(400, "Si pagó o cobró otra persona, divide solo en categorías")
             _partner(conn, s.partner_id)
         else:
             c = accs.get(s.category_id) if s.category_id is not None else None
@@ -597,21 +599,24 @@ def _build(conn: psycopg.Connection, m: MoveInput, on: dt.date,
         return accs[m.splits[0].category_id].name, [  # type: ignore[index]
             _side(money.id, base, cur_id, total, None, False),
             _side(deferred, base, cur_id, total, None, True)]
+    # La parte de otra persona: en un gasto que pagaste te la debe (Por cobrar); en un ingreso que
+    # cobraste se la debes (Por pagar). Si pagó o cobró ella, tu parte queda al revés
+    person_role = "receivable" if out else "payable"
     if paid_by is not None:
-        payable = conn.execute("SELECT system_account('payable')").fetchone()[0]
-        lines = [_side(payable, total_base, base_id, m.amount, paid_by, False)]
+        payer_acc = conn.execute("SELECT system_account(%s)", ("payable" if out else "receivable",)).fetchone()[0]
+        lines = [_side(payer_acc, total_base, base_id, m.amount, paid_by, not out)]
     else:
         lines = [_side(money.id, total_base, cur_id, m.amount, None, not out)]
-    receivable = None
+    person_acc = None
     for s, b in zip(m.splits, parts, strict=True):
         if s.partner_id is not None:
-            receivable = receivable or conn.execute("SELECT system_account('receivable')").fetchone()[0]
-            lines.append(_side(receivable, b, cur_id, s.amount, s.partner_id, True))
+            person_acc = person_acc or conn.execute("SELECT system_account(%s)", (person_role,)).fetchone()[0]
+            lines.append(_side(person_acc, b, cur_id, s.amount, s.partner_id, out))
         else:
             lines.append(_side(s.category_id, b, base_id, b, m.with_partner_id, out))  # type: ignore[arg-type]
     ref = accs[own[0].category_id].name  # type: ignore[index]
     if paid_by is not None:
-        ref = f"{ref} (pagó {_first(payer)})"
+        ref = f"{ref} ({'pagó' if out else 'cobró'} {_first(payer)})"
     return ref, lines
 
 
@@ -1129,8 +1134,12 @@ def _kind(lines: list[tuple]) -> tuple[str, list[tuple], list[tuple], list[tuple
     elif (len(cats) == 1 and cats[0][4] == "bad_debt" and not cash and persons
           and all(x[4] == "receivable" and x[8] < 0 for x in persons)):
         kind = "write_off"
-    elif cats and all(x[3] == "income" for x in cats) and len(cash) == 1 and not persons:
-        kind = "income"
+    elif (cats and all(x[3] == "income" for x in cats) and len(cash) == 1 and cash[0][8] > 0
+          and all(x[4] == "payable" and x[8] < 0 for x in persons)):
+        kind = "income"                                    # también compartido: le debes su parte
+    elif (cats and all(x[3] == "income" for x in cats) and not cash and len(persons) == 1
+          and persons[0][4] == "receivable" and persons[0][8] > 0):
+        kind = "income"                                    # lo cobró otra persona: te debe tu parte
     elif not cats and len(cash) == 2 and not persons:
         kind = "transfer"
     elif (not cats and len(cash) == 1 and persons and len({(x[4], x[10], x[8] > 0) for x in persons}) == 1
@@ -1163,9 +1172,10 @@ def _classify(head: tuple, lines: list[tuple]) -> tuple[MoveSummary, list[tuple]
         m = cash[0]
         s = MoveSummary(move_id, on, ref, posted, kind, m[7], abs(m[8]), cat_base, m[2], categories,
                         partner_id=pid, partner=pname)
-    elif kind == "expense":   # lo pagó otra persona: no sale de tus cuentas
+    elif kind in ("expense", "income"):   # lo pagó o lo cobró otra persona: no toca tus cuentas
         s = MoveSummary(move_id, on, ref, posted, kind, who[7], abs(who[8]), cat_base,  # type: ignore[index]
-                        f"Pagó {_first(pname or '')}", categories, partner_id=pid, partner=pname)
+                        f"{'Pagó' if kind == 'expense' else 'Cobró'} {_first(pname or '')}", categories,
+                        partner_id=pid, partner=pname)
     elif kind == "write_off":
         s = MoveSummary(move_id, on, ref, posted, kind, who[7], sum((abs(x[8]) for x in persons), Decimal(0)),  # type: ignore[index]
                         cat_base, pname or "", categories, partner_id=pid, partner=pname)
@@ -1476,7 +1486,7 @@ def _detail(user_id: int, move_id: int) -> MoveDetail:
         paid_by = None if cash else pid
         m = cash[0] if cash else persons[0]
         rate = _round6(abs(m[9] / m[8])) if m[7] != base and m[8] else None
-        parts = [x for x in lines if x[3] in ("income", "expense") or (x[4] == "receivable" and cash)]
+        parts = [x for x in lines if x[3] in ("income", "expense") or (x[4] in RECONCILED_ROLES and cash)]
         amounts = [abs(x[8]) if x[3] not in ("income", "expense") else
                    abs(x[9]) if rate is None else _round(abs(x[9]) / rate) for x in parts]
         amounts[-1] = abs(m[8]) - sum(amounts[:-1], Decimal(0))   # que sumen exacto el total
