@@ -28,7 +28,8 @@ export function ReporteCategorias({ kind }: { kind: "expense" | "income" }) {
 function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: ReturnType<typeof usePeriod> }) {
   const report = useCategoryReport(kind, p.period);
   const money = useMoney();
-  const [selected, setSelected] = useState<number | null>(null);
+  // Los grupos resaltados en la dona y en las barras: todos los que abriste o tocaste, no solo el último
+  const [marked, setMarked] = useState<number[]>([]);
   const [open, setOpen] = useState<number[]>([]);
   const expense = kind === "expense";
 
@@ -37,17 +38,20 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
   const r = report.data;
   const vs = against(p);
   const top = r.groups.filter((g) => Number(g.amount) > 0);
-  const sel = selected !== null ? top.find((g) => g.id === selected) : undefined;
+  const picked = top.filter((g) => marked.includes(g.id));
+  const lit = (id: number) => marked.length === 0 || marked.includes(id);
+  const centerLabel = picked.length === 0 ? "Total" : picked.length === 1 ? picked[0]!.name.split(" ")[0] : `${picked.length} grupos`;
+  const centerAmount = picked.length === 0 ? r.total : (picked.reduce((s, g) => s + Math.round(Number(g.amount) * 100), 0) / 100).toFixed(2);
+  const markToggle = (id: number) => setMarked((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
   const max = Math.max(...r.groups.map((g) => Number(g.amount)), 1);
-  // Desplegar un grupo lo resalta en la dona; plegarlo vuelve al último que siga abierto, o al total
+  // Desplegar un grupo lo suma a lo resaltado; plegarlo lo quita. Sin ninguno resaltado, la dona muestra el total
   const toggle = (g: Group) => {
     if (open.includes(g.id)) {
-      const rest = open.filter((x) => x !== g.id);
-      setOpen(rest);
-      if (selected === g.id) setSelected(rest.at(-1) ?? null);
+      setOpen(open.filter((x) => x !== g.id));
+      setMarked((m) => m.filter((x) => x !== g.id));
     } else {
       setOpen([...open, g.id]);
-      setSelected(g.id);
+      setMarked((m) => (m.includes(g.id) ? m : [...m, g.id]));
     }
   };
   const moves = (id: number, name: string) =>
@@ -94,17 +98,17 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
                 <Pie data={top.map((g) => ({ id: g.id, name: g.name, value: Number(g.amount), color: g.color }))} dataKey="value"
                   innerRadius={46} outerRadius={70} paddingAngle={1} startAngle={90} endAngle={-270} isAnimationActive={false}
                   stroke="var(--background)" strokeWidth={2}
-                  onClick={(_, i: number) => { const id = top[i]?.id ?? null; setSelected((s) => (s === id ? null : id)); }}>
+                  onClick={(_, i: number) => { const id = top[i]?.id; if (id !== undefined) markToggle(id); }}>
                   {top.map((g) => (
-                    <Cell key={g.id} fill={catColor(g.color)} opacity={selected === null || selected === g.id ? 1 : 0.3} className="cursor-pointer" />
+                    <Cell key={g.id} fill={catColor(g.color)} opacity={lit(g.id) ? 1 : 0.3} className="cursor-pointer" />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-caption text-muted-foreground">{sel ? sel.name.split(" ")[0] : "Total"}</span>
-              <span className={`${money(sel ? sel.amount : r.total).length > 11 ? "text-[12px]" : "text-[15px]"} leading-5 font-semibold tabular-nums`}>
-                {money(sel ? sel.amount : r.total)}
+              <span className="text-caption text-muted-foreground">{centerLabel}</span>
+              <span className={`${money(centerAmount).length > 11 ? "text-[12px]" : "text-[15px]"} leading-5 font-semibold tabular-nums`}>
+                {money(centerAmount)}
               </span>
             </div>
           </div>
@@ -131,7 +135,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
                 }} />
                 {expense ? r.groups.map((g, k) => (
                   <Bar key={g.id} dataKey={`g${g.id}`} stackId="a" fill={catColor(g.color)} stroke="var(--background)" strokeWidth={2}
-                    radius={k === r.groups.length - 1 ? [4, 4, 0, 0] : 0} isAnimationActive={false} />
+                    radius={k === r.groups.length - 1 ? [4, 4, 0, 0] : 0} isAnimationActive={false} fillOpacity={lit(g.id) ? 1 : 0.3} />
                 )) : <Bar dataKey="total" fill={catColor(10)} radius={[4, 4, 0, 0]} isAnimationActive={false} />}
               </BarChart>
             </ResponsiveContainer>
@@ -173,7 +177,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
             </>
           );
           return (
-            <div key={g.id} className={`flex flex-col border-b border-border ${selected === g.id ? "bg-card" : ""}`}>
+            <div key={g.id} className={`flex flex-col border-b border-border ${marked.includes(g.id) ? "bg-card" : ""}`}>
               {expandable ? (
                 <button type="button" aria-expanded={isOpen} onClick={() => toggle(g)} className="flex min-h-16 items-center gap-3 text-left">
                   {row}<Icon name={isOpen ? "expand_less" : "expand_more"} className="text-[22px] text-muted-foreground" />
