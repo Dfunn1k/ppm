@@ -52,7 +52,8 @@ test("crear la cuenta con Google, sin contraseña, y crearla luego en Mi cuenta"
   await setupSteps(page);
 
   await page.goto("/mas/cuenta");
-  await expect(page.getByText(`Entras con ${email} · para desvincular, primero crea una contraseña`)).toBeVisible();
+  await expect(page.getByText(`Entras con ${email}`)).toBeVisible();
+  await expect(page.getByText("Para desvincularla, primero crea una contraseña")).toBeVisible();
   await expect(page.getByRole("button", { name: "Desvincular Google" })).toHaveCount(0);
   await page.getByRole("button", { name: /Crear contraseña/ }).click();
   const hoja = page.getByRole("dialog", { name: "Crear contraseña" });

@@ -68,7 +68,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
       {r.filename && <span className="text-caption text-muted-foreground">{r.filename}</span>}
 
       <section aria-label="Foto del corte" className="mt-5 flex flex-col">
-        <span className="border-b border-border pb-1 text-label text-muted-foreground">Foto del corte · lo que dice el banco</span>
+        <span className="flex flex-col border-b border-border pb-1"><span className="text-label text-muted-foreground">Foto del corte</span><span className="text-caption text-muted-foreground">Lo que dice el banco</span></span>
         {photo.map(([label, value]) => (
           <div key={label} className="flex min-h-11 items-center justify-between border-b border-border text-[14px] tabular-nums">
             <span className="font-semibold">{label}</span><span>{value}</span>

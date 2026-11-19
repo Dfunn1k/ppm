@@ -183,7 +183,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)} className={chip}>
           <Icon name="event" className="text-[18px]" />
-          {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : "Hoy · otra fecha"}
+          {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" className="text-[18px] text-muted-foreground" /></>}
         </button>
         {kind === "bank" && (
           <button type="button" aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)} className={chip}>

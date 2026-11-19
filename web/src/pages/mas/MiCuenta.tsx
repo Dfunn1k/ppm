@@ -82,7 +82,8 @@ export function MiCuenta() {
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">Google</span>
               <span className="text-caption break-words text-muted-foreground">
-                Entras con {me.google_email}{!me.has_password && " · para desvincular, primero crea una contraseña"}
+                Entras con {me.google_email}
+                {!me.has_password && <span className="block">Para desvincularla, primero crea una contraseña</span>}
               </span>
             </span>
             {me.has_password && (

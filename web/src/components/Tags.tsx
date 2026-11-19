@@ -127,8 +127,9 @@ export function MoveTagsRow({ moveId, tags, inherited }: { moveId: number; tags:
       <div className="flex min-h-13 items-center gap-3 border-b border-border py-2">
         <Icon name="sell" className="w-9 text-center text-muted-foreground" />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-caption text-muted-foreground">Etiquetas · las de su compra</span>
+          <span className="text-caption text-muted-foreground">Etiquetas</span>
           <TagChips tags={tags} />
+          <span className="text-caption text-muted-foreground">Las de su compra</span>
         </span>
       </div>
     );
@@ -140,7 +141,7 @@ export function MoveTagsRow({ moveId, tags, inherited }: { moveId: number; tags:
         <Icon name="sell" className="w-9 text-center text-muted-foreground" />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-caption text-muted-foreground">Etiquetas</span>
-          {tags.length ? <TagChips tags={tags} /> : <span className="font-semibold">Ninguna · ponle una</span>}
+          {tags.length ? <TagChips tags={tags} /> : <><span className="font-semibold">Ninguna</span><span className="-mt-1 text-caption text-muted-foreground">Toca para ponerle una</span></>}
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
       </button>
