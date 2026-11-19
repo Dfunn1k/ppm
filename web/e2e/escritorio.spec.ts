@@ -130,7 +130,7 @@ test("etiquetas en escritorio: el reporte se abre al lado y Más › Etiquetas t
   const tag = (await (await page.request.post("/api/tags", { data: { name: "Mudanza" } })).json()).id as number;
   await page.goto("/registrar");
   await spend(page, "45", "Cajas");
-  await page.getByRole("button", { name: /Etiquetas · opcional/ }).click();
+  await page.getByRole("button", { name: /Etiquetas/ }).click();
   await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("checkbox", { name: "Mudanza" }).click();
   await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("button", { name: "Listo" }).click();
   await page.getByRole("button", { name: "Registrar gasto" }).click();

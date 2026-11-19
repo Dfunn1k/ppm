@@ -12,7 +12,7 @@ import { PersonPicker } from "@/components/PersonPicker";
 import { Installments } from "@/components/Installments";
 import { RateField, useRateInput } from "@/components/RateField";
 import { CurrencyChoice, OptionList, Sheet, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
@@ -241,8 +241,8 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
               className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
               <Icon name="event" className="text-[18px]" />{dateLabel(date)}
             </button>
-            <input aria-label="Nota" placeholder="Nota (opcional)" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
-              className="h-10 min-w-0 border-0 bg-transparent p-0" />
+            <span className="flex min-w-0 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
+              className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} booked />
           <label className="flex min-h-[52px] cursor-pointer items-center gap-3">

@@ -49,16 +49,21 @@ export function TextLink({ className, ...props }: LinkProps) {
   return <Link className={cn("font-semibold text-primary-strong underline", className)} {...props} />;
 }
 
-type FieldProps = ComponentProps<"input"> & { label: string; error?: string; hint?: ReactNode; action?: ReactNode };
+type FieldProps = ComponentProps<"input"> & { label: string; error?: string; hint?: ReactNode; action?: ReactNode; optional?: boolean };
+
+/** «Opcional», tenue, a la derecha del rótulo de un campo que se puede dejar vacío (caso 3 de «Sin punto como conector»). */
+export function Optional() {
+  return <span className="flex-none text-caption font-normal text-muted-foreground">Opcional</span>;
+}
 
 /** Campo de una sola línea: etiqueta arriba y una línea de 2px abajo, sin caja. */
-export function LineField({ label, error, hint, action, className, ...props }: FieldProps) {
+export function LineField({ label, error, hint, action, optional, className, ...props }: FieldProps) {
   const id = useId();
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-caption font-semibold">
-        {label}
+      <label htmlFor={id} className="flex justify-between gap-2 text-caption font-semibold">
+        {label}{optional && <Optional />}
       </label>
       <div className="relative flex">
         <input

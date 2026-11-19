@@ -29,7 +29,7 @@ test("una etiqueta: se crea al registrar, filtra Movimientos, tiene su reporte y
   await page.request.post("/api/moves", { data: { kind: "expense", account_id: bcp, amount: "999", ref: "Sin etiqueta",
     splits: [{ category_id: cats["Hogar"], amount: "999" }] } });
 
-  // Registrar: «Etiquetas · opcional» crea la nueva ahí mismo
+  // Registrar: «Etiquetas» crea la nueva ahí mismo
   await page.getByRole("link", { name: "Registrar un movimiento" }).click();
   await page.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("80");
   await page.getByRole("button", { name: /^Sale de/ }).click();
@@ -37,13 +37,13 @@ test("una etiqueta: se crea al registrar, filtra Movimientos, tiene su reporte y
   await page.getByRole("button", { name: /En qué/ }).first().click();
   await page.getByRole("dialog").getByRole("radio", { name: "Restaurantes y delivery" }).click();
   await page.getByLabel("Nota").fill("Cena en Cusco");
-  await page.getByRole("button", { name: /Etiquetas · opcional/ }).click();
+  await page.getByRole("button", { name: /Etiquetas/ }).click();
   const hoja = page.getByRole("dialog", { name: "Etiquetas" });
   await hoja.getByLabel("Buscar o crear etiqueta").fill("Viaje a Cusco");
   await hoja.getByRole("button", { name: /Crear «Viaje a Cusco»/ }).click();
   await expect(hoja.getByRole("checkbox", { name: "Viaje a Cusco" })).toHaveAttribute("aria-checked", "true");
   await hoja.getByRole("button", { name: "Listo" }).click();
-  await expect(page.getByRole("button", { name: /Etiquetas · opcional/ })).toContainText("Viaje a Cusco");
+  await expect(page.getByRole("button", { name: /Etiquetas/ })).toContainText("Viaje a Cusco");
   await page.getByRole("button", { name: "Registrar gasto" }).click();
   await expect(page).toHaveURL("/movimientos");
   await expect(page.getByRole("link", { name: /Cena en Cusco/ })).toContainText("Viaje a Cusco");   // en la fila
@@ -100,7 +100,7 @@ test("una recurrente con etiqueta y «Con quién» al registrar, que se cambia d
   await page.getByRole("dialog").getByRole("radio", { name: "Software y apps" }).click();
   await page.getByLabel("Nota").fill("Netflix");
   await page.getByRole("switch", { name: /Se repite/ }).check();
-  await page.getByRole("button", { name: /Etiquetas · opcional/ }).click();
+  await page.getByRole("button", { name: /Etiquetas/ }).click();
   await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("checkbox", { name: "Ocio" }).click();
   await page.getByRole("dialog", { name: "Etiquetas" }).getByRole("button", { name: "Listo" }).click();
   await page.getByRole("button", { name: "Guardar recurrente" }).click();
@@ -113,8 +113,8 @@ test("una recurrente con etiqueta y «Con quién» al registrar, que se cambia d
   await page.getByRole("button", { name: /En qué/ }).first().click();
   await page.getByRole("dialog").getByRole("radio", { name: "Restaurantes y delivery" }).click();
   await page.getByLabel("Nota").fill("Cena");
-  await page.getByRole("button", { name: /Con quién · opcional/ }).click();
-  await page.getByRole("combobox", { name: "Con quién · opcional" }).fill("Juan");
+  await page.getByRole("button", { name: /Con quién/ }).click();
+  await page.getByRole("combobox", { name: "Con quién" }).fill("Juan");
   await page.getByRole("option", { name: /Juan Pérez/ }).click();
   await page.getByRole("button", { name: "Registrar gasto" }).click();
   await expect(page).toHaveURL("/movimientos");
