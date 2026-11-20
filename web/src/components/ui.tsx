@@ -56,6 +56,17 @@ export function Optional() {
   return <span className="flex-none text-caption font-normal text-muted-foreground">Opcional</span>;
 }
 
+/** Montos en varias monedas, uno por línea y alineados a la derecha, como una columna de montos (caso 6
+ * de «Sin punto como conector»): «S/ 1,284.90» y debajo «US$ 45.00», sin signo que los una. */
+export function Amounts({ values, className }: { values: string[]; className?: string }) {
+  if (values.length < 2) return <span className={className}>{values[0] ?? ""}</span>;
+  return (
+    <span className={cn("inline-flex flex-col items-end text-right", className)}>
+      {values.map((v) => <span key={v}>{v}</span>)}
+    </span>
+  );
+}
+
 /** Campo de una sola línea: etiqueta arriba y una línea de 2px abajo, sin caja. */
 export function LineField({ label, error, hint, action, optional, className, ...props }: FieldProps) {
   const id = useId();

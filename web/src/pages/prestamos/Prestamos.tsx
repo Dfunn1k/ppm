@@ -213,7 +213,7 @@ export function Prestamo() {
           <span className="flex flex-1 flex-col">
             <span className="font-semibold">{dayDate(p.date)}</span>
             <span className="text-[12px] leading-4 text-muted-foreground tabular-nums">
-              {p.parts.map((x) => `${x.name.toLowerCase()} ${formatNumber(x.amount, lang)}`).join(" · ")}
+              {p.parts.map((x, k) => `${k ? x.name.toLowerCase() : x.name} ${formatNumber(x.amount, lang)}`).join(" + ")}
             </span>
           </span>
           <span className="tabular-nums">{formatNumber(p.total, lang)}</span>

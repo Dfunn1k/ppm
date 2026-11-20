@@ -2,7 +2,7 @@
 import { Link, NavLink, useLocation } from "react-router";
 
 import { type AccountRow, useAccounts, useMe } from "@/api/hooks";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { Amounts, ErrorAlert, Icon } from "@/components/ui";
 import { cardHint } from "@/lib/cards";
 import { formatAmount, symbolOf } from "@/lib/money";
 import { ListSkeleton } from "@/components/Skeleton";
@@ -19,13 +19,14 @@ function Group({ label, total, children }: { label: string; total: string; child
   );
 }
 
-function Row({ to, icon, letter, name, subtitle, amount, negative, attention }: {
+function Row({ to, icon, letter, name, subtitle, amount, amountNote, negative, attention }: {
   to?: string;
   icon?: string | null;
   letter?: string;
   name: string;
   subtitle?: string | null;
-  amount: string;
+  amount: string | string[];
+  amountNote?: string | null;   // debajo del saldo: cuánto es en soles una cuenta en otra moneda
   negative?: boolean;
   attention?: boolean;   // el subtítulo pide algo (falta la fecha de pago)
 }) {
@@ -40,7 +41,10 @@ function Row({ to, icon, letter, name, subtitle, amount, negative, attention }: 
           <span className={`text-caption tabular-nums ${attention ? "font-semibold text-attention" : "text-muted-foreground"}`}>{subtitle}</span>
         )}
       </span>
-      <span className={`text-amount ${negative ? "text-expense" : ""}`}>{amount}</span>
+      <span className="flex flex-none flex-col items-end">
+        <Amounts values={typeof amount === "string" ? [amount] : amount} className={`text-amount ${negative ? "text-expense" : ""}`} />
+        {amountNote && <span className="text-caption text-muted-foreground tabular-nums">{amountNote}</span>}
+      </span>
     </>
   );
   const cls = "flex min-h-[60px] items-center gap-3 border-b border-border";
@@ -54,7 +58,7 @@ function people(n: number | null | undefined, to: boolean) {
 }
 
 function accountRow(a: AccountRow, base: string, lang: string, negative?: boolean) {
-  const { amount, subtitle } = rowAmount(a, base, lang);
+  const { amount, inBase, subtitle } = rowAmount(a, base, lang);
   if (a.kind === "receivable") {
     return <Row key={a.id} to="/personas?ver=me-deben" icon="group" name="Me deben" subtitle={people(a.partners, false)}
       amount={formatAmount(a.base_total, symbolOf(base), lang)} />;
@@ -81,16 +85,16 @@ function accountRow(a: AccountRow, base: string, lang: string, negative?: boolea
     return <Row key={a.id} to={`/prestamos/${a.id}`} icon={a.icon} name={a.name} subtitle={a.subtitle ?? subtitle}
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
   }
-  return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} negative={negative} />;
+  return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} amountNote={inBase} negative={negative} />;
 }
 
-/** El saldo de una cuenta en su moneda; si no es la base, el subtítulo dice cuánto es en soles. */
+/** El saldo de una cuenta en su moneda; si no es la base, debajo del saldo va cuánto es en soles. */
 function rowAmount(a: AccountRow, base: string, lang: string) {
   const single = a.balances.length === 1 ? a.balances[0]! : null;
   const currency = single?.currency ?? a.currency ?? base;
   const amount = formatAmount(single?.amount ?? (a.balances.length ? a.base_total : "0.00"), symbolOf(currency), lang);
-  const inBase = currency !== base && single ? `son ${formatAmount(single.base, symbolOf(base), lang)}` : null;
-  return { amount, subtitle: [a.subtitle, inBase].filter(Boolean).join(" · ") || null };
+  const inBase = currency !== base && single ? formatAmount(single.base, symbolOf(base), lang) : null;
+  return { amount, inBase, subtitle: a.subtitle || null };
 }
 
 export function Cuentas() {
@@ -137,7 +141,7 @@ export function Cuentas() {
           {o.custody.map((c) => (
             <Row key={c.partner_id} to={`/personas/${c.partner_id}`} letter={c.partner_name[0]?.toUpperCase()} name={c.partner_name}
               subtitle="Te la dio para guardar"
-              amount={c.balances.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang)).join(" · ")} />
+              amount={c.balances.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang))} />
           ))}
         </Group>
       )}

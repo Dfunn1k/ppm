@@ -13,7 +13,7 @@ import { CurrencyChoice, Segmented } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
-import { currencyLabel, divide, formatNumber, parseAmount, symbolOf } from "@/lib/money";
+import { currencyOption, divide, formatNumber, parseAmount, symbolOf } from "@/lib/money";
 import { AmountField } from "@/pages/cuentas/CuentaForm";
 import { useBack } from "@/lib/transitions";
 
@@ -90,7 +90,7 @@ export function YaDebia({ editing }: { editing?: MoveDetail }) {
             options={[{ value: "owes_me", label: first ? `${first} me debía` : "Me debía" }, { value: "i_owe", label: `Yo le debía` }]} />
           {me.currencies.length > 1 && (
             <CurrencyChoice label="Moneda" size="sm" value={currency} onChange={setCurrency}
-              options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
+              options={me.currencies.map(currencyOption)} />
           )}
           <AmountField label={side === "owes_me" ? "¿Cuánto te debía?" : "¿Cuánto le debías?"} symbol={symbolOf(currency)}
             value={amount} onChange={(e) => setAmount(e.target.value)} />

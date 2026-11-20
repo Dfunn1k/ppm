@@ -16,7 +16,7 @@ import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
-import { CURRENCY_NAME, add, currencyLabel, divide, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, add, currencyOption, divide, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 import { useDesktopFocus } from "@/lib/desktop";
 
@@ -190,13 +190,13 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           {isCard && me.currencies.length > 1 && (
             <div className="mt-3">
               <CurrencyChoice label="¿En qué moneda?" size="sm" value={currency} onChange={setCardCurrency}
-                options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
+                options={me.currencies.map(currencyOption)} />
             </div>
           )}
           {twoWay && debtCurrencies.length > 1 && (
             <div className="mt-3">
               <CurrencyChoice label="¿Qué deuda paga?" size="sm" value={debtCur} onChange={(c) => { setDebtPick(c); setDebt(null); }}
-                options={debtCurrencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
+                options={debtCurrencies.map(currencyOption)} />
             </div>
           )}
           {cross && (

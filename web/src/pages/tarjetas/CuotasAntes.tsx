@@ -10,7 +10,7 @@ import { CurrencyChoice } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { installmentClosings } from "@/lib/cards";
 import { shortDate, todayISO } from "@/lib/dates";
-import { currencyLabel, formatAmount, multiply, parseAmount, symbolOf } from "@/lib/money";
+import { currencyOption, formatAmount, multiply, parseAmount, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
 
 export function CuotasAntes() {
@@ -61,7 +61,7 @@ export function CuotasAntes() {
           <LineField label="¿Qué compraste?" placeholder="Laptop" maxLength={120} value={what} onChange={(e) => setWhat(e.target.value)} />
           {me.currencies.length > 1 && (
             <CurrencyChoice label="Moneda" size="sm" value={currency} onChange={setCurrency}
-              options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
+              options={me.currencies.map(currencyOption)} />
           )}
           <div className="grid grid-cols-[1fr_140px] items-end gap-4">
             <LineField label="¿Cuánto es el capital de cada cuota?" inputMode="decimal" placeholder="0.00" value={each} onChange={(e) => setEach(e.target.value)}
