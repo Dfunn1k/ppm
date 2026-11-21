@@ -7,10 +7,11 @@ import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction, us
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, Icon, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
+import { listText } from "@/lib/utils";
 
 import { PersonaSheet } from "./PersonaForm";
 import { joinMoney } from "./Personas";
@@ -207,13 +208,16 @@ export function Persona() {
   );
 }
 
-/** «3 cuotas · 1 por cobrar · 2 por facturar · 1 cobrada»: las que faltan, por estado, y las ya cobradas. */
+/** «Vence el 20 dic» → «vence el 20 dic», cuando va después de su estado. */
+const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+
+/** «3 cuotas: 1 por cobrar, 1 por facturar y 1 cobrada»: las que faltan, por estado, y las ya cobradas. */
 function cuotaCounts(g: OpenItem[]): string {
   const parts = g[0]!.parts!;
   const billed = g.filter((i) => i.billed !== false).length;
   const paid = parts - g.length;
-  return [`${parts} cuotas`, billed && `${billed} por cobrar`, g.length - billed && `${g.length - billed} por facturar`,
-    paid && `${paid} ${paid === 1 ? "cobrada" : "cobradas"}`].filter(Boolean).join(" · ");
+  return `${parts} cuotas: ${listText([billed && `${billed} por cobrar`, g.length - billed && `${g.length - billed} por facturar`,
+    paid && `${paid} ${paid === 1 ? "cobrada" : "cobradas"}`])}`;
 }
 
 /** Las deudas abiertas de un lado. Las partes de una compra en cuotas van juntas, bajo su compra. Sin
@@ -257,7 +261,10 @@ function Items({ label, header, items, paid, lang, ask }: {
                 className="flex min-h-10 items-center gap-2.5 text-left">
                 <span className="grid size-6 flex-none place-items-center rounded-full bg-muted text-[12px] font-semibold">{i.part}</span>
                 <span className={`flex flex-1 flex-col text-caption ${m?.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>
-                  <span>{[i.billed === false ? "Por facturar" : !m?.late && "Por cobrar", m?.text].filter(Boolean).join(" · ")}</span>
+                  <span className="flex flex-wrap items-center gap-x-2.5">
+                    {i.billed === false ? <Status icon="receipt_long">Por facturar</Status> : !m?.late && <Status icon="schedule">Por cobrar</Status>}
+                    {m && <span>{i.billed === false || !m.late ? lower(m.text) : m.text}</span>}
+                  </span>
                   {i.interest && <span className="tabular-nums">Incluye {formatAmount(i.interest, symbolOf(i.currency), lang)} de interés</span>}
                 </span>
                 <span className="text-[14px] tabular-nums">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>

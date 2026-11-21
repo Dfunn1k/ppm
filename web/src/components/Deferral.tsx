@@ -13,6 +13,7 @@ import { ErrorAlert, Icon, PrimaryButton } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { daysBetween } from "@/lib/deferral";
 import { formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { listText } from "@/lib/utils";
 
 type Deferral = NonNullable<MoveDetail["deferral"]>;
 
@@ -70,7 +71,7 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
 
       <section aria-label="Partes" className="mt-4 flex flex-col">
         <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-          <span>{f.parts.length} partes · {counted === 1 ? "1 contó" : `${counted} contaron`}{canceled ? ` · ${canceled} canceladas` : ""}</span>
+          <span>{f.parts.length} partes: {listText([counted === 1 ? "1 contó" : `${counted} contaron`, canceled > 0 && (canceled === 1 ? "1 cancelada" : `${canceled} canceladas`)])}</span>
           <span>Faltan {money(f.remaining)}</span>
         </div>
         {f.parts.map((p) => {

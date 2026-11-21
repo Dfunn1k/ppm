@@ -56,6 +56,16 @@ export function Optional() {
   return <span className="flex-none text-caption font-normal text-muted-foreground">Opcional</span>;
 }
 
+/** Un estado con su ícono (caso 5 de «Sin punto como conector»): «Por confirmar», «Pausada», «Archivada».
+ * En ámbar si pide algo de ti; si no, del color del texto que lo rodea. Su detalle va al lado, sin «·». */
+export function Status({ icon, children, attention, className }: { icon: string; children: ReactNode; attention?: boolean; className?: string }) {
+  return (
+    <span className={cn("inline-flex flex-none items-center gap-1 font-semibold normal-case tracking-normal", attention && "text-attention", className)}>
+      <Icon name={icon} className="text-[15px]" />{children}
+    </span>
+  );
+}
+
 /** Campo de una sola línea: etiqueta arriba y una línea de 2px abajo, sin caja. */
 export function LineField({ label, error, hint, action, optional, className, ...props }: FieldProps) {
   const id = useId();
