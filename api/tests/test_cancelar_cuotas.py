@@ -15,9 +15,21 @@ from tests.test_cuotas_correcciones import ana, asientos_de_cuota, cuadra_cuotas
 from tests.test_tarjetas import plan_lines, visa
 
 CANCELA = "2026-11-10"
+HOY = "2026-11-12"   # el día del boceto: el reloj de pruebas (0040) lo fija, así no importa qué día corra
+
+
+def fijar_hoy(c) -> None:
+    c.execute("SELECT set_config('ppm.today', %s, false)", (HOY,))
+
+
+@pytest.fixture(autouse=True)
+def reloj(ana):
+    """Todas las pruebas de este archivo corren el 12 nov 2026."""
+    fijar_hoy(ana)
 
 
 def televisor(c):
+    fijar_hoy(c)   # también cuando lo usa otro archivo (test_cierre)
     card = visa(c)
     plan = en_cuotas(c, card, "215.00", 6, "2026-08-25", price="1200.00")
     return card, plan
@@ -84,7 +96,7 @@ def test_el_banco_no_cobra_mas_de_lo_que_faltaba(ana):
 
 def test_el_estado_de_la_tarjeta_despues_de_cancelar(ana):
     card, plan = televisor(ana)
-    hoy = date(2026, 11, 12)
+    hoy = date.fromisoformat(HOY)
     s = ana.execute("SELECT total_debt, unbilled, to_pay FROM credit_card_status(%s) WHERE account_id = %s"
                     " AND currency_id = %s", (hoy, card, cur(ana, "PEN"))).fetchone()
     assert s == (Decimal("1290.00"), Decimal("860.00"), Decimal("430.00"))
