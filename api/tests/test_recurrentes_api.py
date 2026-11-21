@@ -148,7 +148,7 @@ def test_ya_lo_venia_pagando_no_mueve_tus_cuentas(ana: Ana):
     assert ana.balance(ana.bcp) == "1000.00"
     owe = ana.c.get("/accounts").json()["owe"]
     row = next(a for a in owe if a["id"] == loan)
-    assert (row["kind"], row["subtitle"]) == ("loan", "Préstamo en soles · BCP")
+    assert (row["kind"], row["subtitle"], row["bank"]) == ("loan", "Préstamo en soles", "BCP")
     d = ana.c.get(f"/loans/{loan}").json()
     assert (d["debt"], d["bank"], d["paid_count"], d["left_count"], d["pay_account"]) == \
            ("38850.00", "BCP", 0, 23, "BCP")

@@ -36,7 +36,7 @@ test("un seguro repartido en 12 meses: la parte del mes, cancelar lo que falta y
 
   // En el mes: la parte de hoy es el gasto; el pago, de Efectivo a «Pagos por adelantado»
   await expect(page).toHaveURL("/movimientos");
-  await page.getByRole("link", { name: /SOAT · parte 1\/12/ }).click();
+  await page.getByRole("link", { name: /SOAT\s*1 de 12/ }).click();
   await expect(page.getByText("Parte 1 de 12 de «SOAT»")).toBeVisible();
   await expect(page.getByRole("button", { name: /Editar|Borrar/ })).toHaveCount(0);
   await page.getByRole("link", { name: /Parte 1 de 12/ }).click();

@@ -11,6 +11,7 @@ import { shortDate, todayISO } from "@/lib/dates";
 import { add, formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
 import { dayDate } from "@/pages/recurrentes/Recurrentes";
+import { accountOption } from "@/components/AccountSub";
 
 function payAccounts(have: AccountRow[] | undefined, currency: string) {
   return (have ?? []).filter((a) => (a.kind === "bank" || a.kind === "cash") && (a.currency ?? currency) === currency);
@@ -106,7 +107,7 @@ export function NuevoPrestamo() {
           </label>
           <SheetSelect label={fresh ? "¿A qué cuenta entró?" : "¿De qué cuenta pagas la cuota?"} hint={fresh ? "De ahí pagas la cuota" : undefined}
             sheetTitle="Elige la cuenta" value={pay ? String(pay.id) : ""} onChange={setPayId}
-            options={pays.map((a) => ({ value: String(a.id), label: a.name, hint: a.subtitle ?? undefined }))} />
+            options={pays.map((a) => ({ value: String(a.id), label: a.name, ...accountOption(a) }))} />
 
           <span className="mt-2 flex flex-col border-b border-border pb-1"><span className="text-label text-muted-foreground">La cuota</span><span className="text-caption text-muted-foreground">Se repite cada mes</span></span>
           <div className="grid grid-cols-2 gap-4">

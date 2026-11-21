@@ -64,7 +64,7 @@ def test_el_banco_va_en_el_subtitulo_si_el_nombre_no_lo_dice():
     c = person()
     r = c.post("/accounts/bank", json={"name": "Sueldo", "currency": "PEN", "bank_id": bank_id(c, "BCP")})
     assert r.status_code == 201, r.text
-    assert r.json()["account"]["subtitle"] == "Ahorros en soles · BCP"
+    assert (r.json()["account"]["subtitle"], r.json()["account"]["bank"]) == ("Ahorros en soles", "BCP")
 
 
 def test_cuenta_de_banco_en_soles():

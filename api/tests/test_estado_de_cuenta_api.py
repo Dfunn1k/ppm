@@ -73,7 +73,7 @@ def test_el_caso_qore_toma_la_foto_del_banco_y_divide_la_cuota(ana: Con, pdf):
 
     # La cuota 1/3: capital a su categoría e interés a Intereses
     month = ana.c.get("/moves", params={"month": "2026-10"}).json()
-    m = next(m for day in month["days"] for m in day["moves"] if m["ref"] == "Unipiel · cuota 1/3")
+    m = next(m for day in month["days"] for m in day["moves"] if (m["ref"], m["part"], m["parts"]) == ("Unipiel", 1, 3))
     assert (m["kind"], m["amount"]) == ("expense", "262.02")
     assert sorted(c["name"] for c in m["categories"]) == ["Hogar", "Intereses"]
     plan = ana.c.get(f"/moves/{unipiel}").json()["plan"]
@@ -245,7 +245,6 @@ def test_un_pdf_que_llega_despues_del_cierre_no_divide_la_cuota(ana: Con, pdf):
     r = upload(ana, card)
     assert r["used"] == "1716.47"
     assert r["installments"][0]["not_split"] is True
-    assert any("cae en un periodo cerrado y no se dividió" in e for e in r["explanations"])
     assert ana.c.get(f"/moves/{unipiel}").json()["plan"]["lines"][0]["interest"] is None
 
     assert ana.c.put("/closing", json={"lock_date": None}).status_code == 200

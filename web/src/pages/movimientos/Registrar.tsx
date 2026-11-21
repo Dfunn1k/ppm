@@ -37,6 +37,7 @@ import { Reembolso } from "./Reembolso";
 import { RegistrarPersona } from "./RegistrarPersona";
 import { YaDebia } from "@/pages/personas/YaDebia";
 import { useDesktopFocus } from "@/lib/desktop";
+import { accountOption } from "@/components/AccountSub";
 
 type Kind = Extract<MoveIn["kind"], "expense" | "income" | "transfer">;
 type Part = { category: Category | null; partner?: { id: number; name: string } | null; amount: string };
@@ -200,7 +201,8 @@ export function Registrar({ editing, recurring, reminder }: {
       value: String(a.id),
       label: a.name,
       hint: a.kind === "card" ? a.subtitle ?? "Tarjeta de crédito"
-        : a.subtitle ?? undefined,
+        : undefined,
+      ...(a.kind === "card" ? {} : accountOption(a)),
       // El saldo a la derecha, como en la lista de Cuentas (caso 9, opción B)
       right: a.kind === "card" ? undefined : formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang),
     }));

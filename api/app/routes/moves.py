@@ -136,6 +136,8 @@ class MoveSummaryOut(BaseModel):
     account_icon: str | None         # el de la cuenta de dinero (la de donde sale, en una transferencia)
     tags: list[TagRefOut]
     attachments: int
+    part: int | None = None          # una cuota o una parte repartida: cuál es
+    parts: int | None = None         # y de cuántas («3 de 12»)
 
 
 class DayOut(BaseModel):

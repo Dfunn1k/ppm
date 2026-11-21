@@ -6,6 +6,7 @@ import { type HomeSetup, useAccounts, useHomeSetup, useMe, useSaveHomeSetup } fr
 import { SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { formatAmount, symbolOf } from "@/lib/money";
+import { accountOption } from "@/components/AccountSub";
 
 export function InicioAjustes() {
   const me = useMe().data;
@@ -71,7 +72,7 @@ export function InicioAjustes() {
         <SheetSelect label="Al tocar +, sale de" sheetTitle="¿De qué cuenta sale?"
           value={s.account_id ? String(s.account_id) : ""} onChange={(v) => send({ account_id: v ? Number(v) : null })}
           options={[{ value: "", label: "Elegirla cada vez", hint: "Registrar arranca con la primera de tus cuentas" },
-            ...money.map((a) => ({ value: String(a.id), label: a.name, hint: a.subtitle ?? undefined }))]} />
+            ...money.map((a) => ({ value: String(a.id), label: a.name, ...accountOption(a) }))]} />
         <span className="text-caption text-muted-foreground">Dentro de una cuenta o tarjeta, el + registra con esa.</span>
       </div>
       {save.error && <div className="mt-3"><ErrorAlert>{save.error.message}</ErrorAlert></div>}

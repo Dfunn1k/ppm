@@ -142,6 +142,7 @@ export function DetalleMovimiento() {
         </div>
       )}
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
+      {s.part != null && s.parts != null && <span className="mt-2 flex"><Pill>{s.part} de {s.parts}</Pill></span>}
       {cancels && (
         <Link to={`/movimientos/${cancels.move_id}`} className="mt-3 flex items-center gap-2.5 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
           <Icon name="event_busy" />

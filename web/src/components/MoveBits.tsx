@@ -5,6 +5,7 @@ import { flow, isPersonKind, tone } from "@/lib/kinds";
 import { formatAmount, formatNumber, symbolOf } from "@/lib/money";
 
 import { CategoryChip } from "./CategorySheet";
+import { Pill } from "./Pill";
 import { TagChips, tagColor } from "./Tags";
 import { Icon } from "./ui";
 
@@ -104,6 +105,17 @@ export function MoveAmount({ move: x, base, lang }: { move: MoveSummary; base: s
     <span className={`flex items-center gap-0.5 text-amount whitespace-nowrap ${tone(x.kind)}`}>
       {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} className="text-[16px]" />}
       {f === "in" ? "+ " : f === "out" ? "− " : ""}{value}
+    </span>
+  );
+}
+
+/** El nombre de un movimiento en su fila. Una cuota o una parte repartida se llama como la compra y
+ *  lleva al lado cuál es, en pastilla: «Laptop [3 de 12]» (caso 10, opción E). */
+export function MoveName({ move: x }: { move: Pick<MoveSummary, "ref" | "part" | "parts"> }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <span className="truncate font-semibold">{x.ref}</span>
+      {x.part != null && x.parts != null && <Pill>{x.part} de {x.parts}</Pill>}
     </span>
   );
 }

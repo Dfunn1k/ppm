@@ -19,6 +19,7 @@ import { type PersonKind, isPersonKind } from "@/lib/kinds";
 import { CURRENCY_NAME, add, currencyOption, divide, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 import { useDesktopFocus } from "@/lib/desktop";
+import { accountOption } from "@/components/AccountSub";
 
 const TEXT: Record<PersonKind, { ask: string; who: string; into: boolean; submit: string; role: "owes_me" | "i_owe" | "keep" }> = {
   lend: { ask: "¿Cuánto le prestaste?", who: "¿A quién?", into: false, submit: "Registrar préstamo", role: "owes_me" },
@@ -186,7 +187,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           <SheetSelect label={t.into ? "Entra a" : "Sale de"} sheetTitle={t.into ? "¿A qué cuenta entra?" : "¿De qué cuenta sale?"}
             value={account ? String(account.id) : ""} onChange={setAccountId}
             options={accounts.map((a) => ({ value: String(a.id), label: a.name,
-              hint: a.subtitle ?? undefined, right: formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang) }))} />
+              ...accountOption(a), right: formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang) }))} />
           {isCard && me.currencies.length > 1 && (
             <div className="mt-3">
               <CurrencyChoice label="¿En qué moneda?" size="sm" value={currency} onChange={setCardCurrency}

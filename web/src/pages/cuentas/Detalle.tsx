@@ -25,6 +25,7 @@ import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf }
 import { AmountField } from "./CuentaForm";
 import { DetailSkeleton } from "@/components/Skeleton";
 import { useDesktop } from "@/lib/desktop";
+import { AccountSub } from "@/components/AccountSub";
 
 /** En escritorio los movimientos van en tabla: fecha, movimiento, categoría, monto y saldo. */
 const TABLE = "grid grid-cols-[64px_minmax(0,1fr)_120px_112px] items-center gap-3";
@@ -85,7 +86,7 @@ export function Detalle() {
           <Icon name="more_vert" className="text-[24px]" />
         </button>
       </div>
-      {d.account.subtitle && <span className="mt-2 text-label text-muted-foreground">{d.account.subtitle}</span>}
+      {d.account.subtitle && <span className="mt-2 text-label text-muted-foreground"><AccountSub a={d.account} /></span>}
       <h1 className="mt-1.5 text-title-hero">{d.account.name}</h1>
       <span className="mt-4 text-caption text-muted-foreground">Tienes hoy</span>
       {d.account.balances.length === 0 ? (

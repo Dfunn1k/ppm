@@ -1757,6 +1757,8 @@ export interface components {
             /** Partners */
             partners?: number | null;
             card?: components["schemas"]["CardBriefOut"] | null;
+            /** Bank */
+            bank?: string | null;
         };
         /** ActivityIn */
         ActivityIn: {
@@ -3365,6 +3367,10 @@ export interface components {
             tags: components["schemas"]["TagRefOut"][];
             /** Attachments */
             attachments: number;
+            /** Part */
+            part?: number | null;
+            /** Parts */
+            parts?: number | null;
         };
         /** MoveTagsIn */
         MoveTagsIn: {

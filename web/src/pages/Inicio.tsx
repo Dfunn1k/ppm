@@ -6,7 +6,7 @@ import { Link, useLocation, useSearchParams } from "react-router";
 
 import { useHome, useMe, usePending, useUpdateMe } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
-import { MoveAmount, MoveIcon, MoveLine, moveBits } from "@/components/MoveBits";
+import { MoveAmount, MoveIcon, MoveLine, MoveName, moveBits } from "@/components/MoveBits";
 import { activityCaption, NoticeAmounts, noticeView, sectionOf } from "@/components/Pending";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Facts, Icon } from "@/components/ui";
@@ -179,7 +179,7 @@ export function Inicio() {
           <Link key={x.id} to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border py-2">
             <MoveIcon move={x} />
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-semibold">{x.ref}</span>
+              <MoveName move={x} />
               <MoveLine bits={moveBits(x, h.currency, lang, x.date === todayISO() ? "Hoy" : shortDate(x.date))} tags={x.tags} />
             </span>
             {hidden ? <span className="text-amount text-muted-foreground">••••</span> : <MoveAmount move={x} base={h.currency} lang={lang} />}

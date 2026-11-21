@@ -66,6 +66,7 @@ class AccountRow:
     base_total: Decimal          # suma de sus saldos en moneda base
     partners: int | None = None  # Por cobrar y Por pagar: con cuántas personas hay algo pendiente
     card: CardBrief | None = None   # tarjetas: lo que toca pagar
+    bank: str | None = None      # bancos y préstamos: el banco, que la app muestra en pastilla (caso 10)
 
 
 @dataclass(frozen=True)
@@ -219,13 +220,12 @@ SELECT a.id, a.name, a.account_type, a.system_role, coalesce(a.icon, p.icon), tr
 
 
 def card_subtitle(bank: str | None, brand: str | None, last4: str | None) -> str | None:
-    """«BBVA · Visa •••• 4417», con lo que haya."""
-    tail = " ".join(x for x in [brand, f"•••• {last4}" if last4 else None] if x)
-    return " · ".join(x for x in [bank, tail] if x) or None
+    """«BBVA Visa •••• 4417», con lo que haya: como está impreso en la tarjeta."""
+    return " ".join(x for x in [bank, brand, f"•••• {last4}" if last4 else None] if x) or None
 
 
 def _bank_unless_named(bank: str | None, name: str) -> str | None:
-    """El banco va en el subtítulo solo si el nombre no lo dice ya: «BCP» no lleva «… · BCP» debajo."""
+    """El banco se muestra solo si el nombre no lo dice ya: la cuenta «BCP» no lleva otra vez «BCP» debajo."""
     return None if bank and bank.casefold() in name.casefold() else bank
 
 
@@ -244,19 +244,19 @@ def _row(r: tuple, balances: list[Money]) -> AccountRow:
         kind = "cash"
     else:
         kind = "other"
-    subtitle = None
+    subtitle = bank = None
     if kind == "bank":
-        subtitle = " · ".join(x for x in [f"{KIND_NAMES[acc_kind]} en {CURRENCY_NAMES.get(currency or '', currency)}",
-                                          _bank_unless_named(bank_name, name)] if x)
+        subtitle = f"{KIND_NAMES[acc_kind]} en {CURRENCY_NAMES.get(currency or '', currency)}"
+        bank = _bank_unless_named(bank_name, name)
     elif kind == "cash" and currency and currency != "PEN":
         subtitle = f"En {CURRENCY_NAMES.get(currency, currency)}"
     elif kind == "card":
         subtitle = card_subtitle(_bank_unless_named(card_bank, name), brand, last4)
     elif kind == "loan":
-        subtitle = " · ".join(x for x in [f"Préstamo en {CURRENCY_NAMES.get(currency or '', currency)}",
-                                          _bank_unless_named(loan_bank, name)] if x)
+        subtitle = f"Préstamo en {CURRENCY_NAMES.get(currency or '', currency)}"
+        bank = _bank_unless_named(loan_bank, name)
     return AccountRow(acc_id, name, kind, currency, icon or ("account_balance" if kind == "bank" else "payments"),
-                      subtitle, balances, sum((m.base for m in balances), ZERO))
+                      subtitle, balances, sum((m.base for m in balances), ZERO), bank=bank)
 
 
 def overview(user_id: int) -> Overview:

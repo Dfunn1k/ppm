@@ -36,7 +36,8 @@ HIDDEN = {"res_users": {"password"}}        # nunca sale: la huella de la contra
 CATALOGS = ("res_currency", "res_bank", "res_country", "res_lang")
 SPOOL = 16 * 1024 * 1024                    # hasta 16 MB en memoria; más, al disco temporal
 
-README = """PPM · tus datos ({date})
+README = """Tus datos de PPM
+Exportados el {date}
 
 datos.json   Todo lo que registraste, tabla por tabla, tal como lo guarda PPM: tu respaldo.
 csv/         Una tabla por archivo, para abrir en Excel o Sheets (UTF-8, separado por comas).
