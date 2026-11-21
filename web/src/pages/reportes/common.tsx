@@ -82,6 +82,19 @@ export function delta(now: string, before: string) {
   return d === 0 ? "igual" : `${d > 0 ? "+" : "−"}${Math.abs(d)} %`;
 }
 
+/** El cambio contra el periodo anterior con su flecha (caso 7): ↗ 12 %, ↘ 4 %, «Igual» o «Nuevo». */
+export function Trend({ now, before }: { now: string; before: string }) {
+  const a = Number(now), b = Number(before);
+  if (!b) return <>{a ? "Nuevo" : "Igual"}</>;
+  const d = Math.round(((a - b) / Math.abs(b)) * 100);
+  if (d === 0) return <>Igual</>;
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <Icon name={d > 0 ? "trending_up" : "trending_down"} className="text-[15px]" />{Math.abs(d)} %
+    </span>
+  );
+}
+
 /** «12 % menos que setiembre» con su flecha. */
 export function Versus({ now, before, against }: { now: string; before: string; against: string }) {
   const a = Number(now), b = Number(before);

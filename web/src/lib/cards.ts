@@ -1,6 +1,7 @@
 // Los cortes de una tarjeta, con las mismas reglas que la base (card_closing_for): una compra entra
 // al primer corte en o después de su fecha, y un corte 31 en febrero es el último día del mes.
 import type { AccountRow } from "@/api/hooks";
+import type { Fact } from "@/components/ui";
 
 import { shortDate } from "./dates";
 import { formatAmount, symbolOf } from "./money";
@@ -35,11 +36,13 @@ export function installmentClosings(iso: string, n: number, day: number): string
 }
 
 /** Lo que C1 dice de una tarjeta: «Pagar S/ 1,284.90 + US$ 45.00 antes del 05 nov». */
-export function cardHint(a: AccountRow, lang: string): { text: string; attention: boolean } {
+export function cardHint(a: AccountRow, lang: string): { text: string; facts?: Fact[]; attention: boolean } {
   const c = a.card;
   if (!c || c.to_pay.length === 0) return { text: a.subtitle ?? "Nada por pagar", attention: false };
   const money = c.to_pay.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang)).join(" + ");
-  if (!c.date_due) return { text: `Cerró el ${shortDate(c.last_closing)} · falta la fecha de pago`, attention: true };
+  if (!c.date_due) {
+    return { text: `Cerró el ${shortDate(c.last_closing)} y falta la fecha de pago`, facts: [["Cerró", shortDate(c.last_closing)], ["Fecha de pago", "Falta"]], attention: true };
+  }
   return { text: `Pagar ${money} antes del ${shortDate(c.date_due)}`, attention: false };
 }
 

@@ -10,7 +10,7 @@ import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardD
 import { type Bit, MoveLine, clipBit, pendingBit } from "@/components/MoveBits";
 import { Activities, ActivitySheet } from "@/components/Pending";
 import { Segmented, Sheet } from "@/components/Sheet";
-import { Amounts, ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
+import { Amounts, ErrorAlert, type Fact, Facts, Icon, LineField, PrimaryButton, Segments } from "@/components/ui";
 import { ImportStatement } from "@/pages/tarjetas/Conciliar";
 import { DateField } from "@/components/DateSheet";
 import { daysUntil } from "@/lib/cards";
@@ -59,7 +59,7 @@ export function Tarjeta() {
   const when = owed.length === 0
     ? favor.length ? "Tienes saldo a favor" : "Nada por pagar ahora"
     : d.date_due
-      ? `A pagar antes del ${shortDate(d.date_due)}${dueIn(d.date_due)}`
+      ? <Facts items={[["Pagar antes del", shortDate(d.date_due)], dueIn(d.date_due)]} attention={daysUntil(d.date_due, todayISO()) <= 0} />
       : `A pagar del ciclo que cerró el ${shortDate(d.last_closing)}`;
   const hero = owed.length === 0 && favor.length ? favor[0]!.to_pay.replace("-", "") : Number(main.to_pay) > 0 ? main.to_pay : "0.00";
   const heroCur = owed.length === 0 && favor.length ? favor[0]!.currency : main.currency;
@@ -147,7 +147,7 @@ export function Tarjeta() {
         <button key={r.currency} type="button" onClick={() => setMenu("rate")}
           className="mt-1 flex min-h-10 items-center gap-1.5 self-start text-caption text-muted-foreground tabular-nums">
           <Icon name="currency_exchange" className="text-[16px]" />
-          {symbolOf(r.currency)} al tipo de venta {Number(r.rate).toFixed(3)} · {r.edited ? `escrito el ${shortDate(r.rate_date)}` : `del ${shortDate(r.rate_date)}`}
+          <Facts items={[[`${symbolOf(r.currency)} a la venta`, Number(r.rate).toFixed(3)], [r.edited ? "Escrito el" : "Del", shortDate(r.rate_date)]]} />
           <span className="font-semibold text-primary-strong">Cambiar</span>
         </button>
       ))}
@@ -164,10 +164,11 @@ export function Tarjeta() {
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">{p.name}</span>
-              <span className="text-caption text-muted-foreground tabular-nums">
-                {p.opening ? "De antes de PPM" : `Facturada ${p.billed} de ${p.n_installments}`}
-                {" · "}quedan {p.n_installments - p.billed}{p.next_installment ? ` de ${money(p.next_installment, p.currency)}` : ""}
-              </span>
+              <Segments done={p.billed} total={p.n_installments} className="mt-1 mb-1 max-w-48" />
+              <Facts items={[
+                p.opening ? ["Desde", "Antes de PPM"] : ["Facturadas", `${p.billed} de ${p.n_installments}`],
+                ["Quedan", `${p.n_installments - p.billed}${p.next_installment ? ` de ${money(p.next_installment, p.currency)}` : ""}`],
+              ]} />
             </span>
             <span className="text-amount">{money(p.remaining, p.currency)}</span>
           </Link>
@@ -189,9 +190,7 @@ export function Tarjeta() {
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">{c.name}</span>
-              <span className="text-caption text-muted-foreground">
-                {c.yearly ? "Cada año" : "Cada corte"} · {c.next_date ? `el próximo, ${shortDate(c.next_date)}` : "terminado"}
-              </span>
+              <Facts items={[["Cada", c.yearly ? "Año" : "Corte"], c.next_date ? ["El próximo", shortDate(c.next_date)] : ["Estado", "Terminado"]]} />
               {c.drafts > 0 && (
                 <span className="mt-1 self-start rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">
                   {c.drafts === 1 ? "1 por confirmar" : `${c.drafts} por confirmar`}
@@ -215,7 +214,7 @@ export function Tarjeta() {
 
       <div className="mt-3 flex flex-col gap-4">
         {cycle && (
-          <section aria-label={cycleLabel(cycle)} className="flex flex-col">
+          <section aria-label={cycleTitle(cycle, at === open)} className="flex flex-col">
             <div className="flex items-center justify-between gap-2">
               <button type="button" aria-label="Ciclo anterior" disabled={at >= d.cycles.length - 1}
                 onClick={() => setPicked(d.cycles[at + 1]!.closing_date)}
@@ -348,11 +347,11 @@ function ChargeSheet({ open, onClose, card, lang }: { open: boolean; onClose: ()
   );
 }
 
-function dueIn(due: string) {
+function dueIn(due: string): Fact {
   const n = daysUntil(due, todayISO());
-  if (n < 0) return " · ya pasó";
-  if (n === 0) return " · es hoy";
-  return ` · faltan ${n} ${n === 1 ? "día" : "días"}`;
+  if (n < 0) return ["Plazo", "Ya pasó"];
+  if (n === 0) return ["Plazo", "Es hoy"];
+  return ["Faltan", n === 1 ? "1 día" : `${n} días`];
 }
 
 function cycleTitle(c: CardDetail["cycles"][number], open: boolean) {
@@ -364,8 +363,8 @@ function cycleTitle(c: CardDetail["cycles"][number], open: boolean) {
 function cycleLabel(c: CardDetail["cycles"][number]) {
   if (c.state === "current") return `Cierra ${shortDate(c.closing_date)}`;
   if (c.state === "billed") {
-    return c.date_due ? `Cerró ${shortDate(c.closing_date)} · pagar antes del ${shortDate(c.date_due)}`
-      : `Cerró ${shortDate(c.closing_date)} · sin fecha de pago`;
+    return c.date_due ? <Facts items={[["Cerró", shortDate(c.closing_date)], ["Pagar antes del", shortDate(c.date_due)]]} />
+      : <Facts items={[["Cerró", shortDate(c.closing_date)], ["Fecha de pago", "Falta"]]} attention />;
   }
   return `Cerró ${shortDate(c.closing_date)}`;
 }

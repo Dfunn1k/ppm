@@ -151,8 +151,10 @@ export function Prestamo() {
   const money = (v: string) => formatAmount(v, sym, lang);
   const paidOff = Number(l.debt) <= 0;
   const progress = Number(l.start_debt) > 0 ? Math.min(100, Math.round((1 - Number(l.debt) / Number(l.start_debt)) * 100)) : 0;
-  const progressText = paidOff ? "Lo terminaste de pagar"
-    : `Pagaste ${l.paid_count} ${l.paid_count === 1 ? "cuota" : "cuotas"} · ${l.left_count === 1 ? "falta 1" : `faltan ${l.left_count}`}`;
+  const total = l.paid_count + l.left_count;
+  const progressText = paidOff ? "Lo terminaste de pagar" : `${l.paid_count} de ${total} cuotas`;
+  // Un punto por cuota, lleno si ya la pagaste (caso 7); con muchas cuotas, la barra del capital
+  const dots = !paidOff && total > 0 && total <= 36;
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
       <div className="-mx-2.5 flex items-center">
@@ -164,9 +166,17 @@ export function Prestamo() {
       <span className="text-[40px] leading-[44px] font-semibold tracking-[-0.02em] tabular-nums">{money(l.debt)}</span>
       <span className="text-caption text-muted-foreground">Solo el capital, sin los intereses que faltan</span>
       <div className="mt-2 flex flex-col gap-1.5">
-        <div role="img" aria-label={progressText} className="h-2.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-2.5 rounded-full bg-primary" style={{ width: `${paidOff ? 100 : progress}%` }} />
-        </div>
+        {dots ? (
+          <div role="img" aria-label={`Pagaste ${progressText}`} className="flex flex-wrap gap-1">
+            {Array.from({ length: total }, (_, i) => (
+              <span key={i} className={`size-2.5 rounded-full ${i < l.paid_count ? "bg-primary" : "border-[1.5px] border-input-line"}`} />
+            ))}
+          </div>
+        ) : (
+          <div role="img" aria-label={progressText} className="h-2.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-2.5 rounded-full bg-primary" style={{ width: `${paidOff ? 100 : progress}%` }} />
+          </div>
+        )}
         <span className="text-caption text-muted-foreground">{progressText}</span>
       </div>
 

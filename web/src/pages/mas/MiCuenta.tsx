@@ -9,7 +9,8 @@ import { z } from "zod";
 import { ApiError, useChangePassword, useGoogleUnlink, useLogout, useLogoutAll, useMe, useProviders } from "@/api/hooks";
 import { GoogleMark, googleStart } from "@/components/GoogleButton";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, PasswordField, PrimaryButton } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, PasswordField, PrimaryButton } from "@/components/ui";
+import { capitalize } from "@/lib/utils";
 import { CURRENCY_NAME } from "@/lib/money";
 
 const next = z.string().min(8, { error: "Usa al menos 8 caracteres" }).max(128, { error: "Usa 128 caracteres o menos" });
@@ -62,7 +63,7 @@ export function MiCuenta() {
       </div>
       <span className="mt-6 hidden text-label text-muted-foreground lg:block">Mi cuenta</span>
       <h1 className="mt-6 text-title-hero lg:mt-1">{me.name}</h1>
-      <span className="mt-2 text-muted-foreground">{me.email} · {currencies}</span>
+      <Facts className="mt-2" items={[["Correo", me.email], ["Monedas", capitalize(currencies)]]} />
       {(done ?? (news && !news[0] ? news[1] : null)) && (
         <div role="status" className="mt-4 flex items-start gap-2 rounded-md bg-muted p-3 text-caption">
           <Icon name="check_circle" fill className="text-income" /><span>{done ?? news?.[1]}</span>

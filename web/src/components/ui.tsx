@@ -77,6 +77,60 @@ export function Status({ icon, children, attention, className }: { icon: string;
   );
 }
 
+/** Un dato de una ficha: su nombre y su valor; `false` o `null` no se muestran. */
+export type Fact = readonly [label: string, value: ReactNode] | false | null | undefined | "";
+
+/** Datos sueltos como etiqueta y valor (caso 7 de «Sin punto como conector»): una ficha chica, el nombre
+ * arriba en mayúsculas y el dato abajo, lado a lado. «PAGAR ANTES DEL 20 nov» junto a «FALTAN 3 días».
+ * En ámbar si pide algo de ti. */
+export function Facts({ items, attention, className }: { items: Fact[]; attention?: boolean; className?: string }) {
+  const xs = items.filter(Boolean) as (readonly [string, ReactNode])[];
+  return (
+    <span className={cn("inline-flex flex-wrap gap-x-4 gap-y-1 text-left", className)}>
+      {xs.map(([label, value], i) => (
+        <span key={label} className="flex flex-col">
+          {/* Para el lector de pantalla se lee «Faltan: 3 días, …» */}
+          <span className="text-[10px] leading-[14px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+            {i > 0 && <span className="sr-only">, </span>}{label}<span className="sr-only">: </span>
+          </span>
+          <span className={cn("text-caption font-semibold text-foreground tabular-nums normal-case tracking-normal", attention && "text-attention")}>{value}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Avance en partes, como la barra de cuotas (caso 7): una rayita por parte, llena si ya pasó. Con
+ * muchas partes, una sola barra. */
+export function Segments({ done, total, className }: { done: number; total: number; className?: string }) {
+  if (total > 24) {
+    return (
+      <span className={cn("block h-1.5 overflow-hidden rounded-full bg-border", className)} aria-hidden="true">
+        <span className="block h-full rounded-full bg-foreground" style={{ width: `${Math.round((done / total) * 100)}%` }} />
+      </span>
+    );
+  }
+  return (
+    <span className={cn("flex gap-[3px]", className)} aria-hidden="true">
+      {Array.from({ length: total }, (_, i) => <span key={i} className={cn("h-1.5 flex-1 rounded-[3px]", i < done ? "bg-foreground" : "bg-border")} />)}
+    </span>
+  );
+}
+
+/** El ejemplo de un formato de números y fechas como una fila de Movimientos (caso 7): se ve tal como
+ * quedará, sin unir el monto y la fecha con un signo. */
+export function FormatSample({ amount, date }: { amount: string; date: string }) {
+  return (
+    <span className="mt-1 flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5">
+      <span className="flex flex-1 flex-col">
+        <span className="text-caption font-semibold text-foreground">Almuerzo</span>
+        <span className="text-[12px] leading-4 text-muted-foreground">{date}</span>
+      </span>
+      <span className="text-caption font-semibold text-foreground tabular-nums">{amount}</span>
+    </span>
+  );
+}
+
 /** Campo de una sola línea: etiqueta arriba y una línea de 2px abajo, sin caja. */
 export function LineField({ label, error, hint, action, optional, className, ...props }: FieldProps) {
   const id = useId();

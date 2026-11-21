@@ -9,7 +9,7 @@ import { Avatar } from "@/components/MoveBits";
 import { TagChips } from "@/components/Tags";
 import { DateField } from "@/components/DateSheet";
 import { Segmented, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, PrimaryButton, Spinner, Status } from "@/components/ui";
+import { ErrorAlert, type Fact, Facts, Icon, PrimaryButton, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, parseAmount, symbolOf } from "@/lib/money";
 import { MODE_ICON, MODE_NAME, ruleText } from "@/lib/recurrence";
@@ -41,15 +41,14 @@ function ModeChip({ row }: { row: RecurringRow }) {
 }
 
 /** La paga (o la cobra) otra persona: «Paga Luis», «Cobra Luis». */
-function payer(row: RecurringRow) {
-  return `${row.kind === "income" ? "Cobra" : "Paga"} ${row.paid_by!.split(" ")[0]}`;
-}
-
+/** La línea de una recurrente en la lista: la próxima fecha y quién o dónde, como etiqueta y valor (caso 7). */
 function caption(row: RecurringRow) {
   if (row.state === "paused") return "Pausada";
-  const when = row.next ? shortDate(row.next.date) : "Sin próximas fechas";
-  if (row.mode === "reminder") return `${when} · te avisamos`;
-  return `${when} · ${row.kind === "transfer" ? `a ${row.to_account}` : row.paid_by ? payer(row) : row.account}`;
+  const who: Fact = row.mode === "reminder" ? ["Cómo", "Te avisamos"]
+    : row.kind === "transfer" ? ["A", row.to_account ?? ""]
+      : row.paid_by ? [row.kind === "income" ? "La cobra" : "La paga", row.paid_by.split(" ")[0]!]
+        : [row.kind === "income" ? "Entra a" : "Sale de", row.account];
+  return <Facts items={[["Próxima", row.next ? shortDate(row.next.date) : "Sin fechas"], who]} />;
 }
 
 export function Recurrentes() {
@@ -143,8 +142,10 @@ export function Recurrente() {
   // El estado (o el modo) con su ícono a la izquierda y cada cuánto se repite a la derecha
   const status = paused ? { icon: "pause_circle", name: "Pausada" } : done ? { icon: "stop_circle", name: "Terminada" }
     : { icon: MODE_ICON[row.mode], name: MODE_NAME[row.mode] };
-  const where = row.kind === "transfer" ? `de ${row.account} a ${row.to_account}`
-    : `${rec.data.categories.map((c) => c.name).join(", ")} · ${row.paid_by ? `${row.kind === "income" ? "la cobra" : "la paga"} ${row.paid_by.split(" ")[0]}` : `${row.kind === "income" ? "entra a" : "sale de"} ${row.account}`}`;
+  const where: Fact[] = row.kind === "transfer" ? [["De", row.account], ["A", row.to_account ?? ""]] : [
+    [rec.data.categories.length > 1 ? "Categorías" : "Categoría", rec.data.categories.map((c) => c.name).join(", ")],
+    row.paid_by ? [row.kind === "income" ? "La cobra" : "La paga", row.paid_by.split(" ")[0]!] : [row.kind === "income" ? "Entra a" : "Sale de", row.account],
+  ];
   const mine = rec.data.splits.reduce((t, v) => t + Math.round(Number(v) * 100), 0) / 100;
 
   return (
@@ -179,7 +180,7 @@ export function Recurrente() {
           {row.kind === "transfer" ? "" : isNegative(row.amount) ? "− " : "+ "}{money(row.amount)}
           {row.mode === "draft" && <span className="ml-2 text-caption font-normal text-muted-foreground">más o menos</span>}
         </span>
-        <span className="text-caption text-muted-foreground lg:col-start-1 lg:row-start-2 lg:mt-1">{where} · desde el {shortDate(rule.start)}</span>
+        <Facts className="mt-1 lg:col-start-1 lg:row-start-2" items={[...where, ["Desde", shortDate(rule.start)]]} />
       </div>
       {rec.data.tags.length > 0 && <div className="mt-2"><TagChips tags={rec.data.tags} small /></div>}
 
@@ -232,7 +233,7 @@ export function Recurrente() {
                     <span className={`font-semibold ${n.skipped ? "line-through" : ""}`}>{dayDate(n.date)}</span>
                     <span className="text-caption text-muted-foreground">
                       {n.skipped ? "Saltada: esta vez no"
-                        : n.moved || n.changed ? [n.moved && `Movida del ${Number(n.occurrence.slice(8))}`, n.changed && "otro monto"].filter(Boolean).join(" · ")
+                        : n.moved || n.changed ? <Facts items={[n.moved && ["Movida del", String(Number(n.occurrence.slice(8)))], n.changed && ["Monto", "Otro"]]} />
                           : row.mode === "auto" ? "Se registra sola ese día" : row.mode === "draft" ? "Se crea por confirmar ese día" : "Te avisamos ese día"}
                     </span>
                   </span>
@@ -322,7 +323,7 @@ function OccurrenceSheet({ id, next, name, money, lang, onClose }: {
   };
   return (
     <Sheet title={`Solo el ${dayDate(next.occurrence).toLowerCase()}`} open onClose={onClose}>
-      <span className="mx-1 -mt-2 text-caption text-muted-foreground">{name} · {money(next.amount)} · las demás fechas no cambian</span>
+      <Facts className="mx-1 -mt-2" items={[[name, money(next.amount)], ["Las demás fechas", "No cambian"]]} />
       <div className="mx-1 mt-3">
         <Segmented label="Qué cambias" size="sm" value={tab} onChange={(v) => setTab(v as typeof tab)}
           options={[{ value: "date", label: "Otra fecha" }, { value: "amount", label: "Otro monto" }, { value: "skip", label: "Saltar" }]} />

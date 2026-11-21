@@ -5,7 +5,7 @@ import { installmentClosings } from "@/lib/cards";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, parseAmount, symbolOf } from "@/lib/money";
 
-import { Icon } from "./ui";
+import { Facts, Icon } from "./ui";
 
 /** En cuotas: cuántas, de cuánto cada una (la del cronograma del banco) y en qué cortes llegan. Cada
  *  cuota es gasto de su categoría cuando el banco la factura; si la compra es de otra persona (`who`),
@@ -50,9 +50,7 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
           {interest < 0 ? (
             <span className="font-semibold text-attention">{n} cuotas de {money(each)} no llegan a lo que costó: revisa la cuota.</span>
           ) : (
-            <span className="font-semibold">
-              {n} cuotas de {money(each)}{last !== each ? ` (la última, ${money(last)})` : ""}{interest > 0 ? ` · ${money(cents + interest)} en total` : ""}
-            </span>
+            <Facts items={[["Cuotas", `${n} de ${money(each)}`], last !== each && ["La última", money(last)], interest > 0 && ["En total", money(cents + interest)]]} />
           )}
           {interest >= 0 && (
             <span className="text-caption text-muted-foreground">

@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { useAccounts, useCard, useMe, useSaveMove } from "@/api/hooks";
 import { SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, PrimaryButton, Screen, Spinner } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
@@ -83,9 +83,7 @@ export function PagarTarjeta() {
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
         <h1 className="mt-2 text-title-hero">{d.account.name}</h1>
-        <span className="mt-1 text-caption text-muted-foreground">
-          Ciclo que cerró el {shortDate(d.last_closing)}{d.date_due ? ` · pagar antes del ${shortDate(d.date_due)}` : ""}
-        </span>
+        <Facts className="mt-1" items={[["Ciclo", `Cerró el ${shortDate(d.last_closing)}`], d.date_due && ["Pagar antes del", shortDate(d.date_due)]]} />
 
         {sides.length > 1 && (
           <div role="radiogroup" aria-label="Qué parte pagas" className="mt-5 grid gap-1 rounded-md bg-muted p-[3px]"

@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 
 import { useCatalog, useMe } from "@/api/hooks";
 import { SheetSelect } from "@/components/Sheet";
-import { Icon, PrimaryButton, Screen } from "@/components/ui";
+import { FormatSample, Icon, PrimaryButton, Screen } from "@/components/ui";
 import { formatAmount } from "@/lib/money";
 
 import { BASE_CURRENCY, StepHeader, useWizard } from "./wizard";
@@ -34,8 +34,9 @@ export function Paso1() {
         <span className="text-[36px] leading-10 font-semibold tracking-[-0.02em] tabular-nums">
           {formatAmount(1284.9, base.symbol, choices.lang)}
         </span>
-        <span className="text-caption text-muted-foreground tabular-nums">
-          Hoy, {today} · en {base.name}, la moneda de tu país. No se cambia.
+        <span className="flex flex-wrap items-center gap-x-3 text-caption text-muted-foreground tabular-nums">
+          <span className="inline-flex items-center gap-1"><Icon name="today" className="text-[15px]" />Hoy es {today}</span>
+          <span className="inline-flex items-center gap-1"><Icon name="lock" className="text-[15px]" />Todo en {base.name}, la moneda de tu país</span>
         </span>
       </section>
 
@@ -65,7 +66,7 @@ export function Paso1() {
           options={(catalog?.langs ?? []).map((l) => ({
             value: l.code,
             label: l.name,
-            hint: `${formatAmount(1284.9, base.symbol, l.code)} · ${today}`,
+            detail: <FormatSample amount={formatAmount(1284.9, base.symbol, l.code)} date={today} />,
           }))}
         />
         <div className="flex flex-col gap-1.5">

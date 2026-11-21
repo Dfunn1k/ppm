@@ -2,7 +2,7 @@
 import { Link, NavLink, useLocation } from "react-router";
 
 import { type AccountRow, useAccounts, useMe } from "@/api/hooks";
-import { Amounts, ErrorAlert, Icon } from "@/components/ui";
+import { Amounts, ErrorAlert, Facts, Icon } from "@/components/ui";
 import { cardHint } from "@/lib/cards";
 import { formatAmount, symbolOf } from "@/lib/money";
 import { ListSkeleton } from "@/components/Skeleton";
@@ -24,7 +24,7 @@ function Row({ to, icon, letter, name, subtitle, amount, amountNote, negative, a
   icon?: string | null;
   letter?: string;
   name: string;
-  subtitle?: string | null;
+  subtitle?: React.ReactNode;
   amount: string | string[];
   amountNote?: string | null;   // debajo del saldo: cuánto es en soles una cuenta en otra moneda
   negative?: boolean;
@@ -78,7 +78,7 @@ function accountRow(a: AccountRow, base: string, lang: string, negative?: boolea
   }
   if (a.kind === "card") {
     const hint = cardHint(a, lang);
-    return <Row key={a.id} to={`/tarjetas/${a.id}`} icon="credit_card" name={a.name} subtitle={hint.text} attention={hint.attention}
+    return <Row key={a.id} to={`/tarjetas/${a.id}`} icon="credit_card" name={a.name} subtitle={hint.facts ? <Facts items={hint.facts} attention /> : hint.text} attention={hint.attention}
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} negative={!a.base_total.startsWith("-") ? false : negative} />;
   }
   if (a.kind === "loan") {

@@ -7,13 +7,13 @@ import { useState } from "react";
 import { type MoveDetail, useAccounts, useCancelPlan, useMe } from "@/api/hooks";
 import { addDays, DateField } from "@/components/DateSheet";
 import { Sheet, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, PrimaryButton } from "@/components/ui";
+import { ErrorAlert, Facts, PrimaryButton } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, parseAmount, subtract, symbolOf } from "@/lib/money";
 
 type Plan = NonNullable<MoveDetail["plan"]>;
 
-export function CancelPlanSheet({ plan, title, open, onClose }: { plan: Plan; title: string; open: boolean; onClose: () => void }) {
+export function CancelPlanSheet({ plan, open, onClose }: { plan: Plan; title: string; open: boolean; onClose: () => void }) {
   const me = useMe().data;
   const overview = useAccounts().data;
   const cancel = useCancelPlan(plan.plan_id ?? 0);
@@ -68,9 +68,7 @@ export function CancelPlanSheet({ plan, title, open, onClose }: { plan: Plan; ti
   return (
     <Sheet title="Cancelar las cuotas que faltan" open={open} onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-4 px-3">
-        <span className="text-caption text-muted-foreground tabular-nums">
-          {title} · faltan {left.length} de {plan.n_installments} cuotas, {money(plan.remaining)}
-        </span>
+        <Facts items={[["Faltan", `${left.length} de ${plan.n_installments} cuotas`], ["Suman", money(plan.remaining)]]} />
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-label text-muted-foreground">¿Qué pasó?</legend>

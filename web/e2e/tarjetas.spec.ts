@@ -63,7 +63,7 @@ test("crear una tarjeta con lo que toca pagar y escribir después la fecha de pa
   await page.getByRole("button", { name: "Escribir fecha de pago" }).click();
   await pickDate(page, /Último día de pago/, lima(10));
   await page.getByRole("button", { name: "Guardar fecha" }).click();
-  await expect(page.getByText(/A pagar antes del .* faltan 10 días/)).toBeVisible();
+  await expect(page.getByText(/Pagar antes del: .*, Faltan: 10 días/)).toBeVisible();
 
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /Visa BBVA/ })).toContainText("Pagar S/ 1,284.90 antes del");
@@ -78,7 +78,7 @@ test("un gasto con tarjeta en 6 cuotas: cada cuota se factura en su corte", asyn
   await page.getByRole("dialog").getByRole("radio", { name: "Hogar" }).click();
   await page.getByLabel("Nota").fill("Televisor");
   await page.getByRole("switch", { name: /En cuotas/ }).check();
-  await expect(page.getByRole("status")).toContainText("6 cuotas de S/ 200.00");
+  await expect(page.getByRole("status")).toContainText("Cuotas: 6 de S/ 200.00");
   await page.getByRole("button", { name: "Registrar gasto en 6 cuotas" }).click();
   await expect(page).toHaveURL("/movimientos");
 
@@ -136,7 +136,7 @@ test("las cuotas de antes de PPM no son gasto y se facturan desde el próximo co
 
   await expect(page).toHaveURL(`/tarjetas/${id}`);
   await expect(page.getByRole("region", { name: "Cuotas por venir" }).getByRole("link", { name: /Laptop/ }))
-    .toContainText("De antes de PPM");
+    .toContainText("Desde: Antes de PPM");
   await expect(page.getByText("Nada por pagar ahora")).toBeVisible();
 });
 
@@ -187,7 +187,7 @@ test("importar el PDF del estado de cuenta: la foto del banco y la cuota en capi
   await expect(page.getByText("Estimada")).toBeVisible();
   await page.getByLabel("PDF del estado de cuenta").setInputFiles({ name: "EECC_VISA.pdf", mimeType: "application/pdf", buffer: pdf });
   await expect(page.getByRole("heading", { name: "Estado de cuenta" })).toBeVisible();
-  await expect(page.getByText("Ciclo del 28 set al 25 oct", { exact: false })).toBeVisible();
+  await expect(page.getByText("Ciclo: 28 set al 25 oct", { exact: false })).toBeVisible();
   const foto = page.getByRole("region", { name: "Foto del corte" });
   await expect(foto).toContainText("S/ 5,283.53");
   await expect(foto).toContainText("S/ 1,716.47");

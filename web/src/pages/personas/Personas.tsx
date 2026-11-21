@@ -7,7 +7,7 @@ import { Link, NavLink, useNavigate, useSearchParams } from "react-router";
 
 import { type PartnerRow, useMe, usePartnersOverview } from "@/api/hooks";
 import { Avatar } from "@/components/MoveBits";
-import { Amounts, ErrorAlert, Icon } from "@/components/ui";
+import { Amounts, ErrorAlert, type Fact, Facts, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
 
@@ -26,15 +26,16 @@ export function joinMoney(list: Money[], lang: string) {
   return moneyList(list, lang).join(" + ");
 }
 
-/** «Te debe S/ 39.00 · le debes S/ 50.00 · guardas S/ 200.00». Con `net`, sin el lado de la deuda
+/** Te debe, le debes y guardas, como etiqueta y valor (caso 7). Con `net`, sin el lado de la deuda
  *  cuando es el único: ese ya va a la derecha con su monto. */
-export function personDetail(p: PartnerRow, lang: string, net = false) {
+export function personDetail(p: PartnerRow, lang: string, net = false): Fact[] {
   const single = net && (p.owes_me.length > 0) !== (p.i_owe.length > 0);
-  return [
-    p.owes_me.length && !single ? `te debe ${joinMoney(p.owes_me, lang)}` : null,
-    p.i_owe.length && !single ? `le debes ${joinMoney(p.i_owe, lang)}` : null,
-    p.keep.length ? `guardas ${joinMoney(p.keep, lang)}` : null,
-  ].filter(Boolean).join(" · ").replace(/^./, (c) => c.toUpperCase());
+  const facts: Fact[] = [
+    p.owes_me.length > 0 && !single && ["Te debe", joinMoney(p.owes_me, lang)],
+    p.i_owe.length > 0 && !single && ["Le debes", joinMoney(p.i_owe, lang)],
+    p.keep.length > 0 && ["Guardas", joinMoney(p.keep, lang)],
+  ];
+  return facts.filter(Boolean);
 }
 
 type View = "me-deben" | "debo" | "guardo";
@@ -130,7 +131,7 @@ export function Personas() {
                     <Avatar name={p.name} size={40} />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="font-semibold">{p.name}</span>
-                      {personDetail(p, lang, true) && <span className="text-caption text-muted-foreground tabular-nums">{personDetail(p, lang, true)}</span>}
+                      {personDetail(p, lang, true).length > 0 && <Facts items={personDetail(p, lang, true)} className="mt-0.5" />}
                     </span>
                     {net && (
                       <span className="flex flex-col items-end">

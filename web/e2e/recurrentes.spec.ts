@@ -96,7 +96,7 @@ test("un préstamo que ya venía pagando: crearlo y pagar la cuota con la boleta
 
   await expect(page).toHaveURL(/\/prestamos\/\d+$/);
   await expect(page.getByText("S/ 38,850.00")).toBeVisible();
-  await expect(page.getByText("Pagaste 0 cuotas · faltan 23")).toBeVisible();
+  await expect(page.getByText("0 de 23 cuotas")).toBeVisible();
   await page.getByRole("link", { name: "Pagar cuota" }).click();
   await page.getByRole("textbox", { name: "Capital", exact: true }).fill("1050.10");
   await page.getByRole("textbox", { name: "Interés", exact: true }).fill("609.90");
@@ -104,7 +104,7 @@ test("un préstamo que ya venía pagando: crearlo y pagar la cuota con la boleta
 
   await expect(page).toHaveURL(/\/prestamos\/\d+$/);
   await expect(page.getByText("S/ 37,799.90")).toBeVisible();
-  await expect(page.getByText("Pagaste 1 cuota · faltan 22")).toBeVisible();
+  await expect(page.getByText("1 de 23 cuotas")).toBeVisible();
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /Préstamo vehicular/ })).toContainText("Préstamo en soles · BCP");
 });

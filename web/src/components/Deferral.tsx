@@ -9,7 +9,7 @@ import { CategoryChip } from "@/components/CategorySheet";
 import { addDays, DateField } from "@/components/DateSheet";
 import { Sheet, SheetSelect } from "@/components/Sheet";
 import { RateField, useRateInput } from "@/components/RateField";
-import { ErrorAlert, Icon, PrimaryButton } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, PrimaryButton } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { daysBetween } from "@/lib/deferral";
 import { formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
@@ -22,10 +22,11 @@ const year = (iso: string) => iso.slice(0, 4);
 const longDay = (iso: string) => `${shortDate(iso)} ${year(iso)}`;
 const monthOf = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${year(iso)}`;
 
-/** Lo que va debajo del monto: «Por días: del 16 nov 2026 al 15 nov 2027 · 365 días». */
+/** Lo que va debajo del monto: por días, del, al y cuántos días, como etiqueta y valor (caso 7); por
+ * meses, una frase. */
 export function deferralCaption(f: Deferral, money: (v: string) => string) {
   return f.method === "days"
-    ? `Por días: del ${longDay(f.start)} al ${longDay(f.end!)} · ${daysBetween(f.start, f.end!)} días`
+    ? <Facts items={[["Por días, del", longDay(f.start)], ["Al", longDay(f.end!)], ["Días", String(daysBetween(f.start, f.end!))]]} />
     : `Por meses: ${f.months} partes de ${money(f.parts[0]!.amount)}`;
 }
 
@@ -82,9 +83,8 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
               <span className={`grid size-[26px] flex-none place-items-center rounded-full text-[12px] font-semibold ${p.move_id ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                 {p.sequence}
               </span>
-              <span className={`flex-1 ${p.canceled ? "text-muted-foreground" : ""}`}>
-                {p.days ? `${monthOf(p.date)} · ${p.days} d` : longDay(p.date)}
-              </span>
+              {p.days ? <Facts className={`flex-1 ${p.canceled ? "opacity-60" : ""}`} items={[["Mes", monthOf(p.date)], ["Días", String(p.days)]]} />
+                : <span className={`flex-1 ${p.canceled ? "text-muted-foreground" : ""}`}>{longDay(p.date)}</span>}
               {state && <span className={`text-caption font-semibold ${p.move_id ? "text-income" : "text-muted-foreground"}`}>{state}</span>}
               <span className={`w-24 text-right font-medium tabular-nums ${p.canceled ? "text-muted-foreground line-through" : ""}`}>{money(p.amount)}</span>
             </>
@@ -134,7 +134,7 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
   );
 }
 
-function CancelDeferralSheet({ moveId, deferral: f, title, open, onClose }: {
+function CancelDeferralSheet({ moveId, deferral: f, open, onClose }: {
   moveId: number; deferral: Deferral; title: string; open: boolean; onClose: () => void;
 }) {
   const me = useMe().data;
@@ -206,9 +206,7 @@ function CancelDeferralSheet({ moveId, deferral: f, title, open, onClose }: {
   return (
     <Sheet title="Cancelar lo que falta" open={open} onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-4 px-3">
-        <span className="text-caption text-muted-foreground tabular-nums">
-          {title} · faltan {money(f.remaining)} en {left.length === 1 ? "1 parte" : `${left.length} partes`}
-        </span>
+        <Facts items={[["Faltan", money(f.remaining)], ["Partes", String(left.length)]]} />
         <SheetSelect label={expense ? "Entra a" : "Sale de"} sheetTitle={expense ? "¿A qué cuenta entró?" : "¿De qué cuenta salió?"}
           value={account} onChange={(v) => { setAccountId(v); setTyped(""); }}
           options={accounts.map((a) => ({ value: String(a.id), label: a.name, hint: formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency), lang) }))} />

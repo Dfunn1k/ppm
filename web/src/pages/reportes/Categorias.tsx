@@ -8,13 +8,13 @@ import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis
 
 import { type CategoryReport, useCategoryReport } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, Facts, Icon } from "@/components/ui";
 import { ReportBones } from "@/components/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { monthName } from "@/lib/months";
 
 import {
-  ChartTip, MONTH_LETTER, PeriodBar, ReportHeader, Versus, against, catColor, delta, useMoney, usePeriod,
+  ChartTip, MONTH_LETTER, PeriodBar, ReportHeader, Trend, Versus, against, catColor, delta, useMoney, usePeriod,
 } from "./common";
 
 type Group = CategoryReport["groups"][number];
@@ -169,9 +169,10 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
                   <span aria-hidden="true" className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                     <span className="block h-1.5 rounded-full" style={{ width: `${Math.max(0, (Number(g.amount) / max) * 100)}%`, background: catColor(g.color) }} />
                   </span>
-                  <span className="min-w-24 text-right text-caption text-muted-foreground tabular-nums">
-                    {Number(r.total) ? Math.round((Number(g.amount) / Number(r.total)) * 100) : 0} % · {delta(g.amount, g.previous)}
-                  </span>
+                  <Facts className="flex-none" items={[
+                    ["Del total", `${Number(r.total) ? Math.round((Number(g.amount) / Number(r.total)) * 100) : 0} %`],
+                    ["Cambio", <Trend now={g.amount} before={g.previous} />],
+                  ]} />
                 </span>
               </span>
             </>

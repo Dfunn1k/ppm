@@ -81,8 +81,8 @@ test("el Inicio cuenta los dólares al último tipo de cambio", async ({ page })
   test.skip(buy === null, "No hay ningún tipo de cambio cargado todavía");
   await page.reload();
   // Los días en que SUNAT no publica (feriados, fines de semana) se cuenta con el último: «del 14 nov»
-  await expect(page.getByText(new RegExp(`dólar a ${buy!.replace(".", "\\.")} (de hoy|del \\d{2} \\S+)`)))
-    .toContainText("US$ 200.00 = S/");
+  await expect(page.getByText(new RegExp(`Tus dólares: US\\$ 200\\.00, Son: S/ .*1 dólar (hoy|el \\d{2} \\S+): ${buy!.replace(".", "\\.")}`)))
+    .toBeVisible();
 });
 
 test("Z1: solo el administrador ve el tipo de cambio y lo carga a mano", async ({ browser }) => {

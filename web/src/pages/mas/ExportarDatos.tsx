@@ -1,11 +1,11 @@
 // X6 · Exportar tus datos: como pedirle al banco el historial antes de cerrar la cuenta. Un ZIP con
 // datos.json (el respaldo, fiel al modelo), csv/ (una tabla por archivo, para Excel) y adjuntos/,
 // que se pueden dejar fuera si pesan mucho. Se arma al momento y no queda en el servidor.
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "react-router";
 
 import { useExportSummary, useExportZip } from "@/api/hooks";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, Facts, Icon } from "@/components/ui";
 
 const n = (v: number) => v.toLocaleString("en-US");
 
@@ -21,11 +21,11 @@ export function ExportarDatos() {
   const [withFiles, setWithFiles] = useState(true);
   const files = what?.attachments ?? 0;
 
-  const contents: [string, string, string, boolean?][] = [
+  const contents: [string, string, ReactNode, boolean?][] = [
     ["data_object", "datos.json", "Todo, tal como lo guarda PPM: tu respaldo"],
     ["table", "csv/", "Una tabla por archivo, para Excel o Sheets"],
     ["attach_file", "adjuntos/", withFiles
-      ? `${n(files)} ${files === 1 ? "foto o PDF" : "fotos y PDF"}, tal como los subiste${what ? ` · ${size(what.attachments_bytes)}` : ""}`
+      ? <Facts items={[["Tal como los subiste", `${n(files)} ${files === 1 ? "foto o PDF" : "fotos y PDF"}`], what && ["Pesan", size(what.attachments_bytes)]]} />
       : "No va: solo sus nombres en datos.json", !withFiles],
   ];
   const counts: [string, number | undefined][] = [
@@ -92,7 +92,7 @@ export function ExportarDatos() {
         className="mt-5 flex h-14 items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-70">
         {zip.isPending
           ? <><Icon name="progress_activity" className="animate-spin text-[22px]" />Armando tu ZIP…</>
-          : <><Icon name="download" className="text-[22px]" />Descargar ZIP{what && withFiles && what.attachments_bytes > 0 ? ` · ${size(what.attachments_bytes)}` : ""}</>}
+          : <><Icon name="download" className="text-[22px]" />Descargar ZIP{what && withFiles && what.attachments_bytes > 0 ? ` (${size(what.attachments_bytes)})` : ""}</>}
       </button>
       <Link to="/mas/cuenta" className="mt-3 py-2 text-center text-caption font-semibold underline">Volver</Link>
     </main>

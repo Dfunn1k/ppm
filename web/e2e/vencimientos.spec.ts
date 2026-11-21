@@ -46,7 +46,7 @@ test("un gasto en 6 cuotas de S/ 207: no es gasto hoy, cada cuota lo es en su co
   await page.getByLabel("Nota").fill("Sofá");
   await page.getByRole("switch", { name: /En cuotas/ }).check();
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("207");
-  await expect(page.getByText("6 cuotas de S/ 207.00 · S/ 1,242.00 en total")).toBeVisible();
+  await expect(page.getByText("Cuotas: 6 de S/ 207.00, En total: S/ 1,242.00")).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Cada cuota es gasto de Hogar en el corte que la factura");
   await page.getByRole("button", { name: "Registrar gasto en 6 cuotas" }).click();
 
@@ -55,7 +55,7 @@ test("un gasto en 6 cuotas de S/ 207: no es gasto hoy, cada cuota lo es en su co
   await page.getByRole("region", { name: "Cuotas por venir" }).getByRole("link", { name: /Sofá/ }).click();
   await expect(page.getByText("Gasto en cuotas")).toBeVisible();
   await expect(page.getByText("6 cuotas: 0 facturadas")).toBeVisible();
-  await expect(page.getByText("6 cuotas de S/ 207.00 · precio S/ 1,200.00")).toBeVisible();
+  await expect(page.getByText("Cuotas: 6 de S/ 207.00, Precio: S/ 1,200.00")).toBeVisible();
   await expect(page.getByText("Cada cuota es gasto de «Hogar» en el corte que la factura", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: /corregir capital e interés/ })).toHaveCount(0);
 });
@@ -71,7 +71,7 @@ test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte",
   await page.getByRole("button", { name: "Una cuota menos" }).click();
   await page.getByRole("button", { name: "Una cuota menos" }).click();       // 3 cuotas
   await page.getByRole("textbox", { name: "¿De cuánto cada una?" }).fill("410");
-  await expect(page.getByText("3 cuotas de S/ 410.00 · S/ 1,230.00 en total")).toBeVisible();
+  await expect(page.getByText("Cuotas: 3 de S/ 410.00, En total: S/ 1,230.00")).toBeVisible();
   await page.getByRole("button", { name: "Registrar préstamo en 3 cuotas" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
