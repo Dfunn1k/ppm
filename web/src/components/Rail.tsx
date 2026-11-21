@@ -47,7 +47,7 @@ export function Rail() {
   return (
     <nav aria-label="Navegación principal"
       className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center gap-1 overflow-y-auto border-r border-border bg-card py-4 lg:flex">
-      <Link to="/inicio" aria-label="PPM · Inicio" className="mb-3"><Logo size={36} /></Link>
+      <Link to="/inicio" aria-label="Inicio de PPM" className="mb-3"><Logo size={36} /></Link>
       <Link to={registerLink(location.pathname, me?.home_account_id)} state={{ background: location }}
         aria-label="Registrar un movimiento" aria-keyshortcuts={keyLabel(keys.register)}
         className="group relative mb-4 grid size-[52px] place-items-center rounded-2xl bg-primary text-primary-foreground shadow-md">
@@ -74,9 +74,13 @@ export function Rail() {
         );
       })}
       <button type="button" onClick={openShortcutsHelp} aria-label={`Atajos de teclado (tecla ${keyLabel(keys.help)})`}
-        title={`Atajos de teclado · ${keyLabel(keys.help)}`}
-        className="mt-auto mb-2 grid size-11 flex-none place-items-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground">
+        className="group mt-auto mb-2 grid size-11 flex-none place-items-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground">
         <Icon name="keyboard" className="text-[24px]" />
+        {/* El mismo globo de «Registrar». Va fijo porque el riel recorta lo que sale de él; abajo
+            quedan el botón (44), su margen (8), la inicial (40) y el relleno del riel (16). */}
+        <span role="tooltip" className={`pointer-events-none fixed ${me ? "bottom-[86px]" : "bottom-[46px]"} left-[96px] z-50 hidden translate-y-1/2 items-center gap-2 rounded-lg bg-foreground px-2.5 py-1.5 text-[13px] leading-[18px] whitespace-nowrap text-background shadow-lg group-hover:flex group-focus-visible:flex`}>
+          Atajos de teclado <Kbd dark>{keyLabel(keys.help)}</Kbd>
+        </span>
       </button>
       {me && (
         <Link to="/mas/cuenta" aria-label={`Mi cuenta: ${me.name}`} title={me.name}
