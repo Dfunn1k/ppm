@@ -9,7 +9,7 @@ import { type FlowReport, useFlowReport } from "@/api/hooks";
 import { ErrorAlert } from "@/components/ui";
 import { monthName } from "@/lib/months";
 
-import { ChartTip, MONTH_LETTER, PeriodBar, ReportHeader, catColor, useMoney, usePeriod } from "./common";
+import { ChartTip, MONTH_SHORT, PeriodBar, ReportHeader, catColor, useMoney, usePeriod } from "./common";
 import { ReportBones } from "@/components/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -43,7 +43,7 @@ export function ReporteFlujo() {
   const links = r.sources.flatMap((s, i) => r.uses.map((u, j) => ({
     source: i, target: r.sources.length + j, value: inTotal ? (Number(s.amount) * Number(u.amount)) / inTotal : 0,
   }))).filter((l) => l.value > 0);
-  const savings = r.savings.map((m) => ({ ...m, label: MONTH_LETTER[Number(m.month.slice(5, 7)) - 1], pct: m.percent }));
+  const savings = r.savings.map((m) => ({ ...m, label: MONTH_SHORT[Number(m.month.slice(5, 7)) - 1], pct: m.percent }));
   const negative = Number(r.saved) < 0;
 
   if (links.length === 0) {

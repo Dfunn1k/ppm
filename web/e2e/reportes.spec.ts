@@ -46,6 +46,7 @@ test("los reportes: índice, gastos por grupo, flujo, patrimonio y personas", as
   const grupos = page.getByRole("region", { name: "Por grupo" });
   const dona = page.getByRole("img", { name: /Gasto por grupo/ });
   await expect(dona).toContainText("Total");                       // sin elegir nada: el general
+  await expect(grupos.getByRole("button", { name: /Comida y bebida/ })).toContainText("75 % del total");   // la barra dice lo que pesa
   await grupos.getByRole("button", { name: /Comida y bebida/ }).click();
   await expect(dona).toContainText("Comida");
   await grupos.getByRole("button", { name: /Transporte/ }).click();     // con dos abiertos, la dona suma los dos
@@ -54,9 +55,11 @@ test("los reportes: índice, gastos por grupo, flujo, patrimonio y personas", as
   await grupos.getByRole("button", { name: /Comida y bebida/ }).click();
   await expect(dona).toContainText("Transporte");
   await expect(dona).toContainText("S/ 100.00");
+  await expect(dona).toContainText("25 %");
   await grupos.getByRole("button", { name: /Transporte/ }).click();
   await expect(dona).toContainText("Total");                       // al plegarlos vuelve al general
   await page.getByRole("radio", { name: "Año" }).click();
+  await expect(page.getByRole("region", { name: "Mes a mes" })).toContainText("Ene");   // el eje con tres letras
   await page.getByRole("radio", { name: "Mes" }).click();
   await expect(dona).toContainText("Total");
   await grupos.getByRole("button", { name: /Comida y bebida/ }).click();

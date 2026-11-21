@@ -56,12 +56,10 @@ function TagReportView({ p }: { p: ReturnType<typeof usePeriod> }) {
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <span className="flex justify-between gap-2"><span className="font-semibold">{t.name}</span><span className="text-amount">{money(t.amount)}</span></span>
-                      <span className="flex items-center gap-2">
-                        <span aria-hidden="true" className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <span className="block h-1.5 rounded-full" style={{ width: `${Math.max(0, (Number(t.amount) / max) * 100)}%`, background: tagColor(t.color) }} />
-                        </span>
-                        <span className="text-caption text-muted-foreground tabular-nums">{t.moves === 1 ? "1 movimiento" : `${t.moves} movimientos`}</span>
+                      <span aria-hidden="true" className="block h-1.5 overflow-hidden rounded-full bg-muted">
+                        <span className="block h-1.5 rounded-full" style={{ width: `${Math.max(0, (Number(t.amount) / max) * 100)}%`, background: tagColor(t.color) }} />
                       </span>
+                      <span className="text-caption text-muted-foreground tabular-nums">{t.moves === 1 ? "1 movimiento" : `${t.moves} movimientos`}</span>
                     </span>
                     <Icon name={isOpen ? "expand_less" : "expand_more"} className="text-[22px] text-muted-foreground" />
                   </button>
