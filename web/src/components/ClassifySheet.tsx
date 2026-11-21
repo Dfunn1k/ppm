@@ -11,6 +11,7 @@ import { CategoryChip } from "./CategorySheet";
 import { PersonPicker } from "./PersonPicker";
 import { Segmented, Sheet } from "./Sheet";
 import { ErrorAlert, Facts, Icon, Optional, PrimaryButton } from "./ui";
+import { AccountSub } from "./AccountSub";
 
 /** Lo que hace falta saber de cada movimiento para clasificarlo. */
 export type ToClassify = { move_id: number; title: string; date: string; account: string; account_id: number; currency: string; amount: string };
@@ -212,7 +213,7 @@ function AccountList({ items, base, selected, onPick }: {
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">{a.name}</span>
                 <span className="text-caption text-muted-foreground">
-                  {usable ? (a.subtitle ?? "") : "En otra moneda: un cambio se registra en Registrar › Transferir"}
+                  {usable ? <AccountSub a={a} /> : "En otra moneda: un cambio se registra en Registrar › Transferir"}
                 </span>
               </span>
               {on && <Icon name="check_circle" fill className="text-[22px]" />}

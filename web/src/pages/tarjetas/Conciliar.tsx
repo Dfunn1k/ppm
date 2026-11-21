@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type Reconciliation, useBankInstallment, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
+import { Pill } from "@/components/Pill";
 import { ErrorAlert, Facts, Icon, Screen, Segments, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { add, formatAmount, subtract, symbolOf } from "@/lib/money";
@@ -48,6 +49,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
   const bankInstallment = useBankInstallment(id, r.closing_date);
   const money = (v: string, cur = r.limit_currency) => formatAmount(v, symbolOf(cur), lang);
   const missing = r.lines.filter((l) => l.move_id === null);
+  const notSplit = r.installments.filter((x) => x.not_split);
   const photo: [string, string][] = [
     ["Línea de crédito", money(r.credit_limit)],
     ["Línea utilizada", money(r.used)],
@@ -167,10 +169,17 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
         )}
       </section>
 
-      {r.explanations.length > 0 && (
+      {(r.explanations.length > 0 || notSplit.length > 0) && (
         <section aria-label="De dónde sale" className="mt-5 flex flex-col gap-2 rounded-[12px] bg-muted p-3.5">
           <span className="text-label text-muted-foreground">De dónde sale</span>
           {r.explanations.map((t) => <p key={t} className="text-[14px] leading-5">{t}</p>)}
+          {/* Una cuota en un periodo cerrado: el nombre en negrita y la cuota en pastilla (caso 10, opción C) */}
+          {notSplit.map((x) => (
+            <p key={`${x.name}-${x.sequence}`} className="text-[14px] leading-5">
+              <b>{x.name}</b> <Pill>Cuota {x.sequence} de {x.n_installments}</Pill> cae en un periodo cerrado y no se dividió en
+              capital e interés. Reabre el periodo y vuelve a importar el PDF para dividirla.
+            </p>
+          ))}
         </section>
       )}
 

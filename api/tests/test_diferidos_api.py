@@ -77,7 +77,7 @@ def test_el_gasto_espera_y_cada_parte_cuenta_en_su_mes(ana: Ana):
 
     # La parte de este mes es un gasto de su categoría, desde «Pagos por adelantado»
     mes = ana.c.get("/moves", params={"month": MES}).json()
-    parte = next(m for day in mes["days"] for m in day["moves"] if m["ref"] == "SOAT y seguro · parte 3/12")
+    parte = next(m for day in mes["days"] for m in day["moves"] if (m["ref"], m["part"], m["parts"]) == ("SOAT y seguro", 3, 12))
     assert (parte["kind"], parte["base"], parte["account"]) == ("expense", "100.00", "Pagos por adelantado")
     assert mes["expense_total"] == "100.00"
     r = ana.c.get("/reports/expenses", params={"period": MES}).json()

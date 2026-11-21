@@ -407,9 +407,7 @@ def reconciliation(user_id: int, card_id: int, closing: dt.date) -> Reconciliati
                        [Unmatched(i.move_id, i.date, i.ref, i.amount, i.currency) for i in free
                         if not (i.payment and any(b.payment for b in bank_lines))],
                        fees, charges, unread)
-    explain += [f"{x.name} · cuota {x.sequence}/{x.n_installments}: cae en un periodo cerrado y no se dividió en capital e "
-                "interés. Reabre el periodo y vuelve a importar el PDF para dividirla."
-                for x in plans if x.not_split]
+    # Las cuotas en un periodo cerrado (not_split) las explica la app, con el nombre en negrita y la cuota en pastilla
     return Reconciliation(closing, date_from, date_due, filename, limit, limit_cur, used, available, currencies,
                           fees, _cents(charges[limit_cur]), plans, explain, lines, unmatched, unread)
 

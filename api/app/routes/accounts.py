@@ -75,6 +75,7 @@ class AccountRowOut(BaseModel):
     base_total: Decimal
     partners: int | None = None      # Por cobrar y Por pagar: cuántas personas
     card: CardBriefOut | None = None # tarjetas: lo que toca pagar y hasta cuándo
+    bank: str | None = None          # bancos y préstamos: el banco, en pastilla
 
 
 class CustodyRowOut(BaseModel):

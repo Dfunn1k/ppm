@@ -58,7 +58,7 @@ def test_la_cuota_facturada_es_gasto_de_su_categoria_en_el_corte(ana: Con):
     billed = next(c for c in ana.detail(card)["cycles"] if c["state"] == "billed")
     cuota = next(i for i in billed["items"] if i["kind"] == "installment")
     assert (cuota["amount"], cuota["interest"], cuota["sequence"], cuota["counterpart"]) == ("262.02", None, 1, "Hogar")
-    cuotas = [m for m in month_moves(ana, CORTE) if m["ref"] == "Unipiel · cuota 1/3"]
+    cuotas = [m for m in month_moves(ana, CORTE) if (m["ref"], m["part"], m["parts"]) == ("Unipiel", 1, 3)]
     assert [(m["kind"], m["amount"], m["date"]) for m in cuotas] == [("expense", "262.02", CORTE.isoformat())]
     assert [c["name"] for c in cuotas[0]["categories"]] == ["Hogar"]
 

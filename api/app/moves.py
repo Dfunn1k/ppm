@@ -908,6 +908,8 @@ class MoveSummary:
     account_icon: str | None = None  # el de la cuenta de dinero (la de donde sale, en una transferencia)
     tags: list[tags_.TagRef] = field(default_factory=list)
     attachments: int = 0
+    part: int | None = None      # una cuota o una parte repartida: cuál es («3» de «3 de 12»; caso 10)
+    parts: int | None = None     # y de cuántas
 
 
 @dataclass(frozen=True)
@@ -1217,7 +1219,20 @@ def summaries(conn: psycopg.Connection, heads: list[tuple]) -> list[MoveSummary]
     found = [_classify(h, by_move[h[0]])[0] for h in heads if by_move[h[0]]]
     ids = [x.id for x in found]
     tags, files = move_marks.tags(conn, ids), move_marks.attachments(conn, ids)
-    return [replace(x, tags=tags.get(x.id, []), attachments=files.get(x.id, 0)) for x in found]
+    parts = {r[0]: (r[1], r[2]) for r in conn.execute(_PARTS_SQL, (ids,))}
+    return [replace(x, tags=tags.get(x.id, []), attachments=files.get(x.id, 0),
+                    part=parts.get(x.id, (None, None))[0], parts=parts.get(x.id, (None, None))[1]) for x in found]
+
+
+# Cuál cuota o parte es cada asiento: su nombre es solo el de la compra y la app pinta «3 de 12»
+_PARTS_SQL = """
+SELECT m.id, coalesce(m.installment_sequence, m.deferral_sequence),
+       CASE WHEN m.installment_plan_id IS NOT NULL THEN p.n_installments
+            ELSE (SELECT count(*) FROM account_deferral_line l WHERE l.deferral_id = m.deferral_id) END
+  FROM account_move m
+  LEFT JOIN account_installment_plan p ON p.id = m.installment_plan_id
+ WHERE m.id = ANY(%s) AND (m.installment_sequence IS NOT NULL OR m.deferral_sequence IS NOT NULL)
+"""
 
 
 def _kind_of(conn: psycopg.Connection, move_id: int) -> str:
@@ -1441,7 +1456,7 @@ def cancel_deferral(user_id: int, move_id: int, on: dt.date | None, refund: Deci
                     lines.append(_side(category, rest, base_id, rest, None, into))
                 cancel = conn.execute(
                     "INSERT INTO account_move (date, ref, state) VALUES (%s, %s, 'posted') RETURNING id",
-                    (when, f"{ref} · cancelado")).fetchone()[0]
+                    (when, f"Cancelación de {ref or 'lo repartido'}")).fetchone()[0]
                 _write(conn, cancel, lines)
                 conn.execute("UPDATE account_deferral SET cancel_move_id = %s WHERE id = %s", (cancel, did))
         except psycopg.Error as e:
@@ -1468,7 +1483,10 @@ def _detail(user_id: int, move_id: int) -> MoveDetail:
               JOIN account_move m ON m.id = o.move_id
              WHERE l.move_id = %s ORDER BY m.date, o.id""", (move_id,))]
         plan = _plan_detail(conn, move_id)
+        part = conn.execute(_PARTS_SQL, ([move_id],)).fetchone()
     summary, cash = _classify(head, lines)
+    if part:
+        summary = replace(summary, part=part[1], parts=part[2])
     all_lines = [LineOut(x[1], x[2], x[13], x[14], x[7], x[8], x[10], x[11], x[12], x[15], x[16], x[17]) for x in lines]
     kind, _cash, persons, cats, _fx = _kind(lines)
     pid = persons[0][10] if persons else None

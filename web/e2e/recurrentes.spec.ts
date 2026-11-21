@@ -107,7 +107,7 @@ test("un préstamo que ya venía pagando: crearlo y pagar la cuota con la boleta
   await expect(page.getByText("S/ 37,799.90")).toBeVisible();
   await expect(page.getByText("1 de 23 cuotas")).toBeVisible();
   await page.goto("/cuentas");
-  await expect(page.getByRole("link", { name: /Préstamo vehicular/ })).toContainText("Préstamo en soles · BCP");
+  await expect(page.getByRole("link", { name: /Préstamo vehicular/ })).toContainText("BCPPréstamo en soles")   // el banco en pastilla (caso 10);
 });
 
 test("un gasto que se repite, compartido con Luis: cada vez te debe su parte", async ({ page }) => {

@@ -6,6 +6,7 @@ import { Amounts, ErrorAlert, Facts, Icon } from "@/components/ui";
 import { cardHint } from "@/lib/cards";
 import { formatAmount, symbolOf } from "@/lib/money";
 import { ListSkeleton } from "@/components/Skeleton";
+import { AccountSub } from "@/components/AccountSub";
 
 function Group({ label, total, children }: { label: string; total: string; children: React.ReactNode }) {
   return (
@@ -82,7 +83,7 @@ function accountRow(a: AccountRow, base: string, lang: string, negative?: boolea
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} negative={!a.base_total.startsWith("-") ? false : negative} />;
   }
   if (a.kind === "loan") {
-    return <Row key={a.id} to={`/prestamos/${a.id}`} icon={a.icon} name={a.name} subtitle={a.subtitle ?? subtitle}
+    return <Row key={a.id} to={`/prestamos/${a.id}`} icon={a.icon} name={a.name} subtitle={a.subtitle || a.bank ? <AccountSub a={a} /> : subtitle}
       amount={formatAmount(a.base_total.replace("-", ""), symbolOf(base), lang)} />;
   }
   return <Row key={a.id} to={`/cuentas/${a.id}`} icon={a.icon} name={a.name} subtitle={subtitle} amount={amount} amountNote={inBase} negative={negative} />;
@@ -94,7 +95,7 @@ function rowAmount(a: AccountRow, base: string, lang: string) {
   const currency = single?.currency ?? a.currency ?? base;
   const amount = formatAmount(single?.amount ?? (a.balances.length ? a.base_total : "0.00"), symbolOf(currency), lang);
   const inBase = currency !== base && single ? formatAmount(single.base, symbolOf(base), lang) : null;
-  return { amount, inBase, subtitle: a.subtitle || null };
+  return { amount, inBase, subtitle: a.subtitle || a.bank ? <AccountSub a={a} /> : null };
 }
 
 export function Cuentas() {

@@ -4,7 +4,7 @@ import { NavLink, useLocation, useSearchParams } from "react-router";
 
 import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth, useTags } from "@/api/hooks";
 import { CategorySheet } from "@/components/CategorySheet";
-import { MoveAmount, MoveIcon, MoveLine, moveBits } from "@/components/MoveBits";
+import { MoveAmount, MoveIcon, MoveLine, MoveName, moveBits } from "@/components/MoveBits";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { BoneRows } from "@/components/Skeleton";
 import { Kbd } from "@/components/ShortcutsHelp";
@@ -15,6 +15,7 @@ import { todayISO } from "@/lib/dates";
 import { useDesktop } from "@/lib/desktop";
 import { monthName, monthOptions } from "@/lib/months";
 import { formatAmount, isZero, symbolOf } from "@/lib/money";
+import { accountOption } from "@/components/AccountSub";
 
 const DAYS = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
 
@@ -167,7 +168,7 @@ export function Movimientos() {
       </Sheet>
       <Sheet title="Filtrar por cuenta" open={sheet === "account"} onClose={() => setSheet(null)}>
         <OptionList value={String(filters.account_id ?? "")}
-          options={[...(accounts?.have ?? []), ...(accounts?.owe ?? [])].map((a) => ({ value: String(a.id), label: a.name, hint: a.subtitle ?? undefined }))}
+          options={[...(accounts?.have ?? []), ...(accounts?.owe ?? [])].map((a) => ({ value: String(a.id), label: a.name, ...accountOption(a) }))}
           onPick={(v) => { set("cuenta", v); setSheet(null); }} />
       </Sheet>
       <Sheet title="Filtrar por tipo" open={sheet === "kind"} onClose={() => setSheet(null)}>
@@ -213,7 +214,7 @@ function MoveRow({ move: x, lang, base }: { move: MoveSummary; lang: string; bas
       className="flex min-h-[60px] items-center gap-3 border-b border-border py-2 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
       <MoveIcon move={x} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold">{x.ref}</span>
+        <MoveName move={x} />
         <MoveLine bits={moveBits(x, base, lang)} tags={x.tags} />
       </span>
       <MoveAmount move={x} base={base} lang={lang} />
