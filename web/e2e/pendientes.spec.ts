@@ -41,12 +41,12 @@ test("lo vencido va arriba y posponerlo lo esconde hasta su fecha", async ({ pag
   await page.goto("/inicio");
   const card = page.getByRole("region", { name: "Pendientes" });
   await expect(card).toContainText("Pendientes11 vencido");
-  await expect(card).toContainText("Luis Pérez te debe S/ 50.00");
+  await expect(card).toContainText(/Luis Pérez te debe.*S\/ 50\.00/);
   await card.getByRole("link", { name: "Ver todo" }).click();
 
   await expect(page).toHaveURL("/pendientes");
   const late = page.getByRole("region", { name: "Vencidos" });
-  await expect(late).toContainText("Luis Pérez te debe S/ 50.00");
+  await expect(late).toContainText(/Luis Pérez te debe.*S\/ 50\.00/);
   await late.getByRole("button", { name: "Posponer" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "En 3 días" }).click();
 
@@ -104,5 +104,5 @@ test("con más días de aviso llega lo que vence después", async ({ page }) => 
   await expect(page.getByText("Avisarme 3 días antes")).toBeVisible();
   for (let i = 0; i < 4; i++) await page.getByRole("button", { name: "Un día más" }).click();
   await expect(page.getByText("Avisarme 7 días antes")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Próximos días" })).toContainText("Luis Pérez te debe S/ 50.00");
+  await expect(page.getByRole("region", { name: "Próximos días" })).toContainText(/Luis Pérez te debe.*S\/ 50\.00/);
 });

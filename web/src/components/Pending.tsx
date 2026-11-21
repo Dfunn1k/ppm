@@ -34,19 +34,17 @@ function when(n: Notice, today: string, verb: { past: string; today: string; fut
   return `${verb.future} ${shortDate(n.date)}`;
 }
 
-/** Lo que dice un aviso y a dónde lleva tocarlo. `name` y `amount` son el título partido en dos, para
- *  poner el monto a la derecha (Pendientes en la computadora). */
-export function noticeView(n: Notice, today: string, lang: string): { icon: string; title: string; caption: ReactNode; to: string; name: string; amount?: string } {
+/** Lo que dice un aviso y a dónde lleva tocarlo: lo que hay que hacer (`name`) y, aparte, el monto, que
+ *  va a la derecha como en una fila de Movimientos, uno por moneda (caso 9, opción C). */
+export function noticeView(n: Notice, today: string, lang: string): { icon: string; caption: ReactNode; to: string; name: string; amounts: string[] } {
   const money = (a: { amount: string; currency: string }) => formatAmount(a.amount.replace("-", ""), symbolOf(a.currency), lang);
   switch (n.kind) {
     case "maturity": {
       const owed = isNegative(n.amounts[0]?.amount ?? "0");
-      const amounts = n.amounts.map(money).join(" + ");
       return {
         icon: owed ? "call_made" : "call_received",
-        title: owed ? `Le debes ${amounts} a ${n.partner}` : `${n.partner} te debe ${amounts}`,
         name: owed ? `Le debes a ${n.partner}` : `${n.partner} te debe`,
-        amount: amounts,
+        amounts: n.amounts.map(money),
         caption: when(n, today, { past: "Venció", today: "Vence hoy", future: "Vence el" }),
         to: `/personas/${n.partner_id}`,
       };
@@ -54,9 +52,8 @@ export function noticeView(n: Notice, today: string, lang: string): { icon: stri
     case "card_due":
       return {
         icon: "credit_card",
-        title: `${n.account} · pagar ${n.amounts.map(money).join(" + ")}`,
         name: `Pagar ${n.account}`,
-        amount: n.amounts.map(money).join(" + "),
+        amounts: n.amounts.map(money),
         caption: when(n, today, { past: "Venció el pago", today: "Hoy es el último día de pago", future: "Pagar antes del" }),
         to: `/tarjetas/${n.account_id}`,
       };
@@ -64,8 +61,8 @@ export function noticeView(n: Notice, today: string, lang: string): { icon: stri
       const title = `${plural(n.count, "movimiento", "movimientos")} por confirmar`;
       return {
         icon: "schedule",
-        title,
         name: title,
+        amounts: [],
         caption: n.bank_charges > 0
           ? withPill(`${plural(n.bank_charges, "es un cargo", "son cargos")} del banco`, "Ya es su día")
           : "Ya llegaron a su día",
@@ -76,8 +73,8 @@ export function noticeView(n: Notice, today: string, lang: string): { icon: stri
       const title = `${plural(n.count, "movimiento", "movimientos")} por clasificar`;
       return {
         icon: "inbox",
-        title,
         name: title,
+        amounts: [],
         caption: "Del banco: falta decir en qué fueron",
         to: "/por-clasificar",
       };
@@ -87,9 +84,8 @@ export function noticeView(n: Notice, today: string, lang: string): { icon: stri
       const out = !a || isNegative(a.amount);
       return {
         icon: "notifications",
-        title: `${n.name}${a ? ` · ${money(a)}` : ""}`,
         name: n.name ?? "",
-        amount: a ? money(a) : undefined,
+        amounts: a ? [money(a)] : [],
         caption: n.date < today
           ? withPill(`Desde el ${shortDate(n.date)}`, "Sin registrar", true)
           : out ? "Te toca pagarlo hoy" : "Te toca recibirlo hoy",
@@ -118,8 +114,14 @@ const chip = (late: boolean) =>
   `grid size-10 flex-none place-items-center rounded-full ${late ? "bg-attention-soft text-attention" : "bg-secondary text-secondary-foreground"}`;
 const small = "h-9 rounded-full border border-border px-3 text-[14px] font-semibold";
 
-/** Un aviso en la bandeja: tocarlo lleva a donde se resuelve; «Posponer» abre los atajos. Con `split`,
- *  el monto va a la derecha en vez de dentro del título. */
+/** Los montos de un aviso, a la derecha y uno por línea. */
+export function NoticeAmounts({ amounts }: { amounts: string[] }) {
+  if (amounts.length === 0) return null;
+  return <span className="flex flex-none flex-col items-end font-medium tabular-nums">{amounts.map((a) => <span key={a}>{a}</span>)}</span>;
+}
+
+/** Un aviso en la bandeja: tocarlo lleva a donde se resuelve; «Posponer» abre los atajos. Con `split`
+ *  (en la computadora) no va la flecha. */
 export function NoticeItem({ n, today, lang, split }: { n: Notice; today: string; lang: string; split?: boolean }) {
   const v = noticeView(n, today, lang);
   const [snoozing, setSnoozing] = useState(false);
@@ -129,10 +131,10 @@ export function NoticeItem({ n, today, lang, split }: { n: Notice; today: string
       <Link to={v.to} className="flex items-center gap-3">
         <span className={chip(n.late)}><Icon name={v.icon} className="text-[20px]" /></span>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-semibold">{split ? v.name : v.title}</span>
+          <span className="font-semibold">{v.name}</span>
           <span className={`text-caption ${n.late ? "text-attention" : "text-muted-foreground"}`}>{v.caption}</span>
         </span>
-        {split && v.amount && <span className="flex-none text-right font-medium tabular-nums">{v.amount}</span>}
+        <NoticeAmounts amounts={v.amounts} />
         {!split && <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />}
       </Link>
       <div className="flex flex-wrap gap-2 pl-[52px]">
@@ -149,7 +151,7 @@ export function NoticeItem({ n, today, lang, split }: { n: Notice; today: string
           <Icon name="snooze" className="text-[18px]" />Posponer
         </button>
       </div>
-      <SnoozeSheet open={snoozing} onClose={() => setSnoozing(false)} noticeKey={n.key} title={v.title} today={today} />
+      <SnoozeSheet open={snoozing} onClose={() => setSnoozing(false)} noticeKey={n.key} title={v.name} today={today} />
     </div>
   );
 }

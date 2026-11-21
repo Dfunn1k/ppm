@@ -33,12 +33,13 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
   deleting: boolean;
   error?: string | null;
   onAdd?: () => void;
-  caption?: string;                 // el movimiento: «Mercado · S/ 126.00»
+  caption?: { name: string; amount: string };   // el movimiento al que pertenece
 }) {
   const a = list[index]!;
   const [zoom, setZoom] = useState(0);         // índice en ZOOMS
   const [turn, setTurn] = useState(0);         // grados
   const [confirm, setConfirm] = useState(false);
+  const [info, setInfo] = useState(false);       // la ficha «Detalles» abierta
   const touch = useRef<number | null>(null);
   const pdf = a.mimetype === "application/pdf";
   const scale = ZOOMS[zoom]!;
@@ -61,7 +62,12 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
     return () => { window.removeEventListener("keydown", key); document.body.style.overflow = overflow; };
   });
 
-  const meta = `${shortDate(a.create_date.slice(0, 10))} · ${fileSize(a.file_size)} · ${kindOf(a)}${pdf && a.page_count ? ` · ${a.page_count} pág.` : ""}`;
+  // Arriba va solo el nombre; lo demás, en la ficha que abre «Detalles» (caso 9, opción E)
+  const details: [string, string][] = [
+    ...(caption ? [["Movimiento", caption.name], ["Monto", caption.amount]] as [string, string][] : []),
+    ["Subido", shortDate(a.create_date.slice(0, 10))], ["Pesa", fileSize(a.file_size)], ["Tipo", pdf ? "PDF" : "Foto"],
+    ...(pdf && a.page_count ? [["Páginas", String(a.page_count)]] as [string, string][] : []),
+  ];
   const tool = "grid size-10 place-items-center rounded-[10px] hover:bg-white/10";
 
   return createPortal(
@@ -73,7 +79,10 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
         </button>
         <span className="flex min-w-0 flex-1 flex-col lg:flex-row lg:items-baseline lg:gap-3">
           <span className="truncate font-semibold">{a.name}</span>
-          <span className="truncate text-caption text-[#a3a3a3]">{caption ? `${caption} · ` : ""}{meta}</span>
+          <button type="button" aria-expanded={info} onClick={() => setInfo(!info)}
+            className="flex h-7 items-center gap-1 self-start text-caption text-[#d4d4d4] lg:self-auto">
+            <Icon name="info" className="text-[18px]" />Detalles
+          </button>
         </span>
         {list.length > 1 && <span className="pr-2 text-caption text-[#a3a3a3] lg:order-first lg:pr-3">{index + 1} de {list.length}</span>}
         <div className="hidden items-center gap-1 lg:flex">
@@ -92,6 +101,17 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
         </div>
       </div>
 
+      {info && (
+        <dl className="flex flex-wrap gap-x-6 gap-y-2 border-b border-[#2e2e2e] px-4 py-3 lg:px-5">
+          {details.map(([k, v]) => (
+            <div key={k} className="flex flex-col">
+              <dt className="text-[10px] leading-[14px] font-semibold tracking-[0.05em] text-[#8a8a8a] uppercase">{k}</dt>
+              <dd className="text-caption font-semibold text-[#fafafa] tabular-nums">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
       <div className="flex min-h-0 flex-1">
         {/* La lista, en la computadora */}
         <aside aria-label="Adjuntos del movimiento" className="hidden w-72 flex-none flex-col gap-1.5 overflow-y-auto border-r border-[#2e2e2e] p-4 lg:flex">
@@ -102,7 +122,7 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
               <Thumb a={x} className="h-[58px] w-11 rounded-md" />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[14px] font-semibold">{x.name}</span>
-                <span className="text-caption text-[#a3a3a3]">{shortDate(x.create_date.slice(0, 10))} · {fileSize(x.file_size)}</span>
+                <span className="text-caption text-[#a3a3a3]">{fileSize(x.file_size)}</span>
               </span>
             </button>
           ))}

@@ -200,7 +200,9 @@ export function Registrar({ editing, recurring, reminder }: {
       value: String(a.id),
       label: a.name,
       hint: a.kind === "card" ? a.subtitle ?? "Tarjeta de crédito"
-        : [a.subtitle, formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang)].filter(Boolean).join(" · "),
+        : a.subtitle ?? undefined,
+      // El saldo a la derecha, como en la lista de Cuentas (caso 9, opción B)
+      right: a.kind === "card" ? undefined : formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang),
     }));
 
   const total = parseAmount(amount || "0", lang);

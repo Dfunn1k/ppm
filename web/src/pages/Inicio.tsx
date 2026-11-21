@@ -7,7 +7,7 @@ import { Link, useLocation, useSearchParams } from "react-router";
 import { useHome, useMe, usePending, useUpdateMe } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, MoveLine, moveBits } from "@/components/MoveBits";
-import { activityCaption, noticeView, sectionOf } from "@/components/Pending";
+import { activityCaption, NoticeAmounts, noticeView, sectionOf } from "@/components/Pending";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Facts, Icon } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
@@ -210,10 +210,10 @@ function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
   const items = [
     ...box.notices.map((n) => {
       const v = noticeView(n, box.today, lang);
-      return { key: n.key, to: v.to, title: hidden ? v.title.replace(AMOUNT, "$1 ••••") : v.title, caption: v.caption, late: n.late, date: n.date, section: sectionOf(n, box.today) };
+      return { key: n.key, to: v.to, title: v.name, amounts: hidden ? v.amounts.map((a) => a.replace(AMOUNT, "$1 ••••")) : v.amounts, caption: v.caption, late: n.late, date: n.date, section: sectionOf(n, box.today) };
     }),
     ...box.activities.map((a) => ({
-      key: `a${a.id}`, to: "/pendientes", title: a.summary, caption: activityCaption(a, box.today), late: a.late, date: a.date,
+      key: `a${a.id}`, to: "/pendientes", title: a.summary, amounts: [] as string[], caption: activityCaption(a, box.today), late: a.late, date: a.date,
       section: sectionOf(a, box.today),
     })),
   ].sort((x, y) => ORDER[x.section] - ORDER[y.section] || x.date.localeCompare(y.date));
@@ -230,6 +230,7 @@ function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
             <span className="truncate font-semibold">{i.title}</span>
             <span className={`truncate text-caption ${i.late ? "text-attention" : "text-muted-foreground"}`}>{i.caption}</span>
           </span>
+          <NoticeAmounts amounts={i.amounts} />
         </Link>
       ))}
       <Link to="/pendientes" className="flex min-h-12 items-center justify-between font-semibold">

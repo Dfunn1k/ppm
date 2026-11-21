@@ -20,6 +20,7 @@ import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
 import { Sheet } from "@/components/Sheet";
+import { Pill } from "@/components/Pill";
 import { ErrorAlert, Facts, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
@@ -240,7 +241,11 @@ export function DetalleMovimiento() {
             </div>
             {d.lines.map((l, i) => (
               <div key={i} className="grid min-h-11 grid-cols-[1fr_84px_84px] items-center gap-2 tabular-nums">
-                <span className="truncate font-semibold">{l.account}{l.partner ? ` · ${l.partner}` : ""}</span>
+                {/* La persona en pastilla al lado de la cuenta (caso 9, opción C) */}
+                <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="truncate font-semibold">{l.account}</span>
+                  {l.partner && <Pill><Icon name="person" className="mr-0.5 text-[14px]" />{l.partner}</Pill>}
+                </span>
                 <span className="text-right">{Number(l.debit) ? l.debit : ""}</span>
                 <span className="text-right">{Number(l.credit) ? l.credit : ""}</span>
               </div>
@@ -277,9 +282,11 @@ export function DetalleMovimiento() {
                 className="flex min-h-[52px] items-center gap-3 border-b border-border text-left">
                 <Icon name={m?.late ? "schedule" : "event_available"} className={`w-9 text-center ${m?.late ? "text-attention" : "text-muted-foreground"}`} />
                 <span className="flex flex-1 flex-col">
-                  <span className="text-caption text-muted-foreground">{debts.length > 1 ? `Parte ${k + 1} · ${formatAmount(l.amount.replace("-", ""), symbolOf(l.currency), lang)}` : "Vence"}</span>
+                  <span className="text-caption text-muted-foreground">{debts.length > 1 ? `Parte ${k + 1} de ${debts.length}` : "Vence"}</span>
                   <span className={`font-semibold ${m?.late ? "text-attention" : ""}`}>{m?.text ?? "Sin fecha de vencimiento"}</span>
                 </span>
+                {/* Con varias partes, el monto de cada una a la derecha (caso 9, opción C) */}
+                {debts.length > 1 && <span className="tabular-nums">{formatAmount(l.amount.replace("-", ""), symbolOf(l.currency), lang)}</span>}
                 <span className="text-caption font-semibold text-primary-strong">{m ? "Cambiar" : "Poner"}</span>
               </button>
             );
@@ -401,7 +408,7 @@ export function DetalleMovimiento() {
         </section>
       )}
 
-      <MoveAttachments moveId={s.id} caption={`${s.ref} · ${formatAmount(s.amount, symbolOf(s.currency), lang)}`} />
+      <MoveAttachments moveId={s.id} caption={{ name: s.ref, amount: formatAmount(s.amount, symbolOf(s.currency), lang) }} />
       <Activities target={{ move_id: s.id }} />
 
       <div className="min-h-6 flex-1" />
@@ -449,7 +456,7 @@ export function DetalleMovimiento() {
 
       {unclassified && classifying && (
         <ClassifySheet open onClose={() => setClassifying(false)} items={[{
-          move_id: s.id, title: bank[0]?.payment_ref ?? s.ref, caption: `${shortDate(s.date)} · ${s.account}`,
+          move_id: s.id, title: bank[0]?.payment_ref ?? s.ref, date: shortDate(s.date), account: s.account,
           account_id: d.account_id ?? 0, currency: s.currency, amount: f === "out" ? `-${s.amount}` : s.amount,
         }]} />
       )}

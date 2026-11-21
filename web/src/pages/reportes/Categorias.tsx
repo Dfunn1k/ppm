@@ -129,7 +129,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
                 <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                 <Tooltip cursor={{ fill: "var(--muted)" }} content={({ active, payload }) => {
                   const m = payload?.[0]?.payload as MonthRow | undefined;
-                  return <ChartTip active={active && !!m} title={m ? `${m.month} · ${money(m.total)}` : ""}
+                  return <ChartTip active={active && !!m} title={m ? <span className="flex justify-between gap-3"><span>{m.month}</span><span className="tabular-nums">{money(m.total)}</span></span> : ""}
                     rows={expense && m ? r.groups.filter((g) => Number(m[`g${g.id}`])).map((g) => ({
                       color: catColor(g.color), label: g.name, value: money(Number(m[`g${g.id}`]).toFixed(2)) })) : []} />;
                 }} />
