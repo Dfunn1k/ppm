@@ -7,11 +7,11 @@ import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction, us
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
-import { Amounts, ErrorAlert, Icon, Status } from "@/components/ui";
+import { Amounts, ErrorAlert, Facts, Icon, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
-import { listText } from "@/lib/utils";
+import { capitalize, listText } from "@/lib/utils";
 
 import { PersonaSheet } from "./PersonaForm";
 import { joinMoney, moneyList } from "./Personas";
@@ -281,10 +281,11 @@ function Items({ label, header, items, paid, lang, ask }: {
             <Link to={`/movimientos/${i.move_id}`} className="flex items-center gap-3">
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-semibold">{i.ref}</span>
-                <span className="text-caption text-muted-foreground tabular-nums">
-                  {shortDate(i.date)} · {ago(i.days).toLowerCase()}
-                  {partial && ` · era ${formatAmount(i.amount, symbolOf(i.currency), lang)}, ${paid} ${formatAmount(subtract(i.amount, i.open), symbolOf(i.currency), lang)}`}
-                </span>
+                <Facts className="mt-0.5" items={[
+                  ["Del", `${shortDate(i.date)}, ${ago(i.days).toLowerCase()}`],
+                  partial && ["Era", formatAmount(i.amount, symbolOf(i.currency), lang)],
+                  partial && [capitalize(paid), formatAmount(subtract(i.amount, i.open), symbolOf(i.currency), lang)],
+                ]} />
               </span>
               <span className="text-amount">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>
             </Link>

@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import { statementFileUrl, useMe, useStatement, useUndoStatement } from "@/api/hooks";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, Spinner } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
@@ -54,9 +54,11 @@ export function Extracto() {
         <span className="truncate pr-2.5 text-label text-muted-foreground uppercase">{d.account}</span>
       </div>
       <h1 className="mt-2 text-title-1 break-all">{s.name}</h1>
-      <span className="mt-1 text-caption text-muted-foreground">
-        {s.date_from && s.date_to ? `Del ${shortDate(s.date_from)} al ${shortDate(s.date_to)} · ` : ""}importado el {when} · {s.lines === 1 ? "1 movimiento" : `${s.lines} movimientos`}
-      </span>
+      <Facts className="mt-1" items={[
+        s.date_from && s.date_to && ["Periodo", `${shortDate(s.date_from)} al ${shortDate(s.date_to)}`],
+        ["Importado", when],
+        ["Movimientos", String(s.lines)],
+      ]} />
 
       {check && (
         <div className={`mt-4 flex gap-2.5 rounded-lg p-3.5 ${check.cls}`}>

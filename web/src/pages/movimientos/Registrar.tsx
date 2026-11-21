@@ -18,7 +18,7 @@ import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { CurrencyChoice, Segmented, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
 import { DeferralFields, NO_DEFERRAL, type DeferralState, deferralBody, deferralValues } from "@/components/DeferralFields";
@@ -614,7 +614,7 @@ export function Registrar({ editing, recurring, reminder }: {
                 className="flex flex-col items-start border-b-2 border-input-line pb-1.5 text-left">
                 <span className="text-caption font-semibold">¿Qué día?</span>
                 <span className="flex w-full items-center gap-2 text-[17px] leading-[26px]">
-                  <span className="flex-1">{ruleText(ruleNow)} · desde el {shortDate(date)}</span>
+                  <Facts className="flex-1" items={[["Se repite", ruleText(ruleNow)], ["Desde", shortDate(date)]]} />
                   <Icon name="calendar_month" className="text-[22px] text-muted-foreground" />
                 </span>
               </button>

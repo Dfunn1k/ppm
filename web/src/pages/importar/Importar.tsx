@@ -16,7 +16,7 @@ import {
   useStatements,
 } from "@/api/hooks";
 import { OptionList, Segmented, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
 import { Pill } from "@/components/Pill";
@@ -179,7 +179,7 @@ function FileStep({ accountId, pending, error, onFile, lang }: {
 }
 
 function PastRow({ s, lang }: { s: StatementRow; lang: string }) {
-  const range = s.date_from && s.date_to ? `${shortDate(s.date_from)}–${shortDate(s.date_to)}` : "sin fechas";
+  const range = s.date_from && s.date_to ? `${shortDate(s.date_from)}–${shortDate(s.date_to)}` : "Sin fechas";
   const status = s.difference === null ? null : isZero(s.difference)
     ? { icon: "check_circle", text: "Cuadra", cls: "text-income" }
     : { icon: "error", text: `${isNegative(s.difference) ? "Sobran" : "Faltan"} ${formatNumber(s.difference.replace("-", ""), lang)}`, cls: "text-attention" };
@@ -188,7 +188,7 @@ function PastRow({ s, lang }: { s: StatementRow; lang: string }) {
       <span className="grid size-9 flex-none place-items-center rounded-full bg-muted"><Icon name="description" /></span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{s.name}</span>
-        <span className="text-caption text-muted-foreground">{range} · {s.lines === 1 ? "1 movimiento" : `${s.lines} movimientos`}</span>
+        <Facts className="mt-0.5" items={[["Periodo", range], ["Movimientos", String(s.lines)]]} />
       </span>
       {status && <span className={`flex items-center gap-1 text-caption font-semibold ${status.cls}`}><Icon name={status.icon} className="text-[18px]" />{status.text}</span>}
     </Link>

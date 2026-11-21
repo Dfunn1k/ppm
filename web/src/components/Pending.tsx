@@ -2,7 +2,7 @@
 // tus recordatorios (escribir, cambiar, marcar hecho) y la sección «Recordatorios» del detalle de un
 // movimiento, una persona o una cuenta.
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { formatAmount, isNegative, symbolOf } from "@/lib/money";
 
 import { DateField, DateSheet, addDays } from "./DateSheet";
 import { Sheet } from "./Sheet";
+import { Pill } from "./Pill";
 import { ErrorAlert, Icon, LineField } from "./ui";
 
 export type Section = "late" | "today" | "soon";
@@ -35,7 +36,7 @@ function when(n: Notice, today: string, verb: { past: string; today: string; fut
 
 /** Lo que dice un aviso y a dónde lleva tocarlo. `name` y `amount` son el título partido en dos, para
  *  poner el monto a la derecha (Pendientes en la computadora). */
-export function noticeView(n: Notice, today: string, lang: string): { icon: string; title: string; caption: string; to: string; name: string; amount?: string } {
+export function noticeView(n: Notice, today: string, lang: string): { icon: string; title: string; caption: ReactNode; to: string; name: string; amount?: string } {
   const money = (a: { amount: string; currency: string }) => formatAmount(a.amount.replace("-", ""), symbolOf(a.currency), lang);
   switch (n.kind) {
     case "maturity": {
@@ -66,7 +67,7 @@ export function noticeView(n: Notice, today: string, lang: string): { icon: stri
         title,
         name: title,
         caption: n.bank_charges > 0
-          ? `${plural(n.bank_charges, "es un cargo", "son cargos")} del banco · ya llegaron a su día`
+          ? withPill(`${plural(n.bank_charges, "es un cargo", "son cargos")} del banco`, "Ya es su día")
           : "Ya llegaron a su día",
         to: n.count === 1 && n.move_id ? `/movimientos/${n.move_id}` : "/movimientos?pendientes=1",
       };
@@ -90,7 +91,7 @@ export function noticeView(n: Notice, today: string, lang: string): { icon: stri
         name: n.name ?? "",
         amount: a ? money(a) : undefined,
         caption: n.date < today
-          ? `Desde el ${shortDate(n.date)} · todavía no lo registras`
+          ? withPill(`Desde el ${shortDate(n.date)}`, "Sin registrar", true)
           : out ? "Te toca pagarlo hoy" : "Te toca recibirlo hoy",
         to: `/registrar/aviso/${n.recurring_id}/${n.occurrence}`,
       };
@@ -98,13 +99,18 @@ export function noticeView(n: Notice, today: string, lang: string): { icon: stri
   }
 }
 
-/** Lo que dice un recordatorio tuyo debajo de su texto: de qué cuelga y para cuándo. */
-export function activityCaption(a: Activity, today: string, withTarget = true) {
+/** Un texto con su pastilla al lado (caso 7 de «Sin punto como conector»): «Desde el 10 nov» y «Sin registrar». */
+function withPill(text: string, pill: string, attention = false) {
+  return <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">{text}<Pill attention={attention}>{pill}</Pill></span>;
+}
+
+/** Lo que dice un recordatorio tuyo debajo de su texto: de qué cuelga y, en su pastilla, para cuándo. */
+export function activityCaption(a: Activity, today: string, withTarget = true): ReactNode {
   const target = withTarget ? (a.partner ?? a.move ?? a.account) : null;
   const date = a.done_date
     ? `Hecho el ${shortDate(a.done_date)}`
     : a.date < today ? `Era para el ${shortDate(a.date)}` : a.date === today ? "Para hoy" : `Para el ${shortDate(a.date)}`;
-  return [target, date].filter(Boolean).join(" · ");
+  return target ? withPill(target, date, a.late && !a.done_date) : date;
 }
 
 const row = "flex min-h-[60px] items-center gap-3 border-b border-border";

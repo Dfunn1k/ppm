@@ -2,7 +2,7 @@
 // por adelantado. Por días (cada mes según los días que cubre) o por meses (partes iguales). Debajo,
 // cómo se reparte, con el mismo cálculo que hace la API.
 import { DateField } from "@/components/DateSheet";
-import { Icon } from "@/components/ui";
+import { Facts, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { addMonths, dayBefore, type DeferralMethod, deferralSchedule } from "@/lib/deferral";
 import { formatAmount } from "@/lib/money";
@@ -34,7 +34,7 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
   const parts = total && Number(total) > 0 ? deferralSchedule(total, v.method, start, end, months) : null;
   const money = (x: string) => formatAmount(x, symbol, lang);
   const label = (p: { date: string; days: number | null }) =>
-    p.days ? `${MONTHS[Number(p.date.slice(5, 7)) - 1]} ${p.date.slice(0, 4)} · ${p.days} días` : `${shortDate(p.date)} ${p.date.slice(0, 4)}`;
+    p.days ? <Facts items={[["Mes", `${MONTHS[Number(p.date.slice(5, 7)) - 1]} ${p.date.slice(0, 4)}`], ["Días", String(p.days)]]} /> : `${shortDate(p.date)} ${p.date.slice(0, 4)}`;
   const shown = parts && parts.length > 4 ? parts.slice(0, 3) : parts;
 
   return (
@@ -75,7 +75,7 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
           <section aria-label="Así se reparte" className="flex flex-col">
             <div className="flex justify-between text-label text-muted-foreground">
               <span>Así se reparte</span>
-              <span>{parts ? (v.method === "days" ? `${parts.reduce((s, p) => s + (p.days ?? 0), 0)} días · ${parts.length} partes` : `${parts.length} partes iguales`) : ""}</span>
+              <span>{parts ? (v.method === "days" ? <Facts items={[["Días", String(parts.reduce((s, p) => s + (p.days ?? 0), 0))], ["Partes", String(parts.length)]]} /> : `${parts.length} partes iguales`) : ""}</span>
             </div>
             {parts ? (
               <>

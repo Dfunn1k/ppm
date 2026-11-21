@@ -56,10 +56,10 @@ test("prestar desde Más, cobrar sin pasarse y verlo en Personas", async ({ page
   await expect(page.getByRole("button", { name: "Registrar cobro" })).toBeDisabled();
   await page.getByRole("textbox", { name: "¿Cuánto te pagaron?" }).fill("20");
   await chooseAccount(page, "Entra a", "BCP");
-  await expect(page.getByText("Sandra te debe S/ 59.00 · quedará en S/ 39.00")).toBeVisible();
+  await expect(page.getByText("Sandra te debe: S/ 59.00, Quedará en: S/ 39.00")).toBeVisible();
   await page.getByRole("button", { name: "Registrar cobro" }).click();
 
-  await expect(page.getByRole("link", { name: /Préstamo a Sandra/ })).toContainText("era S/ 59.00, te pagó S/ 20.00");
+  await expect(page.getByRole("link", { name: /Préstamo a Sandra/ })).toContainText("Era: S/ 59.00, Te pagó: S/ 20.00");
   await page.goto("/cuentas");
   await page.getByRole("link", { name: /Me deben.*1 persona/ }).click();
   await expect(page).toHaveURL("/personas?ver=me-deben");
@@ -209,7 +209,7 @@ test("cobrar en soles lo que te deben en dólares", async ({ page }) => {
   await expect(debt).toBeVisible();
   await debt.fill("133.38");
   await expect(page.getByText("La deuda es en dólares y la plata entra en soles: a 3.501 por US$.")).toBeVisible();
-  await expect(page.getByText("Paul te debe US$ 133.38 · quedará en US$ 0.00")).toBeVisible();
+  await expect(page.getByText("Paul te debe: US$ 133.38, Quedará en: US$ 0.00")).toBeVisible();
   await page.getByRole("button", { name: "Registrar cobro" }).click();
 
   await expect(page).toHaveURL(`/personas/${paul}`);

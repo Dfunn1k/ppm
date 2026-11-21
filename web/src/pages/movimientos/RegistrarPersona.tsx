@@ -12,7 +12,7 @@ import { PersonPicker } from "@/components/PersonPicker";
 import { Installments } from "@/components/Installments";
 import { RateField, useRateInput } from "@/components/RateField";
 import { CurrencyChoice, OptionList, Sheet, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
@@ -124,10 +124,10 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? " Te debe todas las cuotas; cada una vence con la fecha de pago de su corte." : ""}`
           : "No es un gasto: la plata sigue siendo tuya.")];
       case "borrow": return [`Le quedarás debiendo ${money(after)} a ${first}`, "No es un ingreso: entra a tu cuenta, pero se la debes."];
-      case "collect": return [`${first} te debe ${owedMoney(have)} · quedará en ${owedMoney(after)}`, how + fx];
-      case "repay": return [`Le debes ${owedMoney(have)} a ${first} · quedará en ${owedMoney(after)}`, how + fx];
+      case "collect": return [<Facts items={[[`${first} te debe`, owedMoney(have)], ["Quedará en", owedMoney(after)]]} />, how + fx];
+      case "repay": return [<Facts items={[[`Le debes a ${first}`, owedMoney(have)], ["Quedará en", owedMoney(after)]]} />, how + fx];
       case "custody_in": return [`Guardarás ${money(after)} de ${first}`, "Entra a tu cuenta, pero no suma a lo que realmente tienes: es suya."];
-      case "custody_out": return [`Guardas ${money(have)} de ${first} · quedarán ${money(after)}`, "Sale de tu cuenta y baja lo que guardas. No es un gasto tuyo."];
+      case "custody_out": return [<Facts items={[[`Guardas de ${first}`, money(have)], ["Quedarán", money(after)]]} />, "Sale de tu cuenta y baja lo que guardas. No es un gasto tuyo."];
     }
   })();
   const overText = kind === "collect"
@@ -285,7 +285,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
       <Sheet title="¿Qué deuda paga primero?" open={choosing} onClose={() => setChoosing(false)}>
         <OptionList value={String(debt?.id ?? openDebts[0]?.line_id ?? "")}
           options={openDebts.map((i) => ({ value: String(i.line_id), label: i.ref,
-            hint: `${shortDate(i.date)} · faltan ${formatAmount(i.open, symbolOf(i.currency), lang)}` }))}
+            hint: i.ref, detail: <Facts className="mt-0.5" items={[["Del", shortDate(i.date)], ["Faltan", formatAmount(i.open, symbolOf(i.currency), lang)]]} /> }))}
           onPick={(v) => {
             const i = openDebts.find((x) => String(x.line_id) === v);
             setDebt(i && i !== openDebts[0] ? { id: i.line_id, ref: i.ref } : null);

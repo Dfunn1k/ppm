@@ -27,10 +27,10 @@ type Status = AdminRates["currencies"][number];
 function caption(c: Status) {
   if (!c.last) return "Todavía no hay ninguno: cárgalo a mano.";
   const when = c.last.date === todayISO() ? "Hoy" : shortDate(c.last.date);
-  const how = c.last.source === "SUNAT" ? "SUNAT" : "a mano";
-  const loaded = c.loaded_at ? ` Cargado a las ${time(c.loaded_at)}.` : "";
+  const how = c.last.source === "SUNAT" ? "de SUNAT" : "a mano";
+  const loaded = c.loaded_at ? `, a las ${time(c.loaded_at)}` : "";
   const who = c.currency === "USD" ? "" : ` SUNAT no publica ${NAME[c.currency]?.toLowerCase() ?? c.currency}s; ${c.users === 1 ? "1 persona lo usa" : `${c.users} personas lo usan`}.`;
-  return `${when} · ${how}.${loaded}${who}`;
+  return `${when}, ${how}${loaded}.${who}`;
 }
 
 export function TipoCambio() {
@@ -92,9 +92,17 @@ export function TipoCambio() {
       <div className="flex flex-col gap-2">
         {sunat.error && <ErrorAlert>{sunat.error.message}</ErrorAlert>}
         {sunat.data && (
-          <div role="status" className="flex items-start gap-2 rounded-md bg-muted p-3 text-caption">
-            <Icon name="check_circle" fill className="text-income" />
-            <span>SUNAT: {shortDate(sunat.data.date)} · compra {rateText(sunat.data.buy)} · venta {rateText(sunat.data.sell)}.</span>
+          <div role="status" className="flex flex-col gap-2 rounded-md bg-muted p-3 text-caption">
+            <span className="flex items-center gap-2"><Icon name="check_circle" fill className="text-income" />SUNAT del {shortDate(sunat.data.date)}</span>
+            {/* Compra y venta en grande, cada una en su casilla, como la pizarra de una casa de cambio (caso 7) */}
+            <span className="grid grid-cols-2 gap-2">
+              {([["Compra", sunat.data.buy], ["Venta", sunat.data.sell]] as const).map(([k, v]) => (
+                <span key={k} className="flex flex-col rounded-md border border-border bg-card px-3 py-1.5">
+                  <span className="text-[10px] leading-[14px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{k}</span>
+                  <span className="font-display text-[24px] leading-[30px] font-bold tabular-nums">{rateText(v)}</span>
+                </span>
+              ))}
+            </span>
           </div>
         )}
         <PrimaryButton type="button" onClick={() => setLoading(true)}>Cargar a mano</PrimaryButton>

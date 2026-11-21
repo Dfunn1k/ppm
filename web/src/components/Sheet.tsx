@@ -68,7 +68,9 @@ export function Sheet({ title, open, onClose, children }: {
   );
 }
 
-export type Option = { value: string; label: string; hint?: string };
+/** `detail`, si viene, se muestra en lugar de `hint` (etiqueta y valor, o un ejemplo; caso 7); `hint` sigue
+ * sirviendo al buscador. */
+export type Option = { value: string; label: string; hint?: string; detail?: ReactNode };
 
 /** Desde cuántas opciones la lista trae buscador y sube la elegida primero (decisión «Listas largas»). */
 export const SEARCH_FROM = 9;
@@ -120,7 +122,7 @@ export function OptionList({ options, value, onPick, search, searchLabel = "Busc
             >
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">{o.label}</span>
-                {o.hint && <span className="text-caption text-muted-foreground">{o.hint}</span>}
+                {o.detail ?? (o.hint && <span className="text-caption text-muted-foreground">{o.hint}</span>)}
               </span>
               {selected && <Icon name="check_circle" fill className="text-[22px]" />}
             </button>

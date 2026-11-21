@@ -49,5 +49,5 @@ test("la cuota del banco es distinta: usar la del banco", async ({ page }) => {
   await expect(aviso).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Detalle plan cuotas" })).toContainText("Dividida en tu gasto");
   await page.getByRole("region", { name: "Detalle plan cuotas" }).getByRole("link").click();
-  await expect(page.getByText("3 cuotas de S/ 262.02 · precio S/ 693.00")).toBeVisible();
+  await expect(page.getByText("Cuotas: 3 de S/ 262.02, Precio: S/ 693.00")).toBeVisible();
 });

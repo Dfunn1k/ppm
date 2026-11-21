@@ -9,7 +9,7 @@ import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, MoveLine, moveBits } from "@/components/MoveBits";
 import { activityCaption, noticeView, sectionOf } from "@/components/Pending";
 import { OptionList, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, Facts, Icon } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { CURRENCY_NAME, formatAmount, isNegative, isZero, rateText, symbolOf } from "@/lib/money";
 import { monthName, monthOptions } from "@/lib/months";
@@ -48,11 +48,14 @@ export function Inicio() {
   const money = (v: string) => amount(v, h.currency);
   const percent = h.saved_percent ?? 0;
   const negative = isNegative(h.saved);
-  const today = hidden ? "Montos escondidos · toca el ojo para verlos" : [
-    `Tienes ${money(h.have_total)}`,
-    !isZero(h.custody_total) && `guardas ${money(h.custody_total)}`,
-    isZero(h.owe_total) ? "no debes nada" : `debes ${money(h.owe_total)}`,
-  ].filter(Boolean).join(" · ");
+  // Lo que tienes, guardas y debes, como etiqueta y valor (caso 7)
+  const today = hidden
+    ? <span className="inline-flex items-center gap-1"><Icon name="visibility_off" className="text-[16px]" />Montos escondidos. Toca el ojo para verlos</span>
+    : <Facts items={[
+      ["Tienes", money(h.have_total)],
+      !isZero(h.custody_total) && ["Guardas", money(h.custody_total)],
+      ["Debes", isZero(h.owe_total) ? "Nada" : money(h.owe_total)],
+    ]} />;
   const cards = h.accounts;
 
   return (
@@ -80,10 +83,11 @@ export function Inicio() {
       <h1 className="font-display text-[48px] leading-[50px] font-extrabold tracking-[-0.03em] tabular-nums">{money(h.real_total)}</h1>
       <span className="mt-1 text-caption text-muted-foreground tabular-nums">{today}</span>
       {h.foreign.map((f) => (
-        <span key={f.currency} className="text-caption text-muted-foreground tabular-nums">
-          {amount(f.amount, f.currency)} = {money((Number(f.amount) * Number(f.rate)).toFixed(2))} · {ONE[f.currency] ?? f.currency} a {rateText(f.rate)}
-          {f.rate_date === todayISO() ? " de hoy" : ` del ${shortDate(f.rate_date)}`}
-        </span>
+        <Facts key={f.currency} className="mt-1" items={[
+          [`Tus ${CURRENCY_NAME[f.currency] ?? f.currency}`, amount(f.amount, f.currency)],
+          ["Son", money((Number(f.amount) * Number(f.rate)).toFixed(2))],
+          [`1 ${ONE[f.currency] ?? f.currency} ${f.rate_date === todayISO() ? "hoy" : `el ${shortDate(f.rate_date)}`}`, rateText(f.rate)],
+        ]} />
       ))}
       {h.foreign.filter((f) => f.stale).map((f) => (
         <div key={f.currency} role="status" className="mt-4 flex items-start gap-2.5 rounded-md bg-attention-soft p-3 text-caption text-attention">

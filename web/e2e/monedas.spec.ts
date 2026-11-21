@@ -35,7 +35,7 @@ test("agregar y quitar una moneda, y cambiar el formato", async ({ page }) => {
   const r = await page.request.post("/api/accounts/cash", { data: { name: "Pesos", currency: "CLP", opening: { amount: "15000", rate: "0.0036" } } });
   expect(r.status()).toBe(201);
   await page.reload();
-  await expect(otras).toContainText("En uso: Pesos");
+  await expect(otras).toContainText("Pesos");
   await expect(otras.getByRole("button", { name: "Quitar Peso chileno" })).toHaveCount(0);
   await page.goto("/cuentas");
   await expect(page.getByRole("link", { name: /Pesos/ })).toContainText("CLP 15,000");

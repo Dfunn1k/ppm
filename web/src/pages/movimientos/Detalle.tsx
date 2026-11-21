@@ -20,7 +20,7 @@ import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, Facts, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
 import { add, divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
@@ -172,9 +172,7 @@ export function DetalleMovimiento() {
         {exchange && <><Icon name="arrow_forward" aria-label="a" className="text-[26px] text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}
       </span>
       {plan?.price && plan.installment_amount && (
-        <span className="text-caption text-muted-foreground tabular-nums">
-          {plan.n_installments} cuotas de {formatAmount(plan.installment_amount, symbolOf(plan.currency), lang)} · precio {formatAmount(plan.price, symbolOf(plan.currency), lang)}
-        </span>
+        <Facts items={[["Cuotas", `${plan.n_installments} de ${formatAmount(plan.installment_amount, symbolOf(plan.currency), lang)}`], ["Precio", formatAmount(plan.price, symbolOf(plan.currency), lang)]]} />
       )}
       {deferral && (
         <span className="text-caption text-muted-foreground tabular-nums">

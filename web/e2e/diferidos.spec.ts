@@ -27,7 +27,7 @@ test("un seguro repartido en 12 meses: la parte del mes, cancelar lo que falta y
 
   await page.getByRole("switch", { name: /Repartir en el tiempo/ }).click();
   const reparto = page.getByRole("region", { name: "Así se reparte" });
-  await expect(reparto).toContainText("partes");                        // por días: un año desde hoy
+  await expect(reparto).toContainText("Partes: ");                        // por días: un año desde hoy
   await page.getByRole("radio", { name: "Por meses" }).click();
   await expect(reparto).toContainText("12 partes iguales");
   await expect(reparto).toContainText("S/ 100.00");

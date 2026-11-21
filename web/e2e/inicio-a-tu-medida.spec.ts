@@ -70,7 +70,7 @@ test("el ojo esconde los montos del Inicio y se recuerda", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("S/ 1,500.00");
   await page.getByRole("button", { name: "Esconder los montos" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("S/ ••••");
-  await expect(page.getByText("Montos escondidos · toca el ojo para verlos")).toBeVisible();
+  await expect(page.getByText("Montos escondidos. Toca el ojo para verlos")).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("S/ ••••");
   await page.getByRole("button", { name: "Mostrar los montos" }).click();

@@ -50,7 +50,7 @@ test("pagué lo que faltaba desde el BCP, y deshacerlo", async ({ page }) => {
   await page.goto(`/movimientos/${id}`);
   await page.getByRole("button", { name: "Cancelar las cuotas que faltan" }).click();
   const hoja = page.getByRole("dialog", { name: "Cancelar las cuotas que faltan" });
-  await expect(hoja).toContainText(`faltan ${left} de 6 cuotas`);
+  await expect(hoja).toContainText(`Faltan: ${left} de 6 cuotas`);
   await hoja.getByRole("radio", { name: /Pagué lo que faltaba/ }).check();
   const faltaba = 215 * left;
   await hoja.getByLabel("Lo que te cobró el banco").fill(String(faltaba - 20));

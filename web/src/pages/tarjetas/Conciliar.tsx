@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type Reconciliation, useBankInstallment, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
-import { ErrorAlert, Icon, Screen, Spinner, Status } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, Screen, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { add, formatAmount, subtract, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
@@ -62,9 +62,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
     <Screen className="pt-4">
       <FormHeader back={`/tarjetas/${id}`} label={name} />
       <h1 className="mt-2 text-title-hero">Estado de cuenta</h1>
-      <p className="mt-2 text-muted-foreground">
-        Ciclo del {shortDate(r.date_from)} al {shortDate(r.closing_date)}{r.date_due ? ` · pagar antes del ${shortDate(r.date_due)}` : ""}.
-      </p>
+      <Facts className="mt-2" items={[["Ciclo", `${shortDate(r.date_from)} al ${shortDate(r.closing_date)}`], r.date_due && ["Pagar antes del", shortDate(r.date_due)]]} />
       {r.filename && <span className="text-caption text-muted-foreground">{r.filename}</span>}
 
       <section aria-label="Foto del corte" className="mt-5 flex flex-col">
@@ -201,7 +199,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
             <Link key={`${u.move_id}-${u.amount}`} to={`/movimientos/${u.move_id}`} className="flex min-h-11 items-center gap-3 border-b border-border">
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-semibold">{u.ref}</span>
-                <span className="text-caption text-muted-foreground">{shortDate(u.date)} · revisa el monto o la fecha</span>
+                <Facts items={[["Del", shortDate(u.date)], ["Revisa", "El monto o la fecha"]]} attention />
               </span>
               <span className="text-amount">{money(u.amount, u.currency)}</span>
             </Link>

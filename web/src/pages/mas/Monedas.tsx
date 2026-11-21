@@ -7,7 +7,7 @@ import { Link } from "react-router";
 import { type MyCurrency, useCatalog, useMe, useMyCurrencies, useToggleCurrency, useUpdateMe } from "@/api/hooks";
 import { Sheet } from "@/components/Sheet";
 import { DetailSkeleton } from "@/components/Skeleton";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, FormatSample, Icon } from "@/components/ui";
 import { formatAmount, symbolOf } from "@/lib/money";
 
 /** «14/11/2026»: los dos formatos de hoy escriben la fecha igual (res_lang.date_format). */
@@ -16,8 +16,8 @@ function sampleDate() {
 }
 
 function rateCaption(c: MyCurrency) {
-  if (c.rate === "SUNAT") return "tipo de cambio de SUNAT, cada día";
-  if (c.rate === "manual") return "tipo de cambio a mano";
+  if (c.rate === "SUNAT") return "SUNAT, cada día";
+  if (c.rate === "manual") return "A mano";
   return null;
 }
 
@@ -84,12 +84,13 @@ export function Monedas() {
               <Badge symbol={c.symbol} />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">{c.name}</span>
-                <span className={`text-caption ${rate ? "text-muted-foreground" : "text-attention"}`}>
-                  {used ? `En uso: ${c.accounts.join(", ")}` : "Sin cuentas todavía"}
-                  {" · "}
-                  {rate ?? (me.is_admin
-                    ? <>sin tipo de cambio todavía: cárgalo en <Link to="/mas/tipo-de-cambio" className="underline">Más › Tipo de cambio</Link></>
-                    : "sin tipo de cambio todavía: el administrador lo carga")}
+                {/* Cada dato con su ícono (caso 7): en qué cuentas y de dónde sale el tipo de cambio */}
+                <span className="flex flex-wrap items-center gap-x-3 text-caption text-muted-foreground">
+                  <span className="inline-flex items-center gap-1"><Icon name="account_balance" className="text-[15px]" />{used ? c.accounts.join(", ") : "Sin cuentas todavía"}</span>
+                  {rate ? <span className="inline-flex items-center gap-1"><Icon name="sync" className="text-[15px]" />{rate}</span>
+                    : <span className="inline-flex items-center gap-1 font-semibold text-attention"><Icon name="error" className="text-[15px]" />{me.is_admin
+                      ? <>Sin tipo de cambio: cárgalo en <Link to="/mas/tipo-de-cambio" className="underline">Más › Tipo de cambio</Link></>
+                      : "Sin tipo de cambio: el administrador lo carga"}</span>}
                 </span>
               </span>
               {!used && (
@@ -119,9 +120,7 @@ export function Monedas() {
                 className={`flex min-h-[60px] items-center gap-3 rounded-md px-3 text-left ${on ? "bg-muted" : ""}`}>
                 <span className="flex flex-1 flex-col">
                   <span className="font-semibold">{country}</span>
-                  <span className="text-caption text-muted-foreground tabular-nums">
-                    {formatAmount("1284.90", symbolOf(me.currency), l.code)} · {sampleDate()}
-                  </span>
+                  <FormatSample amount={formatAmount("1284.90", symbolOf(me.currency), l.code)} date={sampleDate()} />
                 </span>
                 {on ? <Icon name="check_circle" fill className="text-[22px]" /> : <span aria-hidden="true" className="size-5 rounded-full border-2 border-input-line" />}
               </button>
