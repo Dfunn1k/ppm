@@ -8,7 +8,7 @@ import { ErrorAlert, Icon } from "@/components/ui";
 import { formatAmount, rateText, symbolOf } from "@/lib/money";
 import { monthName } from "@/lib/months";
 
-import { ChartTip, MONTH_LETTER, ReportHeader, useMoney } from "./common";
+import { ChartTip, MONTH_SHORT, ReportHeader, useMoney } from "./common";
 import { ReportBones } from "@/components/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { isZero } from "@/lib/money";
@@ -31,7 +31,7 @@ export function ReportePatrimonio() {
   const r = report.data;
   const first = r.months[0]!, last = r.months.at(-1)!;
   const change = Number(last.amount) - Number(first.amount);
-  const points = r.months.map((m) => ({ ...m, value: Number(m.amount), label: MONTH_LETTER[Number(m.date.slice(5, 7)) - 1] }));
+  const points = r.months.map((m) => ({ ...m, value: Number(m.amount), label: MONTH_SHORT[Number(m.date.slice(5, 7)) - 1] }));
   const have = r.have.reduce((a, x) => a + Number(x.amount), 0);
   const gain = (f: (typeof r.foreign)[number]) => Number(f.today) - Number(f.book);
 

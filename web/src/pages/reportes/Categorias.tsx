@@ -8,13 +8,13 @@ import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis
 
 import { type CategoryReport, useCategoryReport } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
-import { ErrorAlert, Facts, Icon } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { ReportBones } from "@/components/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
-import { monthName } from "@/lib/months";
+import { monthName, monthOnly } from "@/lib/months";
 
 import {
-  ChartTip, MONTH_LETTER, PeriodBar, ReportHeader, Trend, Versus, against, catColor, delta, useMoney, usePeriod,
+  ChartTip, MONTH_SHORT, PeriodBar, ReportHeader, ShareBar, Trend, Versus, against, catColor, delta, useMoney, usePeriod,
 } from "./common";
 
 type Group = CategoryReport["groups"][number];
@@ -43,7 +43,8 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
   const centerLabel = picked.length === 0 ? "Total" : picked.length === 1 ? picked[0]!.name.split(" ")[0] : `${picked.length} grupos`;
   const centerAmount = picked.length === 0 ? r.total : (picked.reduce((s, g) => s + Math.round(Number(g.amount) * 100), 0) / 100).toFixed(2);
   const markToggle = (id: number) => setMarked((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
-  const max = Math.max(...r.groups.map((g) => Number(g.amount)), 1);
+  // Lo que pesa en el total: la barra de cada fila se llena hasta ahí y la dona lo dice al elegir un grupo
+  const share = (amount: string | number) => (Number(r.total) ? Math.round((Number(amount) / Number(r.total)) * 100) : 0);
   // Desplegar un grupo lo suma a lo resaltado; plegarlo lo quita. Sin ninguno resaltado, la dona muestra el total
   const toggle = (g: Group) => {
     if (open.includes(g.id)) {
@@ -58,7 +59,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
     `/movimientos?mes=${p.month}&categoria=${id}&categoria_nombre=${encodeURIComponent(name)}`;
   type MonthRow = { label: string; month: string; total: number; [group: string]: string | number };
   const months: MonthRow[] = r.months.map((m, i) => ({
-    label: MONTH_LETTER[i]!, month: m.month, total: Number(m.total),
+    label: MONTH_SHORT[i]!, month: m.month, total: Number(m.total),
     ...Object.fromEntries(r.groups.map((g, k) => [`g${g.id}`, Number(m.groups[k] ?? 0)])),
   }));
 
@@ -110,6 +111,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
               <span className={`${money(centerAmount).length > 11 ? "text-[12px]" : "text-[15px]"} leading-5 font-semibold tabular-nums`}>
                 {money(centerAmount)}
               </span>
+              {picked.length > 0 && <span className="text-caption font-semibold tabular-nums">{share(centerAmount)} %</span>}
             </div>
           </div>
         )}
@@ -129,7 +131,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
                 <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                 <Tooltip cursor={{ fill: "var(--muted)" }} content={({ active, payload }) => {
                   const m = payload?.[0]?.payload as MonthRow | undefined;
-                  return <ChartTip active={active && !!m} title={m ? <span className="flex justify-between gap-3"><span>{m.month}</span><span className="tabular-nums">{money(m.total)}</span></span> : ""}
+                  return <ChartTip active={active && !!m} title={m ? <span className="flex justify-between gap-3"><span>{monthOnly(m.month)}</span><span className="tabular-nums">{money(m.total)}</span></span> : ""}
                     rows={expense && m ? r.groups.filter((g) => Number(m[`g${g.id}`])).map((g) => ({
                       color: catColor(g.color), label: g.name, value: money(Number(m[`g${g.id}`]).toFixed(2)) })) : []} />;
                 }} />
@@ -165,14 +167,9 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
               <CategoryChip category={g} />
               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <span className="flex justify-between gap-2"><span className="font-semibold">{g.name}</span><span className="text-amount">{money(g.amount)}</span></span>
-                <span className="flex items-center gap-2">
-                  <span aria-hidden="true" className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                    <span className="block h-1.5 rounded-full" style={{ width: `${Math.max(0, (Number(g.amount) / max) * 100)}%`, background: catColor(g.color) }} />
-                  </span>
-                  <Facts className="flex-none" items={[
-                    ["Del total", `${Number(r.total) ? Math.round((Number(g.amount) / Number(r.total)) * 100) : 0} %`],
-                    ["Cambio", <Trend now={g.amount} before={g.previous} />],
-                  ]} />
+                <ShareBar pct={share(g.amount)} color={catColor(g.color)} />
+                <span className="flex justify-end text-caption text-muted-foreground tabular-nums">
+                  <span className="sr-only">Cambio: </span><Trend now={g.amount} before={g.previous} />
                 </span>
               </span>
             </>

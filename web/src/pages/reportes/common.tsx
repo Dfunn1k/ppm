@@ -135,4 +135,19 @@ export function ChartTip({ active, title, rows }: { active?: boolean; title?: Re
   );
 }
 
-export const MONTH_LETTER = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+/** El eje de los gráficos de 12 meses: tres letras, porque con una se repiten (dos M, dos J, dos A). */
+export const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
+
+/** Lo que pesa un grupo en el total: la barra se llena hasta ahí y el número va en la punta (dentro, si casi la llena). */
+export function ShareBar({ pct, color }: { pct: number; color: string }) {
+  const inside = pct > 82;
+  return (
+    <span className="relative block h-4 overflow-hidden rounded-md bg-muted">
+      <span aria-hidden="true" className="block h-4 rounded-md" style={{ width: `${Math.min(100, Math.max(0, pct))}%`, background: color }} />
+      <span className={`absolute top-0 text-[11px] leading-4 font-semibold tabular-nums ${inside ? "text-on-category" : ""}`}
+        style={inside ? { right: 6 } : { left: `calc(${Math.max(0, pct)}% + 6px)` }}>
+        {pct} %<span className="sr-only"> del total</span>
+      </span>
+    </span>
+  );
+}
