@@ -8,9 +8,13 @@ import { createPortal } from "react-dom";
 import { type Attachment, attachmentThumb, attachmentUrl, attachmentView } from "@/api/hooks";
 import { shortDate } from "@/lib/dates";
 
+import { Kbd } from "./ShortcutsHelp";
 import { ErrorAlert, Icon } from "./ui";
 
 const ZOOMS = [1, 1.5, 2, 3, 4];
+
+// La ayuda de teclas de abajo (caso 8, opción B): cada tecla en su cajita, como en Atajos.
+const KEY_HELP: [keys: string[], what: string][] = [[["←", "→"], "Pasar"], [["+", "−"], "Zoom"], [[], "acerca"], [["Esc"], "Cerrar"]];
 
 export function fileSize(bytes: number) {
   return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -143,7 +147,14 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
               </button>
             </>
           )}
-          <span className="hidden pb-3 text-center text-caption text-[#a3a3a3] lg:block">← → para pasar · + − para el zoom · doble clic acerca · Esc para cerrar</span>
+          <span className="hidden flex-wrap justify-center gap-x-5 gap-y-1.5 pb-3 text-caption text-[#a3a3a3] lg:flex">
+            {KEY_HELP.map(([keys, what]) => (
+              <span key={what} className="flex items-center gap-1.5">
+                {keys.length ? keys.map((k) => <Kbd key={k} dark>{k}</Kbd>) : <b className="font-semibold text-[#ddd]">Doble clic</b>}
+                {what}
+              </span>
+            ))}
+          </span>
         </div>
       </div>
 

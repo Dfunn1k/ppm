@@ -46,7 +46,7 @@ export function CrearCuenta() {
     <AccessLayout>
     <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
       <div className="flex flex-col lg:hidden">
-        <Refran label="PPM · Crear cuenta" />
+        <Refran label="Crear cuenta en PPM" />
       </div>
       <div className="flex-1 lg:hidden" />
       <form noValidate onSubmit={onSubmit} className="mt-8 flex flex-col gap-3 lg:mt-0">

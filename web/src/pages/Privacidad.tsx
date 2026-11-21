@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import { usePrivacy } from "@/api/hooks";
+import { Logo } from "@/components/InstallSheet";
 import { Icon, Screen } from "@/components/ui";
 
 const UPDATED = "14 de noviembre de 2026";
@@ -33,7 +34,7 @@ export function Privacidad() {
           ? <Link to="/" aria-label="Ir a PPM" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
           : <button type="button" onClick={() => navigate(-1)} aria-label="Volver" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></button>}
       </div>
-      <span className="mt-3 text-label text-muted-foreground">PPM · PAN PARA MAYO</span>
+      <span className="mt-3 flex items-center gap-2 text-label text-muted-foreground"><Logo size={20} />PAN PARA MAYO</span>
       <h1 className="mt-2 text-title-hero">Privacidad</h1>
       <span className="mt-2 text-caption text-muted-foreground">Actualizada el {UPDATED}</span>
       <p className="mt-4 text-muted-foreground">
