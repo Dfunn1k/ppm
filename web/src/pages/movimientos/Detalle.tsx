@@ -25,6 +25,7 @@ import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
 import { add, divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
+import { listText } from "@/lib/utils";
 import { DetailSkeleton } from "@/components/Skeleton";
 
 const FX_GROUP = { gain: "Ingresos", loss: "Gastos financieros" } as const;
@@ -312,8 +313,8 @@ export function DetalleMovimiento() {
         <section aria-label="Cuotas" className="mt-4 flex flex-col">
           <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
             <span>
-              {plan.n_installments} cuotas · {billedText(plan.lines.filter((x) => x.billed).length)}
-              {canceled ? ` · ${plan.lines.filter((x) => x.canceled).length} canceladas` : ""}
+              {plan.n_installments} cuotas: {listText([billedText(plan.lines.filter((x) => x.billed).length),
+                canceled && canceledText(plan.lines.filter((x) => x.canceled).length)])}
             </span>
             <span>Quedan {formatAmount(plan.remaining, symbolOf(plan.currency), lang)}</span>
           </div>
@@ -486,6 +487,10 @@ export function DetalleMovimiento() {
 
 function billedText(n: number) {
   return n === 1 ? "1 facturada" : `${n} facturadas`;
+}
+
+function canceledText(n: number) {
+  return n === 1 ? "1 cancelada" : `${n} canceladas`;
 }
 
 function Field({ icon, label, value, amount }: { icon: string; label: string; value: string; amount?: string }) {

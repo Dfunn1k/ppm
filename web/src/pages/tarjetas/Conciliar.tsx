@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type Reconciliation, useBankInstallment, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
-import { ErrorAlert, Icon, Screen, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, Screen, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { add, formatAmount, subtract, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
@@ -89,7 +89,12 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
                   <span className="truncate font-semibold">{x.name} · cuota {x.sequence}/{x.n_installments}</span>
                   <span className="text-caption text-muted-foreground tabular-nums">
                     Capital {money(x.capital, x.currency)} + interés {money(x.interest, x.currency)}
-                    {x.differs ? ` · en PPM la cuota es ${money(x.differs.each, x.currency)}` : x.move_id === null ? " · no la encontramos en PPM" : x.mine ? " · dividida en tu gasto" : " · de otra persona: te debe la cuota completa"}
+                  </span>
+                  <span className="text-caption text-muted-foreground tabular-nums">
+                    {x.differs ? <Status icon="error" attention>En PPM la cuota es {money(x.differs.each, x.currency)}</Status>
+                      : x.move_id === null ? <Status icon="error" attention>No está en PPM</Status>
+                      : x.mine ? <Status icon="call_split">Dividida en tu gasto</Status>
+                      : <Status icon="person">De otra persona: te debe la cuota completa</Status>}
                   </span>
                 </span>
                 <span className="text-amount">{money(add(x.capital, x.interest), x.currency)}</span>

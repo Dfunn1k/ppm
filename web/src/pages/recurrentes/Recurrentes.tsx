@@ -9,10 +9,10 @@ import { Avatar } from "@/components/MoveBits";
 import { TagChips } from "@/components/Tags";
 import { DateField } from "@/components/DateSheet";
 import { Segmented, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, PrimaryButton, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, parseAmount, symbolOf } from "@/lib/money";
-import { MODE_NAME, ruleText } from "@/lib/recurrence";
+import { MODE_ICON, MODE_NAME, ruleText } from "@/lib/recurrence";
 
 const WEEK = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -140,7 +140,9 @@ export function Recurrente() {
   const money = (v: string) => formatAmount(v.replace("-", ""), sym, lang);
   const paused = row.state === "paused";
   const done = row.state === "done";
-  const label = `${paused ? "Pausada" : done ? "Terminada" : MODE_NAME[row.mode]} · ${ruleText(rule).toLowerCase()}`;
+  // El estado (o el modo) con su ícono a la izquierda y cada cuánto se repite a la derecha
+  const status = paused ? { icon: "pause_circle", name: "Pausada" } : done ? { icon: "stop_circle", name: "Terminada" }
+    : { icon: MODE_ICON[row.mode], name: MODE_NAME[row.mode] };
   const where = row.kind === "transfer" ? `de ${row.account} a ${row.to_account}`
     : `${rec.data.categories.map((c) => c.name).join(", ")} · ${row.paid_by ? `${row.kind === "income" ? "la cobra" : "la paga"} ${row.paid_by.split(" ")[0]}` : `${row.kind === "income" ? "entra a" : "sale de"} ${row.account}`}`;
   const mine = rec.data.splits.reduce((t, v) => t + Math.round(Number(v) * 100), 0) / 100;
@@ -154,7 +156,10 @@ export function Recurrente() {
         )}
       </div>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-        <span className="mt-1 text-label text-muted-foreground lg:mt-0">{label}</span>
+        <span className="mt-1 flex items-center justify-between gap-3 text-caption text-muted-foreground lg:mt-0 lg:justify-start">
+          <Status icon={status.icon}>{status.name}</Status>
+          <span>{ruleText(rule)}</span>
+        </span>
         {/* En la computadora las acciones van arriba, como en el detalle de una cuenta */}
         {!done && (
           <span className="hidden flex-none gap-2 lg:flex">

@@ -86,7 +86,7 @@ test("un gasto con tarjeta en 6 cuotas: cada cuota se factura en su corte", asyn
   const cuota = page.getByRole("region", { name: "Cuotas por venir" }).getByRole("link", { name: /Televisor/ });
   await expect(cuota).toContainText("S/ 1,200.00");
   await cuota.click();
-  await expect(page.getByText("6 cuotas · 0 facturadas")).toBeVisible();
+  await expect(page.getByText("6 cuotas: 0 facturadas")).toBeVisible();
   await expect(page.getByRole("link", { name: "Editar" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Borrar la compra y sus cuotas" })).toBeVisible();
 });

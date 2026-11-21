@@ -44,7 +44,7 @@ test("un seguro repartido en 12 meses: la parte del mes, cancelar lo que falta y
   await expect(page.getByText("Gasto repartido")).toBeVisible();
   await expect(page.getByText("Por meses: 12 partes de S/ 100.00")).toBeVisible();
   const partes = page.getByRole("region", { name: "Partes" });
-  await expect(partes).toContainText("12 partes · 1 contó");
+  await expect(partes).toContainText("12 partes: 1 contó");
   await expect(partes).toContainText("Faltan S/ 1,100.00");
 
   await page.getByRole("button", { name: "Cancelar lo que falta" }).click();

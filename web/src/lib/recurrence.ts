@@ -40,6 +40,11 @@ export function ruleText(r: Rule): string {
   return every === 1 ? "Todos los días" : `Cada ${every} días`;
 }
 
+/** El ícono de cada modo, junto a su nombre en el detalle de una recurrente. */
+export const MODE_ICON: Record<"auto" | "draft" | "reminder", string> = {
+  auto: "bolt", draft: "schedule", reminder: "notifications",
+};
+
 export const MODE_NAME: Record<"auto" | "draft" | "reminder", string> = {
   auto: "Automático", draft: "Por confirmar", reminder: "Recordatorio",
 };
