@@ -54,7 +54,7 @@ test("un gasto en 6 cuotas de S/ 207: no es gasto hoy, cada cuota lo es en su co
   await page.goto(`/tarjetas/${visa}`);
   await page.getByRole("region", { name: "Cuotas por venir" }).getByRole("link", { name: /Sofá/ }).click();
   await expect(page.getByText("Gasto en cuotas")).toBeVisible();
-  await expect(page.getByText("6 cuotas · 0 facturadas")).toBeVisible();
+  await expect(page.getByText("6 cuotas: 0 facturadas")).toBeVisible();
   await expect(page.getByText("6 cuotas de S/ 207.00 · precio S/ 1,200.00")).toBeVisible();
   await expect(page.getByText("Cada cuota es gasto de «Hogar» en el corte que la factura", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: /corregir capital e interés/ })).toHaveCount(0);
@@ -75,16 +75,16 @@ test("prestarle la tarjeta a Luis en cuotas y poner la fecha de pago del corte",
   await page.getByRole("button", { name: "Registrar préstamo en 3 cuotas" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
-  await expect(page.getByText("3 cuotas · 3 por facturar")).toBeVisible();
+  await expect(page.getByText("3 cuotas: 3 por facturar")).toBeVisible();
   const primera = page.getByRole("button", { name: /^Parte 1 de 3/ });
-  await expect(primera).toContainText("Vence con el pago del corte del");
+  await expect(primera).toContainText(/Por facturar.*vence con el pago del corte del/);
 
   // La fecha de pago de ese ciclo, escrita en la tarjeta, la toma la parte 1
   const corte = (await (await page.request.get(`/api/partners/${luis}`)).json()).owes_me[0].maturity_closing as string;
   const pago = new Date(Date.parse(corte) + 15 * 86_400_000).toISOString().slice(0, 10);
   expect((await page.request.put(`/api/cards/${visa}/due-date`, { data: { closing_date: corte, date_due: pago } })).status()).toBe(200);
   await page.reload();
-  await expect(page.getByRole("button", { name: /^Parte 1 de 3/ })).toContainText("Vence el");
+  await expect(page.getByRole("button", { name: /^Parte 1 de 3/ })).toContainText("vence el");
 });
 
 test("una compra en cuotas que es de otra persona: no es tu gasto, te debe todas las cuotas", async ({ page }) => {
@@ -103,7 +103,7 @@ test("una compra en cuotas que es de otra persona: no es tu gasto, te debe todas
   await page.getByRole("button", { name: "Registrar gasto en 3 cuotas" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
-  await expect(page.getByText("3 cuotas · 3 por facturar")).toBeVisible();
+  await expect(page.getByText("3 cuotas: 3 por facturar")).toBeVisible();
   await expect(page.getByRole("link", { name: /Unipiel/ })).toContainText("S/ 786.06");
 });
 

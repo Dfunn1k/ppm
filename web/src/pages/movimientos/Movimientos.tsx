@@ -10,7 +10,7 @@ import { BoneRows } from "@/components/Skeleton";
 import { Kbd } from "@/components/ShortcutsHelp";
 import { tagColor } from "@/components/Tags";
 import { keyLabel, useShortcuts } from "@/lib/shortcuts";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, Icon, Status } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { useDesktop } from "@/lib/desktop";
 import { monthName, monthOptions } from "@/lib/months";
@@ -154,7 +154,7 @@ export function Movimientos() {
       {m?.days.map((d) => (
         <section key={d.date} aria-label={dayLabel(d.date)} className="flex flex-col">
           <div className="mt-4 flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-            <span>{dayLabel(d.date)}{d.moves.every((x) => !x.posted) ? " · por confirmar" : ""}</span>
+            <span className="flex items-center gap-2.5">{dayLabel(d.date)}{d.moves.every((x) => !x.posted) && <Status icon="schedule" attention>Por confirmar</Status>}</span>
             {!isZero(d.total) && <span>{d.total.startsWith("-") ? "− " : "+ "}{formatAmount(d.total.replace("-", ""), sym, lang)}</span>}
           </div>
           {d.moves.map((x) => <MoveRow key={x.id} move={x} lang={lang} base={m.currency} />)}
