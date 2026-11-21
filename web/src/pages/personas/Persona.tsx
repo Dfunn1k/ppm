@@ -19,6 +19,8 @@ import { DetailSkeleton } from "@/components/Skeleton";
 
 type Hoja = null | "pago" | "compensar" | "perdido" | "editar";
 
+const CONTACT = "flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-caption font-semibold";
+
 function ago(days: number) {
   return days <= 0 ? "Hoy" : days === 1 ? "Ayer" : `Hace ${days} días`;
 }
@@ -110,7 +112,11 @@ export function Persona() {
         </span>
       )}
       {(p.phone || p.email) && (
-        <span className="mt-2 text-caption text-muted-foreground">{[p.phone, p.email].filter(Boolean).join(" · ")}</span>
+        // Cada dato en su pastilla con ícono: tocarla llama o abre el correo (caso 9, opción C)
+        <span className="mt-2 flex flex-wrap gap-2">
+          {p.phone && <a href={`tel:${p.phone.replace(/[^\d+]/g, "")}`} className={CONTACT}><Icon name="call" className="text-[18px]" />{p.phone}</a>}
+          {p.email && <a href={`mailto:${p.email}`} className={CONTACT}><Icon name="mail" className="text-[18px]" />{p.email}</a>}
+        </span>
       )}
 
       <div className="mt-4 flex flex-col gap-4">

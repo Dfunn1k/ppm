@@ -71,7 +71,8 @@ test("un recordatorio se ve en el Inicio y en Pendientes hasta que lo haces", as
   });
   expect(r.status()).toBe(201);
   await page.goto("/inicio");
-  await expect(page.getByRole("region", { name: "Pendientes" })).toContainText("Alquiler · S/ 1,200.00");
+  const card = page.getByRole("region", { name: "Pendientes" }).getByRole("link", { name: /Alquiler/ });
+  await expect(card).toContainText("S/ 1,200.00");   // el monto a la derecha (caso 9)
   await page.goto("/pendientes");
   const hoy = page.getByRole("region", { name: "Hoy" });
   await expect(hoy).toContainText("Te toca pagarlo hoy");

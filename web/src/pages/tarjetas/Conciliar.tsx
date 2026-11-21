@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type Reconciliation, useBankInstallment, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
-import { ErrorAlert, Facts, Icon, Screen, Spinner, Status } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, Screen, Segments, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { add, formatAmount, subtract, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
@@ -84,7 +84,14 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
             const row = (
               <>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-semibold">{x.name} · cuota {x.sequence}/{x.n_installments}</span>
+                  {/* La barra de rayitas de las cuotas de la tarjeta (caso 7) y «3 de 12» (caso 9, opción C) */}
+                  <span className="flex items-center gap-2.5">
+                    <span className="truncate font-semibold">{x.name}</span>
+                    <Segments done={x.sequence} total={x.n_installments} className="w-24 flex-none" />
+                    <span className="flex-none text-caption text-muted-foreground tabular-nums">
+                      <span className="sr-only">Cuota </span>{x.sequence} de {x.n_installments}
+                    </span>
+                  </span>
                   <span className="text-caption text-muted-foreground tabular-nums">
                     Capital {money(x.capital, x.currency)} + interés {money(x.interest, x.currency)}
                   </span>

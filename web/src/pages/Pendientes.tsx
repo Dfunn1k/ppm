@@ -5,7 +5,7 @@
 import { useState } from "react";
 
 import { type Activity, type Notice, useMe, usePending, useSnooze, useUpdateMe } from "@/api/hooks";
-import { ActivityItem, ActivitySheet, NoticeItem, type Section, noticeView, sectionOf } from "@/components/Pending";
+import { ActivityItem, ActivitySheet, NoticeAmounts, NoticeItem, type Section, noticeView, sectionOf } from "@/components/Pending";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { useDesktop } from "@/lib/desktop";
 import { shortDate } from "@/lib/dates";
@@ -103,7 +103,10 @@ export function Pendientes() {
           {showSnoozed && box.snoozed.map((n) => (
             <div key={n.key} className="flex min-h-[60px] items-center gap-3 border-b border-border">
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="font-semibold">{noticeView(n, box.today, lang).title}</span>
+                <span className="flex items-baseline justify-between gap-3">
+                  <span className="font-semibold">{noticeView(n, box.today, lang).name}</span>
+                  <NoticeAmounts amounts={noticeView(n, box.today, lang).amounts} />
+                </span>
                 <span className="text-caption text-muted-foreground">Vuelve el {shortDate(n.snooze_until!)}</span>
               </span>
               <button type="button" disabled={snooze.isPending} onClick={() => snooze.mutate({ key: n.key, until: null })}

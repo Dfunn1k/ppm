@@ -6,8 +6,9 @@ import { Link, useSearchParams } from "react-router";
 import { type Unclassified, useMe, useUnclassified } from "@/api/hooks";
 import { ClassifySheet, type ToClassify } from "@/components/ClassifySheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
-import { shortDate } from "@/lib/dates";
+import { shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, formatNumber, isNegative, symbolOf } from "@/lib/money";
+import { monthOnly } from "@/lib/months";
 
 const DAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
@@ -16,11 +17,20 @@ function dayDate(iso: string) {
   return `${DAYS[new Date(y!, m! - 1, d!).getDay()]} ${shortDate(iso)}`;
 }
 
+/** El encabezado de cada día (caso 9, opción C): como en Movimientos, pero con el mes, porque la bandeja
+ *  junta varios meses. «VIERNES 12 DE NOVIEMBRE». */
+const LONG_DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+function dayHeader(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${iso === todayISO() ? "Hoy, " : ""}${LONG_DAYS[new Date(y!, m! - 1, d!).getDay()]} ${d} de ${monthOnly(iso.slice(0, 7)).toLowerCase()}`;
+}
+
 export function toClassify(u: Unclassified): ToClassify {
   return {
     move_id: u.move_id,
     title: u.payment_ref ?? u.ref,
-    caption: `${dayDate(u.date)} · ${u.account}`,
+    date: dayDate(u.date),
+    account: u.account,
     account_id: u.account_id,
     currency: u.currency,
     amount: u.amount,
@@ -78,11 +88,14 @@ export function PorClasificar() {
             fueron, no cuentan como gasto ni ingreso.
           </p>
           <ul className="mt-3 flex flex-col">
-            {items.map((u) => {
+            {items.map((u, k) => {
               const out = isNegative(u.amount);
               const on = picked.includes(u.move_id);
+              const newDay = k === 0 || items[k - 1]!.date !== u.date;
               return (
-                <li key={u.move_id} className="flex min-h-[76px] items-center gap-3 border-b border-border">
+                <li key={u.move_id} className="flex flex-col">
+                {newDay && <span className="mt-4 border-b border-border pb-1 text-label text-muted-foreground">{dayHeader(u.date)}</span>}
+                <div className="flex min-h-[76px] items-center gap-3 border-b border-border">
                   {selecting && (
                     <button type="button" role="checkbox" aria-checked={on} aria-label={`Elegir ${u.payment_ref ?? u.ref}`}
                       onClick={() => toggle(u.move_id)} className="-ml-2.5 grid size-11 flex-none place-items-center">
@@ -98,7 +111,7 @@ export function PorClasificar() {
                     </span>
                     <span className="flex items-center justify-between gap-2">
                       <span className="truncate text-caption text-muted-foreground">
-                        {dayDate(u.date)} · {u.account}{u.operation_number ? ` · op. ${u.operation_number}` : ""}
+                        {u.account}{u.operation_number ? `, op. ${u.operation_number}` : ""}
                       </span>
                       {!selecting && (
                         <button type="button" onClick={() => setSheet([toClassify(u)])}
@@ -108,6 +121,7 @@ export function PorClasificar() {
                       )}
                     </span>
                   </span>
+                </div>
                 </li>
               );
             })}

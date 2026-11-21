@@ -186,7 +186,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           <SheetSelect label={t.into ? "Entra a" : "Sale de"} sheetTitle={t.into ? "¿A qué cuenta entra?" : "¿De qué cuenta sale?"}
             value={account ? String(account.id) : ""} onChange={setAccountId}
             options={accounts.map((a) => ({ value: String(a.id), label: a.name,
-              hint: [a.subtitle, formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang)].filter(Boolean).join(" · ") }))} />
+              hint: a.subtitle ?? undefined, right: formatAmount(a.balances[0]?.amount ?? "0.00", symbolOf(a.currency ?? base), lang) }))} />
           {isCard && me.currencies.length > 1 && (
             <div className="mt-3">
               <CurrencyChoice label="¿En qué moneda?" size="sm" value={currency} onChange={setCardCurrency}

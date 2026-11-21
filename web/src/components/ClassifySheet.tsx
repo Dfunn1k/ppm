@@ -10,10 +10,10 @@ import { formatAmount, symbolOf } from "@/lib/money";
 import { CategoryChip } from "./CategorySheet";
 import { PersonPicker } from "./PersonPicker";
 import { Segmented, Sheet } from "./Sheet";
-import { ErrorAlert, Icon, Optional, PrimaryButton } from "./ui";
+import { ErrorAlert, Facts, Icon, Optional, PrimaryButton } from "./ui";
 
 /** Lo que hace falta saber de cada movimiento para clasificarlo. */
-export type ToClassify = { move_id: number; title: string; caption: string; account_id: number; currency: string; amount: string };
+export type ToClassify = { move_id: number; title: string; date: string; account: string; account_id: number; currency: string; amount: string };
 
 type Tab = "category" | "account" | "person";
 type Role = NonNullable<ClassifyIn["role"]>;
@@ -52,8 +52,9 @@ export function ClassifySheet({ open, onClose, items, onDone }: {
 
   const one = items.length === 1 ? items[0]! : null;
   const title = one ? one.title : `${items.length} movimientos`;
+  // Uno solo: su día, la cuenta y el monto como etiqueta y valor (caso 9, opción B)
   const caption = one
-    ? `${one.caption} · ${formatAmount(one.amount, symbolOf(one.currency), lang)}`
+    ? <Facts items={[["Día", one.date], ["Cuenta", one.account], ["Monto", formatAmount(one.amount, symbolOf(one.currency), lang)]]} />
     : "Todos van al mismo lugar";
 
   const body: ClassifyIn | null =

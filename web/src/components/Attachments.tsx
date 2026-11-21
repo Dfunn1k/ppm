@@ -79,7 +79,7 @@ export function PendingFiles({ files, onChange }: { files: File[]; onChange: (fi
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate font-semibold">{f.name}</span>
-            <span className="text-caption text-muted-foreground">{fileSize(f.size)} · {f.type === "application/pdf" ? "PDF" : "foto"}</span>
+            <span className="flex items-center gap-1.5 text-caption text-muted-foreground tabular-nums"><Pill>{f.type === "application/pdf" ? "PDF" : "Foto"}</Pill>{fileSize(f.size)}</span>
           </span>
           <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => onChange(files.filter((_, j) => j !== i))}
             className="grid size-10 place-items-center rounded-full"><Icon name="close" className="text-[20px]" /></button>
@@ -96,7 +96,7 @@ export function PendingFiles({ files, onChange }: { files: File[]; onChange: (fi
 }
 
 /** En el detalle de un movimiento: la tira de miniaturas (la más reciente primero), «Adjuntar» y el visor. */
-export function MoveAttachments({ moveId, caption }: { moveId: number; caption?: string }) {
+export function MoveAttachments({ moveId, caption }: { moveId: number; caption?: { name: string; amount: string } }) {
   const list = useAttachments(moveId).data ?? [];
   const upload = useUploadAttachment();
   const remove = useDeleteAttachment(moveId);
