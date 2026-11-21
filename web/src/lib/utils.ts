@@ -11,3 +11,8 @@ export function listText(items: (string | false | null | undefined | 0)[]): stri
   const xs = items.filter(Boolean) as string[];
   return xs.length < 2 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
 }
+
+/** «soles y dólares» → «Soles y dólares». */
+export function capitalize(t: string): string {
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}

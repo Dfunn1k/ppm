@@ -11,7 +11,8 @@ import { Icon } from "@/components/ui";
 import { useDesktop } from "@/lib/desktop";
 import { useInstall } from "@/lib/install";
 import { shortDate } from "@/lib/dates";
-import { formatNumber, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, formatNumber } from "@/lib/money";
+import { capitalize, listText } from "@/lib/utils";
 
 const CURRENT = "lg:-mx-3 lg:rounded-lg lg:border-0 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]";
 const ROW = `flex min-h-16 items-center gap-3.5 border-b border-border lg:min-h-14 ${CURRENT}`;
@@ -127,9 +128,12 @@ export function Mas() {
         <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="currency_exchange" className="text-[22px]" /></span>
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">Monedas y formato</span>
-          <span className="text-caption text-muted-foreground tabular-nums">
-            {me ? `${me.currencies.map((c) => symbolOf(c)).join(" · ")} · ${formatNumber("1284.90", me.lang ?? "es-PE")}` : "Tus monedas y cómo se escriben"}
-          </span>
+          {me ? (
+            <span className="flex flex-col text-caption text-muted-foreground tabular-nums">
+              <span>{capitalize(listText(me.currencies.map((c) => CURRENCY_NAME[c] ?? c)))}</span>
+              <span>Así: {formatNumber("1284.90", me.lang ?? "es-PE")}</span>
+            </span>
+          ) : <span className="text-caption text-muted-foreground">Tus monedas y cómo se escriben</span>}
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
       </NavLink>

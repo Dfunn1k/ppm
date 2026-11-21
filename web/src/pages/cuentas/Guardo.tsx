@@ -9,7 +9,7 @@ import { CurrencyChoice, SEARCH_FROM } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
-import { currencyLabel, parseAmount, symbolOf } from "@/lib/money";
+import { currencyOption, parseAmount, symbolOf } from "@/lib/money";
 
 import { AmountField } from "./CuentaForm";
 import { FormHeader } from "./Nueva";
@@ -98,7 +98,7 @@ export function NuevaGuardo() {
         <div className="flex flex-col gap-4">
           {me.currencies.length > 1 && (
             <CurrencyChoice label="Moneda" value={currency} onChange={setCurrency}
-              options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
+              options={me.currencies.map(currencyOption)} />
           )}
           <AmountField label="¿Cuánto te dio para guardar?" symbol={symbolOf(currency)} value={amount}
             onChange={(e) => setAmount(e.target.value)} />

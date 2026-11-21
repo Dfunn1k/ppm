@@ -78,7 +78,7 @@ test("una cuenta en dólares pide el tipo de cambio y se ve en soles", async ({ 
   const buy = rates.find((r) => r.currency === "USD")?.buy;
   const soles = buy ? (Math.round(1520 * Number(buy) * 100) / 100).toLocaleString("en-US", { minimumFractionDigits: 2 }) : "5,700.00";
   await page.getByRole("link", { name: "Volver a cuentas" }).click();
-  await expect(page.getByText(`son S/ ${soles}`, { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Ahorros BBVA/ })).toContainText(`US$ 1,520.00S/ ${soles}`);   // en soles, debajo del saldo
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(`S/ ${soles}`);
 });
 

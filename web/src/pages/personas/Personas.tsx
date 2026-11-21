@@ -7,7 +7,7 @@ import { Link, NavLink, useNavigate, useSearchParams } from "react-router";
 
 import { type PartnerRow, useMe, usePartnersOverview } from "@/api/hooks";
 import { Avatar } from "@/components/MoveBits";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { Amounts, ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
 
@@ -16,8 +16,14 @@ import { ListSkeleton } from "@/components/Skeleton";
 
 type Money = PartnerRow["owes_me"][number];
 
+/** Un monto por moneda, para mostrarlos uno debajo del otro con Amounts. */
+export function moneyList(list: Money[], lang: string): string[] {
+  return list.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang));
+}
+
+/** Los mismos montos dentro de una frase: «Te debe S/ 39.00 + US$ 10.00». */
 export function joinMoney(list: Money[], lang: string) {
-  return list.map((m) => formatAmount(m.amount, symbolOf(m.currency), lang)).join(" + ");
+  return moneyList(list, lang).join(" + ");
 }
 
 /** «Te debe S/ 39.00 · le debes S/ 50.00 · guardas S/ 200.00». Con `net`, sin el lado de la deuda
@@ -105,7 +111,7 @@ export function Personas() {
                 <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
                   <Avatar name={p.name} size={40} />
                   <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
-                  <span className="text-amount">{joinMoney(side.of(p), lang)}</span>
+                  <Amounts values={moneyList(side.of(p), lang)} className="text-amount" />
                 </NavLink>
               ))}
               <button type="button" onClick={() => setParams({}, { replace: true })} className="flex min-h-12 items-center font-semibold">

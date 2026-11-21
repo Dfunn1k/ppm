@@ -29,7 +29,7 @@ import { NO_SHARED, SharedBlock, type SharedState, shares } from "@/components/S
 import { shortDate, todayISO } from "@/lib/dates";
 import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
-import { currencyLabel, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
+import { currencyOption, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 
 import { AsientoManual } from "./AsientoManual";
@@ -378,7 +378,7 @@ export function Registrar({ editing, recurring, reminder }: {
           {card && me.currencies.length > 1 && (
             <div className="mt-3">
               <CurrencyChoice label="Moneda" size="sm" value={currency} onChange={setCardCurrency}
-                options={me.currencies.map((c) => ({ value: c, label: currencyLabel(c) }))} />
+                options={me.currencies.map(currencyOption)} />
             </div>
           )}
 
@@ -409,10 +409,15 @@ export function Registrar({ editing, recurring, reminder }: {
                         className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-[20px] leading-7 font-semibold tabular-nums" />
                     </span>
                   </label>
-                  <span className="pb-1.5 text-caption text-muted-foreground tabular-nums">
-                    {impliedRate(amount, toAmount, currency, toCurrency, base, lang)}
-                    {sunat.value && sunatSell.value &&
-                      ` SUNAT ${sunat.date === todayISO() ? "hoy" : `del ${shortDate(sunat.date!)}`}: ${sunat.value} · ${sunatSell.value}`}
+                  <span className="flex flex-col pb-1.5 text-caption text-muted-foreground tabular-nums">
+                    <span>{impliedRate(amount, toAmount, currency, toCurrency, base, lang)}</span>
+                    {sunat.value && sunatSell.value && (
+                      <>
+                        <span className="mt-1">SUNAT {sunat.date === todayISO() ? "hoy" : `del ${shortDate(sunat.date!)}`}</span>
+                        <span>Compra {sunat.value}</span>
+                        <span>Venta {sunatSell.value}</span>
+                      </>
+                    )}
                   </span>
                 </div>
               )}

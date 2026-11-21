@@ -11,7 +11,7 @@ import { CurrencyChoice, Segmented, SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
-import { currencyLabel, parseAmount, symbolOf } from "@/lib/money";
+import { currencyOption, parseAmount, symbolOf } from "@/lib/money";
 
 export type Bank = { id: number; name: string; cci_code: string | null };
 
@@ -153,7 +153,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
             label="Moneda"
             value={currency}
             onChange={(v) => form.setValue("currency", v)}
-            options={currencies.map((c) => ({ value: c, label: currencyLabel(c) }))}
+            options={currencies.map(currencyOption)}
           />
         </div>
       )}

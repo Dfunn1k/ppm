@@ -207,8 +207,8 @@ export function DetalleMovimiento() {
         )}
         {plan?.category && <Field icon="category" label="En qué" value={plan.category} />}
         {transfer && !plan && !deferral && (
-          <Field icon={iconOf(to)} label="Entró a"
-            value={`${to}${s.to_amount && s.to_currency !== s.currency ? ` · ${formatAmount(s.to_amount, symbolOf(s.to_currency), lang)}` : ""}`} />
+          <Field icon={iconOf(to)} label="Entró a" value={to!}
+            amount={s.to_amount && s.to_currency !== s.currency ? formatAmount(s.to_amount, symbolOf(s.to_currency), lang) : undefined} />
         )}
         {debtCross && (
           <Field icon="handshake" label="Canceló de la deuda" value={formatAmount(debtCross, symbolOf(s.to_currency), lang)} />
@@ -493,14 +493,15 @@ function canceledText(n: number) {
   return n === 1 ? "1 cancelada" : `${n} canceladas`;
 }
 
-function Field({ icon, label, value }: { icon: string; label: string; value: string }) {
+function Field({ icon, label, value, amount }: { icon: string; label: string; value: string; amount?: string }) {
   return (
     <div className="flex min-h-14 items-center gap-3 border-b border-border">
       <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name={icon} /></span>
-      <span className="flex flex-col">
+      <span className="flex flex-1 flex-col">
         <span className="text-caption text-muted-foreground">{label}</span>
         <span className="font-semibold">{value}</span>
       </span>
+      {amount && <span className="text-amount">{amount}</span>}
     </div>
   );
 }

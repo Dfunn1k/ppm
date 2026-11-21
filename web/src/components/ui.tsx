@@ -56,6 +56,17 @@ export function Optional() {
   return <span className="flex-none text-caption font-normal text-muted-foreground">Opcional</span>;
 }
 
+/** Montos en varias monedas, uno por línea y alineados a la derecha, como una columna de montos (caso 6
+ * de «Sin punto como conector»): «S/ 1,284.90» y debajo «US$ 45.00», sin signo que los una. */
+export function Amounts({ values, className }: { values: string[]; className?: string }) {
+  if (values.length < 2) return <span className={className}>{values[0] ?? ""}</span>;
+  return (
+    <span className={cn("inline-flex flex-col items-end text-right", className)}>
+      {values.map((v) => <span key={v}>{v}</span>)}
+    </span>
+  );
+}
+
 /** Un estado con su ícono (caso 5 de «Sin punto como conector»): «Por confirmar», «Pausada», «Archivada».
  * En ámbar si pide algo de ti; si no, del color del texto que lo rodea. Su detalle va al lado, sin «·». */
 export function Status({ icon, children, attention, className }: { icon: string; children: ReactNode; attention?: boolean; className?: string }) {

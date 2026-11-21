@@ -65,12 +65,13 @@ export const CURRENCY_SYMBOL: Record<string, string> = { PEN: "S/", USD: "US$", 
 
 export const CURRENCY_NAME: Record<string, string> = { PEN: "soles", USD: "dólares", EUR: "euros" };
 
-/** «Soles · S/» para elegir una moneda; las que no tienen nombre corto, solo con su código («CLP»). */
-export function currencyLabel(code: string) {
+/** Una moneda para elegirla: «Soles», o su código («CLP») si no tiene nombre corto. El símbolo va
+ *  aparte, en gris debajo en una lista larga; en los botones no hace falta, ya está junto al monto. */
+export function currencyOption(code: string): { value: string; label: string; hint?: string } {
   const name = CURRENCY_NAME[code];
   const sym = symbolOf(code);
-  if (name) return `${name[0]!.toUpperCase()}${name.slice(1)} · ${sym}`;
-  return sym === code ? code : `${code} · ${sym}`;
+  const label = name ? `${name[0]!.toUpperCase()}${name.slice(1)}` : code;
+  return { value: code, label, hint: sym === label ? undefined : sym };
 }
 
 export function symbolOf(code: string | null | undefined) {

@@ -10,7 +10,7 @@ import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardD
 import { type Bit, MoveLine, clipBit, pendingBit } from "@/components/MoveBits";
 import { Activities, ActivitySheet } from "@/components/Pending";
 import { Segmented, Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
+import { Amounts, ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
 import { ImportStatement } from "@/pages/tarjetas/Conciliar";
 import { DateField } from "@/components/DateSheet";
 import { daysUntil } from "@/lib/cards";
@@ -153,9 +153,9 @@ export function Tarjeta() {
       ))}
 
       <section aria-label="Cuotas por venir" className="mt-6 flex flex-col">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
+        <div className="flex items-end justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
           <span>Cuotas por venir</span>
-          <span>{plansTotal(d, lang)}</span>
+          <Amounts values={plansTotal(d, lang)} />
         </div>
         {d.plans.map((p) => (
           <Link key={p.id} to={`/movimientos/${p.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
@@ -232,9 +232,9 @@ export function Tarjeta() {
                 <Icon name="chevron_right" />
               </button>
             </div>
-            <div className="mt-3 flex justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
+            <div className="mt-3 flex items-end justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
               <span>{cycle.items.length} {cycle.items.length === 1 ? "movimiento" : "movimientos"}</span>
-              <span className="text-right">{cycle.charges.map((x) => money(x.amount, x.currency)).join(" · ")}</span>
+              <Amounts values={cycle.charges.map((x) => money(x.amount, x.currency))} className="text-right" />
             </div>
             {cycle.statement && (
               <Link to={`/tarjetas/${id}/estado/${cycle.closing_date}`}
@@ -370,10 +370,10 @@ function cycleLabel(c: CardDetail["cycles"][number]) {
   return `Cerró ${shortDate(c.closing_date)}`;
 }
 
-function plansTotal(d: CardDetail, lang: string) {
+function plansTotal(d: CardDetail, lang: string): string[] {
   const by = new Map<string, number>();
   for (const p of d.plans) by.set(p.currency, (by.get(p.currency) ?? 0) + Math.round(Number(p.remaining) * 100));
-  return [...by].map(([cur, cents]) => formatAmount((cents / 100).toFixed(2), symbolOf(cur), lang)).join(" · ");
+  return [...by].map(([cur, cents]) => formatAmount((cents / 100).toFixed(2), symbolOf(cur), lang));
 }
 
 /** En escritorio el ciclo va en tabla, como una cuenta: fecha, movimiento y monto. */

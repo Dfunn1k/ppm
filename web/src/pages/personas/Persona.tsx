@@ -7,14 +7,14 @@ import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction, us
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
-import { ErrorAlert, Icon, Status } from "@/components/ui";
+import { Amounts, ErrorAlert, Icon, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 import { listText } from "@/lib/utils";
 
 import { PersonaSheet } from "./PersonaForm";
-import { joinMoney } from "./Personas";
+import { joinMoney, moneyList } from "./Personas";
 import { DetailSkeleton } from "@/components/Skeleton";
 
 type Hoja = null | "pago" | "compensar" | "perdido" | "editar";
@@ -118,15 +118,15 @@ export function Persona() {
         <Items label="Le debes" header={twoSides || keep} items={d.i_owe} paid="le pagaste" lang={lang} ask={`¿Hasta cuándo le pagas a ${first}?`} />
         {keep && (
           <section aria-label="Guardas suyo" className="flex flex-col">
-            <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-              <span>Guardas suyo</span><span>{joinMoney(p.keep, lang)}</span>
+            <div className="flex items-end justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
+              <span>Guardas suyo</span><Amounts values={moneyList(p.keep, lang)} />
             </div>
             <div className="flex min-h-14 items-center gap-3 border-b border-border">
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">Te la dio para guardar</span>
                 {d.keep_since && <span className="text-caption text-muted-foreground">Desde el {shortDate(d.keep_since)}</span>}
               </span>
-              <span className="text-amount">{joinMoney(p.keep, lang)}</span>
+              <Amounts values={moneyList(p.keep, lang)} className="text-amount" />
             </div>
           </section>
         )}
@@ -238,9 +238,9 @@ function Items({ label, header, items, paid, lang, ask }: {
   return (
     <section aria-label={label} className="flex flex-col">
       {header && (
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
+        <div className="flex items-end justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
           <span>{label}</span>
-          <span>{Object.entries(total).map(([c, v]) => formatAmount(v.toFixed(2), symbolOf(c), lang)).join(" + ")}</span>
+          <Amounts values={Object.entries(total).map(([c, v]) => formatAmount(v.toFixed(2), symbolOf(c), lang))} />
         </div>
       )}
       {groups.map((g) => g[0]!.parts ? (
