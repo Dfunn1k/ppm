@@ -2,7 +2,7 @@
 // cuenta arranca el +. Cada cambio se guarda al instante.
 import { Link } from "react-router";
 
-import { type HomeSetup, useAccounts, useHomeSetup, useMe, useSaveHomeSetup } from "@/api/hooks";
+import { type HomeSetup, useAccounts, useHomeSetup, useMe, useSaveHomeSetup, useUpdateMe } from "@/api/hooks";
 import { SheetSelect } from "@/components/Sheet";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { formatAmount, symbolOf } from "@/lib/money";
@@ -13,6 +13,7 @@ export function InicioAjustes() {
   const setup = useHomeSetup();
   const money = (useAccounts().data?.have ?? []).filter((a) => a.kind === "cash" || a.kind === "bank" || a.kind === "card");
   const save = useSaveHomeSetup();
+  const updateMe = useUpdateMe();
   if (!me || setup.isPending) return <Spinner />;
   if (setup.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{setup.error.message}</ErrorAlert></main>;
   const s = setup.data;
@@ -66,6 +67,22 @@ export function InicioAjustes() {
           </div>
         ))}
         <span className="mt-1.5 text-caption text-muted-foreground">Las apagadas siguen en Cuentas; solo no aparecen en el Inicio.</span>
+      </section>
+
+      <section aria-label="Presupuesto en el Inicio" className="mt-6 flex flex-col">
+        <span className="border-b border-border pb-1 text-label text-muted-foreground">Presupuesto</span>
+        <div className="flex min-h-16 items-center gap-2.5 border-b border-border">
+          <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="savings" className="text-[20px]" /></span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="font-semibold">Tarjeta del presupuesto</span>
+            <span className="text-caption text-muted-foreground">Por asignar y el sobre que se pasó, si ya empezaste tu presupuesto</span>
+          </span>
+          <button type="button" role="switch" aria-checked={me.home_budget} aria-label="Ver el presupuesto en el Inicio"
+            onClick={() => updateMe.mutate({ home_budget: !me.home_budget })}
+            className={`relative h-[26px] w-11 flex-none rounded-full transition-colors ${me.home_budget ? "bg-primary" : "bg-input-line/50"}`}>
+            <span className={`absolute top-[3px] size-5 rounded-full bg-card shadow-sm transition-[left] ${me.home_budget ? "left-[21px]" : "left-[3px]"}`} />
+          </button>
+        </div>
       </section>
 
       <div className="mt-5 flex flex-col gap-1.5">

@@ -44,6 +44,7 @@ class MeOut(BaseModel):
     has_password: bool = True            # False: creó la cuenta con Google y aún no tiene contraseña
     shortcuts: dict[str, str] = {}       # tecla de cada atajo de escritorio: register, search, edit, help
     shortcut_hints: bool = True          # mostrar las pistas de los atajos
+    home_budget: bool = True             # la tarjeta del presupuesto en el Inicio
 
     @classmethod
     def of(cls, me: users.Me) -> "MeOut":
@@ -66,6 +67,7 @@ class MePatch(BaseModel):
     lang: str | None = None              # formato de números y fechas: 'es-PE' o 'es-ES'
     shortcuts: dict[str, str] | None = None   # cambiar teclas ({"register": "r"}); {} = las de fábrica
     shortcut_hints: bool | None = None   # prender o apagar las pistas de los atajos
+    home_budget: bool | None = None      # mostrar o esconder la tarjeta del presupuesto en el Inicio
 
 
 class OptionOut(BaseModel):
@@ -113,7 +115,7 @@ def update(body: MePatch, session: CurrentSession = Depends(current_session)) ->
         except users.ShortcutError as e:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from None
     return MeOut.of(users.update(session.user_id, body.name, body.ui_theme, body.ui_accent, body.notice_days,
-                                  body.ui_private))
+                                  body.ui_private, body.home_budget))
 
 
 @router.post("/me/setup", summary="Configuración inicial (los 3 pasos)")

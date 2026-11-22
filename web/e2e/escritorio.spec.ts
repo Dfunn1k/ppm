@@ -236,3 +236,23 @@ test("Recurrentes y Más en dos paneles, y Pendientes en tres columnas", async (
   for (const name of ["Vencidos", "Hoy", "Próximos días"]) await expect(page.getByRole("region", { name })).toBeVisible();
   await expect(page.getByRole("button", { name: "Escribir un recordatorio" })).toBeVisible();
 });
+
+test("presupuesto en escritorio: en el riel, la lista a la izquierda y lo elegido al lado", async ({ page }) => {
+  await readyUser(page);
+  await page.request.post("/api/budget/start", { data: { month: new Date().toISOString().slice(0, 7), savings: [] } });
+  const riel = page.getByRole("navigation", { name: "Navegación principal" });
+  await riel.getByRole("link", { name: "Presupuesto" }).click();
+  // Al entrar se abre Por asignar al lado
+  await expect(page).toHaveURL("/presupuesto/por-asignar");
+  await expect(riel.getByRole("link", { name: "Presupuesto" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("heading", { name: "De dónde sale Por asignar" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Por asignar" })).toContainText("S/ 1,500.00");
+  // Un sobre se abre al lado y queda marcado en la lista
+  await page.getByRole("link", { name: /Comida y bebida/ }).click();
+  await expect(page).toHaveURL(/\/presupuesto\/sobres\/\d+$/);
+  await expect(page.getByRole("heading", { name: "Comida y bebida" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Comida y bebida/ })).toHaveAttribute("aria-current", "page");
+  // También está en Más
+  await riel.getByRole("link", { name: "Más" }).click();
+  await expect(page.getByRole("link", { name: /Presupuesto Tus sobres/ })).toBeVisible();
+});

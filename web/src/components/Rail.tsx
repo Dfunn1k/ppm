@@ -18,6 +18,7 @@ const ITEMS: Item[] = [
   { to: "/inicio", label: "Inicio", icon: "home" },
   { to: "/movimientos", label: "Movimientos", icon: "receipt_long", also: ["/por-clasificar"] },
   { to: "/cuentas", label: "Cuentas", icon: "account_balance_wallet", also: ["/tarjetas", "/prestamos", "/extractos"] },
+  { to: "/presupuesto", label: "Presupuesto", icon: "savings" },
   { to: "/personas", label: "Personas", icon: "group" },
   { to: "/mas/reportes", label: "Reportes", icon: "bar_chart" },
   { to: "/mas/recurrentes", label: "Recurrentes", icon: "event_repeat" },

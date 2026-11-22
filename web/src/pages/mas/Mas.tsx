@@ -52,6 +52,14 @@ export function Mas() {
           <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
         </Link>
       )}
+      <Link to="/presupuesto" className={ROW}>
+        <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="savings" className="text-[22px]" /></span>
+        <span className="flex flex-1 flex-col">
+          <span className="font-semibold">Presupuesto</span>
+          <span className="text-caption text-muted-foreground">Tus sobres: a qué va cada sol</span>
+        </span>
+        <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
+      </Link>
       <NavLink to="/mas/inicio" className={ROW}>
         <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="home" className="text-[22px]" /></span>
         <span className="flex flex-1 flex-col">
