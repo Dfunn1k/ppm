@@ -211,6 +211,15 @@ def _sheets(conn: psycopg.Cursor) -> dict[str, tuple[list[str], list[tuple[Any, 
             ORDER BY m.date, m.id, l.id""")),
         "etiquetas": (["id", "nombre", "color", "activa"], q("""
             SELECT id, name, color, active FROM account_tag ORDER BY lower(name)""")),
+        "presupuesto": (["mes", "de", "a", "monto", "creado"], q("""
+            SELECT m.month, coalesce(fp.name, fa.name, 'Por asignar'), coalesce(tp.name, ta.name, 'Por asignar'),
+                   m.amount, m.create_date
+            FROM account_budget_move m
+            LEFT JOIN account_budget_post fp ON fp.id = m.from_post_id
+            LEFT JOIN account_account fa ON fa.id = fp.account_id
+            LEFT JOIN account_budget_post tp ON tp.id = m.to_post_id
+            LEFT JOIN account_account ta ON ta.id = tp.account_id
+            ORDER BY m.month, m.id""")),
         "personas": (["id", "nombre", "correo", "teléfono", "activa", "creada"], q("""
             SELECT id, name, email, phone, active, create_date FROM res_partner ORDER BY name""")),
         "recurrentes": (["id", "nombre", "cada", "unidad", "desde", "hasta", "estado", "cuenta o categoría",

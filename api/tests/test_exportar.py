@@ -40,7 +40,7 @@ def test_el_zip_trae_todo_lo_suyo_y_nada_de_otra_persona():
     z = bajar(ana)
     names = set(z.namelist())
     assert {"LEEME.txt", "datos.json", "csv/cuentas.csv", "csv/categorias.csv", "csv/movimientos.csv",
-            "csv/personas.csv", "csv/recurrentes.csv", "csv/tipos_de_cambio.csv", "csv/adjuntos.csv"} <= names
+            "csv/personas.csv", "csv/recurrentes.csv", "csv/tipos_de_cambio.csv", "csv/adjuntos.csv", "csv/presupuesto.csv"} <= names
 
     data = json.loads(z.read("datos.json"))
     assert (data["formato"], data["version"], data["con_adjuntos"]) == ("ppm-exportacion", 1, True)
