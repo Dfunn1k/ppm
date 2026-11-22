@@ -58,6 +58,7 @@ class Me:
     has_password: bool = True         # False si creó la cuenta con Google y aún no tiene contraseña
     shortcuts: dict[str, str] = field(default_factory=lambda: dict(SHORTCUTS))   # tecla de cada atajo
     shortcut_hints: bool = True       # mostrar las pistas de los atajos en la pantalla
+    home_budget: bool = True          # la tarjeta del presupuesto en el Inicio
 
 
 def get_me(user_id: int) -> Me:
@@ -78,7 +79,7 @@ def get_me(user_id: int) -> Me:
                                FROM res_users_currency uc JOIN res_currency c ON c.id = uc.currency_id
                                LEFT JOIN res_currency_format f ON f.currency_id = c.id AND f.lang_id = u.lang_id),
                             '{}'),
-                   u.oauth_email, u.password IS NOT NULL, u.ui_shortcuts, u.ui_shortcut_hints
+                   u.oauth_email, u.password IS NOT NULL, u.ui_shortcuts, u.ui_shortcut_hints, u.home_budget
               FROM res_users u
               LEFT JOIN res_country co  ON co.id = u.country_id
               LEFT JOIN res_currency cur ON cur.id = u.currency_id
@@ -87,18 +88,19 @@ def get_me(user_id: int) -> Me:
     return Me(*row[:10], currencies=list(row[10]), is_admin=row[2].lower() in get_settings().admin_emails,
               notice_days=row[11], ui_private=row[12], home_account_id=row[13], lock_date=row[14],
               icons=list(row[15]), formats=[CurrencyFormat(c, s, int(d)) for c, s, d in row[16]],
-              google_email=row[17], has_password=row[18], shortcuts=shortcut_map(row[19]), shortcut_hints=row[20])
+              google_email=row[17], has_password=row[18], shortcuts=shortcut_map(row[19]), shortcut_hints=row[20],
+              home_budget=row[21])
 
 
 def update(user_id: int, name: str | None, ui_theme: str | None, ui_accent: str | None,
-           notice_days: int | None = None, ui_private: bool | None = None) -> Me:
+           notice_days: int | None = None, ui_private: bool | None = None, home_budget: bool | None = None) -> Me:
     """Lo que la persona cambia de sí misma: su nombre, cómo se ve PPM y con cuánto aviso."""
     with user_transaction(user_id) as conn:
         conn.execute(
             "UPDATE res_users SET name = coalesce(%s, name), ui_theme = coalesce(%s, ui_theme),"
             " ui_accent = coalesce(%s, ui_accent), notice_days = coalesce(%s, notice_days),"
-            " ui_private = coalesce(%s, ui_private)",
-            (name.strip() if name else None, ui_theme, ui_accent, notice_days, ui_private))
+            " ui_private = coalesce(%s, ui_private), home_budget = coalesce(%s, home_budget)",
+            (name.strip() if name else None, ui_theme, ui_accent, notice_days, ui_private, home_budget))
     return get_me(user_id)
 
 

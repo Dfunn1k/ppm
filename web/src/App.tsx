@@ -49,6 +49,11 @@ const ReportePatrimonio = lazy(() => import("./pages/reportes/Patrimonio").then(
 const ReportePersonas = lazy(() => import("./pages/reportes/Personas").then((m) => ({ default: m.ReportePersonas })));
 const Reportes = lazy(() => import("./pages/reportes/Reportes").then((m) => ({ default: m.Reportes })));
 const ReporteEtiquetas = lazy(() => import("./pages/reportes/Etiquetas").then((m) => ({ default: m.ReporteEtiquetas })));
+const Presupuesto = lazy(() => import("./pages/presupuesto/Presupuesto").then((m) => ({ default: m.Presupuesto })));
+const Repartir = lazy(() => import("./pages/presupuesto/Repartir").then((m) => ({ default: m.Repartir })));
+const Sobre = lazy(() => import("./pages/presupuesto/Sobre").then((m) => ({ default: m.Sobre })));
+const PorAsignar = lazy(() => import("./pages/presupuesto/PorAsignar").then((m) => ({ default: m.PorAsignar })));
+const CuentasPresupuesto = lazy(() => import("./pages/presupuesto/Cuentas").then((m) => ({ default: m.CuentasPresupuesto })));
 const Atajos = lazy(() => import("./pages/mas/Atajos").then((m) => ({ default: m.Atajos })));
 const Etiquetas = lazy(() => import("./pages/mas/Etiquetas").then((m) => ({ default: m.Etiquetas })));
 const Mas = lazy(() => import("./pages/mas/Mas").then((m) => ({ default: m.Mas })));
@@ -186,6 +191,18 @@ export function App() {
             <Route path="/tarjetas/:id" element={<Tarjeta />} />
             <Route path="/prestamos/:id" element={<Prestamo />} />
           </Route>
+        </Route>
+        {/* El presupuesto: la lista del mes a la izquierda; al entrar, Por asignar al lado */}
+        <Route element={<Split list={<Presupuesto />} />}>
+          <Route element={<WithNav />}>
+            <Route path="/presupuesto" element={<SplitIndex to="/presupuesto/por-asignar" />} />
+            <Route path="/presupuesto/por-asignar" element={<PorAsignar />} />
+            <Route path="/presupuesto/sobres/:id" element={<Sobre />} />
+          </Route>
+        </Route>
+        <Route path="/presupuesto/repartir" element={<Repartir />} />
+        <Route element={<WithNav />}>
+          <Route path="/presupuesto/cuentas" element={<CuentasPresupuesto />} />
         </Route>
         <Route element={<Split list={<Personas />} />}>
           <Route element={<WithNav />}>

@@ -258,6 +258,29 @@ def test_reembolso_vuelve_al_sobre(ana: Pres):
     assert ana.post("Compras")["activity"] == "-40.00"
 
 
+def test_los_movimientos_de_un_sobre_suman_lo_gastado(ana: Pres):
+    ana.start(M1)
+    card = ana.card()["account"]["id"]
+    ana.spend("Supermercado y mercado", "120", date=day(M1, 2))
+    ana.spend("Restaurantes y delivery", "80", account=card, date=day(M1, 3))
+    ana.register(kind="expense", account_id=ana.bcp, amount="50", date=day(M1, 4),   # mitad comida, mitad taxi
+                 splits=[{"category_id": ana.cat["Supermercado y mercado"], "amount": "30"},
+                         {"category_id": ana.cat["Taxi y apps"], "amount": "20"}])
+    ana.spend("Supermercado y mercado", "999", date=day(ESTE, 1))         # otro mes: no sale
+    comida = ana.post("Comida y bebida", M1)
+    r = ana.c.get(f"/budget/posts/{comida['id']}/lines", params={"month": ym(M1)})
+    assert r.status_code == 200, r.text
+    lines = r.json()
+    assert [(x["date"], x["amount"], x["label"], x["account"]) for x in lines] == [
+        (day(M1, 4), "-30.00", "Supermercado y mercado", "BCP"),
+        (day(M1, 3), "-80.00", "Restaurantes y delivery", "Visa BBVA"),
+        (day(M1, 2), "-120.00", "Supermercado y mercado", "BCP"),
+    ]
+    assert sum(D(x["amount"]) for x in lines) == D(comida["activity"])
+    assert lines[0]["icon"] and lines[0]["color"] is not None
+    assert ana.c.get("/budget/posts/999999/lines", params={"month": ym(ESTE)}).status_code == 404
+
+
 def test_por_clasificar_a_la_vista_y_al_clasificar_pasa_al_sobre(ana: Pres):
     ana.start()
     antes = ana.budget()

@@ -26,6 +26,7 @@ import { AmountField } from "./CuentaForm";
 import { DetailSkeleton } from "@/components/Skeleton";
 import { useDesktop } from "@/lib/desktop";
 import { AccountSub } from "@/components/AccountSub";
+import { ScopeRow } from "@/pages/presupuesto/Cuentas";
 
 /** En escritorio los movimientos van en tabla: fecha, movimiento, categoría, monto y saldo. */
 const TABLE = "grid grid-cols-[64px_minmax(0,1fr)_120px_112px] items-center gap-3";
@@ -104,6 +105,7 @@ export function Detalle() {
         </div>
       )}
 
+      <ScopeRow accountId={d.account.id} />
       {d.bank && <StatementCard detail={d} lang={lang} />}
 
       <Activities target={{ account_id: d.account.id }} hideEmpty />

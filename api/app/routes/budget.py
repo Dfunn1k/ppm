@@ -81,6 +81,16 @@ class BudgetMoveOut(BaseModel):
     source: Literal["manual", "cover", "fill", "start"]
 
 
+class BudgetLineOut(BaseModel):
+    move_id: int
+    date: dt.date
+    amount: Decimal                  # − gastado, + devuelto
+    label: str
+    icon: str | None
+    color: int | None
+    account: str | None
+
+
 class ScopeOut(BaseModel):
     account_id: int
     name: str
@@ -106,7 +116,7 @@ class AssignIn(BaseModel):
     from_post_id: int | None = None  # None = Por asignar
     to_post_id: int | None = None    # None = Por asignar
     amount: Positive
-    source: Literal["manual", "cover"] = "manual"
+    source: Literal["manual", "cover", "start"] = "manual"   # start: el reparto al empezar
 
 
 class SavingIn(BaseModel):
@@ -181,6 +191,15 @@ def assign(body: AssignIn, session: CurrentSession = Depends(current_session)) -
 def undo(move_id: int, session: CurrentSession = Depends(current_session)) -> BudgetMonthOut:
     try:
         return _out(budget.undo(session.user_id, move_id))
+    except AccountError as e:
+        raise _http(e) from None
+
+
+@router.get("/budget/posts/{post_id}/lines", summary="Los movimientos del mes que tocaron un sobre")
+def post_lines(post_id: int, month: Annotated[Month, Query()],
+               session: CurrentSession = Depends(current_session)) -> list[BudgetLineOut]:
+    try:
+        return [BudgetLineOut(**asdict(x)) for x in budget.post_lines(session.user_id, post_id, budget.parse_month(month))]
     except AccountError as e:
         raise _http(e) from None
 

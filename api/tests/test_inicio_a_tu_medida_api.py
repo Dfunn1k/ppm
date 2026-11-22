@@ -53,3 +53,10 @@ def test_el_modo_privado_se_recuerda(ana: Ana):
     assert ana.c.get("/me").json()["ui_private"] is False
     assert ana.c.patch("/me", json={"ui_private": True}).json()["ui_private"] is True
     assert ana.c.get("/me").json()["ui_private"] is True
+
+
+def test_la_tarjeta_del_presupuesto_se_puede_esconder(ana: Ana):
+    assert ana.c.get("/me").json()["home_budget"] is True
+    assert ana.c.patch("/me", json={"home_budget": False}).json()["home_budget"] is False
+    me = ana.c.get("/me").json()
+    assert (me["home_budget"], me["ui_private"]) == (False, False)      # no toca lo demás

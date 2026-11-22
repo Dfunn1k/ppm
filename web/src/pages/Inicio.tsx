@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
-import { useHome, useMe, usePending, useUpdateMe } from "@/api/hooks";
+import { useBudget, useHome, useMe, usePending, useUpdateMe } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, MoveLine, MoveName, moveBits } from "@/components/MoveBits";
 import { activityCaption, NoticeAmounts, noticeView, sectionOf } from "@/components/Pending";
@@ -102,6 +102,7 @@ export function Inicio() {
       </div>
 
       <PendingCard lang={lang} hidden={hidden} />
+      {me.home_budget && <BudgetCard month={month} money={money} />}
 
       <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:p-5">
         <div className="flex items-baseline justify-between">
@@ -195,6 +196,39 @@ export function Inicio() {
           }} />
       </Sheet>
     </main>
+  );
+}
+
+/** El presupuesto en una mirada (opción A del boceto): Por asignar, el sobre que se pasó y el que más se
+ *  usa. Solo si el presupuesto ya empezó; se esconde en Más › Inicio. */
+function BudgetCard({ month, money }: { month: string; money: (v: string) => string }) {
+  const b = useBudget(month).data;
+  if (!b?.started || (b.start && month < b.start.slice(0, 7))) return null;
+  const expense = b.posts.filter((p) => p.kind === "expense");
+  const reds = expense.filter((p) => isNegative(p.available));
+  const busiest = expense.filter((p) => !isNegative(p.available)).sort((x, y) => Number(x.activity) - Number(y.activity))[0];
+  const to = month === todayISO().slice(0, 7) ? "/presupuesto" : `/presupuesto?mes=${month}`;
+  return (
+    <Link to={to} aria-label={`Presupuesto de ${monthName(month).toLowerCase()}`}
+      className="mt-5 flex flex-col gap-2 rounded-lg border border-border bg-card p-4 lg:col-start-1 lg:row-start-4 lg:mt-0 lg:p-5">
+      <span className="text-label text-muted-foreground">Presupuesto de {monthName(month).split(" ")[0]!.toLowerCase()}</span>
+      <span className="flex items-baseline justify-between">
+        <span className="text-caption text-muted-foreground">{isNegative(b.to_assign) ? "Asignaste de más" : "Por asignar"}</span>
+        <span className={`text-[20px] font-semibold tabular-nums ${isNegative(b.to_assign) ? "text-expense" : ""}`}>{money(b.to_assign)}</span>
+      </span>
+      {reds.slice(0, 2).map((p) => (
+        <span key={p.id} className="flex items-center gap-2 text-[14px] font-semibold text-expense tabular-nums">
+          <Icon name="error" className="text-[18px]" />{p.name} se pasó {money(p.available.replace("-", ""))}
+        </span>
+      ))}
+      {reds.length > 2 && <span className="text-caption text-expense">y {reds.length - 2} sobres más en rojo</span>}
+      {busiest && !isZero(busiest.activity) && (
+        <span className="flex justify-between gap-2 text-[14px] tabular-nums">
+          <span className="truncate text-muted-foreground">{busiest.name}</span><span className="flex-none">Quedan {money(busiest.available)}</span>
+        </span>
+      )}
+      <span className="self-end text-caption font-semibold text-primary-strong underline">Ver sobres</span>
+    </Link>
   );
 }
 

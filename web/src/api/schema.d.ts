@@ -1748,6 +1748,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/budget/posts/{post_id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los movimientos del mes que tocaron un sobre */
+        get: operations["post_lines_budget_posts__post_id__lines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/budget/posts": {
         parameters: {
             query?: never;
@@ -1988,7 +2005,7 @@ export interface components {
              * @default manual
              * @enum {string}
              */
-            source: "manual" | "cover";
+            source: "manual" | "cover" | "start";
         };
         /** AttachmentOut */
         AttachmentOut: {
@@ -2126,6 +2143,26 @@ export interface components {
              * @description El saldo según el banco, si el archivo no lo trae
              */
             balance_end?: number | string | null;
+        };
+        /** BudgetLineOut */
+        BudgetLineOut: {
+            /** Move Id */
+            move_id: number;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Amount */
+            amount: string;
+            /** Label */
+            label: string;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+            /** Account */
+            account: string | null;
         };
         /** BudgetMonthOut */
         BudgetMonthOut: {
@@ -3356,6 +3393,11 @@ export interface components {
              * @default true
              */
             shortcut_hints: boolean;
+            /**
+             * Home Budget
+             * @default true
+             */
+            home_budget: boolean;
         };
         /** MePatch */
         MePatch: {
@@ -3377,6 +3419,8 @@ export interface components {
             } | null;
             /** Shortcut Hints */
             shortcut_hints?: boolean | null;
+            /** Home Budget */
+            home_budget?: boolean | null;
         };
         /** MoneyOut */
         MoneyOut: {
@@ -9365,6 +9409,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BudgetMonthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_lines_budget_posts__post_id__lines_get: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path: {
+                post_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetLineOut"][];
                 };
             };
             /** @description Validation Error */

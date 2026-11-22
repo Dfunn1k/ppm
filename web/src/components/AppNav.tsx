@@ -19,7 +19,7 @@ const ITEMS: Item[] = [
 /** Personas y las tarjetas viven dentro de Cuentas y Por clasificar dentro de Movimientos: ahí también se
  *  marcan. Pendientes se abre desde el Inicio o desde Más: se marca la pestaña desde la que llegaste. */
 const ALSO: Record<string, string[]> = {
-  "/cuentas": ["/personas", "/tarjetas", "/prestamos"], "/movimientos": ["/por-clasificar"],
+  "/cuentas": ["/personas", "/tarjetas", "/prestamos"], "/movimientos": ["/por-clasificar"], "/mas": ["/presupuesto"],
 };
 const FROM_WHERE_YOU_CAME = ["/pendientes"];
 let lastTab = "/inicio";

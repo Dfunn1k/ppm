@@ -1687,3 +1687,120 @@ export function useSetWithPartner(moveId: number) {
     onSuccess: () => qc.invalidateQueries({ queryKey: MOVES }),
   });
 }
+
+// --- Presupuesto por sobres ---------------------------------------------------------------------
+
+export type BudgetMonth = components["schemas"]["BudgetMonthOut"];
+export type BudgetPost = components["schemas"]["PostMonthOut"];
+export type BudgetMove = components["schemas"]["BudgetMoveOut"];
+export type BudgetLine = components["schemas"]["BudgetLineOut"];
+export type BudgetScope = components["schemas"]["ScopeOut"];
+type AssignIn = components["schemas"]["AssignIn"];
+type ScopeIn = components["schemas"]["ScopeIn"];
+
+/** Bajo «home»: todo lo que cambia el Inicio (un movimiento, una cuenta, el tipo de cambio) también
+ *  vuelve a pedir los sobres, sin repetir la lista de qué invalida a qué. */
+const BUDGET = ["home", "budget"] as const;
+
+export function useBudget(month?: string) {
+  return useQuery({
+    queryKey: [...BUDGET, "month", month ?? "hoy"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/budget", { params: { query: month ? { month } : {} } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useBudgetLines(postId: number, month: string) {
+  return useQuery({
+    queryKey: [...BUDGET, "lines", postId, month],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/budget/posts/{post_id}/lines",
+        { params: { path: { post_id: postId }, query: { month } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useBudgetMoves(month: string) {
+  return useQuery({
+    queryKey: [...BUDGET, "moves", month],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/budget/moves", { params: { query: { month } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+export function useBudgetScopes() {
+  return useQuery({
+    queryKey: [...BUDGET, "scopes"],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/budget/accounts");
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
+function useBudgetChanged() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: BUDGET });
+}
+
+export function useStartBudget() {
+  const changed = useBudgetChanged();
+  return useMutation({
+    mutationFn: async (body: { month: string; savings: string[] }) => {
+      const { data, error, response } = await api.POST("/budget/start", { body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+/** Asignar, mover o devolver. Varias a la vez (el reparto al empezar) van una tras otra. */
+export function useAssign() {
+  const changed = useBudgetChanged();
+  return useMutation({
+    mutationFn: async (items: AssignIn[]) => {
+      let last: BudgetMonth | undefined;
+      for (const body of items) {
+        const { data, error, response } = await api.POST("/budget/moves", { body });
+        if (!data) fail(response, error);
+        last = data;
+      }
+      return last;
+    },
+    onSettled: () => changed(),
+  });
+}
+
+export function useUndoAssign() {
+  const changed = useBudgetChanged();
+  return useMutation({
+    mutationFn: async (moveId: number) => {
+      const { data, error, response } = await api.DELETE("/budget/moves/{move_id}", { params: { path: { move_id: moveId } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+export function useSetScope() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ accountId, ...body }: ScopeIn & { accountId: number }) => {
+      const { data, error, response } = await api.PUT("/budget/accounts/{account_id}", { params: { path: { account_id: accountId } }, body });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: BUDGET }), qc.invalidateQueries({ queryKey: ACCOUNTS })]),
+  });
+}

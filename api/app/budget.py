@@ -127,6 +127,18 @@ class BudgetMove:
 
 
 @dataclass(frozen=True)
+class BudgetLine:
+    """Un movimiento que tocó un sobre en el mes: lo gastado resta, lo devuelto suma."""
+    move_id: int
+    date: dt.date
+    amount: Decimal
+    label: str                   # la categoría (o la cuenta de fuera) que lo llevó a este sobre
+    icon: str | None
+    color: int | None
+    account: str | None          # la cuenta de dentro con que se pagó o cobró
+
+
+@dataclass(frozen=True)
 class ScopeRow:
     """Cómo entra hoy una cuenta de dinero al presupuesto (D6) y, si está fuera, de qué sobre sale lo
     que se le pasa (D10)."""
@@ -414,6 +426,36 @@ def moves(user_id: int, month: dt.date) -> list[BudgetMove]:
         return [BudgetMove(*r) for r in conn.execute("""
             SELECT id, month, from_post_id, to_post_id, amount, source FROM account_budget_move
              WHERE month = %s ORDER BY id""", (month,))]
+
+
+def post_lines(user_id: int, post_id: int, month: dt.date) -> list[BudgetLine]:
+    """Los movimientos del mes que tocaron un sobre, del más nuevo al más viejo. Salen de la misma regla
+    de la frontera que el disponible (budget_activity), así que suman lo mismo que «Gastaste»."""
+    with user_transaction(user_id) as conn:
+        _post(conn, post_id)
+        return [BudgetLine(*r) for r in conn.execute("""
+            WITH x AS (
+              SELECT move_id, date, sum(amount) AS amount FROM budget_activity(%(first)s, %(last)s)
+               WHERE bucket = 'post' AND post_id = %(post)s GROUP BY move_id, date
+            ), root AS (SELECT account_id FROM account_budget_post WHERE id = %(post)s)
+            SELECT x.move_id, x.date, x.amount, coalesce(c.name, m.ref, ''), c.icon, c.color, k.name
+              FROM x JOIN account_move m ON m.id = x.move_id
+              LEFT JOIN LATERAL (
+                SELECT a.name, coalesce(a.icon, g.icon) AS icon, coalesce(a.color, g.color) AS color
+                  FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                  LEFT JOIN account_account g ON g.id = a.parent_id
+                 WHERE l.move_id = x.move_id AND NOT (budget_scope(a.id, x.date)).on_budget
+                   AND a.system_role IS DISTINCT FROM 'suspense'
+                   AND ((SELECT account_id FROM root) IS NULL
+                        OR coalesce(a.parent_id, a.id) = (SELECT account_id FROM root)
+                        OR a.system_role = 'prepaid')
+                 ORDER BY abs(l.balance) DESC, l.id LIMIT 1) c ON true
+              LEFT JOIN LATERAL (
+                SELECT a.name FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                 WHERE l.move_id = x.move_id AND (budget_scope(a.id, x.date)).on_budget
+                 ORDER BY abs(l.balance) DESC, l.id LIMIT 1) k ON true
+             ORDER BY x.date DESC, x.move_id DESC""",
+            {"first": month, "last": month_end(month), "post": post_id})]
 
 
 # --- Los sobres de ahorro (D10) -------------------------------------------------------------
