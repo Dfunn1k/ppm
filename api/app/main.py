@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from app import rates as rates_logic
 from app.config import get_settings
 from app.db import close_pool, get_pool
-from app.routes import (accounts, attachments, auth, cards, closing, home, me, moves, partners, pending, rates, recurring, reports,
+from app.routes import (accounts, attachments, auth, budget, cards, closing, home, me, moves, partners, pending, rates, recurring, reports,
                         statements, tags)
 
 
@@ -21,7 +21,7 @@ async def lifespan(_app: FastAPI):
     close_pool()
 
 
-app = FastAPI(title="PPM API", version="0.32.0", lifespan=lifespan)
+app = FastAPI(title="PPM API", version="0.33.0", lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(me.router)
 app.include_router(accounts.router)
@@ -37,6 +37,7 @@ app.include_router(attachments.router)
 app.include_router(reports.router)
 app.include_router(closing.router)
 app.include_router(tags.router)
+app.include_router(budget.router)
 
 
 class HealthOut(BaseModel):

@@ -1678,6 +1678,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** El presupuesto de un mes: Por asignar, la plata y cada sobre */
+        get: operations["get_budget_budget_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budget/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Cambiar el mes en que empezó */
+        put: operations["move_start_budget_start_put"];
+        /** Empezar el presupuesto desde un mes */
+        post: operations["start_budget_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budget/moves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lo asignado y movido en un mes */
+        get: operations["list_moves_budget_moves_get"];
+        put?: never;
+        /** Asignar, mover o devolver plata */
+        post: operations["assign_budget_moves_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budget/moves/{move_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deshacer una asignación */
+        delete: operations["undo_budget_moves__move_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budget/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Nuevo sobre de ahorro */
+        post: operations["create_post_budget_posts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budget/posts/{post_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Renombrar, cambiar ícono o color, o archivar un sobre de ahorro */
+        patch: operations["update_post_budget_posts__post_id__patch"];
+        trace?: never;
+    };
+    "/budget/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Qué cuentas de dinero están dentro del presupuesto */
+        get: operations["list_scopes_budget_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/budget/accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Meter o sacar una cuenta del presupuesto desde un día */
+        put: operations["set_scope_budget_accounts__account_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1821,12 +1959,36 @@ export interface components {
             /** History */
             history: components["schemas"]["RateDayOut"][];
         };
+        /** AgeOut */
+        AgeOut: {
+            /** Days */
+            days: number | null;
+            /** Outflows */
+            outflows: number;
+        };
         /** AmountOut */
         AmountOut: {
             /** Currency */
             currency: string;
             /** Amount */
             amount: string;
+        };
+        /** AssignIn */
+        AssignIn: {
+            /** Month */
+            month: string;
+            /** From Post Id */
+            from_post_id?: number | null;
+            /** To Post Id */
+            to_post_id?: number | null;
+            /** Amount */
+            amount: number | string;
+            /**
+             * Source
+             * @default manual
+             * @enum {string}
+             */
+            source: "manual" | "cover";
         };
         /** AttachmentOut */
         AttachmentOut: {
@@ -1964,6 +2126,57 @@ export interface components {
              * @description El saldo según el banco, si el archivo no lo trae
              */
             balance_end?: number | string | null;
+        };
+        /** BudgetMonthOut */
+        BudgetMonthOut: {
+            /** Started */
+            started: boolean;
+            /** Start */
+            start: string | null;
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+            /** Locked */
+            locked: boolean;
+            /** To Assign */
+            to_assign: string;
+            /** Future */
+            future: string;
+            plata: components["schemas"]["PlataOut"];
+            /** Posts */
+            posts: components["schemas"]["PostMonthOut"][];
+            unclassified: components["schemas"]["BudgetUnclassifiedOut"];
+            age: components["schemas"]["AgeOut"];
+        };
+        /** BudgetMoveOut */
+        BudgetMoveOut: {
+            /** Id */
+            id: number;
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+            /** From Post Id */
+            from_post_id: number | null;
+            /** To Post Id */
+            to_post_id: number | null;
+            /** Amount */
+            amount: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "manual" | "cover" | "fill" | "start";
+        };
+        /** BudgetUnclassifiedOut */
+        BudgetUnclassifiedOut: {
+            /** Activity */
+            activity: string;
+            /** Available */
+            available: string;
         };
         /** CancelDeferralIn */
         CancelDeferralIn: {
@@ -3321,6 +3534,11 @@ export interface components {
             /** With Partner Id */
             with_partner_id?: number | null;
         };
+        /** MoveStartIn */
+        MoveStartIn: {
+            /** Month */
+            month: string;
+        };
         /** MoveSummaryOut */
         MoveSummaryOut: {
             /** Id */
@@ -3846,6 +4064,62 @@ export interface components {
             /** Opening */
             opening: boolean;
         };
+        /** PlataOut */
+        PlataOut: {
+            /** Accounts */
+            accounts: string;
+            /** Cards */
+            cards: string;
+            /** Installments */
+            installments: string;
+            /** Owed */
+            owed: string;
+            /** Total */
+            total: string;
+            /** If Exchanged */
+            if_exchanged: string | null;
+        };
+        /** PostMonthOut */
+        PostMonthOut: {
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "expense" | "saving";
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string | null;
+            /** Color */
+            color: number | null;
+            /** Role */
+            role: "patrimony" | null;
+            /** Active */
+            active: boolean;
+            /** Carried */
+            carried: string;
+            /** Assigned */
+            assigned: string;
+            /** Activity */
+            activity: string;
+            /** Available */
+            available: string;
+            /** Average */
+            average: string;
+        };
+        /** PostPatch */
+        PostPatch: {
+            /** Name */
+            name?: string | null;
+            /** Icon */
+            icon?: string | null;
+            /** Color */
+            color?: number | null;
+            /** Active */
+            active?: boolean | null;
+        };
         /** PreviewRowOut */
         PreviewRowOut: {
             /**
@@ -4146,6 +4420,21 @@ export interface components {
             /** Max Count */
             max_count: number | null;
         };
+        /** SavingIn */
+        SavingIn: {
+            /** Name */
+            name: string;
+            /**
+             * Icon
+             * @default savings
+             */
+            icon: string;
+            /**
+             * Color
+             * @default 3
+             */
+            color: number;
+        };
         /** SavingMonthOut */
         SavingMonthOut: {
             /** Month */
@@ -4156,6 +4445,30 @@ export interface components {
             expense: string;
             /** Percent */
             percent: number | null;
+        };
+        /** ScopeIn */
+        ScopeIn: {
+            /** On Budget */
+            on_budget: boolean;
+            /** Since */
+            since?: string | null;
+            /** Post Id */
+            post_id?: number | null;
+        };
+        /** ScopeOut */
+        ScopeOut: {
+            /** Account Id */
+            account_id: number;
+            /** Name */
+            name: string;
+            /** On Budget */
+            on_budget: boolean;
+            /** Default */
+            default: boolean;
+            /** Since */
+            since: string | null;
+            /** Post Id */
+            post_id: number | null;
         };
         /** SettledOut */
         SettledOut: {
@@ -4238,6 +4551,16 @@ export interface components {
             partner_id: number | null;
             /** Partner */
             partner: string | null;
+        };
+        /** StartIn */
+        StartIn: {
+            /** Month */
+            month: string;
+            /**
+             * Savings
+             * @default []
+             */
+            savings: string[];
         };
         /** StateIn */
         StateIn: {
@@ -8838,6 +9161,350 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TagReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_budget_budget_get: {
+        parameters: {
+            query?: {
+                month?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetMonthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_start_budget_start_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveStartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetMonthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_budget_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetMonthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_moves_budget_moves_get: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetMoveOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_budget_moves_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetMonthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_budget_moves__move_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                move_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetMonthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_post_budget_posts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_post_budget_posts__post_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scopes_budget_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_scope_budget_accounts__account_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScopeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeOut"];
                 };
             };
             /** @description Validation Error */
