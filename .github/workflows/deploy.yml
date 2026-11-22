@@ -1,0 +1,97 @@
+name: Despliegue
+
+on:
+  workflow_run:
+    workflows: [API, Web, Versión]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+# Una migración o un respaldo en curso nunca se cancela por el siguiente merge.
+concurrency:
+  group: ppm-production
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.ci.outputs.ready }}
+      sha: ${{ steps.ci.outputs.sha }}
+    env:
+      CANDIDATE: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.CANDIDATE }}
+          persist-credentials: false
+
+      - name: Solo el HEAD de main aprobado por los tres workflows
+        id: ci
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 deploy/ci_ready.py "$CANDIDATE"
+
+  deploy:
+    needs: authorize
+    if: needs.authorize.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://ppm.danychavezdev.com
+    env:
+      CANDIDATE: ${{ needs.authorize.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.CANDIDATE }}
+          persist-credentials: false
+
+      - name: Respaldar, actualizar y migrar en la VPS
+        env:
+          PPM_DEPLOY_SSH_KEY: ${{ secrets.PPM_DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$PPM_DEPLOY_SSH_KEY" ]]; then
+            echo "::error::Falta el secreto PPM_DEPLOY_SSH_KEY. Ver DESPLIEGUE.md, despliegue automático."
+            exit 1
+          fi
+          key="$RUNNER_TEMP/ppm-deploy-key"
+          trap 'rm -f "$key"' EXIT
+          umask 077
+          printf '%s\n' "$PPM_DEPLOY_SSH_KEY" > "$key"
+          ssh -i "$key" -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile=deploy/known_hosts \
+            -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            ubuntu@ppm.danychavezdev.com "deploy $CANDIDATE" \
+            2>&1 | tee "$RUNNER_TEMP/ppm-deploy.log"
+
+      - name: Comprobar HTTPS desde GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
+            https://ppm.danychavezdev.com/api/health | \
+            python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "ok"'
+          printf 'Desplegado `%s` en [PPM](https://ppm.danychavezdev.com).\n' "$CANDIDATE" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Conservar el log de despliegue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: despliegue-${{ env.CANDIDATE }}
+          path: ${{ runner.temp }}/ppm-deploy.log
+          if-no-files-found: ignore
+          retention-days: 14
