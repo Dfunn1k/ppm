@@ -163,7 +163,29 @@ En un servidor nuevo, primero levanta todo (paso 4) para que existan la base y s
 
 ## 7. Actualizar a una versión nueva
 
-Cada vez que se haga merge a `main`:
+Con el acceso del apartado 7a preparado, `.github/workflows/deploy.yml` actualiza producción después
+de cada merge a `main`. Se activa al terminar API, Web o Versión, pero solo despliega cuando **los
+tres workflows de push aprobaron el mismo SHA** y ese SHA sigue siendo el HEAD de `main`. Las pruebas
+corren en cada push a `main`, incluso si el cambio solo toca documentación o despliegue.
+
+El workflow usa una llave SSH dedicada para ejecutar `deploy/release.py` en la VPS: comprueba `main`
+limpio y el SHA, respalda y valida base y adjuntos, etiqueta las imágenes anteriores, avanza con
+fast-forward al SHA aprobado, construye solo el compose de producción, aplica las migraciones con
+`dbmate up` en orden y comprueba contenedores, HTTPS, assets, migraciones y fuentes de la API. Actions
+comprueba además `/api/health` desde fuera de la VPS. No restaura datos automáticamente ante un fallo.
+
+Solo hay un despliegue a la vez y un merge nuevo no cancela una migración en curso. Un SHA que ya está
+desplegado solo vuelve a comprobar salud. Si `main` avanzó antes del preflight, se detiene y espera al
+CI del nuevo HEAD. Los eventos tempranos, cuando todavía faltan pruebas, muestran el motivo en el
+resumen y omiten el job de producción. El reintento manual es **Actions › Despliegue › Run workflow**
+en `main`; exige los mismos tres resultados de CI.
+
+Los logs completos y el registro con SHA anterior, candidato y respaldos quedan en
+`/home/ubuntu/.cache/ppm-desplegar/`; Actions conserva su log 14 días. Un fallo de CI impide el
+despliegue. Un fallo posterior deja el registro en la etapa correspondiente y exige revisar el log
+y las migraciones antes de decidir una reversión.
+
+Para actualizar a mano (alternativa al workflow):
 
 ```bash
 cd /opt/ppm
@@ -181,6 +203,46 @@ Si una actualización falla:
 
 1. Vuelve al commit anterior: `git checkout <commit>` y luego `docker compose up -d --build`.
 2. Si la migración nueva ya cambió datos, restaura el respaldo del paso 1.
+
+### 7a. Preparar el acceso de GitHub Actions (una sola vez)
+
+El destino es el servidor existente, `ubuntu@ppm.danychavezdev.com`, puerto 22. No se copia `.env` a
+GitHub. Solo hace falta un secreto de Actions, `PPM_DEPLOY_SSH_KEY`.
+
+1. Como `ubuntu`, desde una copia revisada de este repositorio, ejecuta:
+
+   ```bash
+   python3 deploy/install_ssh.py
+   ```
+
+   Crea `~/.ssh/ppm_github_actions` (privada, permisos 600), instala el receptor y un script de
+   arranque en `~/.local/lib/ppm-deploy/` y agrega su llave pública a `authorized_keys` conservando
+   las demás. La llave lleva `restrict` y un comando forzado: solo acepta `check` o `deploy` seguido
+   de un SHA completo; no permite una shell, puertos reenviados, agente SSH ni terminal. Ejecutarlo
+   otra vez conserva la misma llave. El primer despliegue usa el script instalado si el checkout
+   aún no trae `deploy/release.py`; los siguientes usan el script del repo ya desplegado.
+
+2. En **Settings › Secrets and variables › Actions › New repository secret**, crea
+   `PPM_DEPLOY_SSH_KEY` con el contenido completo de `~/.ssh/ppm_github_actions`. Usa esta llave
+   dedicada, nunca la llave personal ni la de acceso de la VPS a GitHub. No la subas al repo ni la
+   pegues en chats. El workflow usa el entorno `production`; para despliegue sin intervención,
+   ese entorno debe permitir despliegues desde `main` sin aprobación manual.
+
+3. `deploy/known_hosts` fija la llave pública Ed25519 de **esta** VPS, obtenida de
+   `/etc/ssh/ssh_host_ed25519_key.pub`. Si cambia el servidor o su llave, verifica la nueva por la
+   consola del servidor y actualiza ese archivo por PR. Nunca desactives la verificación del host.
+
+4. Como `ubuntu` en la VPS, comprueba el acceso restringido sin desplegar:
+
+   ```bash
+   ssh -i ~/.ssh/ppm_github_actions -o IdentitiesOnly=yes -o BatchMode=yes \
+     -o StrictHostKeyChecking=yes -o UserKnownHostsFile=deploy/known_hosts \
+     ubuntu@ppm.danychavezdev.com check
+   ```
+
+Tras guardar el secreto y hacer merge del PR, el CI de ese merge activa el primer despliegue.
+Si alguna vez cambia `deploy/ssh_entrypoint.py`, vuelve a ejecutar el instalador después de revisar
+el cambio para actualizar el comando instalado; la llave no cambia.
 
 ## 8. Operar
 

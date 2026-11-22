@@ -3,9 +3,8 @@ name: API
 on:
   push:
     branches: [main]
-    paths: ["api/**", ".github/workflows/api.yml"]
   pull_request:
-    paths: ["api/**", ".github/workflows/api.yml"]
+    paths: ["api/**", "deploy/**", ".github/workflows/api.yml", ".github/workflows/deploy.yml"]
 
 jobs:
   pruebas:
@@ -32,6 +31,10 @@ jobs:
         working-directory: api
     steps:
       - uses: actions/checkout@v4
+
+      - name: Comprobar la autorización y el orden del despliegue
+        working-directory: .
+        run: python3 -m unittest discover -s deploy/tests -v
 
       - uses: astral-sh/setup-uv@v6
         with:
