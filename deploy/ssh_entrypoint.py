@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Comando forzado de la llave de Actions: no acepta una shell ni argumentos libres."""
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import subprocess
@@ -16,6 +17,22 @@ def arguments(command):
     return ["deploy", "--sha", match[1]]
 
 
+def execute(script, args):
+    state = Path.home() / ".cache/ppm-desplegar"
+    state.mkdir(parents=True, exist_ok=True)
+    label = args[-1][:12] if args[0] == "deploy" else "check"
+    log_path = state / f"{datetime.now(timezone.utc):%Y%m%dT%H%M%S%fZ}-{label}-ssh.log"
+    print(f"LOG={log_path}", flush=True)
+    with log_path.open("x") as log:
+        log_path.chmod(0o600)
+        # Si se corta SSH, el despliegue continúa y deja su salida en la VPS.
+        process = subprocess.Popen([sys.executable, "-u", str(script), *args], stdout=log,
+                                   stderr=subprocess.STDOUT, start_new_session=True)
+        status = process.wait()
+    print(log_path.read_text(), end="", flush=True)
+    return status
+
+
 def main():
     try:
         args = arguments(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
@@ -27,7 +44,7 @@ def main():
     script = Path("/opt/ppm/deploy/release.py")
     if not script.is_file():
         script = Path(__file__).resolve().with_name("release.py")
-    return subprocess.call([sys.executable, str(script), *args])
+    return execute(script, args)
 
 
 if __name__ == "__main__":

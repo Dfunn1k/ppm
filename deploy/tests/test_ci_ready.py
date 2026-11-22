@@ -1,11 +1,15 @@
 import sys
+import contextlib
+import io
+import stat
+import tempfile
 from pathlib import Path
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ci_ready import GitHub, WORKFLOWS, ready
-from ssh_entrypoint import arguments
+from ssh_entrypoint import arguments, execute
 
 SHA = "a" * 40
 
@@ -57,6 +61,18 @@ class GateTests(unittest.TestCase):
 
 
 class SSHTests(unittest.TestCase):
+    def test_remote_failures_preserve_the_log_and_the_exit_code(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            script = home / "failing_release.py"
+            script.write_text("import sys\nprint('backup validation failed')\nsys.exit(7)\n")
+            with patch.object(Path, "home", return_value=home), contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(execute(script, ["deploy", "--sha", SHA]), 7)
+            log = next((home / ".cache/ppm-desplegar").glob("*.log"))
+            self.assertIn("backup validation failed", log.read_text())
+            self.assertIn("backup validation failed", out.getvalue())
+            self.assertEqual(stat.S_IMODE(log.stat().st_mode), 0o600)
+
     def test_only_check_and_a_full_sha_can_reach_the_release_command(self):
         self.assertEqual(arguments("check"), ["check"])
         self.assertEqual(arguments(f"deploy {SHA}"), ["deploy", "--sha", SHA])
