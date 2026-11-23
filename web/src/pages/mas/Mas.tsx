@@ -7,6 +7,7 @@ import { Link, NavLink } from "react-router";
 
 import { useMe, usePending } from "@/api/hooks";
 import { INSTALL_HINT, InstallSheet, Logo } from "@/components/InstallSheet";
+import { useRailSpill } from "@/components/Rail";
 import { Icon } from "@/components/ui";
 import { useDesktop } from "@/lib/desktop";
 import { useInstall } from "@/lib/install";
@@ -24,6 +25,9 @@ export function Mas() {
   const install = useInstall();
   const [installing, setInstalling] = useState(false);
   const desktop = useDesktop();   // los atajos de teclado son de la computadora
+  // En escritorio, Pendientes y Reportes están en el riel; si la ventana es baja y no caben, vuelven aquí
+  const spill = useRailSpill();
+  const inRail = (to: string) => desktop && !spill.includes(to);
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
       <h1 className="text-label text-muted-foreground uppercase lg:font-display lg:text-[36px] lg:leading-10 lg:font-extrabold lg:tracking-[-0.03em] lg:text-foreground lg:normal-case">Más</h1>
@@ -37,7 +41,7 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
       </NavLink>
-      {!desktop && (
+      {!inRail("/pendientes") && (
         <Link to="/pendientes" className="flex min-h-16 items-center gap-3.5 border-b border-border">
           <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="notifications" className="text-[22px]" /></span>
           <span className="flex flex-1 flex-col">
@@ -76,7 +80,7 @@ export function Mas() {
         </span>
         <Icon name="chevron_right" className="text-[22px] text-muted-foreground lg:hidden" />
       </NavLink>
-      {!desktop && (
+      {!inRail("/mas/reportes") && (
         <Link to="/mas/reportes" className="flex min-h-16 items-center gap-3.5 border-b border-border">
           <span className="grid size-10 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="bar_chart" className="text-[22px]" /></span>
           <span className="flex flex-1 flex-col">
