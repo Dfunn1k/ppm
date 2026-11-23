@@ -141,3 +141,44 @@ test("la tarjeta del presupuesto se esconde desde Más › Inicio", async ({ pag
   await expect(page.getByText("Lo que realmente tengo hoy")).toBeVisible();
   await expect(page.getByRole("link", { name: /Presupuesto de/ })).toHaveCount(0);
 });
+
+test("deshacer un mes, renombrar y eliminar un sobre de ahorro, y borrar el presupuesto", async ({ page }) => {
+  await readyUser(page);
+  const month = new Date().toISOString().slice(0, 7);
+  expect((await page.request.post("/api/budget/start", { data: { month, savings: ["Viaje"] } })).status()).toBe(201);
+  const posts = (await (await page.request.get("/api/budget")).json()).posts as { id: number; name: string }[];
+  const id = (name: string) => posts.find((p) => p.name === name)!.id;
+  for (const [to, amount] of [["Comida y bebida", "100"], ["Viaje", "200"]] as const) {
+    await page.request.post("/api/budget/moves", { data: { month, to_post_id: id(to), amount } });
+  }
+
+  // Deshacer lo asignado en el mes
+  await page.goto("/presupuesto");
+  await page.getByRole("button", { name: "Más opciones del presupuesto" }).click();
+  await page.getByRole("button", { name: /^Deshacer lo asignado en/ }).click();
+  await expect(page.getByRole("dialog")).toContainText("Se borran las 2 asignaciones");
+  await page.getByRole("button", { name: "Deshacer S/ 300.00" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect((await (await page.request.get("/api/budget/moves", { params: { month } })).json())).toEqual([]);
+
+  // Un sobre de ahorro: cambiarle el nombre y eliminarlo
+  await page.request.post("/api/budget/moves", { data: { month, to_post_id: id("Viaje"), amount: "50" } });
+  await page.goto(`/presupuesto/sobres/${id("Viaje")}`);
+  await page.getByRole("button", { name: "Opciones de Viaje" }).click();
+  await page.getByRole("button", { name: "Cambiar el nombre" }).click();
+  await page.getByRole("textbox", { name: "Nombre" }).fill("Viaje a Cusco");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByRole("heading", { name: "Viaje a Cusco" })).toBeVisible();
+  await page.getByRole("button", { name: "Opciones de Viaje a Cusco" }).click();
+  await page.getByRole("button", { name: /Eliminar sobre/ }).click();
+  await expect(page.getByRole("dialog")).toContainText("Lo guardado, S/ 50.00, vuelve a Por asignar");
+  await page.getByRole("button", { name: "Eliminar Viaje a Cusco" }).click();
+  await expect(page).toHaveURL(/\/presupuesto(\?|$)/);
+  await expect(page.getByText("Viaje a Cusco")).toHaveCount(0);
+
+  // Borrar todo: vuelve Empezar
+  await page.getByRole("button", { name: "Más opciones del presupuesto" }).click();
+  await page.getByRole("button", { name: /^Borrar el presupuesto/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Borrar el presupuesto" }).click();
+  await expect(page.getByRole("heading", { name: "Dale un trabajo a cada sol" })).toBeVisible();
+});

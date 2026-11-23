@@ -1793,6 +1793,56 @@ export function useUndoAssign() {
   });
 }
 
+/** Deshacer todo lo asignado, movido y cubierto en un mes: vuelve a Por asignar. */
+export function useUndoMonth() {
+  const changed = useBudgetChanged();
+  return useMutation({
+    mutationFn: async (month: string) => {
+      const { data, error, response } = await api.DELETE("/budget/moves", { params: { query: { month } } });
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+/** Cambiar el nombre de un sobre de ahorro. */
+export function useRenamePost() {
+  const changed = useBudgetChanged();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      const { error, response } = await api.PATCH("/budget/posts/{post_id}", { params: { path: { post_id: id } }, body: { name } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+/** Eliminar un sobre de ahorro: lo guardado vuelve a Por asignar. */
+export function useDeletePost() {
+  const changed = useBudgetChanged();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error, response } = await api.DELETE("/budget/posts/{post_id}", { params: { path: { post_id: id } } });
+      if (!response.ok) fail(response, error);
+    },
+    onSuccess: () => changed(),
+  });
+}
+
+/** Borrar el presupuesto entero y volver a la pantalla de Empezar. Los movimientos no cambian. */
+export function useResetBudget() {
+  const changed = useBudgetChanged();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.DELETE("/budget");
+      if (!data) fail(response, error);
+      return data;
+    },
+    onSuccess: () => changed(),
+  });
+}
+
 export function useSetScope() {
   const qc = useQueryClient();
   return useMutation({

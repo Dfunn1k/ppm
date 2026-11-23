@@ -1,6 +1,6 @@
 [project]
 name = "ppm-api"  # el paquete de la API dentro del repositorio ppm
-version = "0.36.0"
+version = "0.37.0"
 description = "PPM (pan para mayo): servidor de finanzas personales con partida doble"
 readme = "README.md"
 requires-python = ">=3.13"

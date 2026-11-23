@@ -463,30 +463,77 @@ def test_empezar_antes_y_mover_el_inicio(ana: Pres):
     assert (b["posts"], b["to_assign"]) == ([], "0.00")                  # antes del inicio no hay sobres
 
 
-# --- Meses cerrados ----------------------------------------------------------------------------
+# --- El cierre de periodo no toca el presupuesto --------------------------------------------
 
-def test_un_mes_cerrado_no_se_toca(ana: Pres):
+def test_el_cierre_de_periodo_no_frena_el_presupuesto(ana: Pres):
+    """El presupuesto es una capa aparte: cerrar un periodo protege los asientos, no los sobres."""
+    ana.c.put("/closing", json={"lock_date": (ESTE - dt.timedelta(days=1)).isoformat()})
     ana.start(M2)
     ana.assign("Comida y bebida", "100", M1)
-    fin = (ESTE - dt.timedelta(days=1)).isoformat()
-    r = ana.c.put("/closing", json={"lock_date": fin})
-    assert r.status_code == 200, r.text
-    assert ana.budget(M1)["locked"] and not ana.budget()["locked"]
-    r = ana.assign("Compras", "10", M1, status=400)
-    assert "cerrado" in r["detail"]
     moves = ana.c.get("/budget/moves", params={"month": ym(M1)}).json()
-    assert ana.c.delete(f"/budget/moves/{moves[0]['id']}").status_code == 400
+    assert ana.c.delete(f"/budget/moves/{moves[0]['id']}").status_code == 200
     r = ana.c.put(f"/budget/accounts/{ana.efectivo}", json={"on_budget": False, "since": day(M1)})
-    assert r.status_code == 400 and "cerrado" in r.json()["detail"]
-    assert ana.c.put("/budget/start", json={"month": ym(M1)}).status_code == 400
-    ana.assign("Compras", "10")                                          # el mes abierto sí
+    assert r.status_code == 200, r.text
+    assert ana.c.put("/budget/start", json={"month": ym(M1)}).status_code == 200
+    assert "locked" not in ana.budget(M1)
 
 
-def test_no_empieza_en_un_mes_cerrado(ana: Pres):
-    assert ana.c.put("/closing", json={"lock_date": (ESTE - dt.timedelta(days=1)).isoformat()}).status_code == 200
-    r = ana.c.post("/budget/start", json={"month": ym(M1)})
-    assert r.status_code == 400 and "cerrado" in r.json()["detail"]
-    ana.start()
+# --- Borrar: el mes, un sobre o todo ---------------------------------------------------------
+
+def test_deshacer_lo_asignado_en_un_mes(ana: Pres):
+    ana.start(M1)
+    ana.assign("Comida y bebida", "100", M1)
+    ana.assign("Compras", "50", M1)
+    ana.assign("Compras", "30", M1, frm="Comida y bebida")
+    ana.assign("Comida y bebida", "70")
+    antes = ana.budget()["to_assign"]
+    r = ana.c.delete("/budget/moves", params={"month": ym(M1)})
+    assert r.status_code == 200, r.text
+    assert ana.c.get("/budget/moves", params={"month": ym(M1)}).json() == []
+    assert len(ana.c.get("/budget/moves", params={"month": ym(ESTE)}).json()) == 1   # los otros meses no
+    assert ana.post("Comida y bebida", M1)["available"] == "0.00"
+    assert D(ana.budget()["to_assign"]) == D(antes) + D("150")                     # vuelve a Por asignar
+
+
+def test_eliminar_un_sobre_de_ahorro(ana: Pres):
+    ana.start(savings=["Casa"])
+    fondo = ana.c.post("/accounts/cash", json={"name": "Fondo", "currency": "PEN"}).json()
+    fondo = fondo["account"]["id"] if "account" in fondo else fondo["id"]
+    casa = ana.post("Casa")["id"]
+    assert ana.c.put(f"/budget/accounts/{fondo}", json={"on_budget": False, "post_id": casa}).status_code == 200
+    ana.assign("Comida y bebida", "100")
+    ana.assign("Casa", "200")
+    ana.assign("Casa", "40", frm="Comida y bebida")
+    antes = ana.budget()
+    assert ana.c.delete(f"/budget/posts/{casa}").status_code == 204
+    b = ana.budget()                                     # cuadra: lo guardado volvió a Por asignar
+    assert "Casa" not in [p["name"] for p in b["posts"]]
+    assert D(b["to_assign"]) == D(antes["to_assign"]) + D("240")
+    assert ana.post("Comida y bebida")["available"] == "60.00"          # lo que dio Comida no vuelve a ella
+    scope = next(s for s in ana.c.get("/budget/accounts").json() if s["account_id"] == fondo)
+    assert scope["post_id"] is None                                        # pasa a Construir patrimonio
+    patrimonio = ana.post("Construir patrimonio")["id"]
+    r = ana.c.delete(f"/budget/posts/{patrimonio}")
+    assert r.status_code == 400 and "no se elimina" in r.json()["detail"]
+    r = ana.c.delete(f"/budget/posts/{ana.post('Comida y bebida')['id']}")
+    assert r.status_code == 400
+
+
+def test_borrar_el_presupuesto_y_volver_a_empezar(ana: Pres):
+    ana.start(M1, savings=["Viaje"])
+    ana.assign("Comida y bebida", "100", M1)
+    assert ana.c.put(f"/budget/accounts/{ana.efectivo}", json={"on_budget": False}).status_code == 200
+    ana.c.put("/closing", json={"lock_date": (ESTE - dt.timedelta(days=1)).isoformat()})
+    movimientos = ana.c.get("/moves").json()
+    r = ana.c.delete("/budget")
+    assert r.status_code == 200, r.text
+    assert (r.json()["started"], r.json()["posts"]) == (False, [])
+    assert ana.c.get("/budget/moves", params={"month": ym(M1)}).json() == []
+    assert all(s["on_budget"] for s in ana.c.get("/budget/accounts").json() if s["account_id"] == ana.efectivo)
+    assert ana.c.get("/moves").json() == movimientos                       # los movimientos no cambian
+    b = ana.start(M1)                                                       # se puede empezar otra vez
+    assert "Viaje" not in [p["name"] for p in b["posts"]]
+    assert "Construir patrimonio" in [p["name"] for p in b["posts"]]
 
 
 # --- Qué cuentas entran (D6) ---------------------------------------------------------------
