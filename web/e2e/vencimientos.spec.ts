@@ -104,7 +104,7 @@ test("una compra en cuotas que es de otra persona: no es tu gasto, te debe todas
 
   await expect(page).toHaveURL(`/personas/${luis}`);
   await expect(page.getByText("3 cuotas: 3 por facturar")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Unipiel/ })).toContainText("S/ 786.06");
+  await expect(page.getByRole("listitem").filter({ hasText: "Unipiel" })).toContainText("S/ 786.06");
 });
 
 test("ponerle fecha de vencimiento a un préstamo y verla vencida", async ({ page }) => {
