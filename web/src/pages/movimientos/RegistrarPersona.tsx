@@ -11,10 +11,11 @@ import { pickAccount } from "@/lib/startAccount";
 import { PersonPicker } from "@/components/PersonPicker";
 import { Installments } from "@/components/Installments";
 import { RateField, useRateInput } from "@/components/RateField";
-import { CurrencyChoice, OptionList, Sheet, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Facts, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
+import { CurrencyChoice, Sheet, SheetSelect } from "@/components/Sheet";
+import { DebtCard } from "@/components/DebtCard";
+import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
-import { shortDate, todayISO } from "@/lib/dates";
+import { todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
 import { CURRENCY_NAME, add, currencyOption, divide, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
@@ -125,12 +126,23 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           ? `No es un gasto tuyo: tu tarjeta sube y ${first} te debe.${cuotas ? " Te debe todas las cuotas; cada una vence con la fecha de pago de su corte." : ""}`
           : "No es un gasto: la plata sigue siendo tuya.")];
       case "borrow": return [`Le quedarás debiendo ${money(after)} a ${first}`, "No es un ingreso: entra a tu cuenta, pero se la debes."];
-      case "collect": return [<Facts items={[[`${first} te debe`, owedMoney(have)], ["Quedará en", owedMoney(after)]]} />, how + fx];
-      case "repay": return [<Facts items={[[`Le debes a ${first}`, owedMoney(have)], ["Quedará en", owedMoney(after)]]} />, how + fx];
+      case "collect": return [`${first} te debe ${owedMoney(have)}; quedará en ${owedMoney(after)}`, how + fx];
+      case "repay": return [`Le debes a ${first} ${owedMoney(have)}; quedará en ${owedMoney(after)}`, how + fx];
       case "custody_in": return [`Guardarás ${money(after)} de ${first}`, "Entra a tu cuenta, pero no suma a lo que realmente tienes: es suya."];
-      case "custody_out": return [<Facts items={[[`Guardas de ${first}`, money(have)], ["Quedarán", money(after)]]} />, "Sale de tu cuenta y baja lo que guardas. No es un gasto tuyo."];
+      case "custody_out": return [`Guardas de ${first} ${money(have)}; quedarán ${money(after)}`, "Sale de tu cuenta y baja lo que guardas. No es un gasto tuyo."];
     }
   })();
+  // La deuda que se descuenta: la elegida o la más antigua
+  const chosen = (kind === "collect" || kind === "repay") ? (debt ? openDebts.find((i) => i.line_id === debt.id) : openDebts[0]) : undefined;
+  const down = card && LIMITED.includes(kind) && debtValue && Number(have) > 0 ? (() => {
+    const isCustody = kind === "custody_out";
+    const show = isCustody ? money : owedMoney;
+    const label = kind === "collect" ? `${first} te debe` : kind === "repay" ? `Le debes a ${first}` : `Guardas de ${first}`;
+    const text = kind === "custody_out" ? "Sale de tu cuenta y baja lo que guardas. No es un gasto tuyo."
+      : `Este pago baja ${show(debtValue)} de lo que ${kind === "collect" ? "te debe" : "le debes"}.${cross ? " La diferencia con lo que valía la deuda va a Ganancia por tipo de cambio o Costo del cambio." : ""}`;
+    return { label, before: show(have), after: show(subtract(have, debtValue)), text,
+      share: Math.min(100, Math.round(Number(debtValue) / Number(have) * 100)) };
+  })() : null;
   const overText = kind === "collect"
     ? `${first} te debe ${owedMoney(have)}. Escribe hasta ${owedMoney(have)}; si te dio de más, registra el resto como «Me prestaron» o «Me dio para guardar».`
     : kind === "repay"
@@ -262,15 +274,37 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           <div role="alert" className="mt-3 flex items-start gap-2 rounded-md bg-attention-soft p-3 text-caption text-attention tabular-nums">
             <Icon name="error" /><span>{overText}</span>
           </div>
+        ) : down ? (
+          // Cobrar, pagar o devolver: lo de antes tachado, lo que queda y la deuda que se descuenta,
+          // con la misma tarjeta de la persona (decisión «La persona que te debe», C2)
+          <section aria-label={down.label} className="mt-3 flex flex-col gap-2.5 rounded-[12px] border border-border bg-card px-3.5 py-3 tabular-nums">
+            <span className="text-caption text-muted-foreground">{down.label}</span>
+            <span className="flex flex-wrap items-center gap-x-2.5">
+              <span className="font-display text-[22px] leading-7 font-extrabold text-muted-foreground line-through decoration-2">{down.before}</span>
+              <Icon name="arrow_forward" className="text-[20px] text-muted-foreground" />
+              <span className="font-display text-[28px] leading-8 font-extrabold tracking-[-0.02em]">{down.after}</span>
+            </span>
+            <span aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-muted">
+              <span className="block h-2 rounded-full bg-foreground" style={{ width: `${down.share}%` }} />
+            </span>
+            <span className="text-caption text-muted-foreground">{down.text}</span>
+            {chosen && (
+              <>
+                <span className="mt-1 text-label text-muted-foreground">Se descuenta de</span>
+                <DebtCard item={chosen} lang={lang} paid={kind === "collect" ? "Te pagó" : "Le pagaste"} selected />
+                {openDebts.length > 1 && (
+                  <button type="button" onClick={() => setChoosing(true)}
+                    className="flex h-10 items-center gap-1.5 self-start rounded-full bg-secondary px-4 text-caption font-semibold text-secondary-foreground">
+                    <Icon name="swap_horiz" className="text-[18px]" />Elegir otra deuda
+                  </button>
+                )}
+              </>
+            )}
+          </section>
         ) : card && (
           <div className="mt-3 flex flex-col gap-1 rounded-[12px] border border-border bg-card px-3.5 py-3 tabular-nums">
             <span className="font-semibold">{card[0]}</span>
             {card[1] && <span className="text-caption text-muted-foreground">{card[1]}</span>}
-            {(kind === "collect" || kind === "repay") && openDebts.length > 1 && (
-              <button type="button" onClick={() => setChoosing(true)} className="mt-0.5 h-8 self-start text-caption font-semibold text-primary-strong underline">
-                Elegir otra deuda
-              </button>
-            )}
           </div>
         )}
 
@@ -284,14 +318,19 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
       </form>
 
       <Sheet title="¿Qué deuda paga primero?" open={choosing} onClose={() => setChoosing(false)}>
-        <OptionList value={String(debt?.id ?? openDebts[0]?.line_id ?? "")}
-          options={openDebts.map((i) => ({ value: String(i.line_id), label: i.ref,
-            hint: i.ref, detail: <Facts className="mt-0.5" items={[["Del", shortDate(i.date)], ["Faltan", formatAmount(i.open, symbolOf(i.currency), lang)]]} /> }))}
-          onPick={(v) => {
-            const i = openDebts.find((x) => String(x.line_id) === v);
-            setDebt(i && i !== openDebts[0] ? { id: i.line_id, ref: i.ref } : null);
-            setChoosing(false);
-          }} />
+        {/* Las mismas tarjetas de la persona; la elegida con el acento y su marca en la esquina */}
+        <div role="radiogroup" aria-label="¿Qué deuda paga primero?" className="flex flex-col gap-3 px-1 pt-2.5 pb-1">
+          {openDebts.map((i) => {
+            const on = i.line_id === (debt?.id ?? openDebts[0]?.line_id);
+            return (
+              <button key={i.line_id} type="button" role="radio" aria-checked={on} aria-label={`${i.ref}, ${formatAmount(i.open, symbolOf(i.currency), lang)}`}
+                onClick={() => { setDebt(i !== openDebts[0] ? { id: i.line_id, ref: i.ref } : null); setChoosing(false); }}
+                className="rounded-[16px] text-left">
+                <DebtCard item={i} lang={lang} paid={kind === "collect" ? "Te pagó" : "Le pagaste"} selected={on} />
+              </button>
+            );
+          })}
+        </div>
       </Sheet>
     </main>
   );

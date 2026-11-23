@@ -1,4 +1,4 @@
-const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"];
+export const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "set", "oct", "nov", "dic"];
 
 /** «2026-10-01» → «01 oct» (como en las listas de movimientos). */
 export function shortDate(iso: string): string {

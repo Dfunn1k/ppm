@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction, useRecurringList } from "@/api/hooks";
+import { DebtCard, DueChip } from "@/components/DebtCard";
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
-import { Amounts, ErrorAlert, Facts, Icon, Status } from "@/components/ui";
+import { Amounts, ErrorAlert, Icon, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
@@ -20,10 +21,6 @@ import { DetailSkeleton } from "@/components/Skeleton";
 type Hoja = null | "pago" | "compensar" | "perdido" | "editar";
 
 const CONTACT = "flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-caption font-semibold";
-
-function ago(days: number) {
-  return days <= 0 ? "Hoy" : days === 1 ? "Ayer" : `Hace ${days} días`;
-}
 
 /** Lo que se puede compensar: lo menor de cada lado, en la moneda que tienen en común. */
 function offsetOf(p: PartnerRow) {
@@ -249,63 +246,43 @@ function Items({ label, header, items, paid, lang, ask }: {
           <Amounts values={Object.entries(total).map(([c, v]) => formatAmount(v.toFixed(2), symbolOf(c), lang))} />
         </div>
       )}
-      {groups.map((g) => g[0]!.parts ? (
-        <div key={`m${g[0]!.move_id}`} className="flex flex-col border-b border-border py-2">
-          <Link to={`/movimientos/${g[0]!.move_id}`} className="flex items-center gap-3">
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-semibold">{g[0]!.ref}</span>
-              <span className="text-caption text-muted-foreground">
-                {cuotaCounts(g)}
+      <ul className="mt-2 flex flex-col gap-3">
+        {groups.map((g) => {
+          const i = g[0]!;
+          // Toda la tarjeta abre el movimiento; las fechas son botones encima, para cambiarlas
+          const link = <Link to={`/movimientos/${i.move_id}`} className="after:absolute after:inset-0 after:rounded-[16px]">{i.ref}</Link>;
+          return <li key={i.parts ? `m${i.move_id}` : i.line_id}>{i.parts ? (
+            <DebtCard item={i} lang={lang} paid={capitalize(paid)} title={link} due={false}
+              amount={formatAmount(g.reduce((t, x) => t + Number(x.open), 0).toFixed(2), symbolOf(i.currency), lang)}
+              detail={<span className="text-muted-foreground">{cuotaCounts(g)}</span>}>
+              <span className="relative z-[1] mt-1 flex flex-col">
+                {g.map((x) => {
+                  const m = maturityText(x);
+                  return (
+                    <button key={x.line_id} type="button" onClick={() => setEditing(x)} aria-label={`Parte ${x.part} de ${x.parts}: ${m?.text ?? "sin fecha"}. Cambiar la fecha`}
+                      className="flex min-h-10 items-center gap-2.5 text-left">
+                      <span className="grid size-6 flex-none place-items-center rounded-full bg-muted text-[12px] font-semibold">{x.part}</span>
+                      <span className={`flex flex-1 flex-col text-caption ${m?.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>
+                        <span className="flex flex-wrap items-center gap-x-2.5">
+                          {x.billed === false ? <Status icon="receipt_long">Por facturar</Status> : !m?.late && <Status icon="schedule">Por cobrar</Status>}
+                          {m && <span>{x.billed === false || !m.late ? lower(m.text) : m.text}</span>}
+                        </span>
+                        {x.interest && <span className="tabular-nums">Incluye {formatAmount(x.interest, symbolOf(x.currency), lang)} de interés</span>}
+                      </span>
+                      <span className="text-[14px] tabular-nums">{formatAmount(x.open, symbolOf(x.currency), lang)}</span>
+                    </button>
+                  );
+                })}
               </span>
-            </span>
-            <span className="text-amount">{formatAmount(g.reduce((t, i) => t + Number(i.open), 0).toFixed(2), symbolOf(g[0]!.currency), lang)}</span>
-          </Link>
-          {g.map((i) => {
-            const m = maturityText(i);
-            return (
-              <button key={i.line_id} type="button" onClick={() => setEditing(i)} aria-label={`Parte ${i.part} de ${i.parts}: ${m?.text ?? "sin fecha"}. Cambiar la fecha`}
-                className="flex min-h-10 items-center gap-2.5 text-left">
-                <span className="grid size-6 flex-none place-items-center rounded-full bg-muted text-[12px] font-semibold">{i.part}</span>
-                <span className={`flex flex-1 flex-col text-caption ${m?.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>
-                  <span className="flex flex-wrap items-center gap-x-2.5">
-                    {i.billed === false ? <Status icon="receipt_long">Por facturar</Status> : !m?.late && <Status icon="schedule">Por cobrar</Status>}
-                    {m && <span>{i.billed === false || !m.late ? lower(m.text) : m.text}</span>}
-                  </span>
-                  {i.interest && <span className="tabular-nums">Incluye {formatAmount(i.interest, symbolOf(i.currency), lang)} de interés</span>}
-                </span>
-                <span className="text-[14px] tabular-nums">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (() => {
-        const i = g[0]!;
-        const partial = i.open !== i.amount;
-        const m = maturityText(i);
-        return (
-          <div key={i.line_id} className="flex flex-col border-b border-border py-2">
-            <Link to={`/movimientos/${i.move_id}`} className="flex items-center gap-3">
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-semibold">{i.ref}</span>
-                <Facts className="mt-0.5" items={[
-                  ["Del", `${shortDate(i.date)}, ${ago(i.days).toLowerCase()}`],
-                  partial && ["Era", formatAmount(i.amount, symbolOf(i.currency), lang)],
-                  partial && [capitalize(paid), formatAmount(subtract(i.amount, i.open), symbolOf(i.currency), lang)],
-                ]} />
-              </span>
-              <span className="text-amount">{formatAmount(i.open, symbolOf(i.currency), lang)}</span>
-            </Link>
-            {/* Sin vencimiento no se muestra nada: se pone desde el detalle del movimiento */}
-            {m && (
-              <button type="button" onClick={() => setEditing(i)}
-                className={`mt-0.5 flex h-8 items-center gap-1 self-start text-caption ${m.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>
-                <Icon name={m.late ? "schedule" : "event"} className="text-[16px]" />
-                {m.text}
-              </button>
-            )}
-          </div>
-        );
-      })())}
+            </DebtCard>
+          ) : (
+            <DebtCard item={i} lang={lang} paid={capitalize(paid)} title={link} due={false}>
+              {/* Sin vencimiento no se muestra nada: se pone desde el detalle del movimiento */}
+              <DueChip item={i} onClick={() => setEditing(i)} />
+            </DebtCard>
+          )}</li>;
+        })}
+      </ul>
       {editing && <MaturitySheet key={editing.line_id} open onClose={() => setEditing(null)} item={editing} title={ask} />}
     </section>
   );

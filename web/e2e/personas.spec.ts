@@ -47,7 +47,8 @@ test("prestar desde Más, cobrar sin pasarse y verlo en Personas", async ({ page
   await page.getByRole("button", { name: "Registrar préstamo" }).click();
 
   await expect(page.getByRole("heading", { name: "Sandra Machado" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Préstamo a Sandra/ })).toContainText("S/ 59.00");
+  const prestamo = page.getByRole("listitem").filter({ hasText: "Préstamo a Sandra" });
+  await expect(prestamo).toContainText("S/ 59.00");
 
   await page.getByRole("button", { name: "Registrar que me pagó" }).click();
   await page.getByRole("link", { name: /Me pagó/ }).click();
@@ -56,10 +57,15 @@ test("prestar desde Más, cobrar sin pasarse y verlo en Personas", async ({ page
   await expect(page.getByRole("button", { name: "Registrar cobro" })).toBeDisabled();
   await page.getByRole("textbox", { name: "¿Cuánto te pagaron?" }).fill("20");
   await chooseAccount(page, "Entra a", "BCP");
-  await expect(page.getByText("Sandra te debe: S/ 59.00, Quedará en: S/ 39.00")).toBeVisible();
+  const baja = page.getByRole("region", { name: "Sandra te debe" });
+  await expect(baja).toContainText("S/ 59.00");
+  await expect(baja).toContainText("S/ 39.00");
+  await expect(baja).toContainText("Se descuenta de");
+  await expect(baja).toContainText("Préstamo a Sandra");
   await page.getByRole("button", { name: "Registrar cobro" }).click();
 
-  await expect(page.getByRole("link", { name: /Préstamo a Sandra/ })).toContainText("Era: S/ 59.00, Te pagó: S/ 20.00");
+  await expect(prestamo).toContainText("Te pagó S/ 20.00");
+  await expect(prestamo).toContainText("de S/ 59.00");
   await page.goto("/cuentas");
   await page.getByRole("link", { name: /Me deben.*1 persona/ }).click();
   await expect(page).toHaveURL("/personas?ver=me-deben");
@@ -141,12 +147,12 @@ test("lo que una persona ya me debía antes de PPM queda como deuda abierta con 
   await page.getByRole("button", { name: "Anotar lo que me debía" }).click();
 
   await expect(page).toHaveURL(`/personas/${luis}`);
-  const deuda = page.getByRole("link", { name: /Lo del celular/ });
-  await expect(deuda).toContainText(/hace 14\d días/);
+  const deuda = page.getByRole("listitem").filter({ hasText: "Lo del celular" });
+  await expect(deuda).toContainText("Hace 4 meses");
   await expect(deuda).toContainText("S/ 300.00");
 
   // Se corrige con «Editar», en el mismo formulario
-  await deuda.click();
+  await deuda.getByRole("link", { name: "Lo del celular" }).click();
   await page.getByRole("link", { name: "Editar" }).click();
   await expect(page.getByText("Editar movimiento")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "¿Cuánto te debía?" })).toHaveValue("300.00");
@@ -209,7 +215,9 @@ test("cobrar en soles lo que te deben en dólares", async ({ page }) => {
   await expect(debt).toBeVisible();
   await debt.fill("133.38");
   await expect(page.getByText("La deuda es en dólares y la plata entra en soles: a 3.501 por US$.")).toBeVisible();
-  await expect(page.getByText("Paul te debe: US$ 133.38, Quedará en: US$ 0.00")).toBeVisible();
+  const baja = page.getByRole("region", { name: "Paul te debe" });
+  await expect(baja).toContainText("US$ 133.38");
+  await expect(baja).toContainText("US$ 0.00");
   await page.getByRole("button", { name: "Registrar cobro" }).click();
 
   await expect(page).toHaveURL(`/personas/${paul}`);
@@ -221,4 +229,33 @@ test("cobrar en soles lo que te deben en dólares", async ({ page }) => {
   const fx = page.getByRole("region", { name: "Ganancia por tipo de cambio" });
   await expect(fx).toContainText("+ S/ 0.07");
   await expect(fx).toContainText("La deuda valía");
+});
+
+test("al cobrar se elige la deuda con sus tarjetas y la elegida se marca", async ({ page }) => {
+  await readyUser(page);
+  const bcp = ((await (await page.request.get("/api/manual-accounts")).json()) as { id: number; name: string }[]).find((a) => a.name === "BCP")!.id;
+  const sandra = (await (await page.request.post("/api/partners", { data: { name: "Sandra Machado" } })).json()).id as number;
+  const lend = (ref: string, amount: string, days: number) => page.request.post("/api/moves", { data: {
+    kind: "lend", account_id: bcp, amount, partner_id: sandra, ref,
+    date: new Date(Date.now() - days * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Lima" }) } });
+  await lend("Pago de servicios internet", "154.80", 120);
+  await lend("Regalo para Andrea", "23.00", 7);
+
+  // En la persona, una tarjeta por deuda; la vieja dice cuánto tiempo lleva
+  await page.goto(`/personas/${sandra}`);
+  await expect(page.getByRole("listitem").filter({ hasText: "Pago de servicios internet" })).toContainText("Hace 3 meses");
+  await expect(page.getByRole("listitem").filter({ hasText: "Regalo para Andrea" })).toContainText("Hace 1 semana");
+
+  // Al cobrar se descuenta de la más antigua; se cambia desde la hoja
+  await page.goto(`/registrar/persona/collect?persona=${sandra}`);
+  await page.getByRole("textbox", { name: "¿Cuánto te pagaron?" }).fill("10");
+  await chooseAccount(page, "Entra a", "BCP");
+  const baja = page.getByRole("region", { name: "Sandra te debe" });
+  await expect(baja).toContainText("Pago de servicios internet");
+  await baja.getByRole("button", { name: "Elegir otra deuda" }).click();
+  const hoja = page.getByRole("dialog", { name: "¿Qué deuda paga primero?" });
+  await expect(hoja.getByRole("radio", { name: /Pago de servicios internet/ })).toHaveAttribute("aria-checked", "true");
+  await hoja.getByRole("radio", { name: /Regalo para Andrea/ }).click();
+  await expect(baja).toContainText("Regalo para Andrea");
+  await expect(baja).not.toContainText("Pago de servicios internet");
 });
