@@ -14,6 +14,7 @@ import { isNegative, isZero } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
 
 import { abs, PostChip, postFigures, previousMonthName, useBudgetMonth, useMoney, withMonth } from "./common";
+import { SavingMenu } from "./Borrar";
 import { type AssignTarget, AssignSheet, CoverSheet } from "./Sheets";
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
@@ -45,6 +46,7 @@ export function Sobre() {
   const desktop = useDesktop();
   const [assigning, setAssigning] = useState<AssignTarget | null>(null);
   const [covering, setCovering] = useState(false);
+  const [menu, setMenu] = useState(false);
 
   if (budget.isPending) return <DetailSkeleton back={withMonth("/presupuesto", month)} />;
   if (budget.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{budget.error.message}</ErrorAlert></main>;
@@ -64,7 +66,8 @@ export function Sobre() {
     return m.to_post_id === null ? "Devuelto a Por asignar" : `Movido a ${nameOf(m.to_post_id)}`;
   };
   const accounts = (scopes.data ?? []).filter((s) => !s.on_budget && (s.post_id === id || (s.post_id === null && p.role === "patrimony")));
-  const open = !b.locked && p.active;
+  const open = p.active;
+  const own = saving && p.role === null;   // los que creaste: se renombran y se eliminan
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28 lg:max-w-[880px] lg:px-14 lg:pt-8 lg:pb-10">
@@ -72,6 +75,10 @@ export function Sobre() {
         <Link to={withMonth("/presupuesto", month)} aria-label="Volver al presupuesto" className="grid size-11 place-items-center rounded-full lg:invisible">
           <Icon name="arrow_back" className="text-[24px]" />
         </Link>
+        {own && (
+          <button type="button" aria-label={`Opciones de ${p.name}`} aria-haspopup="dialog" onClick={() => setMenu(true)}
+            className="grid size-11 place-items-center rounded-full"><Icon name="more_vert" className="text-[22px]" /></button>
+        )}
       </div>
       <span className="mt-1 flex items-center gap-2.5">
         <PostChip post={p} size={28} /><span className="text-label text-muted-foreground">{saving ? "Ahorro" : monthOnly(month)}</span>
@@ -143,10 +150,8 @@ export function Sobre() {
             <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="call_split" className="text-[18px]" /></span>
             <span className="flex-1 font-semibold">{moveText(m)}</span>
             <span className="font-semibold tabular-nums">{into ? `+ ${money(m.amount)}` : money(`-${m.amount}`)}</span>
-            {!b.locked && (
-              <button type="button" aria-label={`Deshacer: ${moveText(m)}`} disabled={undo.isPending} onClick={() => undo.mutate(m.id)}
-                className="grid size-9 place-items-center rounded-full text-muted-foreground"><Icon name="undo" className="text-[20px]" /></button>
-            )}
+            <button type="button" aria-label={`Deshacer: ${moveText(m)}`} disabled={undo.isPending} onClick={() => undo.mutate(m.id)}
+              className="grid size-9 place-items-center rounded-full text-muted-foreground"><Icon name="undo" className="text-[20px]" /></button>
           </div>
         );
       })}
@@ -168,6 +173,7 @@ export function Sobre() {
 
       <AssignSheet budget={b} month={month} target={assigning} onClose={() => setAssigning(null)} />
       <CoverSheet budget={b} month={month} post={covering ? p : null} onClose={() => setCovering(false)} />
+      {own && <SavingMenu key={p.id} post={p} month={month} open={menu} onClose={() => setMenu(false)} accounts={accounts.map((s) => s.name)} />}
     </main>
   );
 }

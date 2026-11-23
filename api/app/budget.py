@@ -107,7 +107,6 @@ class BudgetMonth:
     started: bool
     start: dt.date | None
     month: dt.date
-    locked: bool                 # el mes está en un periodo cerrado: no se asigna
     to_assign: Decimal           # Por asignar: verde si sobra, rojo si asignaste de más
     future: Decimal              # lo ya asignado a meses que vienen
     plata: Plata
@@ -194,8 +193,9 @@ def _today(conn: psycopg.Connection) -> dt.date:
     return conn.execute("SELECT user_today()").fetchone()[0]
 
 
-def _user(conn: psycopg.Connection) -> tuple[dt.date | None, dt.date | None]:
-    return conn.execute("SELECT budget_start, lock_date FROM res_users WHERE id = current_user_id()").fetchone()
+def _user(conn: psycopg.Connection) -> dt.date | None:
+    """Desde qué mes presupuesta. El cierre de periodo no toca el presupuesto: es una capa aparte."""
+    return conn.execute("SELECT budget_start FROM res_users WHERE id = current_user_id()").fetchone()[0]
 
 
 def _posts(conn: psycopg.Connection) -> list[tuple]:
@@ -265,7 +265,7 @@ def month_view(user_id: int, month: dt.date | None = None) -> BudgetMonth:
 
 
 def _month_view(conn: psycopg.Connection, month: dt.date | None) -> BudgetMonth:
-    start, lock = _user(conn)
+    start = _user(conn)
     today = _today(conn)
     this_month = today.replace(day=1)
     month = month or this_month
@@ -274,9 +274,8 @@ def _month_view(conn: psycopg.Connection, month: dt.date | None) -> BudgetMonth:
         "SELECT date, amount FROM budget_flows(%s) ORDER BY date, move_id NULLS FIRST", (end,))]
     age = age_of_money(flows, min(end, today) if month <= this_month else end)
     plata = _plata(conn, end, month == this_month)
-    locked = lock is not None and end <= lock
     if start is None or month < start:
-        return BudgetMonth(start is not None, start, month, locked, ZERO, ZERO, plata, [], Unclassified(ZERO, ZERO), age)
+        return BudgetMonth(start is not None, start, month, ZERO, ZERO, plata, [], Unclassified(ZERO, ZERO), age)
 
     activity = _activity(conn, start, end)
     avg_first = add_months(month, -AVERAGE_MONTHS)
@@ -306,7 +305,7 @@ def _month_view(conn: psycopg.Connection, month: dt.date | None) -> BudgetMonth:
 
     future = sum((a for (_pid, k), a in assigned.items() if k > month), ZERO)
     to_assign = plata.total - total_available - un_available - future
-    return BudgetMonth(True, start, month, locked, to_assign, future, plata, posts, unclassified, age)
+    return BudgetMonth(True, start, month, to_assign, future, plata, posts, unclassified, age)
 
 
 # --- Empezar ----------------------------------------------------------------------------------
@@ -315,14 +314,10 @@ def start(user_id: int, month: dt.date, savings: list[str]) -> BudgetMonth:
     """Empezar el presupuesto desde un mes (D7): lo de antes no cuenta. Nace «Construir patrimonio» y,
     si los pide, otros sobres de ahorro (como «Fondo de emergencia»)."""
     with user_transaction(user_id) as conn:
-        current, lock = _user(conn)
-        if current is not None:
+        if _user(conn) is not None:
             raise AccountError(409, "Tu presupuesto ya empezó")
-        today = _today(conn)
-        if month > today.replace(day=1):
+        if month > _today(conn).replace(day=1):
             raise AccountError(400, "Empieza en este mes o en uno que ya pasó")
-        if lock is not None and month_end(month) <= lock:
-            raise AccountError(400, "Ese mes está cerrado: elige uno abierto")
         try:
             with conn.transaction():
                 conn.execute("UPDATE res_users SET budget_start = %s WHERE id = current_user_id()", (month,))
@@ -338,16 +333,12 @@ def start(user_id: int, month: dt.date, savings: list[str]) -> BudgetMonth:
 
 
 def move_start(user_id: int, month: dt.date) -> BudgetMonth:
-    """Cambiar el mes en que empezó. No se puede si deja fuera algo que ya asignaste ni si toca un
-    periodo cerrado: cambiaría lo que ya quedó."""
+    """Cambiar el mes en que empezó. No se puede si deja fuera algo que ya asignaste."""
     with user_transaction(user_id) as conn:
-        current, lock = _user(conn)
-        if current is None:
+        if _user(conn) is None:
             raise AccountError(400, "Tu presupuesto todavía no empieza")
         if month > _today(conn).replace(day=1):
             raise AccountError(400, "Empieza en este mes o en uno que ya pasó")
-        if lock is not None and month_end(min(month, current)) <= lock:
-            raise AccountError(400, "Ese cambio toca un periodo cerrado")
         if conn.execute("SELECT EXISTS (SELECT 1 FROM account_budget_move WHERE month < %s)", (month,)).fetchone()[0]:
             raise AccountError(400, "Ya asignaste plata antes de ese mes: deshazlo primero")
         conn.execute("UPDATE res_users SET budget_start = %s WHERE id = current_user_id()", (month,))
@@ -378,7 +369,7 @@ def assign(user_id: int, month: dt.date, from_post_id: int | None, to_post_id: i
     if from_post_id == to_post_id:
         raise AccountError(400, "Elige de dónde sale y a dónde va")
     with user_transaction(user_id) as conn:
-        start_month, _lock = _user(conn)
+        start_month = _user(conn)
         if start_month is None:
             raise AccountError(400, "Tu presupuesto todavía no empieza")
         if to_post_id is not None and not _post(conn, to_post_id)[3]:
@@ -428,6 +419,51 @@ def moves(user_id: int, month: dt.date) -> list[BudgetMove]:
              WHERE month = %s ORDER BY id""", (month,))]
 
 
+def undo_month(user_id: int, month: dt.date) -> BudgetMonth:
+    """Deshacer todo lo asignado, movido y cubierto en un mes: esa plata vuelve a Por asignar. Los
+    movimientos no cambian; lo que se traiga al mes siguiente sí puede cambiar."""
+    with user_transaction(user_id) as conn:
+        if _user(conn) is None:
+            raise AccountError(400, "Tu presupuesto todavía no empieza")
+        conn.execute("DELETE FROM account_budget_move WHERE user_id = current_user_id() AND month = %s", (month,))
+        return _month_view(conn, month)
+
+
+def delete_post(user_id: int, post_id: int) -> None:
+    """Eliminar un sobre de ahorro que creaste. Lo que tenía vuelve a Por asignar: cada asignación
+    o movimiento suyo pasa a tener Por asignar de ese lado (las que eran solo entre él y Por asignar
+    se van). Las cuentas que salían de él pasan a Construir patrimonio (la llave las deja en NULL)."""
+    with user_transaction(user_id) as conn:
+        _pid, kind, name, _active = _post(conn, post_id)
+        role = conn.execute("SELECT system_role FROM account_budget_post WHERE id = %s", (post_id,)).fetchone()[0]
+        if kind != "saving":
+            raise AccountError(400, "Este sobre es un grupo de gasto: se elimina con su categoría")
+        if role is not None:
+            raise AccountError(400, f"{name} lo usa la app: no se elimina")
+        with conn.transaction():
+            conn.execute("""DELETE FROM account_budget_move
+                             WHERE (from_post_id = %(p)s AND to_post_id IS NULL)
+                                OR (to_post_id = %(p)s AND from_post_id IS NULL)""", {"p": post_id})
+            conn.execute("UPDATE account_budget_move SET from_post_id = NULL WHERE from_post_id = %s", (post_id,))
+            conn.execute("UPDATE account_budget_move SET to_post_id = NULL WHERE to_post_id = %s", (post_id,))
+            conn.execute("DELETE FROM account_budget_post WHERE id = %s", (post_id,))
+
+
+def reset(user_id: int) -> BudgetMonth:
+    """Borrar el presupuesto: lo asignado en todos los meses, los sobres de ahorro que creaste, qué
+    cuentas estaban dentro y el mes en que empezó. Los movimientos, cuentas y categorías no cambian;
+    los sobres de gasto y Construir patrimonio siguen ahí, vacíos, para cuando vuelvas a empezar."""
+    with user_transaction(user_id) as conn:
+        with conn.transaction():
+            # Con RLS ya solo se ven las filas tuyas; el filtro lo dice también aquí, por si acaso
+            conn.execute("DELETE FROM account_budget_move WHERE user_id = current_user_id()")
+            conn.execute("DELETE FROM account_budget_scope WHERE user_id = current_user_id()")
+            conn.execute("DELETE FROM account_budget_post WHERE user_id = current_user_id()"
+                         " AND kind = 'saving' AND system_role IS NULL")
+            conn.execute("UPDATE res_users SET budget_start = NULL WHERE id = current_user_id()")
+        return _month_view(conn, None)
+
+
 def post_lines(user_id: int, post_id: int, month: dt.date) -> list[BudgetLine]:
     """Los movimientos del mes que tocaron un sobre, del más nuevo al más viejo. Salen de la misma regla
     de la frontera que el disponible (budget_activity), así que suman lo mismo que «Gastaste»."""
@@ -474,7 +510,7 @@ def create_saving(user_id: int, name: str, icon: str, color: int) -> int:
     if not name:
         raise AccountError(400, "Ponle un nombre")
     with user_transaction(user_id) as conn:
-        if _user(conn)[0] is None:
+        if _user(conn) is None:
             raise AccountError(400, "Tu presupuesto todavía no empieza")
         return _insert_saving(conn, name, icon, color)
 

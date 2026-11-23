@@ -14,6 +14,7 @@ import { isNegative, isZero } from "@/lib/money";
 import { monthName, monthOnly, monthOptions } from "@/lib/months";
 
 import { AgeOfMoney, abs, addMonth, Heading, PostRow, useBudgetMonth, useMoney, withMonth } from "./common";
+import { ResetSheet, UndoMonthSheet } from "./Borrar";
 import { type AssignTarget, AssignSheet } from "./Sheets";
 
 export function Presupuesto() {
@@ -23,6 +24,7 @@ export function Presupuesto() {
   const [picking, setPicking] = useState(false);
   const [assigning, setAssigning] = useState<AssignTarget | null>(null);
   const [menu, setMenu] = useState(false);
+  const [erasing, setErasing] = useState<null | "month" | "all">(null);
   const path = useLocation().pathname;
   const desktop = useDesktop();
 
@@ -68,14 +70,10 @@ export function Presupuesto() {
                 {!isZero(b.future) && ` Ya asignaste ${money(b.future)} a los meses que vienen.`}
               </span>
             </Link>
-            {b.locked ? (
-              <span className="mt-2 flex items-center gap-1.5 text-caption text-muted-foreground"><Icon name="lock" className="text-[18px]" />Mes cerrado: ya no se asigna.</span>
-            ) : (
-              <button type="button" onClick={() => setAssigning({ from: null, to: null, fixed: "from" })}
-                className="mt-2 flex h-11 items-center justify-center gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground">
-                <Icon name="call_split" className="text-[20px]" />Asignar
-              </button>
-            )}
+            <button type="button" onClick={() => setAssigning({ from: null, to: null, fixed: "from" })}
+              className="mt-2 flex h-11 items-center justify-center gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground">
+              <Icon name="call_split" className="text-[20px]" />Asignar
+            </button>
           </section>
 
           {(!isZero(b.unclassified.available) || !isZero(b.unclassified.activity)) && (
@@ -113,8 +111,22 @@ export function Presupuesto() {
             <span className="flex flex-1 flex-col"><span className="font-semibold">Cuentas del presupuesto</span>
               <span className="text-caption text-muted-foreground">Cuáles se reparten en sobres y cuáles quedan fuera</span></span>
           </Link>
+          {!before && (
+            <button type="button" onClick={() => { setMenu(false); setErasing("month"); }} className="flex min-h-14 items-center gap-3 border-b border-border text-left">
+              <Icon name="undo" className="text-[22px]" />
+              <span className="flex flex-1 flex-col"><span className="font-semibold">Deshacer lo asignado en {monthOnly(month).toLowerCase()}</span>
+                <span className="text-caption text-muted-foreground">Todo lo que repartiste este mes vuelve a Por asignar</span></span>
+            </button>
+          )}
+          <button type="button" onClick={() => { setMenu(false); setErasing("all"); }} className="flex min-h-14 items-center gap-3 text-left text-destructive">
+            <Icon name="delete" className="text-[22px]" />
+            <span className="flex flex-1 flex-col"><span className="font-semibold">Borrar el presupuesto</span>
+              <span className="text-caption text-muted-foreground">Empezar de cero. Tus movimientos no cambian</span></span>
+          </button>
         </div>
       </Sheet>
+      <UndoMonthSheet month={month} open={erasing === "month"} onClose={() => setErasing(null)} />
+      <ResetSheet open={erasing === "all"} onClose={() => setErasing(null)} />
     </main>
   );
 }

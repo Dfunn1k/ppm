@@ -63,7 +63,6 @@ class BudgetMonthOut(BaseModel):
     started: bool
     start: dt.date | None
     month: dt.date
-    locked: bool                     # mes cerrado: no se asigna
     to_assign: Decimal               # Por asignar
     future: Decimal                  # ya asignado a meses que vienen
     plata: PlataOut
@@ -187,6 +186,14 @@ def assign(body: AssignIn, session: CurrentSession = Depends(current_session)) -
         raise _http(e) from None
 
 
+@router.delete("/budget/moves", summary="Deshacer todo lo asignado en un mes")
+def undo_month(month: Annotated[Month, Query()], session: CurrentSession = Depends(current_session)) -> BudgetMonthOut:
+    try:
+        return _out(budget.undo_month(session.user_id, budget.parse_month(month)))
+    except AccountError as e:
+        raise _http(e) from None
+
+
 @router.delete("/budget/moves/{move_id}", summary="Deshacer una asignación")
 def undo(move_id: int, session: CurrentSession = Depends(current_session)) -> BudgetMonthOut:
     try:
@@ -220,6 +227,21 @@ def update_post(post_id: int, body: PostPatch, session: CurrentSession = Depends
     except AccountError as e:
         raise _http(e) from None
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/budget/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT,
+               summary="Eliminar un sobre de ahorro: lo guardado vuelve a Por asignar")
+def delete_post(post_id: int, session: CurrentSession = Depends(current_session)) -> Response:
+    try:
+        budget.delete_post(session.user_id, post_id)
+    except AccountError as e:
+        raise _http(e) from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/budget", summary="Borrar el presupuesto y volver a empezar")
+def reset(session: CurrentSession = Depends(current_session)) -> BudgetMonthOut:
+    return _out(budget.reset(session.user_id))
 
 
 @router.get("/budget/accounts", summary="Qué cuentas de dinero están dentro del presupuesto")
