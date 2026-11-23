@@ -256,3 +256,27 @@ test("presupuesto en escritorio: en el riel, la lista a la izquierda y lo elegid
   await riel.getByRole("link", { name: "Más" }).click();
   await expect(page.getByRole("link", { name: /Presupuesto Tus sobres/ })).toBeVisible();
 });
+
+test("con poco alto el + no se encoge y lo que no cabe en el riel pasa a Más", async ({ page }) => {
+  await readyUser(page);
+  const riel = page.getByRole("navigation", { name: "Navegación principal" });
+  const plus = riel.getByRole("link", { name: "Registrar un movimiento" });
+  // 640 px: no caben Reportes, Presupuesto ni Pendientes; se van a Más en ese orden
+  await page.setViewportSize({ width: 1440, height: 640 });
+  for (const name of ["Reportes", "Presupuesto", "Pendientes"]) await expect(riel.getByRole("link", { name, exact: true })).toHaveCount(0);
+  await expect(riel.getByRole("link", { name: "Personas" })).toBeVisible();
+  const box = await plus.boundingBox();
+  expect(box && [Math.round(box.width), Math.round(box.height)]).toEqual([52, 52]);
+  await riel.getByRole("link", { name: "Más" }).click();
+  await expect(page.getByRole("link", { name: /^Pendientes/ })).toBeVisible();
+  await page.getByRole("link", { name: /^Reportes/ }).click();
+  await expect(riel.getByRole("link", { name: "Más" })).toHaveAttribute("aria-current", "page");
+  // 724 px: vuelve Pendientes
+  await page.setViewportSize({ width: 1440, height: 724 });
+  await expect(riel.getByRole("link", { name: "Pendientes" })).toBeVisible();
+  await expect(riel.getByRole("link", { name: "Presupuesto" })).toHaveCount(0);
+  // 900 px: todo en el riel otra vez
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(riel.getByRole("link", { name: "Reportes" })).toBeVisible();
+  await expect(riel.getByRole("link", { name: "Presupuesto" })).toBeVisible();
+});
