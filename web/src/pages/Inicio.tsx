@@ -109,7 +109,7 @@ export function Inicio() {
           <span className="text-label text-muted-foreground">Para mayo</span>
           <span className="text-caption text-muted-foreground tabular-nums">{h.saved_percent === null ? "" : `${hidden ? "••" : percent} % de lo que entró`}</span>
         </div>
-        <div role="img" aria-label={hidden ? "Barra de ahorro del mes" : negative || percent === 0 ? "Este mes no hubo ahorro" : `Guardaste el ${percent} % de lo que entró`}
+        <div role="img" aria-label={hidden ? "Barra de lo que te quedó en el mes" : negative || percent === 0 ? "Este mes no creció tu patrimonio" : `Te quedó el ${percent} % de lo que entró`}
           className="h-3.5 overflow-hidden rounded-full bg-muted">
           <div className="h-3.5 rounded-full bg-trigo" style={{ width: `${Math.min(percent, 100)}%` }} />
         </div>
@@ -118,7 +118,7 @@ export function Inicio() {
             ? `Este mes salió ${money(h.saved.replace("-", ""))} más de lo que entró.`
             : isZero(h.income_total) && isZero(h.expense_total)
               ? "Todavía no hay movimientos este mes."
-              : `Guardaste ${money(h.saved)} este mes.`}
+              : `Tu patrimonio creció ${money(h.saved)} este mes.`}
         </span>
         <div className="grid grid-cols-2 gap-3 border-t border-border pt-2.5 tabular-nums">
           <span className="flex flex-col">

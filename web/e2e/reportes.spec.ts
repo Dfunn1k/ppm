@@ -39,7 +39,7 @@ test("los reportes: índice, gastos por grupo, flujo, patrimonio y personas", as
   await page.getByRole("link", { name: /Reportes/ }).click();
   await expect(page).toHaveURL("/mas/reportes");
   await expect(page.getByRole("link", { name: /Gastos/ })).toContainText("S/ 400.00");
-  await expect(page.getByRole("link", { name: /Flujo/ })).toContainText("Guardaste 60 %");
+  await expect(page.getByRole("link", { name: /Flujo/ })).toContainText("Te quedó 60 %");
   await expect(page.getByRole("link", { name: /Personas/ })).toContainText("Te deben S/ 50.00");
 
   await page.getByRole("link", { name: /Gastos/ }).click();
