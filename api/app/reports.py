@@ -6,6 +6,10 @@ tarjeta no tocan categorías, así que no aparecen; lo que está en Por clasific
 cuánto es). Un reembolso abona la categoría del gasto: resta, y se informa como «reembolsado». Una
 cuota cuenta en el mes en que se factura, porque ahí nace su gasto.
 
+Flujo trae además «Tu plata» (el puente de caja): con cuánto empezaste en efectivo y bancos, lo que entró
+y salió según la otra cuenta del asiento (pagar la tarjeta, un préstamo, prestar…) y con cuánto
+terminaste; y por qué eso no es lo mismo que lo que creció tu patrimonio.
+
 Periodo: 'AAAA-MM' (un mes) o 'AAAA' (un año). Se compara con el periodo anterior: el mes anterior
 completo, o el año anterior en el mismo tramo (enero a hoy, si el año está en curso)."""
 
@@ -181,7 +185,7 @@ def categories(user_id: int, kind: str, period: str) -> CategoryReport:
 
 @dataclass(frozen=True)
 class FlowNode:
-    id: int | None               # None: «Guardaste» o «De tus ahorros»
+    id: int | None               # None: «Patrimonio» o «De tu patrimonio»
     name: str
     icon: str | None
     color: int | None
@@ -197,14 +201,210 @@ class SavingMonth:
 
 
 @dataclass(frozen=True)
+class CashLine:
+    kind: str                    # con qué cuenta se movió tu plata: 'income', 'expense', 'card', 'loan', 'receivable',
+                                 # 'payable', 'custody', 'prepaid', 'unearned', 'suspense', 'opening', 'other' o 'fx'
+    direction: str               # 'in' (entró a tu plata) u 'out' (salió); ingresos y gastos van netos
+    amount: Decimal              # con signo: + entró, − salió
+    other: Decimal | None = None   # en 'expense': lo gastado que no salió de tu plata (con tarjeta, cuotas…)
+
+
+@dataclass(frozen=True)
+class DiffDetail:
+    name: str                    # la tarjeta, el préstamo o la persona
+    amount: Decimal              # con signo, como su fila
+
+
+@dataclass(frozen=True)
+class CashDiff:
+    kind: str                    # los mismos de CashLine; 'fx' es lo que subió o bajó lo que tienes en otra moneda
+    amount: Decimal              # + creció tu patrimonio sin estar en tus cuentas (debes menos, te deben más…)
+    paid: Decimal | None = None  # tarjetas: lo que pagaste; personas: lo que te pagaron
+    other: Decimal | None = None   # tarjetas: lo que compraste; personas: lo que prestaste
+    details: list[DiffDetail] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class CashBridge:
+    """Tu plata (efectivo y bancos) de principio a fin del periodo: el puente de caja."""
+    start_date: dt.date          # el día antes de empezar
+    end_date: dt.date            # el último día del periodo, u hoy si el periodo sigue
+    start: Decimal               # lo que tenías, al tipo de ese día (como el Inicio)
+    end: Decimal
+    lines: list[CashLine]        # lo que entró y salió; start + Σ lines = end
+    patrimony: Decimal           # lo que creció tu patrimonio en el mismo tramo
+    diffs: list[CashDiff]        # (end − start) + Σ diffs = patrimony
+
+
+@dataclass(frozen=True)
 class FlowReport:
     period: str
     income: Decimal
     expense: Decimal
-    saved: Decimal               # puede ser negativo: salió más de lo que entró
-    sources: list[FlowNode]      # lo que entró, por categoría (y «De tus ahorros» si salió más)
-    uses: list[FlowNode]         # a dónde fue, por grupo de gasto (y «Guardaste» si sobró)
+    saved: Decimal               # lo que creció tu patrimonio; puede ser negativo: gastaste más de lo que entró
+    sources: list[FlowNode]      # lo que entró, por categoría (y «De tu patrimonio» si gastaste más)
+    uses: list[FlowNode]         # a dónde fue, por grupo de gasto (y «Patrimonio» si sobró)
     savings: list[SavingMonth]   # 12 meses: los del año, o los que terminan en el mes elegido
+    cash: CashBridge
+
+
+# Tu plata: efectivo y bancos (las cuentas de dinero que tienes; no tarjetas, préstamos ni las del sistema)
+_PLATA = "(a.account_type = 'asset' AND a.system_role IS NULL)"
+# Con qué se movió: el tipo de la otra cuenta del asiento. «Cuotas por venir» va con la tarjeta: es la parte
+# de su deuda que todavía no se factura
+_KIND = """CASE WHEN a.account_type IN ('income', 'expense') THEN a.account_type
+                WHEN a.account_type = 'equity' THEN 'opening'
+                WHEN a.system_role = 'installments'
+                  OR EXISTS (SELECT 1 FROM account_credit_card k WHERE k.account_id = a.id) THEN 'card'
+                WHEN EXISTS (SELECT 1 FROM account_loan k WHERE k.account_id = a.id) THEN 'loan'
+                WHEN a.system_role IN ('receivable', 'payable', 'custody', 'prepaid', 'unearned', 'suspense')
+                  THEN a.system_role
+                ELSE 'other' END"""
+_CASH_ORDER = ["income", "expense", "card", "loan", "receivable", "payable", "custody", "prepaid", "unearned",
+               "suspense", "opening", "other", "fx"]
+_BY_PARTNER = ("receivable", "payable", "custody")
+
+
+def _plata_value(conn: psycopg.Connection, day: dt.date) -> tuple[Decimal, Decimal]:
+    """Lo que tenías en tu plata al cierre de `day`: al tipo de compra de ese día, cuenta por cuenta como el
+    Inicio, y lo que te costó (en libros)."""
+    return conn.execute(f"""
+        SELECT coalesce(sum(CASE WHEN b.currency_id = u.currency_id THEN b.bal
+                                 ELSE coalesce(round(b.amt * r.rate_buy, 2), b.bal) END), 0),
+               coalesce(sum(b.bal), 0)
+          FROM (SELECT l.account_id, l.currency_id, sum(l.amount_currency) AS amt, sum(l.balance) AS bal
+                  FROM account_move_line l
+                  JOIN account_move m ON m.id = l.move_id AND m.state = 'posted' AND m.date <= %(d)s
+                  JOIN account_account a ON a.id = l.account_id AND {_PLATA}
+                 GROUP BY 1, 2) b
+          CROSS JOIN res_users u
+          LEFT JOIN LATERAL (SELECT rate_buy FROM res_currency_rate
+                              WHERE currency_id = b.currency_id AND name <= %(d)s
+                              ORDER BY name DESC LIMIT 1) r ON true""", {"d": day}).fetchone()
+
+
+def _cash_window(conn: psycopg.Connection, p: Period) -> tuple[dt.date, dt.date]:
+    today = conn.execute("SELECT user_today()").fetchone()[0]
+    return p.start, min(p.end - dt.timedelta(days=1), today)
+
+
+def cash_bridge(conn: psycopg.Connection, p: Period) -> CashBridge:
+    s, e = _cash_window(conn, p)
+    w = {"s": s, "e": e}
+    start, start_book = _plata_value(conn, s - dt.timedelta(days=1))
+    end, end_book = _plata_value(conn, e)
+    # Cada apunte de otra cuenta en un asiento que mueve tu plata: lo que esa cuenta se llevó (o trajo).
+    # Una transferencia entre tus cuentas no tiene otra cuenta: no aparece
+    moved = conn.execute(f"""
+        WITH w AS (SELECT m.id FROM account_move m
+                    WHERE m.state = 'posted' AND m.date >= %(s)s AND m.date <= %(e)s
+                      AND EXISTS (SELECT 1 FROM account_move_line l JOIN account_account a ON a.id = l.account_id
+                                   WHERE l.move_id = m.id AND {_PLATA}))
+        SELECT {_KIND}, coalesce(sum(-l.balance) FILTER (WHERE l.balance < 0), 0),
+               coalesce(sum(-l.balance) FILTER (WHERE l.balance > 0), 0)
+          FROM account_move_line l JOIN w ON w.id = l.move_id
+          JOIN account_account a ON a.id = l.account_id
+         WHERE NOT {_PLATA}
+         GROUP BY 1""", w).fetchall()
+    # Lo que cambió en todo lo demás que tienes o debes: une lo que subió tu plata con tu patrimonio
+    changed = conn.execute(f"""
+        SELECT {_KIND}, coalesce(pa.name, a.name), sum(l.balance)
+          FROM account_move_line l
+          JOIN account_move m ON m.id = l.move_id AND m.state = 'posted' AND m.date >= %(s)s AND m.date <= %(e)s
+          JOIN account_account a ON a.id = l.account_id AND a.account_type IN ('asset', 'liability', 'equity')
+          LEFT JOIN res_partner pa ON pa.id = l.partner_id AND a.system_role IN {_BY_PARTNER}
+         WHERE NOT {_PLATA}
+         GROUP BY 1, 2""", w).fetchall()
+    patrimony = conn.execute("""
+        SELECT coalesce(-sum(l.balance), 0) FROM account_move_line l
+          JOIN account_move m ON m.id = l.move_id AND m.state = 'posted' AND m.date >= %(s)s AND m.date <= %(e)s
+          JOIN account_account a ON a.id = l.account_id AND a.account_type IN ('income', 'expense')""", w).fetchone()[0]
+    expense = conn.execute("""
+        SELECT coalesce(sum(l.balance), 0) FROM account_move_line l
+          JOIN account_move m ON m.id = l.move_id AND m.state = 'posted' AND m.date >= %(s)s AND m.date <= %(e)s
+          JOIN account_account a ON a.id = l.account_id AND a.account_type = 'expense'""", w).fetchone()[0]
+
+    cent = Decimal("0.01")         # un coalesce(…, 0) sin filas trae «0»: todo sale con sus dos decimales
+    start, end, start_book, end_book, patrimony, expense = (
+        Decimal(v).quantize(cent) for v in (start, end, start_book, end_book, patrimony, expense))
+    flows = {k: (i, o) for k, i, o in moved}
+    lines: list[CashLine] = []
+    for k in _CASH_ORDER[:-1]:
+        i, o = flows.get(k, (ZERO, ZERO))
+        if k == "income" and i + o:
+            lines.append(CashLine(k, "in" if i + o > 0 else "out", i + o))
+        elif k == "expense" and i + o:
+            lines.append(CashLine(k, "out" if i + o < 0 else "in", i + o, other=expense + (i + o) or None))
+        elif k not in ("income", "expense"):
+            lines += [CashLine(k, d, v) for d, v in (("in", i), ("out", o)) if v]
+    fx = (end - start) - (end_book - start_book)
+    if fx:
+        lines.append(CashLine("fx", "in" if fx > 0 else "out", fx))
+
+    by_kind: dict[str, list[DiffDetail]] = defaultdict(list)
+    for k, name, v in changed:
+        if v:
+            by_kind[k].append(DiffDetail(name, v))
+    diffs = []
+    for k in _CASH_ORDER[:-1]:
+        details = sorted(by_kind.get(k, []), key=lambda d: (-abs(d.amount), d.name))
+        total = sum((d.amount for d in details), ZERO)
+        if not total:
+            continue
+        paid = other = None
+        i, o = flows.get(k, (ZERO, ZERO))
+        if k == "card" and o:                 # pagaste −o; compraste lo que la deuda subió además
+            paid, other = -o, -o - total
+        elif k == "receivable" and (i or o):  # te pagaron i; prestaste −o
+            paid, other = i, -o
+        if other is not None and (other < 0 or (paid or ZERO) < 0):
+            paid = other = None
+        diffs.append(CashDiff(k, total, paid, other, details if len(details) > 1 or k in ("card", "loan", *_BY_PARTNER) else []))
+    if fx:
+        diffs.append(CashDiff("fx", -fx))
+    return CashBridge(s - dt.timedelta(days=1), e, start, end, lines, patrimony, diffs)
+
+
+@dataclass(frozen=True)
+class CashMove:
+    move_id: int | None          # None: la suma de un mes (en un año)
+    date: dt.date                # el día del movimiento, o el primero del mes
+    ref: str                     # la glosa, o el mes
+    accounts: str | None         # de qué cuentas tuyas salió o a cuáles entró
+    amount: Decimal              # con signo, como la línea
+    count: int = 1               # en un mes: cuántos movimientos
+
+
+def cash_moves(user_id: int, period: str, kind: str, direction: str) -> list[CashMove]:
+    """Los movimientos de una línea de Tu plata (en un año, mes por mes)."""
+    if kind not in _CASH_ORDER[:-1] or direction not in ("in", "out"):
+        raise AccountError(400, "Esa línea no existe")
+    side = "" if kind in ("income", "expense") else ("AND l.balance < 0" if direction == "in" else "AND l.balance > 0")
+    with user_transaction(user_id) as conn:
+        p = _period(conn, period)
+        s, e = _cash_window(conn, p)
+        rows = conn.execute(f"""
+            WITH w AS (SELECT m.id, m.date, m.ref,
+                              (SELECT string_agg(DISTINCT a.name, ', ') FROM account_move_line l
+                                 JOIN account_account a ON a.id = l.account_id
+                                WHERE l.move_id = m.id AND {_PLATA}) AS plata
+                         FROM account_move m
+                        WHERE m.state = 'posted' AND m.date >= %(s)s AND m.date <= %(e)s)
+            SELECT w.id, w.date, w.ref, w.plata, sum(-l.balance)
+              FROM w JOIN account_move_line l ON l.move_id = w.id
+              JOIN account_account a ON a.id = l.account_id
+             WHERE w.plata IS NOT NULL AND NOT {_PLATA} AND {_KIND} = %(k)s {side}
+             GROUP BY 1, 2, 3, 4
+            HAVING sum(-l.balance) <> 0
+             ORDER BY 2 DESC, 1 DESC""", {"s": s, "e": e, "k": kind}).fetchall()
+    moves = [CashMove(*r) for r in rows]
+    if not p.year:
+        return moves
+    months: dict[dt.date, list[CashMove]] = defaultdict(list)
+    for m in moves:
+        months[m.date.replace(day=1)].append(m)
+    return [CashMove(None, d, d.strftime("%Y-%m"), None, sum((m.amount for m in ms), ZERO), len(ms))
+            for d, ms in sorted(months.items())]
 
 
 def flow(user_id: int, period: str) -> FlowReport:
@@ -215,11 +415,12 @@ def flow(user_id: int, period: str) -> FlowReport:
     uses = [node(g) for g in exp.groups if g.amount > 0]
     saved = inc.total - exp.total
     if saved > 0:
-        uses.append(FlowNode(None, "Guardaste", None, None, saved))
+        uses.append(FlowNode(None, "Patrimonio", None, None, saved))
     elif saved < 0:
-        sources.append(FlowNode(None, "De tus ahorros", None, None, -saved))
+        sources.append(FlowNode(None, "De tu patrimonio", None, None, -saved))
     with user_transaction(user_id) as conn:
         p = _period(conn, period)
+        cash = cash_bridge(conn, p)
         first = p.start if p.year else _add_months(p.start, -11)
         last = _add_months(first, 12)
         rows = {r[0]: (r[1], r[2]) for r in conn.execute("""
@@ -236,7 +437,7 @@ def flow(user_id: int, period: str) -> FlowReport:
         key = _add_months(first, i).strftime("%Y-%m")
         i_, e_ = rows.get(key, (ZERO, ZERO))
         savings.append(SavingMonth(key, i_, e_, round((i_ - e_) * 100 / i_) if i_ > 0 else None))
-    return FlowReport(period, inc.total, exp.total, saved, sources, uses, savings)
+    return FlowReport(period, inc.total, exp.total, saved, sources, uses, savings, cash)
 
 
 # --- Patrimonio -----------------------------------------------------------------------------------

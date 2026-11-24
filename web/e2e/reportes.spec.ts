@@ -73,6 +73,22 @@ test("los reportes: índice, gastos por grupo, flujo, patrimonio y personas", as
   await page.goto("/mas/reportes/flujo");
   await expect(page.getByRole("img", { name: /Entró S\/ 1,000.00/ })).toBeVisible();
   await expect(page.getByText("S/ 600.00").first()).toBeVisible();
+  // Tu plata: con cuánto empezaste, lo que entró y salió de tus cuentas y por qué no es tu patrimonio
+  const plata = page.getByRole("region", { name: "Tu plata" });
+  await expect(plata).toContainText("Ingresos que entraron");
+  await expect(plata).toContainText("Le prestaste a alguien");
+  await expect(plata).toContainText("S/ 2,050.00");                // 1,500 de antes de PPM + 1,000 − 400 − 50
+  await plata.getByRole("button", { name: /Gastos pagados con tu plata/ }).click();
+  const hoja = page.getByRole("dialog", { name: "Gastos pagados con tu plata" });
+  await expect(hoja).toContainText("2 movimientos");
+  await expect(hoja).toContainText("S/ 400.00");
+  await page.keyboard.press("Escape");
+  await expect(hoja).toBeHidden();
+  const porque = page.getByRole("region", { name: "Por qué no subió lo mismo" });
+  await expect(porque).toContainText("Creció tu patrimonio");
+  await porque.getByRole("button", { name: /Te deben más/ }).click();
+  await expect(porque).toContainText("Luis Pérez");
+  await expect(porque).toContainText("Te debe S/ 50.00 más");
 
   await page.goto("/mas/reportes/patrimonio");
   await expect(page.getByRole("region", { name: "Cómo está repartido hoy" })).toContainText("Me deben");

@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 
 from tests.test_movimientos_api import HOY, MES, Ana, borrar_usuarios_de_prueba  # noqa: F401
+from tests.test_tarjetas_api import Con
 
 ANTES = HOY.replace(day=1) - timedelta(days=1)          # el mes anterior
 MES_ANTES = ANTES.strftime("%Y-%m")
@@ -15,6 +16,11 @@ MES_ANTES = ANTES.strftime("%Y-%m")
 @pytest.fixture
 def ana() -> Ana:
     return Ana()
+
+
+@pytest.fixture
+def con() -> Con:
+    return Con()
 
 
 def gasto(ana: Ana, cat: str, amount: str, when=HOY, account=None, ref=None) -> dict:
@@ -87,17 +93,17 @@ def test_ingresos_y_flujo_con_lo_guardado(ana: Ana):
     assert (f["income"], f["expense"], f["saved"]) == ("1000.00", "400.00", "600.00")
     assert [(n["name"], n["amount"]) for n in f["sources"]] == [("Salario y facturas", "1000.00")]
     assert [(n["name"], n["amount"]) for n in f["uses"]] == [
-        ("Comida y bebida", "300.00"), ("Transporte", "100.00"), ("Guardaste", "600.00")]
+        ("Comida y bebida", "300.00"), ("Transporte", "100.00"), ("Patrimonio", "600.00")]
     assert len(f["savings"]) == 12 and f["savings"][-1] == {"month": MES, "income": "1000.00", "expense": "400.00", "percent": 60}
 
 
-def test_si_sale_mas_de_lo_que_entra_viene_de_tus_ahorros(ana: Ana):
+def test_si_gastas_mas_de_lo_que_entra_viene_de_tu_patrimonio(ana: Ana):
     ingreso(ana, "100.00")
     gasto(ana, "Taxi y apps", "150.00")
     f = reporte(ana, "flow", period=MES)
     assert f["saved"] == "-50.00"
-    assert ("De tus ahorros", "50.00") in [(n["name"], n["amount"]) for n in f["sources"]]
-    assert "Guardaste" not in [n["name"] for n in f["uses"]]
+    assert ("De tu patrimonio", "50.00") in [(n["name"], n["amount"]) for n in f["sources"]]
+    assert "Patrimonio" not in [n["name"] for n in f["uses"]]
 
 
 def test_patrimonio_hoy_como_el_inicio_y_sus_dolares(ana: Ana):
@@ -137,3 +143,70 @@ def test_el_indice_trae_una_cifra_de_cada_reporte(ana: Ana):
 
 def test_un_periodo_que_no_existe(ana: Ana):
     assert ana.c.get("/reports/expenses", params={"period": "octubre"}).status_code == 422
+
+
+# --- Tu plata (el puente de caja de Flujo) --------------------------------------------------------
+
+def _plata(ana: Con) -> tuple[int, str]:
+    """Una tarjeta, un sueldo, un gasto en efectivo y otro con tarjeta, pagar la tarjeta, prestar y que
+    te devuelvan una parte, y pasar plata entre tus cuentas. Devuelve la tarjeta y a la persona."""
+    card = ana.card()["account"]["id"]
+    luis = ana.c.post("/partners", json={"name": "Luis Pérez"}).json()["id"]
+    ingreso(ana, "1000.00")
+    gasto(ana, "Supermercado y mercado", "300.00")
+    ana.buy(card, "200.00", HOY.isoformat())
+    ana.register(kind="transfer", account_id=ana.bcp, to_account_id=card, amount="150.00", date=HOY.isoformat())
+    ana.register(kind="lend", account_id=ana.bcp, amount="100.00", partner_id=luis, date=HOY.isoformat())
+    ana.register(kind="collect", account_id=ana.efectivo, amount="40.00", partner_id=luis, date=HOY.isoformat())
+    ana.register(kind="transfer", account_id=ana.bcp, to_account_id=ana.efectivo, amount="50.00", date=HOY.isoformat())
+    return card, "Luis Pérez"
+
+
+def test_tu_plata_de_principio_a_fin_y_por_que_no_es_tu_patrimonio(con: Con):
+    _plata(con)
+    f = reporte(con, "flow", period=MES)
+    c = f["cash"]
+    lines = {(x["kind"], x["direction"]): x for x in c["lines"]}
+    assert lines[("income", "in")]["amount"] == "1000.00"
+    assert (lines[("expense", "out")]["amount"], lines[("expense", "out")]["other"]) == ("-300.00", "200.00")
+    assert lines[("card", "out")]["amount"] == "-150.00"
+    assert (lines[("receivable", "out")]["amount"], lines[("receivable", "in")]["amount"]) == ("-100.00", "40.00")
+    assert not any(k == "other" for k, _ in lines)                  # pasar entre tus cuentas no aparece
+    # El puente cuadra: lo que tenías más lo que entró y salió es lo que tienes (fx: lo que movió el dólar)
+    assert Decimal(c["start"]) + sum(Decimal(x["amount"]) for x in c["lines"]) == Decimal(c["end"])
+    assert c["end_date"] == HOY.isoformat()
+    # «Hoy tienes» es lo que suman hoy tus cuentas de efectivo y bancos en Cuentas, al tipo de hoy
+    have = con.c.get("/accounts").json()["have"]
+    assert Decimal(c["end"]) == sum(Decimal(a["base_total"]) for a in have if a["kind"] in ("cash", "bank"))
+    assert (c["patrimony"], f["saved"]) == ("500.00", "500.00")
+    # Y lo que creció tu patrimonio es lo que subió tu plata más lo que no está en tus cuentas
+    assert Decimal(c["end"]) - Decimal(c["start"]) + sum(Decimal(d["amount"]) for d in c["diffs"]) == Decimal(c["patrimony"])
+    diffs = {d["kind"]: d for d in c["diffs"]}
+    tarjeta, personas = diffs["card"], diffs["receivable"]
+    assert (tarjeta["amount"], tarjeta["paid"], tarjeta["other"]) == ("-50.00", "150.00", "200.00")   # debes S/ 50 más
+    assert [(d["name"], d["amount"]) for d in tarjeta["details"]] == [("Visa BBVA", "-50.00")]
+    assert (personas["amount"], personas["paid"], personas["other"]) == ("60.00", "40.00", "100.00")  # te debe S/ 60 más
+    assert [(d["name"], d["amount"]) for d in personas["details"]] == [("Luis Pérez", "60.00")]
+
+
+def test_los_movimientos_de_una_linea_de_tu_plata(con: Con):
+    _plata(con)
+    [pago] = reporte(con, "flow/moves", period=MES, kind="card", direction="out")
+    assert (pago["amount"], pago["accounts"], pago["date"], pago["count"]) == ("-150.00", "BCP", HOY.isoformat(), 1)
+    assert pago["move_id"] is not None
+    [mes] = reporte(con, "flow/moves", period=str(HOY.year), kind="receivable", direction="out")
+    assert (mes["move_id"], mes["ref"], mes["amount"], mes["count"]) == (None, MES, "-100.00", 1)
+    r = con.c.get("/reports/flow/moves", params={"period": MES, "kind": "nada", "direction": "in"})
+    assert r.status_code == 400
+
+
+def test_pagar_solo_la_tarjeta_baja_tu_plata_pero_no_tu_patrimonio(con: Con):
+    card = con.card()["account"]["id"]
+    con.buy(card, "80.00", ANTES.isoformat())                     # la compra fue el mes pasado
+    con.register(kind="transfer", account_id=con.bcp, to_account_id=card, amount="80.00", date=HOY.isoformat())
+    c = reporte(con, "flow", period=MES)["cash"]
+    assert c["patrimony"] == "0.00"
+    assert [(x["kind"], x["amount"]) for x in c["lines"] if x["kind"] != "fx"] == [("card", "-80.00")]
+    [tarjeta] = [d for d in c["diffs"] if d["kind"] != "fx"]
+    assert (tarjeta["kind"], tarjeta["amount"], tarjeta["paid"], tarjeta["other"]) == ("card", "80.00", "80.00", "0.00")
+    assert Decimal(c["end"]) - Decimal(c["start"]) + sum(Decimal(d["amount"]) for d in c["diffs"]) == Decimal(c["patrimony"])

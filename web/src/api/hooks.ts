@@ -1545,6 +1545,24 @@ export function useFlowReport(period: string) {
   });
 }
 
+export type CashLine = FlowReport["cash"]["lines"][number];
+export type CashMove = components["schemas"]["CashMoveOut"];
+
+/** Los movimientos de una línea de «Tu plata» (en un año, mes por mes); se piden al abrir su hoja. */
+export function useFlowMoves(period: string, line: Pick<CashLine, "kind" | "direction"> | null) {
+  return useQuery({
+    queryKey: [...REPORTS, "flow", period, "moves", line?.kind, line?.direction],
+    enabled: line !== null && line.kind !== "fx",
+    queryFn: async () => {
+      const { data, error, response } = await api.GET("/reports/flow/moves", {
+        params: { query: { period, kind: line!.kind, direction: line!.direction } },
+      });
+      if (!data) fail(response, error);
+      return data;
+    },
+  });
+}
+
 export function useNetWorthReport() {
   return useQuery({
     queryKey: [...REPORTS, "net-worth"],
