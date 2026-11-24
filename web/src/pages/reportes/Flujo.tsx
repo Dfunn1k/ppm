@@ -1,16 +1,19 @@
-// X2 · Flujo: de dónde entró la plata (ingresos) y a dónde fue (grupos de gasto) más lo que guardaste,
-// en un Sankey (por esto se eligió Recharts); tocar un destino resalta su plata. Debajo, el % guardado
-// de 12 meses: la barra trigo del Inicio, mes por mes. Si salió más de lo que entró, la diferencia
-// viene «De tus ahorros».
+// X2 · Flujo: de dónde entró la plata (ingresos) y a dónde fue (grupos de gasto) más lo que creció tu
+// patrimonio, en un Sankey (por esto se eligió Recharts); tocar un destino resalta su plata. Si gastaste
+// más de lo que entró, la diferencia viene «De tu patrimonio». Debajo, «Tu plata» (el puente de caja:
+// efectivo y bancos de principio a fin, y por qué no subió lo mismo que tu patrimonio) y el % de 12
+// meses: la barra trigo del Inicio, mes por mes.
 import { useState } from "react";
 import { CartesianGrid, Layer, Line, LineChart, Rectangle, ResponsiveContainer, Sankey, Tooltip, XAxis, YAxis } from "recharts";
 
 import { type FlowReport, useFlowReport } from "@/api/hooks";
-import { ErrorAlert } from "@/components/ui";
+import { ErrorAlert, Icon } from "@/components/ui";
 import { monthName } from "@/lib/months";
 
 import { ChartTip, MONTH_SHORT, PeriodBar, ReportHeader, catColor, useMoney, usePeriod } from "./common";
 import { ReportBones } from "@/components/Skeleton";
+import { todayISO } from "@/lib/dates";
+import { TuPlata } from "./TuPlata";
 import { EmptyState } from "@/components/EmptyState";
 
 type Node = FlowReport["uses"][number] & { side: "in" | "out"; fill: string };
@@ -21,7 +24,7 @@ function short(name: string) {
 }
 
 function fillOf(n: FlowReport["uses"][number], side: "in" | "out") {
-  if (n.id === null) return n.name === "Guardaste" ? "var(--trigo)" : "var(--muted-foreground)";
+  if (n.id === null) return n.name === "Patrimonio" ? "var(--trigo)" : "var(--muted-foreground)";
   return side === "in" ? catColor(10) : catColor(n.color);
 }
 
@@ -45,6 +48,7 @@ export function ReporteFlujo() {
   }))).filter((l) => l.value > 0);
   const savings = r.savings.map((m) => ({ ...m, label: MONTH_SHORT[Number(m.month.slice(5, 7)) - 1], pct: m.percent }));
   const negative = Number(r.saved) < 0;
+  const plata = Number(r.cash.end) - Number(r.cash.start);
 
   if (links.length === 0) {
     return (
@@ -52,8 +56,10 @@ export function ReporteFlujo() {
         <ReportHeader title="Flujo" />
         <PeriodBar p={p} />
         <EmptyState icon="water" title="Todavía no hay flujo">
-          Cuando entre y salga plata en este periodo, aquí ves de dónde vino, a dónde fue y cuánto guardaste.
+          Cuando entre y salga plata en este periodo, aquí ves de dónde vino, a dónde fue y cuánto creció tu patrimonio.
         </EmptyState>
+        {/* Sin ingresos ni gastos igual pudo moverse tu plata (pagar la tarjeta, prestar…) */}
+        {r.cash.lines.length > 0 && <TuPlata cash={r.cash} period={p.period} year={p.year} today={todayISO()} />}
       </main>
     );
   }
@@ -63,14 +69,22 @@ export function ReporteFlujo() {
       <ReportHeader title="Flujo" />
       <PeriodBar p={p} />
 
-      <span className="text-caption text-muted-foreground">{negative ? "Salió más de lo que entró" : "Guardaste"}</span>
+      <span className="text-caption text-muted-foreground">{negative ? "Bajó tu patrimonio" : "Creció tu patrimonio"}</span>
       <span className="font-display text-[34px] leading-[38px] font-extrabold tracking-[-0.02em] tabular-nums">{money(String(Math.abs(Number(r.saved)).toFixed(2)))}</span>
       <span className="mt-0.5 text-caption text-muted-foreground tabular-nums">
-        {Number(r.income) > 0 ? `${Math.round((Number(r.saved) / Number(r.income)) * 100)} % de ${money(r.income)} que entraron; ` : "No entró nada; "}salieron {money(r.expense)}
+        {Number(r.income) > 0 ? `${Math.round((Number(r.saved) / Number(r.income)) * 100)} % de ${money(r.income)} que entraron; ` : "No entró nada; "}gastaste {money(r.expense)}
       </span>
+      <a href="#tu-plata" className="mt-2.5 flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5">
+        <Icon name="account_balance" className="text-[20px]" />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-[14px] leading-5 font-semibold tabular-nums">Tu plata en cuentas {plata >= 0 ? "subió" : "bajó"} {money(Math.abs(plata).toFixed(2))}</span>
+          <span className="text-caption text-muted-foreground">Mira abajo por qué no es lo mismo</span>
+        </span>
+        <Icon name="arrow_downward" className="text-[20px]" />
+      </a>
 
       <section aria-label="De dónde entró y a dónde fue" className="mt-5 flex flex-col gap-1.5">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Entró</span><span>Salió y guardaste</span></div>
+        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Entró</span><span>{negative ? "Gastaste" : "Gastaste y te quedó"}</span></div>
           <div className="h-[320px]" role="img"
             aria-label={`Entró ${money(r.income)}: ${r.sources.map((n) => `${n.name} ${money(n.amount)}`).join(", ")}. Fue a: ${r.uses.map((n) => `${n.name} ${money(n.amount)}`).join(", ")}`}>
             <ResponsiveContainer width="100%" height="100%">
@@ -116,12 +130,14 @@ export function ReporteFlujo() {
               </Sankey>
             </ResponsiveContainer>
           </div>
-        <span className="text-caption text-muted-foreground">Toca un destino para seguir su plata. Pasar plata entre tus cuentas o pagar la tarjeta no es flujo: no sale de ti.</span>
+        <span className="text-caption text-muted-foreground">Toca un destino para seguir su plata. Lo que pagaste de tarjetas y préstamos está abajo, en «Tu plata».</span>
       </section>
 
-      {savings.some((m) => m.pct !== null) && <section aria-label="Cuánto guardas" className="mt-6 flex flex-col gap-1.5">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Cuánto guardas para mayo</span><span>12 meses</span></div>
-        <div className="h-[170px]" role="img" aria-label={`Porcentaje guardado: ${savings.map((m) => `${monthName(m.month)} ${m.pct ?? "sin ingresos"}${m.pct === null ? "" : " %"}`).join(", ")}`}>
+      <TuPlata cash={r.cash} period={p.period} year={p.year} today={todayISO()} />
+
+      {savings.some((m) => m.pct !== null) && <section aria-label="Cuánto creció tu patrimonio" className="mt-6 flex flex-col gap-1.5">
+        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Cuánto creció tu patrimonio</span><span>12 meses</span></div>
+        <div className="h-[170px]" role="img" aria-label={`Lo que te quedó de lo que entró: ${savings.map((m) => `${monthName(m.month)} ${m.pct ?? "sin ingresos"}${m.pct === null ? "" : " %"}`).join(", ")}`}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={savings} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
               <CartesianGrid vertical={false} stroke="var(--border)" />
@@ -131,15 +147,15 @@ export function ReporteFlujo() {
               <Tooltip cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "3 3" }} content={({ active, payload }) => {
                 const m = payload?.[0]?.payload as (typeof savings)[number] | undefined;
                 return <ChartTip active={active && !!m} title={m ? monthName(m.month) : ""} rows={m ? [
-                  { color: "var(--trigo)", label: "Guardaste", value: m.pct === null ? "—" : `${m.pct} %` },
-                  { label: "Entró", value: money(m.income) }, { label: "Salió", value: money(m.expense) }] : []} />;
+                  { color: "var(--trigo)", label: "Te quedó", value: m.pct === null ? "—" : `${m.pct} %` },
+                  { label: "Entró", value: money(m.income) }, { label: "Gastaste", value: money(m.expense) }] : []} />;
               }} />
               <Line type="monotone" dataKey="pct" stroke="var(--trigo)" strokeWidth={2} connectNulls={false} isAnimationActive={false}
                 dot={{ r: 4, fill: "var(--trigo)", stroke: "var(--background)", strokeWidth: 2 }} activeDot={{ r: 6, stroke: "var(--background)", strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <span className="text-caption text-muted-foreground">El % de lo que entró que no salió.</span>
+        <span className="text-caption text-muted-foreground">El % de lo que entró que no gastaste.</span>
       </section>}
     </main>
   );

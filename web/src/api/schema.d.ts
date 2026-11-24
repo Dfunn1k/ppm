@@ -1546,8 +1546,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** De dónde entró la plata, a dónde fue y cuánto guardaste */
+        /** De dónde entró la plata, a dónde fue, cuánto creció tu patrimonio y tu plata de principio a fin */
         get: operations["flow_reports_flow_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/flow/moves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los movimientos de una línea de Tu plata (en un año, mes por mes) */
+        get: operations["flow_moves_reports_flow_moves_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2403,6 +2420,45 @@ export interface components {
             /** Next Bill */
             next_bill: string;
         };
+        /** CashBridgeOut */
+        CashBridgeOut: {
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
+            /** Lines */
+            lines: components["schemas"]["CashLineOut"][];
+            /** Patrimony */
+            patrimony: string;
+            /** Diffs */
+            diffs: components["schemas"]["CashDiffOut"][];
+        };
+        /** CashDiffOut */
+        CashDiffOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "income" | "expense" | "card" | "loan" | "receivable" | "payable" | "custody" | "prepaid" | "unearned" | "suspense" | "opening" | "other" | "fx";
+            /** Amount */
+            amount: string;
+            /** Paid */
+            paid: string | null;
+            /** Other */
+            other: string | null;
+            /** Details */
+            details: components["schemas"]["DiffDetailOut"][];
+        };
         /** CashIn */
         CashIn: {
             /** Name */
@@ -2413,6 +2469,41 @@ export interface components {
              *       "amount": "0.00"
              *     } */
             opening: components["schemas"]["OpeningIn"];
+        };
+        /** CashLineOut */
+        CashLineOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "income" | "expense" | "card" | "loan" | "receivable" | "payable" | "custody" | "prepaid" | "unearned" | "suspense" | "opening" | "other" | "fx";
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "in" | "out";
+            /** Amount */
+            amount: string;
+            /** Other */
+            other: string | null;
+        };
+        /** CashMoveOut */
+        CashMoveOut: {
+            /** Move Id */
+            move_id: number | null;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Ref */
+            ref: string;
+            /** Accounts */
+            accounts: string | null;
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
         };
         /** CatalogOut */
         CatalogOut: {
@@ -2867,6 +2958,13 @@ export interface components {
             /** Recurring */
             recurring: number;
         };
+        /** DiffDetailOut */
+        DiffDetailOut: {
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+        };
         /** DoneIn */
         DoneIn: {
             /**
@@ -2952,6 +3050,7 @@ export interface components {
             uses: components["schemas"]["FlowNodeOut"][];
             /** Savings */
             savings: components["schemas"]["SavingMonthOut"][];
+            cash: components["schemas"]["CashBridgeOut"];
         };
         /** ForeignGainOut */
         ForeignGainOut: {
@@ -8875,6 +8974,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FlowReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flow_moves_reports_flow_moves_get: {
+        parameters: {
+            query: {
+                /** @description Un mes (2026-10) o un año (2026) */
+                period: string;
+                kind: string;
+                direction: "in" | "out";
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                ppm_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashMoveOut"][];
                 };
             };
             /** @description Validation Error */

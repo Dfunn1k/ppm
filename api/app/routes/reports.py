@@ -79,6 +79,40 @@ class SavingMonthOut(BaseModel):
     percent: int | None
 
 
+CashKind = Literal["income", "expense", "card", "loan", "receivable", "payable", "custody", "prepaid", "unearned",
+                   "suspense", "opening", "other", "fx"]
+
+
+class CashLineOut(BaseModel):
+    kind: CashKind
+    direction: Literal["in", "out"]
+    amount: Decimal
+    other: Decimal | None
+
+
+class DiffDetailOut(BaseModel):
+    name: str
+    amount: Decimal
+
+
+class CashDiffOut(BaseModel):
+    kind: CashKind
+    amount: Decimal
+    paid: Decimal | None
+    other: Decimal | None
+    details: list[DiffDetailOut]
+
+
+class CashBridgeOut(BaseModel):
+    start_date: dt.date
+    end_date: dt.date
+    start: Decimal
+    end: Decimal
+    lines: list[CashLineOut]
+    patrimony: Decimal
+    diffs: list[CashDiffOut]
+
+
 class FlowReportOut(BaseModel):
     period: str
     income: Decimal
@@ -87,6 +121,16 @@ class FlowReportOut(BaseModel):
     sources: list[FlowNodeOut]
     uses: list[FlowNodeOut]
     savings: list[SavingMonthOut]
+    cash: CashBridgeOut
+
+
+class CashMoveOut(BaseModel):
+    move_id: int | None
+    date: dt.date
+    ref: str
+    accounts: str | None
+    amount: Decimal
+    count: int
 
 
 class NetPointOut(BaseModel):
@@ -188,10 +232,19 @@ def income(period: PeriodQ, session: CurrentSession = Depends(current_session)) 
         raise _http(e) from None
 
 
-@router.get("/reports/flow", summary="De dónde entró la plata, a dónde fue y cuánto guardaste")
+@router.get("/reports/flow", summary="De dónde entró la plata, a dónde fue, cuánto creció tu patrimonio y tu plata de principio a fin")
 def flow(period: PeriodQ, session: CurrentSession = Depends(current_session)) -> FlowReportOut:
     try:
         return FlowReportOut.model_validate(asdict(reports.flow(session.user_id, period)))
+    except AccountError as e:
+        raise _http(e) from None
+
+
+@router.get("/reports/flow/moves", summary="Los movimientos de una línea de Tu plata (en un año, mes por mes)")
+def flow_moves(period: PeriodQ, kind: Annotated[str, Query(max_length=20)], direction: Literal["in", "out"],
+               session: CurrentSession = Depends(current_session)) -> list[CashMoveOut]:
+    try:
+        return [CashMoveOut.model_validate(asdict(m)) for m in reports.cash_moves(session.user_id, period, kind, direction)]
     except AccountError as e:
         raise _http(e) from None
 
