@@ -108,4 +108,4 @@ def test_una_linea_que_no_se_lee_no_cuadra_con_el_pago_total(ana: Con, pdf):
 def test_un_pdf_que_no_es_de_bcp_ni_de_bbva(ana: Con, pdf):
     card = ana.card(closing_day=10)["account"]["id"]
     r = upload(ana, card, "Estado de cuenta de otro banco", status=400)
-    assert "Por ahora PPM lee los de tarjetas BCP y BBVA" in r["detail"]
+    assert "Por ahora PPM lee los de tarjetas BCP, BBVA e Interbank" in r["detail"]

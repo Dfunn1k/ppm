@@ -140,7 +140,7 @@ def test_el_estado_de_otra_tarjeta_no_entra(ana: Con, pdf):
 def test_un_pdf_que_no_es_de_bcp(ana: Con, pdf):
     card = ana.card(closing_day=25)["account"]["id"]
     r = upload(ana, card, "Estado de cuenta de otro banco", status=400)
-    assert "Por ahora PPM lee los de tarjetas BCP y BBVA" in r["detail"]
+    assert "Por ahora PPM lee los de tarjetas BCP, BBVA e Interbank" in r["detail"]
 
 
 def test_sin_estado_de_cuenta_la_linea_es_estimada_y_el_tc_del_ciclo_se_edita(ana: Con):
