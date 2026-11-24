@@ -43,7 +43,7 @@ test("el Inicio: para mayo, en qué se va la plata y los últimos movimientos", 
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("S/ 2,500.00");
   const mayo = page.getByRole("region", { name: "Para mayo" });
-  await expect(mayo).toContainText("Guardaste S/ 1,500.00 este mes.");
+  await expect(mayo).toContainText("Tu patrimonio creció S/ 1,500.00 este mes.");
   await expect(mayo).toContainText("75 % de lo que entró");
   const plata = page.getByRole("region", { name: "En qué se va la plata" });
   const filas = plata.getByRole("link", { name: /S\/ / });

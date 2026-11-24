@@ -84,7 +84,7 @@ export function Reportes() {
         </Card>
 
         <Card to={`/mas/reportes/flujo${q}`} label="Flujo" icon="water" empty={isZero(s.income) && isZero(s.expense) ? nothing : undefined}
-          value={Number(s.saved) >= 0 ? `Guardaste ${s.saved_percent ?? 0} %` : "Salió más"}
+          value={Number(s.saved) >= 0 ? `Te quedó ${s.saved_percent ?? 0} %` : "Salió más"}
           note={<span className="text-caption text-muted-foreground tabular-nums">
             {Number(s.saved) >= 0 ? `${money(s.saved)} de ${money(s.income)}` : `${money(String(-Number(s.saved)))} más de lo que entró`}
           </span>}>
