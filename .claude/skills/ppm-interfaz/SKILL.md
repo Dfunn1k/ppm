@@ -14,7 +14,9 @@ PPM es contable por dentro e intuitivo por fuera. Esta skill dice dónde está l
 3. `docs/modelo-contable.md`: las decisiones con fecha. Busca las de la pantalla que vas a tocar (por su nombre, su código como C1, M2 o R1, o «Elegido por Dany»). Las de interfaz incluyen el escritorio, el riel, «Sin punto como conector» (casos 5 a 10), Reportes y el presupuesto.
 4. `web/src/styles.css` y `web/src/components/ui.tsx`: cómo están implementados los tokens y las piezas compartidas.
 
-Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: propón 2 o 3 opciones a Dany, con pros y contras y una analogía, y espera que elija. El lienzo «Pantallas de PPM» de claude.ai es un cuaderno de bocetos: sirve para mirar, pero si contradice al documento, manda el documento.
+Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: propón 2 o 3 opciones a Dany, con pros y contras y una analogía, y espera que elija.
+
+**Boceto antes del código.** Toda pantalla nueva o cambio visible se dibuja primero en el lienzo «Pantallas de PPM» de claude.ai, y Dany lo aprueba antes de programarlo. Si ajusta algo que ya existe, el boceto pone la pantalla de hoy al lado de cómo quedaría, con el cambio marcado. El lienzo es un cuaderno de bocetos, no una fuente: lo elegido se escribe en `docs/modelo-contable.md` y, si contradice al documento, manda el documento.
 
 ## 2. Reglas que no se rompen
 
@@ -36,7 +38,7 @@ Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: 
 - Ningún tamaño puede tener scroll horizontal, y nada puede quedar tapado por la barra de abajo, el notch o el teclado.
 - Áreas táctiles de al menos 44×44 px.
 
-**Accesibilidad (WCAG 2.2 AA)**
+**Accesibilidad (WCAG 2.2 AA, ver «Foco y accesibilidad» en `design-system/README.md`)**
 - Contraste 4.5:1 en texto normal y 3:1 en texto grande, íconos y bordes de controles, en claro y en oscuro, con cada acento (tinta, trigo, morado, azul).
 - Todo se puede usar con teclado y el foco se ve siempre.
 - Los botones de solo ícono llevan nombre accesible (`aria-label`).

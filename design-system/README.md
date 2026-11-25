@@ -63,4 +63,9 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 ## Foco y accesibilidad
 
 - El foco de teclado es un anillo de 2px sólido en `ring`, separado 2px del elemento.
-- El texto cumple al menos 4.5:1 sobre su fondo en los dos temas; íconos, bordes de campo y el anillo de foco, al menos 3:1.
+- El texto cumple al menos 4.5:1 sobre su fondo en los dos temas; íconos, bordes de campo y el anillo de foco, al menos 3:1. Vale con cada acento (tinta, trigo, morado y azul) y para el texto grande basta 3:1.
+- La meta es WCAG 2.2 AA.
+- Todo se puede usar con teclado y el foco siempre se ve.
+- Lo que se toca mide al menos 44×44px.
+- Las animaciones respetan `prefers-reduced-motion`.
+- HTML semántico antes que ARIA.
