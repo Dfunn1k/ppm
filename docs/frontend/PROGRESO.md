@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 0, preparación (terminada; esperando el merge del PR y el OK de Dany para la Fase 1).
-- **Rama:** `frontend/fase-0`
-- **Último commit:** ver `git log -1 frontend/fase-0`
+- **Fase actual:** 1, auditoría (en curso).
+- **Rama:** `frontend/fase-1`
+- **Último commit:** ver `git log -1 frontend/fase-1`
 
 ## Checklist
 
@@ -17,10 +17,10 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] Capturas de toda la matriz en Docker (`web/capturas/`, `web/playwright.capturas.config.ts`, `pnpm capturas`).
 - [x] Auditoría automática con axe en 390×844 y 1440×900, claro y oscuro.
 - [x] Resumen de medidas y axe (`web/capturas/resumen.mjs`).
-- [ ] PR de la Fase 0 aprobado por Dany.
+- [x] PR de la Fase 0 aprobado por Dany (#129, 25-nov).
 
-### Fase 1 — Auditoría (pendiente)
-- [ ] a) Inventario de estilos
+### Fase 1 — Auditoría (en curso, `docs/frontend/AUDITORIA.md`)
+- [x] a) Inventario de estilos
 - [ ] b) Componentes
 - [ ] c) Recorrido visual
 - [ ] d) Accesibilidad
@@ -31,7 +31,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Siguiente paso
 
-Esperar el OK de Dany. Con su OK: Fase 1 a), el inventario de estilos de `web/src` agrupado por el token que debería ser, en `docs/frontend/AUDITORIA.md`.
+Fase 1 b), componentes: los que hacen lo mismo con código distinto y los compartidos que no están en `design-system/`. Se escribe en `AUDITORIA.md`, sección b.
 
 ## Decisiones que le tocan a Dany
 
