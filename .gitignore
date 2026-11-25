@@ -12,3 +12,4 @@ web/.pnpm-store/
 web/test-results/
 web/playwright-report/
 local/
+web/capturas-salida/
