@@ -2,6 +2,8 @@
 
 Oct 4, 2026 · @Dany Anderson Chavez Pauca
 
+> **Este archivo es el original y la única fuente de verdad de PPM** desde el 24-nov-2026 (antes lo era el documento de claude.ai, que quedó como archivo). Toda decisión nueva se registra aquí, con su fecha, en el mismo pull request que la implementa.
+
 ## Visión y alcance
 
 La fase 1 de PPM modela solo dos cosas: cuentas y transacciones, con partida doble desde el primer día. Todo lo demás (presupuestos, reportes, metas) se construirá encima de este núcleo, sin cambiarlo.

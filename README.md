@@ -9,20 +9,28 @@
 
 Están juntas mientras PPM es pequeño: un cambio en la API y su pantalla van en el mismo pull request. Si un día crece, cada carpeta puede salir a su propio repositorio sin perder su historia.
 
-La fuente de verdad del diseño es el documento «PPM — Modelo contable y base de datos». Si algo aquí lo contradice, manda el documento.
+## Fuente de verdad
 
-## Artefactos en claude.ai
+Todo lo decidido vive en este repositorio y se cambia con pull request, en el mismo PR que lo implementa:
 
-El diseño de PPM vive en claude.ai. Dos de esos artefactos tienen una copia en este repositorio para que Claude Code los lea sin salir de aquí:
+| Qué | Dónde |
+|---|---|
+| Las decisiones, con su fecha (modelo contable, base de datos, pantallas y reglas de la interfaz) | [`docs/modelo-contable.md`](docs/modelo-contable.md) |
+| El sistema de diseño: voz, montos, color, tipografía y tokens | [`design-system/`](design-system/README.md), implementado en [`web/src/styles.css`](web/src/styles.css) |
+| Cómo se trabaja la interfaz (skill para Claude) | [`.claude/skills/ppm-interfaz/`](.claude/skills/ppm-interfaz/SKILL.md) |
 
-| Artefacto | Copia en el repo | Original |
-|---|---|---|
-| PPM — Modelo contable y base de datos | [`docs/modelo-contable.md`](docs/modelo-contable.md) | <https://claude.ai/artifact/NGkKr1NvteSf7cUBRwN3dH> |
-| Sistema de diseño «PPM» (tokens, voz, componentes) | [`design-system/`](design-system/README.md) | <https://claude.ai/artifact/KQXtCjxNsoonM9d9uob6oM> |
-| Libro de PPM: simulador de partida doble | — | <https://claude.ai/artifact/A26CRpbuQbk6AWK6bMWTEe> |
-| Pantallas de PPM | — | <https://claude.ai/artifact/WcHcG4APSNSqSFM2KngD6E> |
+Si el código y la fuente no coinciden, manda la fuente.
 
-Las copias son una foto del 6 de noviembre de 2026. Si una copia y su original no coinciden, manda el original; vuelve a copiarlo cuando cambie.
+## En claude.ai: archivo y bocetos
+
+Hasta el 24 de noviembre de 2026 el documento y el sistema de diseño tenían su original en claude.ai. Desde entonces el original está aquí y lo de claude.ai no se actualiza:
+
+| Artefacto | Qué es ahora |
+|---|---|
+| [PPM — Modelo contable y base de datos](https://claude.ai/artifact/NGkKr1NvteSf7cUBRwN3dH) | Archivo. Vigente: [`docs/modelo-contable.md`](docs/modelo-contable.md) |
+| [Sistema de diseño «PPM»](https://claude.ai/artifact/KQXtCjxNsoonM9d9uob6oM) | Archivo. Vigente: [`design-system/`](design-system/README.md) |
+| [Pantallas de PPM](https://claude.ai/artifact/WcHcG4APSNSqSFM2KngD6E) | Cuaderno de bocetos: para dibujar y elegir opciones. No es fuente; lo elegido se escribe en `docs/modelo-contable.md` |
+| [Libro de PPM: simulador de partida doble](https://claude.ai/artifact/A26CRpbuQbk6AWK6bMWTEe) | Material para entender la partida doble |
 
 ## Levantarlo
 
