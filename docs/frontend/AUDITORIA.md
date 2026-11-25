@@ -276,3 +276,48 @@ Lo que se nota al pasar de una pantalla a otra (el detalle de componentes está 
 - **Los números grandes en Bricolage** tienen 7 tamaños según la pantalla: patrimonio 48, sobre 32/40, por asignar 26/40, reportes 30 o 40 (ver a).
 - **En Registrar,** la fila «Etiquetas» no se alinea con las de arriba: su ícono y su texto empiezan unos 4 px más a la izquierda.
 - **Los círculos de ícono** de las filas miden 36, 40 o 44 px según la pantalla (ver a, punto 3).
+
+## d) Accesibilidad
+
+**La analogía.** La accesibilidad es como una casa con rampa, pasamanos e interruptores a la altura de la mano: hace la casa usable para quien va en silla de ruedas, para quien carga bolsas y para quien entra a oscuras. En PPM eso es poder usarlo solo con el teclado, con un lector de pantalla que lee en voz alta, con letra grande o con poca vista para los colores.
+
+**Cómo se revisó:**
+- **axe:** las 70 pantallas, a 390 y a 1440 px, en claro y en oscuro.
+- **Contraste:** calculé cada par de colores de los tokens, en los dos temas y con los cuatro acentos.
+- **Teclado:** una prueba nueva (`web/capturas/teclado.spec.ts`) aprieta Tab en cada pantalla hasta dar la vuelta. En 67 pantallas fueron 1,180 paradas en celular y 1,744 en escritorio. En cada parada anota si el foco se ve, si algo fijo lo tapa y si cayó en algo invisible.
+- **Código:** revisé los nombres de los botones de solo ícono, las imágenes, los encabezados, el foco y «reducir movimiento».
+
+### Lo que pasa bien
+
+- **Botones de solo ícono:** todos tienen nombre (0 sin `aria-label`). Las imágenes tienen `alt` y la página dice que está en español (`lang="es"`).
+- **Texto:** el principal y el secundario superan 4.5:1 en los dos temas: `muted-foreground` va de 6.0 a 7.8:1, y `income`, `expense`, `attention` y `destructive`, de 4.8 a 9.7:1.
+- **Acentos:** con los cuatro, el texto sobre el acento y el texto en el acento pasan 4.5:1, en los dos temas.
+- **Foco:** el anillo de 2 px está en todo el sitio, y 1,160 de las 1,180 paradas en celular lo muestran.
+- **Zoom del navegador al 200 %:** funciona, sin scroll horizontal.
+- **Teclado:** no hay trampas: el recorrido siempre da la vuelta.
+- **«Reducir movimiento»** apaga las transiciones de pantalla y las hojas.
+
+### Lo que falla
+
+| # | Qué pasa | Dónde | Norma (WCAG 2.2) | Gravedad |
+|---|---|---|---|---|
+| 1 | **El foco se esconde detrás de la barra de abajo.** Al bajar con Tab, el elemento con foco queda debajo de la barra de navegación: 19 veces en 9 pantallas (Inicio, Cuentas, Presupuesto, Movimientos, Tarjeta, Más…) | Celular y tablet | 2.4.11 Foco no tapado (AA) | Importante |
+| 2 | **La letra grande del sistema no hace nada.** Toda la letra está en px fijos (`font-size: 15px` en `html`), así que si alguien sube el tamaño de letra del navegador, PPM no cambia. La foto «texto grande» de la fase 0 es idéntica byte a byte a la normal. El zoom del navegador sí funciona, por eso no rompe la norma, pero quien ve poco y sube la letra de su teléfono no recibe nada | Toda la app | 1.4.4 Cambiar el tamaño del texto (se cumple por el zoom); buena práctica | Importante |
+| 3 | **Los bordes de los campos con caja casi no se ven:** `input` sobre `card` da 1.48:1 en claro y 1.73:1 en oscuro (se pide 3:1). Los campos de una línea (`input-line`, 4.5:1) sí pasan | Formularios dentro de la app | 1.4.11 Contraste de lo que no es texto | Importante |
+| 4 | **Los encabezados de sección no son encabezados.** Los 61 «LO QUE TENGO ───» son `<div>` o `<span>`, y en todo `web/src` hay 4 `<h2>`. Quien usa lector de pantalla no puede saltar de sección en sección | Casi todas las pantallas | 1.3.1 Información y relaciones | Importante |
+| 5 | **Gráficos que reciben el foco pero no se ven** (axe: 32 elementos). Las miniaturas de Reportes están ocultas para el lector de pantalla (`aria-hidden`), pero el gráfico de adentro (recharts) se puede enfocar: el teclado se detiene 3 veces en algo que nadie oye ni ve | Reportes y sus 6 reportes, en escritorio | 4.1.2 Nombre, función y valor | Importante |
+| 6 | **Un botón dentro de otro** (axe). La barra «Desde cuándo te deben» es una imagen (`role="img"`) con botones adentro | Reporte de Personas | 4.1.2 | Importante |
+| 7 | **El nombre no coincide con lo que se ve** (axe). La tarjeta de presupuesto de Inicio se llama «Presupuesto de noviembre 2026» y tapa todo lo que muestra. El lector de pantalla no dice «Por asignar S/ 18,524.60» ni los sobres en rojo | Inicio | 2.5.3 Etiqueta en el nombre | Importante |
+| 8 | **Contraste justo debajo del mínimo** (axe). La pastilla de disponible en verde da 4.49:1 (`income` sobre `income` al 12 %). El porcentaje dentro de la barra de Ingresos usa `on-category` blanco sobre colores claros de categoría (hasta 3.6:1 con `cat-3`) | Presupuesto, Sobre, Por asignar y reporte de Ingresos, en claro | 1.4.3 Contraste | Importante |
+| 9 | **Áreas táctiles menores de 24 px** en 17 lugares (ver c, punto 6): «VER TODO», «ELEGIR CUÁLES», «Privacidad», las etiquetas de «¿A quién?», «Elige la cuenta» y «Otra línea» | Inicio, Más, Registrar | 2.5.8 Tamaño del objetivo, mínimo (AA) | Importante |
+| 10 | **El acento trigo en claro no se distingue del fondo:** 1.87:1 contra los 3:1 que se piden. Afecta lo que se marca solo con el color del acento, como la opción elegida o el borde de lo seleccionado. El texto sobre trigo sí pasa (8.4:1) | Acento trigo, tema claro | 1.4.11 | Menor (hay que ver en la Fase 2 qué se marca solo con `primary`) |
+| 11 | **Dos buscadores sin anillo de foco:** Etiquetas (`Tags.tsx:85`) y Clasificar | Hojas de etiqueta y de clasificar | 2.4.7 Foco visible | Menor |
+| 12 | **El foco de «¿A quién?» solo oscurece la línea de abajo,** de gris a negro, sin anillo. Fueron 15 paradas en los Registrar con persona y el saldo inicial | `PersonPicker` | 2.4.7 (se cumple, pero es distinto al resto) | Menor |
+| 13 | **Lo que gira no respeta «reducir movimiento»:** 17 `animate-spin` y 2 `animate-pulse` siguen moviéndose. El README dice que las animaciones lo respetan | Botones que cargan y esqueletos | Regla del README (2.3.3 es nivel AAA) | Menor |
+| 14 | **Las categorías en oscuro elegido a mano** muestran los colores del tema claro (ver a, punto 10). El contraste pasa, pero no es el color decidido | Si el teléfono está en claro y PPM en Oscuro | — | Menor |
+
+### Lo que no se pudo medir aquí
+
+- **Lector de pantalla de verdad** (VoiceOver o TalkBack): queda para la Fase 5, con una lista de pruebas a mano.
+- **Notch y barra de gestos del iPhone:** la página pide ocupar toda la pantalla (`viewport-fit=cover`), pero el código no usa `safe-area-inset` en ningún lado, y Playwright no simula el notch. Instalada como app, la barra de abajo puede quedar debajo de la barra de gestos del iPhone. → Revisarlo en un iPhone real (Dany) y decidirlo en la Fase 2.
+- **Lighthouse:** se pide en la Fase 5 y necesita tu permiso.

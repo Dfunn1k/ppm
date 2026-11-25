@@ -23,7 +23,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] a) Inventario de estilos
 - [x] b) Componentes
 - [x] c) Recorrido visual
-- [ ] d) Accesibilidad
+- [x] d) Accesibilidad
 - [ ] e) Código contra decisiones
 - [ ] f) Hallazgos priorizados
 
@@ -31,7 +31,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Siguiente paso
 
-Fase 1 d), accesibilidad (la prueba de teclado `capturas/teclado.spec.ts` ya está escrita), y e), código contra decisiones.
+Fase 1 e), código contra decisiones (un ayudante lo está revisando), y f), hallazgos priorizados. Después, el punto de control 1.
 
 ## Decisiones que le tocan a Dany
 
@@ -64,6 +64,8 @@ docker compose run --rm e2e node capturas/resumen.mjs
   - teclado abierto: 390×508 (390×844 menos el teclado), solo en formularios y con el foco en el primer campo.
 - **Acentos:** tinta, trigo, morado y azul en Inicio, Registrar, Apariencia y Gastos, a 390×844 y 1440×900, claro y oscuro.
 - **axe** revisa WCAG 2.0, 2.1 y 2.2, niveles A y AA, en cada pantalla a 390×844 y 1440×900, claro y oscuro.
+- **Teclado** (`capturas/teclado.spec.ts`, desde la Fase 1): en cada pantalla aprieta Tab hasta dar la vuelta y anota si el foco se ve, si lo tapa algo fijo y si cae en algo invisible. Sale en `capturas-salida/teclado/<tamaño>.json`. Solo esto: `-g "teclado|preparar"`.
+- **Ojo con «texto grande»:** hoy sale idéntica a 390×844, porque PPM tiene toda la letra en px (ver AUDITORIA d, punto 2). Servirá para comparar cuando eso cambie.
 - La salida queda en `web/capturas-salida/` (no se sube al repo).
 
 ## Comandos para verificar
