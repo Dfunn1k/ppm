@@ -21,7 +21,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ### Fase 1 — Auditoría (en curso, `docs/frontend/AUDITORIA.md`)
 - [x] a) Inventario de estilos
-- [ ] b) Componentes
+- [x] b) Componentes
 - [x] c) Recorrido visual
 - [ ] d) Accesibilidad
 - [ ] e) Código contra decisiones
@@ -31,7 +31,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Siguiente paso
 
-Fase 1 b), componentes: los que hacen lo mismo con código distinto y los compartidos que no están en `design-system/`. Se escribe en `AUDITORIA.md`, sección b.
+Fase 1 d), accesibilidad (la prueba de teclado `capturas/teclado.spec.ts` ya está escrita), y e), código contra decisiones.
 
 ## Decisiones que le tocan a Dany
 

@@ -134,6 +134,76 @@ Fuera de eso, todos los colores de los dos temas y de los cuatro acentos son id�
 - Colores: comparación de cada token de `tokens.json`, ya resuelto, con la variable de `styles.css` en claro, en oscuro del sistema y en oscuro elegido.
 - Los scripts están en el historial de la sesión. Si hacen falta otra vez, pasan a `web/capturas/` en la Fase 3, como parte de la regla automática.
 
+## b) Componentes
+
+**La analogía.** Un componente compartido es un molde de galletas: haces el molde una vez y todas salen iguales. Hoy, muchas pantallas recortan su galleta a mano con cuchillo. Se parecen, pero una sale 4 px más ancha, otra sin el anillo de foco, otra con un nombre distinto para el lector de pantalla. Si mañana cambias la receta, hay que ir galleta por galleta.
+
+### Lo que ya está bien unificado
+
+- **Lista y detalle en escritorio** (`Split`): ninguna copia a mano.
+- **`Sheet`** (35 archivos), **`PrimaryButton`** (33), **`LineField`** (23), **`Segmented`** (16), **`SheetSelect`** (15) y **`Icon`** (88) se usan bien en casi todos lados.
+
+### Mismo patrón, código distinto (las 10 de más impacto)
+
+| # | Patrón | Molde que existe | Copias a mano | En qué difieren |
+|---|---|---|---|---|
+| 1 | **Fila de lista** (círculo, título, subtítulo y monto) | Ninguno general; solo versiones de un dominio (`PostRow`, `MoveLine`, `NoticeItem`, `DebtCard`) | 91 en 41 archivos | Alto de 52, 56, 60, 68 o 72 px; separación de 12 o 14 px; la marca de la fila elegida en escritorio, copiada 8 veces |
+| 2 | **Encabezado de sección** («LO QUE TENGO ───») | `Heading`, escondido en `pages/presupuesto/common.tsx` (2 usos) | 61 en 35 archivos | Ninguno es un encabezado de verdad (`<h2>`): el lector de pantalla no los ofrece para saltar de sección en sección (ver d) |
+| 3 | **Contenedor de la pantalla** | `Screen` (`ui.tsx`, 19 archivos, y 15 le cambian el relleno) | 41 páginas lo escriben a mano, en 17 combinaciones | El espacio de abajo es de 24, 32, 40 o 112 px según la página |
+| 4 | **Botón «Volver» y cabecera de formulario** | `FormHeader`, atrapado en `pages/cuentas/Nueva.tsx` (8 usos); además `ReportHeader`, `StepHeader` y `Back` | 36 flechas en 33 archivos; 5 formularios copian `FormHeader` | 12 nombres accesibles distintos («Volver a Más», «Volver», «Volver a cuentas»…); 6 son botón y no enlace |
+| 5 | **Círculo de ícono** | `CategoryChip`, `Avatar` y `MoveIcon`, que reciben el tamaño en `style` | 46 en 22 archivos (12 solo en Más) | 7 tamaños (32 a 64 px) y 4 fondos |
+| 6 | **Montos** | `money.ts` formatea bien, pero no hay un componente de monto | `useMoney` está definido dos veces (Presupuesto y Reportes); unas 22 funciones `money` repetidas | El campo grande de Registrar está copiado 3 veces (48 px), más versiones de 44, 34 y 30 px; solo una marca el error con `aria-invalid` |
+| 7 | **Botones fuera de `PrimaryButton`** | `PrimaryButton` | 9 principales de 56 px hechos a mano, 3 de 52 px con el texto al centro, 4 de borrar, 6 de contorno | Deshabilitado con opacidad de 50, 60 o 70 %; no hay un botón secundario ni uno de borrar compartidos |
+| 8 | **Chips de filtro y pastillas** | `Pill` (9 archivos) | 38 chips en 28 archivos y 9 pastillas sueltas | Alto de 20 a 40 px; letra de 11 o 12 px; solo 13 dicen si están elegidos (`aria-pressed`) |
+| 9 | **Barras de avance** | `Segments` (2 usos) y `ShareBar` (Reportes) | 11 hechas a mano | 5 altos (6 a 16 px); para el lector de pantalla, 4 tratos distintos (oculta, imagen, medidor, barra de progreso) |
+| 10 | **Buscador y selector segmentado** | El buscador de `OptionList` y `Segmented` | 8 buscadores copiados (2 sin anillo de foco: Etiquetas y Clasificar); la barra Gasto / Ingreso / Transferir / Más está duplicada en `Registrar.tsx` y `MasTipos.tsx` | Alto de 40 o 44 px; la barra duplicada mide 38 px y `Segmented`, 40 |
+
+También están casi repetidos:
+- `ArchiveSheet`, en el detalle de cuenta y en el de tarjeta.
+- El botón «Cancelar» subrayado, 6 veces.
+- El estado vacío, con 2 copias fuera de `EmptyState`.
+- La carga: 20 pantallas usan el círculo que gira (`Spinner`) y otras 20 usan esqueletos.
+
+### Moldes que viven en el lugar equivocado
+
+Se comparten, pero están dentro de una página y no en `components/`: `FormHeader`, `AmountField`, `Heading`, `PostChip`, `AvailablePill`, `ShareBar`, `ReportHeader`, `StepHeader` y `useMoney`. Para usarlos, otra página tiene que importar de una página hermana, y eso invita a copiarlos.
+
+### Qué documenta `design-system/`
+
+`design-system/components/` tiene Amount, Button, CategoryChip y Cover. De ellos:
+- **CategoryChip** es el único que coincide con el código.
+- **Button** dice «alto 40 px, `radius-md`», pero el README general y `PrimaryButton` dicen 56 px y radio 14. **Se contradicen.**
+- **Amount** describe un componente que no existe con ese nombre; lo hacen a medias `MoveAmount` y `Amounts`.
+- **Cover** solo tiene la vista previa, sin README.
+
+El README general describe en palabras `LineField`, `PrimaryButton` y la hoja con buscador. **Sin documentar**, y con más de 5 usos:
+- `ErrorAlert` (67 archivos);
+- `Spinner` (21);
+- `Screen` (19);
+- `Facts` (18);
+- `Segmented` (16);
+- `DateField` (13);
+- `Optional` y `Pill` (9 cada uno);
+- `RateField` (9);
+- `Avatar` (8);
+- `PersonPicker` (7);
+- los esqueletos;
+- `EmptyState` (6);
+- `Status` y `Kbd` (5 cada uno).
+
+### shadcn y cva
+
+- **No hay `components/ui/` de shadcn.** Hay un `components.json` y la función `cn()`, pero ninguna pieza de shadcn instalada: Sheet, Segmented, SheetSelect, Pill y los esqueletos son propios. No es malo, porque están hechos a la medida de PPM, pero la regla de `CLAUDE.md` («componentes de shadcn/ui») no describe lo que hay. → Fase 2: decidir si la regla cambia o si se adoptan piezas de shadcn.
+- **`class-variance-authority` está instalado y no se usa en ningún archivo.** Las variantes se arman con condiciones dentro de las clases. La skill `ppm-interfaz` pide `cva` para las variantes: es la herramienta para los moldes de la Fase 3.
+
+### Cómo se midió
+
+Un ayudante recorrió `web/src` con grep y un script que cuenta los imports, también los que ocupan varias líneas. Verifiqué a mano estas cifras:
+- `cva` sin usos;
+- `useMoney` en dos archivos;
+- el README de Button con 40 px;
+- 61 encabezados de sección con la misma receta exacta.
+
 ## c) Recorrido visual
 
 **La analogía.** La medición automática es la balanza: dice cuánto pesa cada cosa, pero no si la torta se ve bien. Esta sección es mirar la torta: las fotos de la fase 0 en los 16 tamaños, en claro y oscuro, más los casos especiales. Lo que dice cada punto se ve en la foto que lo acompaña (`web/capturas-salida/<tema>/<tamaño>/<pantalla>.jpg`; se regeneran con `pnpm capturas`).
