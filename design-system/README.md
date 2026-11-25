@@ -1,3 +1,5 @@
+> **Esta carpeta es el original del sistema de diseño de PPM** desde el 24-nov-2026 (antes lo era el artefacto de claude.ai, que quedó como archivo). Los tokens viven en `tokens.json` y se implementan en `web/src/styles.css`: un token nuevo o cambiado toca los dos en el mismo pull request, y la regla nueva se anota en este README.
+
 PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va la plata, sin saber contabilidad. Por dentro es partida doble; por fuera habla como habla la gente. Esta guía dice cómo se ve y cómo suena.
 
 ## Voz y contenido
@@ -37,7 +39,7 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 - `title-1` y `title-2` usan Bricolage Grotesque, solo para títulos: uno por pantalla y los de sección.
 - Todo lo demás va en IBM Plex Sans: `body`, `body-strong`, `caption`, `label`, `amount-hero` y `amount`.
 - Los códigos que se copian (CCI, número de operación) van en `code`, con IBM Plex Mono.
-- Las tres familias se cargan desde Google Fonts.
+- Las tres familias las sirve PPM con `@fontsource`, no Google Fonts (decisión «Fuentes e íconos» en `docs/modelo-contable.md`).
 
 ## Espacio, radios y sombras
 
@@ -61,4 +63,9 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 ## Foco y accesibilidad
 
 - El foco de teclado es un anillo de 2px sólido en `ring`, separado 2px del elemento.
-- El texto cumple al menos 4.5:1 sobre su fondo en los dos temas; íconos, bordes de campo y el anillo de foco, al menos 3:1.
+- El texto cumple al menos 4.5:1 sobre su fondo en los dos temas; íconos, bordes de campo y el anillo de foco, al menos 3:1. Vale con cada acento (tinta, trigo, morado y azul) y para el texto grande basta 3:1.
+- La meta es WCAG 2.2 AA.
+- Todo se puede usar con teclado y el foco siempre se ve.
+- Lo que se toca mide al menos 44×44px.
+- Las animaciones respetan `prefers-reduced-motion`.
+- HTML semántico antes que ARIA.

@@ -1,4 +1,4 @@
-/* Tema de PPM: los tokens del sistema de diseño «PPM» (claude.ai), con los nombres de shadcn/ui.
+/* Tema de PPM: los tokens de design-system/tokens.json, con los nombres de shadcn/ui.
    Claro por defecto; oscuro si el sistema lo pide (salvo data-theme="light") o con data-theme="dark".
    El acento (data-accent) solo cambia primary, primary-foreground, secondary,
    secondary-foreground y primary-strong. El trigo es el sello de PPM y no cambia con el acento. */
