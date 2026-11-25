@@ -39,7 +39,7 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 - `title-1` y `title-2` usan Bricolage Grotesque, solo para títulos: uno por pantalla y los de sección.
 - Todo lo demás va en IBM Plex Sans: `body`, `body-strong`, `caption`, `label`, `amount-hero` y `amount`.
 - Los códigos que se copian (CCI, número de operación) van en `code`, con IBM Plex Mono.
-- Las tres familias se cargan desde Google Fonts.
+- Las tres familias las sirve PPM con `@fontsource`, no Google Fonts (decisión «Fuentes e íconos» en `docs/modelo-contable.md`).
 
 ## Espacio, radios y sombras
 
