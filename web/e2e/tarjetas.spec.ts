@@ -195,6 +195,11 @@ test("importar el PDF del estado de cuenta: la foto del banco y la cuota en capi
 
   await page.goto(`/tarjetas/${card}`);
   await expect(page.getByText("S/ 5,283.53")).toBeVisible();
-  await page.getByRole("button", { name: "Ciclo anterior" }).click();     // se ve un ciclo a la vez: el del estado es el que cerró
-  await expect(page.getByRole("link", { name: "Ver su estado de cuenta" })).toBeVisible();
+  // Se ve un ciclo a la vez: se retrocede hasta el del estado (corte 25 oct). Según el día en que
+  // corre, es el que acaba de cerrar o uno anterior (desde el 25 nov ya cerró otro)
+  const estado = page.getByRole("link", { name: "Ver su estado de cuenta" });
+  await expect(async () => {
+    if (!(await estado.isVisible())) await page.getByRole("button", { name: "Ciclo anterior" }).click();
+    await expect(estado).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15000 });
 });
