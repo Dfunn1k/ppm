@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 1, auditoría (en curso).
+- **Fase actual:** 1, auditoría (terminada; ⏸ punto de control 1, esperando a Dany).
 - **Rama:** `frontend/fase-1`
 - **Último commit:** ver `git log -1 frontend/fase-1`
 
@@ -24,18 +24,22 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] b) Componentes
 - [x] c) Recorrido visual
 - [x] d) Accesibilidad
-- [ ] e) Código contra decisiones
-- [ ] f) Hallazgos priorizados
+- [x] e) Código contra decisiones
+- [x] f) Hallazgos priorizados
 
 ### Fases 2 a 5 (pendientes)
 
 ## Siguiente paso
 
-Fase 1 e), código contra decisiones (un ayudante lo está revisando), y f), hallazgos priorizados. Después, el punto de control 1.
+⏸ Punto de control 1: Dany revisa `AUDITORIA.md` y el PR de la Fase 1. Con su OK: Fase 2, `docs/frontend/SISTEMA.md`, empezando por las decisiones de la sección e (A a F) y la estrategia para la tablet y los 1024 px.
 
 ## Decisiones que le tocan a Dany
 
-Ninguna abierta.
+Para la Fase 2 (con opciones, no se deciden en la auditoría):
+- Las 6 diferencias entre la fuente y el código de `AUDITORIA.md`, e (A a F): formularios con caja o con línea, montos en Bricolage, la regla de títulos, «asiento» y «por cobrar», el símbolo en las filas y el README de Button.
+- Qué pasa en la tablet (768–1023 px) y entre 1024 y ~1200 px.
+- Cambiar el texto «como el debe y el haber» de Por asignar (texto visible).
+- Revisar en un iPhone, con PPM instalada, si la barra de abajo queda bajo la barra de gestos.
 
 ## Fuera de alcance (errores funcionales encontrados, sin arreglar)
 

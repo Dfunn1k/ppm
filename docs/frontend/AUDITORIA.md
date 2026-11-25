@@ -321,3 +321,96 @@ Lo que se nota al pasar de una pantalla a otra (el detalle de componentes está 
 - **Lector de pantalla de verdad** (VoiceOver o TalkBack): queda para la Fase 5, con una lista de pruebas a mano.
 - **Notch y barra de gestos del iPhone:** la página pide ocupar toda la pantalla (`viewport-fit=cover`), pero el código no usa `safe-area-inset` en ningún lado, y Playwright no simula el notch. Instalada como app, la barra de abajo puede quedar debajo de la barra de gestos del iPhone. → Revisarlo en un iPhone real (Dany) y decidirlo en la Fase 2.
 - **Lighthouse:** se pide en la Fase 5 y necesita tu permiso.
+
+## e) Código contra decisiones
+
+**La analogía.** Es comparar la casa con los planos aprobados. A veces la casa está mal construida: se arregla la casa. Otras veces el dueño cambió de idea en obra y nadie corrigió el plano: se corrige el plano. Aquí hay de las dos, y en las segundas decides tú cuál manda.
+
+Fuentes: `design-system/README.md` (DS), `tokens.json`, `design-system/components/`, `docs/modelo-contable.md` (MC) y la skill `ppm-interfaz`. Un ayudante hizo la revisión. Verifiqué a mano:
+- que no hay `border-input` en ningún campo;
+- «el debe y el haber» en Por asignar;
+- el monto sin símbolo de `MoveAmount`;
+- la fila del 13-nov de MC.
+
+### Lo que cumple
+
+- **«Sin punto como conector»:** ningún «·» en texto visible. Los casos 5 a 10 usan `Status`, `Facts`, `Amounts`, `Pill` y `Optional`.
+- **Montos:** el signo menos es «−» y no un guion; entrada y salida llevan ícono y signo además del color; las cifras son tabulares (218 usos).
+- **Selectores:** no hay `<select>` nativos ni selectores de fecha del navegador. Elegir de una lista siempre abre una hoja.
+- **Íconos:** solo Material Symbols, sin emoji. El único SVG es el logo de Google.
+- **Voz:** sin «¡», sin «usted» y sin mayúsculas de título.
+- **Escritorio (13-nov):** riel de 88 px, lista y detalle en Movimientos, Cuentas, Presupuesto, Personas, Reportes, Recurrentes y Más. Registrar es un panel lateral de 480 px y las hojas se abren como ventana al centro.
+
+### Donde el código no cumple (se arregla el código)
+
+| # | Regla | Qué hace el código | Dónde | Gravedad |
+|---|---|---|---|---|
+| 1 | Skill: nunca «Debe/Haber» | «Siempre cuadra, como el debe y el haber.» | `presupuesto/PorAsignar.tsx:69` | Importante (es texto visible: necesita tu OK para cambiarlo) |
+| 2 | MC, 13-nov: «ninguna sección del riel queda con la columna del celular» | Por clasificar no tiene versión de escritorio | `movimientos/PorClasificar.tsx:58` | Importante |
+| 3 | DS: montos con `money.ts`, símbolo y separador de miles | Los totales del asiento manual son `(inn / 100).toFixed(2)`: sin separador ni símbolo | `movimientos/AsientoManual.tsx:112-113` | Importante |
+| 4 | DS: el trigo solo en «mayo.» y en la barra «para mayo», como relleno | El trigo también pinta el nodo Patrimonio y la línea del % guardado en Flujo | `reportes/Flujo.tsx:27, 150-154` | Menor |
+| 5 | DS: tipos de cambio con `rateText` | 7 `toFixed(3)` o `toLocaleString` a mano | Tarjeta, Registrar, RegistrarPersona, Detalle, MoveBits | Menor |
+| 6 | DS: íconos rellenos solo en la pestaña activa y en el check de la opción elegida | 13 rellenos más: casillas, radios y avisos de éxito | Tags, PorClasificar, Pending, Entrar, MiCuenta… | Menor |
+| 7 | DS: íconos a 24 px en la navegación | La barra de abajo y el riel los ponen a 22 px | `AppNav.tsx:52`, `Rail.tsx:104` | Menor |
+| 8 | DS: el botón principal mide 56 px, radio 14, flecha a la derecha | Unas 18 acciones principales hechas a mano en 6 formas (48 px redondo, 44 px redondo, 52 px centrado…), sobre todo en Presupuesto | `presupuesto/*`, Tags, WithPartner, Etiquetas, Préstamos, Conciliar… | Importante (b, punto 7) |
+| 9 | CLAUDE.md: un token nuevo cambia `tokens.json` y `styles.css` juntos | `radius-xl` solo en `styles.css` | — | Menor (a, punto 10) |
+
+### Donde el plano quedó atrás (decides tú cuál manda)
+
+| # | Lo que dice la fuente | Lo que hace el código (y quizá decidiste) | Opciones |
+|---|---|---|---|
+| A | **DS: «dentro de la app, los formularios usan caja con borde `input`»** | Ningún campo usa caja: toda la app usa la línea de 2 px del acceso (`LineField`, 42 veces fuera del acceso, más 30 subrayados a mano). No hay una decisión que lo cambie | Registrar «la línea en toda la app» y corregir DS, o pasar los formularios a caja. Es el choque más grande entre fuente y código |
+| B | **DS: Bricolage solo para títulos; los montos van en Plex Sans (`amount-hero`)** | 17 montos grandes en Bricolage extrabold (el patrimonio de Inicio y de Cuentas, Presupuesto, Sobre, los reportes, DebtCard…) y solo 5 con `amount-hero`. Ninguna decisión lo permite | Registrar «los montos protagonistas en Bricolage» con su token, o pasarlos a `amount-hero`. Se ve en la portada de casi cada sección |
+| C | **DS: `title-hero` solo en recuperar la contraseña y en la configuración** | Se usa 40 veces en unas 34 pantallas de la app, y `title-1` (el título de pantalla) solo 4. El 13-nov aprobaste «una regla de títulos» (#70), pero no quedó escrita | Escribir la regla que aprobaste (se reconstruye desde el PR #70) y ajustar DS |
+| D | **DS: «movimiento (no asiento)», «no por cobrar ni por pagar»** | «Asiento manual» (en el mapa R1 de MC), «Por cobrar» en las cuotas (MC, aprobado) y «Por pagar / Por cobrar» en Presupuesto › Cuentas (no aprobado) | Ajustar DS con las excepciones aprobadas y decidir «Por pagar» de Presupuesto |
+| E | **DS: el monto lleva su símbolo antes del número** | En las filas, la moneda principal va sin «S/» («− 35.50») y las otras con su símbolo. Seguramente es «el dólar en claro» del 13-nov, pero no quedó escrito | Escribirlo en DS (filas sin el símbolo de tu moneda) o volver a poner el símbolo |
+| F | **`components/Button/README.md`: 40 px, `radius-md`** | `PrimaryButton` (56 px, radio 14) en 44 lugares; nada usa la variante de 40 px | Reescribir el README de Button con lo que hay, en la Fase 2 |
+
+Esto no se arregla en la auditoría: va a la Fase 2, donde te traigo cada uno con opciones.
+
+## f) Hallazgos priorizados
+
+**Cómo se ordena:**
+- **Crítico:** impide usar algo o pierde datos.
+- **Importante:** rompe una norma AA, una decisión tuya, o se repite en muchas pantallas.
+- **Menor:** es puntual o de pulido.
+
+**No encontré nada crítico.** Todas las pantallas cargan, nada se sale de ancho, el teclado nunca queda atrapado y ningún botón queda sin nombre.
+
+### Importante
+
+| # | Hallazgo | Sección | Se resuelve en |
+|---|---|---|---|
+| 1 | El foco se esconde detrás de la barra de abajo (19 veces en 9 pantallas) | d1 | Fase 3: un margen de desplazamiento (`scroll-padding`) en la base |
+| 2 | La letra está en px fijos: subir el tamaño de letra no hace nada | d2 | Fase 2 (escala en `rem`) y Fase 3 |
+| 3 | A 1024 px el escritorio queda apretado: nombres cortados y montos partidos en dos líneas | c1 | Fase 2: qué pasa entre 1024 y ~1200 px |
+| 4 | La tablet no tiene diseño: es el celular estirado | c2 | Fase 2, con opciones |
+| 5 | Los encabezados de sección no son encabezados (61 copias, 4 `<h2>` en todo el código) | b2, d4 | Fase 3: un molde `SectionHeading` |
+| 6 | Filas de lista, contenedor de pantalla, cabecera con «Volver» y círculos de ícono copiados a mano (91, 41, 36 y 46 copias) | b1, b3–b5 | Fases 2 y 3: moldes con `cva`; Fase 4: pantalla por pantalla |
+| 7 | 1,027 valores escritos a mano: 21 tamaños de letra, 11 de ícono, 5 altos de fila, 7 radios y 7 capas sin escala | a | Fase 2 (escalas) y Fase 3 (tokens y una regla automática) |
+| 8 | Fuente y código no coinciden en formularios (caja o línea), montos en Bricolage, `title-hero` y el README de Button | e, A–F | Fase 2: tú decides cuál manda |
+| 9 | Bordes de los campos con caja con 1.48:1 | d3 | Va con la decisión de e, A |
+| 10 | Gráficos de Reportes que reciben el foco sin verse, un botón dentro de otro en Personas, y un nombre que tapa el contenido en Inicio | d5–d7 | Fase 4, en sus lotes |
+| 11 | Contraste justo debajo del mínimo: la pastilla verde (4.49:1) y el % dentro de la barra de Ingresos | d8 | Fase 2: el token `income-soft`; Fase 4 |
+| 12 | Áreas táctiles menores de 24 px (17) y de 44 px en las piezas compartidas (Volver, segmentado, selectores) | c6, d9 | Fase 3, en las piezas compartidas |
+| 13 | Botones principales en 6 formas y sin un botón secundario ni uno de borrar compartidos | b7, e8 | Fases 2 y 3 |
+| 14 | «Como el debe y el haber» en Por asignar | e1 | Necesita tu OK (es texto) |
+| 15 | Por clasificar sin versión de escritorio | e2 | Fase 4 |
+| 16 | Totales del asiento manual sin `money.ts` | e3 | Fase 4 |
+| 17 | El visor de adjuntos, con 27 hex y sin tokens | a6 | Fase 2 (tokens «siempre oscuro») y Fase 4 |
+| 18 | No se usa `safe-area-inset`: la barra de abajo puede quedar bajo la barra de gestos del iPhone | d | Verificar en un iPhone real; Fase 2 |
+
+### Menor
+
+| # | Hallazgo | Sección |
+|---|---|---|
+| 19 | Las categorías no cambian de color con «Oscuro» elegido a mano, y hay líneas repetidas en `styles.css` | a10, d14 |
+| 20 | `radius-xl` sin token, y `xl` más chico que `lg` | a4, a10 |
+| 21 | Textos cortados sin «…» y montos partidos a 280 px | c3 |
+| 22 | El acento trigo en claro tiene 1.87:1 contra el fondo cuando marca algo solo con color | d10 |
+| 23 | Dos buscadores sin anillo de foco, y «¿A quién?» con un foco distinto | d11, d12 |
+| 24 | Lo que gira no respeta «reducir movimiento» | d13, a8 |
+| 25 | Trigo en Flujo, 13 íconos rellenos de más, íconos de la navegación a 22 px y tipos de cambio formateados a mano | e4–e7 |
+| 26 | `cva` instalado y sin usar; moldes compartidos que viven dentro de páginas | b |
+| 27 | La fila «Etiquetas» de Registrar, 4 px fuera de línea | c7 |
+| 28 | Seis estilos en línea que no son dinámicos | a9 |
