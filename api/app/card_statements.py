@@ -46,14 +46,15 @@ def _card(conn: psycopg.Connection, card_id: int) -> tuple[int, str, str | None]
 def open_rates(conn: psycopg.Connection, card_id: int, last: dt.date,
                today: dict[str, TodayRate] | None = None) -> dict[str, CardRate]:
     """A cuánto cuentan en la línea las monedas que no son la suya, en el ciclo abierto: el tipo
-    escrito a mano después del último corte o, si no, el de venta del día."""
+    escrito a mano desde el último corte o, si no, el de venta del día. El día del corte el ciclo
+    abierto ya es el siguiente, así que lo escrito ese día cuenta."""
     from app.cards import CardRate
     today = _today_rates(conn) if today is None else today
     out = {cur: CardRate(cur, r.sell, r.date, False) for cur, r in today.items()}
     for cur, rate, on in conn.execute(
             "SELECT trim(c.name), r.rate, r.rate_date FROM account_credit_card_rate r"
             "  JOIN res_currency c ON c.id = r.currency_id"
-            " WHERE r.card_account_id = %s AND r.rate_date > %s", (card_id, last)):
+            " WHERE r.card_account_id = %s AND r.rate_date >= %s", (card_id, last)):
         out[cur] = CardRate(cur, rate, on, True)
     return out
 
