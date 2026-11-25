@@ -133,3 +133,76 @@ Fuera de eso, todos los colores de los dos temas y de los cuatro acentos son id�
 - Íconos contra texto: el `text-[Npx]` cuenta como ícono si la misma cadena tiene la clase `icon` o está en un `<Icon>`.
 - Colores: comparación de cada token de `tokens.json`, ya resuelto, con la variable de `styles.css` en claro, en oscuro del sistema y en oscuro elegido.
 - Los scripts están en el historial de la sesión. Si hacen falta otra vez, pasan a `web/capturas/` en la Fase 3, como parte de la regla automática.
+
+## c) Recorrido visual
+
+**La analogía.** La medición automática es la balanza: dice cuánto pesa cada cosa, pero no si la torta se ve bien. Esta sección es mirar la torta: las fotos de la fase 0 en los 16 tamaños, en claro y oscuro, más los casos especiales. Lo que dice cada punto se ve en la foto que lo acompaña (`web/capturas-salida/<tema>/<tamaño>/<pantalla>.jpg`; se regeneran con `pnpm capturas`).
+
+### Lo que pasa bien
+
+- **Cero scroll horizontal** en las 70 pantallas, en los 16 tamaños, en los dos temas y en zoom 200 %, texto grande y teclado.
+- **El riel se adapta a la altura** (1024×768): lo que no cabe pasa a «Más» (Reportes, en esa foto). Así está pensado en `Rail.tsx`; no es un error.
+- **Los acentos** (tinta, trigo, morado y azul) se aplican igual en Inicio, Registrar, Apariencia y Gastos, en los dos temas. axe no marca contraste en ninguno de ellos (el detalle de contraste está en d).
+- **Nada queda tapado por la barra de abajo** al final de la página en las fotos revisadas: las pantallas con barra dejan su espacio (`pb-28`).
+
+### 1. A 1024 px, el escritorio queda apretado (importante)
+
+Desde 1024 px aparecen el riel y los dos paneles. Pero a 1024 el espacio que queda no alcanza para lo que se diseñó a 1280 o más:
+
+| Pantalla | Qué pasa a 1024×768 | A 1280×800 |
+|---|---|---|
+| Detalle de cuenta (`cuenta-banco`) | La tabla corta los nombres: «Plaza …», «Entra…», «Saldo i… Lo q» | Se leen enteros |
+| Inicio | «BBVA dól…», el monto de «Comida y bebida» se parte en dos líneas («S/» arriba y «599.20» abajo), la cuenta de los últimos movimientos queda en «B…» | Todo cabe |
+| Detalle de cuenta (dólares) | Igual que el de soles | Bien |
+
+Un monto partido en dos líneas rompe la regla de los montos del README: cifras que se leen de un vistazo. → **Fase 2**: decidir qué hace cada pantalla entre 1024 y ~1200 px (una columna menos, la tabla como lista o el riel más angosto).
+
+### 2. La tablet es un celular estirado (importante, sin diseño decidido)
+
+A 768×1024 y 820×1180 se ve el diseño del celular: una columna de ~375 px al centro, con la barra de abajo de lado a lado. Con 820 px queda más de la mitad de la pantalla vacía. No se rompe nada, pero desaprovecha el espacio, y en horizontal (1024×768) salta de golpe al escritorio apretado del punto 1. La misión ya lo dice: la tablet no tiene diseño decidido. → **Fase 2**, con opciones.
+
+### 3. El plegable de 280 px (menor)
+
+- El patrimonio de Inicio y de Cuentas se parte: «S/» en una línea y «9,003.48» en la otra. Pasa con el monto en Bricolage de 48 px.
+- El mes del encabezado se va a dos líneas («Noviembre / 2026»).
+- En la barra de abajo, «Inicio» y «Movimientos» quedan pegados.
+- La medición encontró 3 textos cortados sin «…»: «25 nov Lo que tenía al empezar» en las cuentas de banco y de dólares, y «21 nov Cuota 2 de 6» en la tarjeta. También a 320 px.
+
+280 px es el tamaño más chico de la matriz y pocos lo usan, pero un monto partido es justo lo que PPM no debería hacer. → Que el monto grande se achique en vez de partirse (Fase 2).
+
+### 4. Teclado abierto (menor)
+
+Con el teclado (390×508) el campo con foco se ve siempre, y nada queda tapado. El botón «Registrar gasto» queda al final del formulario y no a la vista: hay que bajar después de escribir. Es así en el celular sin teclado también (390×844). Es una decisión de diseño, no un error, pero conviene confirmarla en la Fase 2: ¿botón fijo abajo o al final?
+
+### 5. Zoom al 200 % (menor)
+
+Funciona: el diseño de celular, sin scroll horizontal. La barra de abajo ocupa el 20 % del alto (80 de 400 px) y el contenido que queda a la vista es poco, pero no se corta nada.
+
+### 6. Lo que se toca y mide menos de 44 px
+
+**Una aclaración sobre la fase 0:** los ~400 de la tabla son la suma de las 70 pantallas, no de cada una (unos 6 por pantalla). En celular (390×844), 69 de 70 pantallas tienen al menos uno.
+
+| Qué es | Veces (390×844) | Mide |
+|---|---|---|
+| Opciones de un selector segmentado (Gasto / Ingreso…, colores e íconos de Categoría nueva) | 159 | 38 de alto; los colores, 30×30 |
+| Volver y Cerrar (la flecha de arriba) | 57 | 41×41 |
+| Selectores de una línea («Efectivo ⌄») | 34 | 41 de alto |
+| Campos de una línea («Nota») | 13 | 38 de alto |
+| Otros (chips «Hoy», enlaces de «Ver todo», «Elegir cuáles»…) | 138 | Varios |
+
+**Menos de 24 px, el mínimo de la norma (WCAG 2.5.8), en 17 lugares:**
+- «VER TODO», «ELEGIR CUÁLES» y «VER TODOS» de Inicio: 16 px de alto.
+- «Privacidad»: 18 px.
+- Las etiquetas «¿A quién?», «¿Quién te prestó?» y parecidas de Registrar con persona: 23 px.
+- «Elige la cuenta» y «Otra línea» de Registrar manual: 22 px.
+
+En escritorio se suman, en las 63 pantallas con riel, el logo (36×36), el botón de atajos (41×41) y el de tu cuenta (38×38). Casi todo sale de 3 o 4 piezas compartidas, así que arreglarlas en la Fase 3 resuelve cientos de casos de una vez.
+
+### 7. Un mismo elemento se ve distinto
+
+Lo que se nota al pasar de una pantalla a otra (el detalle de componentes está en b):
+
+- **El título de la lista en escritorio:** Cuentas usa una etiqueta chica en mayúsculas («CUENTAS») y Reportes usa un título enorme en Bricolage («Reportes»). Son el mismo lugar con dos tratamientos.
+- **Los números grandes en Bricolage** tienen 7 tamaños según la pantalla: patrimonio 48, sobre 32/40, por asignar 26/40, reportes 30 o 40 (ver a).
+- **En Registrar,** la fila «Etiquetas» no se alinea con las de arriba: su ícono y su texto empiezan unos 4 px más a la izquierda.
+- **Los círculos de ícono** de las filas miden 36, 40 o 44 px según la pantalla (ver a, punto 3).

@@ -22,7 +22,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 ### Fase 1 — Auditoría (en curso, `docs/frontend/AUDITORIA.md`)
 - [x] a) Inventario de estilos
 - [ ] b) Componentes
-- [ ] c) Recorrido visual
+- [x] c) Recorrido visual
 - [ ] d) Accesibilidad
 - [ ] e) Código contra decisiones
 - [ ] f) Hallazgos priorizados
