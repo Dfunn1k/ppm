@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 0, preparación (terminada; esperando el merge del PR y el OK de Dany para la Fase 1).
-- **Rama:** `frontend/fase-0`
-- **Último commit:** ver `git log -1 frontend/fase-0`
+- **Fase actual:** 1, auditoría (terminada; ⏸ punto de control 1, esperando a Dany).
+- **Rama:** `frontend/fase-1`
+- **Último commit:** ver `git log -1 frontend/fase-1`
 
 ## Checklist
 
@@ -17,25 +17,29 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] Capturas de toda la matriz en Docker (`web/capturas/`, `web/playwright.capturas.config.ts`, `pnpm capturas`).
 - [x] Auditoría automática con axe en 390×844 y 1440×900, claro y oscuro.
 - [x] Resumen de medidas y axe (`web/capturas/resumen.mjs`).
-- [ ] PR de la Fase 0 aprobado por Dany.
+- [x] PR de la Fase 0 aprobado por Dany (#129, 25-nov).
 
-### Fase 1 — Auditoría (pendiente)
-- [ ] a) Inventario de estilos
-- [ ] b) Componentes
-- [ ] c) Recorrido visual
-- [ ] d) Accesibilidad
-- [ ] e) Código contra decisiones
-- [ ] f) Hallazgos priorizados
+### Fase 1 — Auditoría (en curso, `docs/frontend/AUDITORIA.md`)
+- [x] a) Inventario de estilos
+- [x] b) Componentes
+- [x] c) Recorrido visual
+- [x] d) Accesibilidad
+- [x] e) Código contra decisiones
+- [x] f) Hallazgos priorizados
 
 ### Fases 2 a 5 (pendientes)
 
 ## Siguiente paso
 
-Esperar el OK de Dany. Con su OK: Fase 1 a), el inventario de estilos de `web/src` agrupado por el token que debería ser, en `docs/frontend/AUDITORIA.md`.
+⏸ Punto de control 1: Dany revisa `AUDITORIA.md` y el PR de la Fase 1. Con su OK: Fase 2, `docs/frontend/SISTEMA.md`, empezando por las decisiones de la sección e (A a F) y la estrategia para la tablet y los 1024 px.
 
 ## Decisiones que le tocan a Dany
 
-Ninguna abierta.
+Para la Fase 2 (con opciones, no se deciden en la auditoría):
+- Las 6 diferencias entre la fuente y el código de `AUDITORIA.md`, e (A a F): formularios con caja o con línea, montos en Bricolage, la regla de títulos, «asiento» y «por cobrar», el símbolo en las filas y el README de Button.
+- Qué pasa en la tablet (768–1023 px) y entre 1024 y ~1200 px.
+- Cambiar el texto «como el debe y el haber» de Por asignar (texto visible).
+- Revisar en un iPhone, con PPM instalada, si la barra de abajo queda bajo la barra de gestos.
 
 ## Fuera de alcance (errores funcionales encontrados, sin arreglar)
 
@@ -64,6 +68,8 @@ docker compose run --rm e2e node capturas/resumen.mjs
   - teclado abierto: 390×508 (390×844 menos el teclado), solo en formularios y con el foco en el primer campo.
 - **Acentos:** tinta, trigo, morado y azul en Inicio, Registrar, Apariencia y Gastos, a 390×844 y 1440×900, claro y oscuro.
 - **axe** revisa WCAG 2.0, 2.1 y 2.2, niveles A y AA, en cada pantalla a 390×844 y 1440×900, claro y oscuro.
+- **Teclado** (`capturas/teclado.spec.ts`, desde la Fase 1): en cada pantalla aprieta Tab hasta dar la vuelta y anota si el foco se ve, si lo tapa algo fijo y si cae en algo invisible. Sale en `capturas-salida/teclado/<tamaño>.json`. Solo esto: `-g "teclado|preparar"`.
+- **Ojo con «texto grande»:** hoy sale idéntica a 390×844, porque PPM tiene toda la letra en px (ver AUDITORIA d, punto 2). Servirá para comparar cuando eso cambie.
 - La salida queda en `web/capturas-salida/` (no se sube al repo).
 
 ## Comandos para verificar

@@ -17,6 +17,6 @@ export default defineConfig({
   },
   projects: [
     { name: "preparar", testMatch: /preparar\.setup\.ts/ },
-    { name: "capturas", testMatch: /(capturas|axe)\.spec\.ts/, dependencies: ["preparar"] },
+    { name: "capturas", testMatch: /(capturas|axe|teclado)\.spec\.ts/, dependencies: ["preparar"] },
   ],
 });
