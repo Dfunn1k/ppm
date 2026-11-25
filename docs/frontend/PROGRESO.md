@@ -46,7 +46,7 @@ Ninguna abierta.
 Todo corre en Docker, en el contenedor `e2e` (Playwright 1.55):
 
 ```bash
-# Toda la matriz (16 tamaños y 3 casos especiales, claro y oscuro), los acentos y axe: ~20-30 min
+# Toda la matriz (16 tamaños y 3 casos especiales, claro y oscuro), los acentos y axe: ~20 min, ~3,700 fotos, 130 MB
 docker compose run --rm e2e corepack pnpm capturas
 # Una parte: tamaños, temas o pantallas
 docker compose run --rm -e PPM_TAMANOS=390x844,1440x900 -e PPM_TEMAS=dark -e PPM_PANTALLAS=inicio,movimientos e2e corepack pnpm capturas
