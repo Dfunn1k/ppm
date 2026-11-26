@@ -7,13 +7,17 @@ import { Link, useParams } from "react-router";
 import { type BudgetMove, useBudget, useBudgetLines, useBudgetMoves, useBudgetScopes, useUndoAssign } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { DetailSkeleton } from "@/components/Skeleton";
+import { IconButton } from "@/components/Button";
+import { BackLink } from "@/components/PageHeader";
+import { ProgressBar } from "@/components/ProgressBar";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { useDesktop } from "@/lib/desktop";
 import { isNegative, isZero } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
 
-import { abs, PostChip, postFigures, previousMonthName, useBudgetMonth, useMoney, withMonth } from "./common";
+import { abs, PILL_PRIMARY, PILL_SECONDARY, PostChip, postFigures, previousMonthName, useBudgetMonth, useMoney, withMonth } from "./common";
 import { SavingMenu } from "./Borrar";
 import { type AssignTarget, AssignSheet, CoverSheet } from "./Sheets";
 
@@ -70,46 +74,40 @@ export function Sobre() {
   const own = saving && p.role === null;   // los que creaste: se renombran y se eliminan
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28 lg:max-w-[880px] lg:px-14 lg:pt-8 lg:pb-10">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to={withMonth("/presupuesto", month)} aria-label="Volver al presupuesto" className="grid size-11 place-items-center rounded-full lg:invisible">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
-        {own && (
-          <button type="button" aria-label={`Opciones de ${p.name}`} aria-haspopup="dialog" onClick={() => setMenu(true)}
-            className="grid size-11 place-items-center rounded-full"><Icon name="more_vert" className="text-[22px]" /></button>
-        )}
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28 lg:max-w-220 lg:px-14 lg:pt-8 lg:pb-10">
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to={withMonth("/presupuesto", month)} label="Volver al presupuesto" className="lg:invisible" />
+        {own && <IconButton icon="more_vert" label={`Opciones de ${p.name}`} aria-haspopup="dialog" onClick={() => setMenu(true)} />}
       </div>
       <span className="mt-1 flex items-center gap-2.5">
         <PostChip post={p} size={28} /><span className="text-label text-muted-foreground">{saving ? "Ahorro" : monthOnly(month)}</span>
       </span>
-      <h1 className="mt-1.5 font-display text-[32px] leading-[38px] font-extrabold tracking-[-0.03em] lg:text-[40px] lg:leading-[46px]">{p.name}</h1>
+      <h1 className="mt-1.5 text-title-hero break-words">{p.name}</h1>
 
       <div className="lg:mt-4 lg:flex lg:items-start lg:gap-14">
-        <div className="flex flex-col lg:w-[300px] lg:flex-none">
+        <div className="flex flex-col lg:w-75 lg:flex-none">
           <span className="mt-3 text-caption text-muted-foreground lg:mt-0">{saving ? "Guardado" : red ? "Te pasaste" : "Te queda"}</span>
-          <span className={`font-display text-[40px] leading-[46px] font-extrabold tracking-[-0.03em] tabular-nums ${red ? "text-expense" : ""}`}>{money(red ? abs(p.available) : p.available)}</span>
+          <span className={`text-amount-display ${red ? "text-expense" : ""}`}>{money(red ? abs(p.available) : p.available)}</span>
           {!saving && (
-            <span aria-hidden="true" className="my-2 h-1.5 overflow-hidden rounded-full bg-muted">
-              <span className="block h-1.5 rounded-full" style={{ width: `${had > 0 ? Math.min(Math.max(spent / had, 0), 1) * 100 : red ? 100 : 0}%`, background: red ? "var(--expense)" : `var(--cat-${p.color ?? 0})` }} />
-            </span>
+            <ProgressBar className="my-2" value={had > 0 ? Math.min(Math.max(spent / had, 0), 1) : red ? 1 : 0}
+              tone={red ? "expense" : "category"} color={p.color} />
           )}
           {pace && <span className="text-caption text-muted-foreground">{pace}</span>}
           {open && (
             <div className="mt-4 flex gap-2">
               {red ? (
-                <button type="button" onClick={() => setCovering(true)} className="flex h-11 flex-1 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">Cubrir</button>
+                <button type="button" onClick={() => setCovering(true)} className={`flex-1 ${PILL_PRIMARY}`}>Cubrir</button>
               ) : (
-                <button type="button" onClick={() => setAssigning({ from: null, to: p.id, fixed: "to" })} className="flex h-11 flex-1 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">Asignar</button>
+                <button type="button" onClick={() => setAssigning({ from: null, to: p.id, fixed: "to" })} className={`flex-1 ${PILL_PRIMARY}`}>Asignar</button>
               )}
               <button type="button" disabled={Number(p.available) <= 0} onClick={() => setAssigning({ from: p.id, to: null, fixed: "from" })}
-                className="flex h-11 flex-1 items-center justify-center rounded-full bg-secondary font-semibold text-secondary-foreground disabled:opacity-50">
+                className={`flex-1 ${PILL_SECONDARY}`}>
                 {saving ? "Usar" : "Mover a otro"}
               </button>
             </div>
           )}
         </div>
-        <div className="mt-4 flex flex-1 flex-col lg:mt-0 lg:max-w-[360px]">
+        <div className="mt-4 flex flex-1 flex-col lg:mt-0 lg:max-w-90">
           <Row label={`Traías de ${previousMonthName(month)}`} value={signed(p.carried)} />
           <Row label="Asignaste" value={signed(p.assigned)} />
           <Row label={saving ? "Usaste" : "Gastaste"} value={isZero(p.activity) ? money("0") : signed(p.activity)} />
@@ -120,18 +118,18 @@ export function Sobre() {
 
       {saving && (
         <div className="mt-4 flex gap-2 rounded-md bg-muted p-3 text-caption text-muted-foreground">
-          <Icon name="info" className="text-[18px]" />
+          <Icon name="info" size="sm" />
           <span>Un sobre de ahorro guarda plata que sigue en tus cuentas. Lo que sobra pasa solo al mes siguiente y va creciendo.</span>
         </div>
       )}
 
-      <div className="mt-6 flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Este mes</span></div>
+      <SectionHeading className="mt-6">Este mes</SectionHeading>
       {lines.data && lines.data.length === 0 && mine.length === 0 && (
         <span className="py-3 text-caption text-muted-foreground">Nada todavía en {monthOnly(month).toLowerCase()}.</span>
       )}
       {(lines.data ?? []).map((x) => (
         <Link key={x.move_id} to={`/movimientos/${x.move_id}`}
-          className="flex min-h-14 items-center gap-3 border-b border-border py-2 lg:grid lg:grid-cols-[72px_1fr_140px] lg:gap-3">
+          className="flex min-h-row-option items-center gap-3 border-b border-border py-2 lg:grid lg:grid-cols-post-ledger lg:gap-3">
           {desktop && <span className="text-caption text-muted-foreground">{shortDate(x.date)}</span>}
           <span className="flex min-w-0 flex-1 items-center gap-3">
             <CategoryChip category={{ icon: x.icon, color: x.color ?? p.color ?? 0 }} size={32} />
@@ -146,12 +144,12 @@ export function Sobre() {
       {mine.map((m) => {
         const into = m.to_post_id === id;
         return (
-          <div key={m.id} className="flex min-h-14 items-center gap-3 border-b border-border py-2">
-            <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="call_split" className="text-[18px]" /></span>
+          <div key={m.id} className="flex min-h-row-option items-center gap-3 border-b border-border py-2">
+            <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="call_split" size="sm" /></span>
             <span className="flex-1 font-semibold">{moveText(m)}</span>
             <span className="font-semibold tabular-nums">{into ? `+ ${money(m.amount)}` : money(`-${m.amount}`)}</span>
-            <button type="button" aria-label={`Deshacer: ${moveText(m)}`} disabled={undo.isPending} onClick={() => undo.mutate(m.id)}
-              className="grid size-9 place-items-center rounded-full text-muted-foreground"><Icon name="undo" className="text-[20px]" /></button>
+            <IconButton icon="undo" label={`Deshacer: ${moveText(m)}`} disabled={undo.isPending} onClick={() => undo.mutate(m.id)}
+              className="-mr-2.5 text-muted-foreground" />
           </div>
         );
       })}
@@ -159,12 +157,12 @@ export function Sobre() {
 
       {saving && (
         <>
-          <div className="mt-6 border-b border-border pb-1 text-label text-muted-foreground">Cuentas que salen de aquí</div>
+          <SectionHeading className="mt-6">Cuentas que salen de aquí</SectionHeading>
           {accounts.length === 0
             ? <span className="py-3 text-caption text-muted-foreground">Ninguna. Al sacar una cuenta del presupuesto, eliges de qué sobre sale lo que le pasas.</span>
             : accounts.map((s) => (
-              <div key={s.account_id} className="flex min-h-14 items-center gap-3 border-b border-border">
-                <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="account_balance" className="text-[18px]" /></span>
+              <div key={s.account_id} className="flex min-h-row-option items-center gap-3 border-b border-border py-2">
+                <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="account_balance" size="sm" /></span>
                 <span className="flex flex-col"><span className="font-semibold">{s.name}</span><span className="text-caption text-muted-foreground">Fuera del presupuesto</span></span>
               </div>
             ))}

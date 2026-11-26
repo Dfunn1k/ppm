@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 7 terminado; esperando el visto bueno de Dany).
+- **Fase actual:** 4, migración por lotes (lote 8 terminado; esperando el visto bueno de Dany).
 - **Rama:** `frontend/fase-4-lote-6`
 - **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
 
@@ -75,9 +75,13 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 6: Tarjeta, Pagar tarjeta y Préstamo (con Nuevo préstamo). PR #138, aprobado por Dany (26-nov).
   - 61 valores escritos a mano → 0; lo que se toca < 44 px: 0 (antes Ciclo anterior y siguiente, Hoy y Pagar toda la deuda); axe sin violaciones; foco tapado 1 → 0.
   - El monto que escribes en Nuevo préstamo pasa de 30 a 48 px (amount-input). Si Dany lo prefiere más chico, falta un token «monto de formulario».
-- [x] Lote 7: Personas, Persona y De antes de PPM (con DebtCard, que también usan Me pagó y Le pagué). PR #139.
+- [x] Lote 7: Personas, Persona y De antes de PPM (con DebtCard, que también usan Me pagó y Le pagué). PR #139, aprobado por Dany (26-nov).
   - 53 valores escritos a mano → 0; lo que se toca < 44 px: 0 (antes los datos de contacto, el vencimiento, las cuotas y Prestarle); axe sin violaciones; foco tapado 2 → 0.
   - El nombre de la persona pasa a title-hero (40 → 48 px) y lo que queda entre ustedes a amount-display, en Bricolage (decisiones C y S2). La tarjeta elegida usa el acento al 15 % en lugar de una mezcla a mano; utilidad nueva `mark-selected-below` para el total elegido de Personas.
+- [x] Lote 8: el presupuesto entero (Presupuesto con Empezar, Sobre, Por asignar, Repartir y Cuentas del presupuesto, con sus hojas). PR #140.
+  - 80 valores escritos a mano → 0; lo que se toca < 44 px: 0; axe 4 → 0 (el verde de lo que queda en un sobre, ahora income-soft); foco tapado 2 → 0.
+  - Textos de las decisiones D y H: «Debo a personas» y «Me deben» en Cuentas del presupuesto; «Siempre cuadra: cada sol está en un solo lugar.» en Por asignar.
+  - Sobre y Por asignar pasan a title-hero (decisión C) y su monto principal a amount-display (S2). Los botones redondos de la sección se mantienen, ahora con tokens (`PILL_PRIMARY`, `PILL_SECONDARY` en common.tsx); falta que Dany diga si pasan al botón de la app.
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
 - [ ] Después, de a 2 o 3: Presupuesto, Sobre y Por asignar; Reportes (Gastos, Ingresos, Flujo, Patrimonio, Etiquetas, Tu plata); Recurrentes y Pendientes; Más y sus ajustes; acceso y bienvenida; importar
 
@@ -85,7 +89,7 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 
 ## Siguiente paso
 
-Dany revisa el lote 7 (PR #139) y da su visto bueno. Con su OK: lote 8, Presupuesto, Sobre y Por asignar (con el texto de la decisión H y las palabras de la D), en la rama `frontend/fase-4-lote-8`.
+Dany revisa el lote 8 (PR #140), da su visto bueno y dice si los botones redondos del presupuesto se quedan. Con su OK: lote 9, Reportes (Gastos, Ingresos, Flujo, Patrimonio, Etiquetas, Personas, Tu plata), en la rama `frontend/fase-4-lote-9`.
 
 ## Decisiones de Dany
 

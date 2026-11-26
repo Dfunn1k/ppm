@@ -1,20 +1,22 @@
 // Qué cuentas entran al presupuesto (sección 6 del boceto, D6 y D10): el interruptor de cada cuenta,
 // la hoja que pregunta desde cuándo y de qué sobre de ahorro sale lo que le pasas, y la lista de todas.
 import { useState } from "react";
-import { Link } from "react-router";
-
 import { type BudgetScope, useBudget, useBudgetScopes, useSetScope } from "@/api/hooks";
 import { Sheet, SheetSelect } from "@/components/Sheet";
 import { ListSkeleton } from "@/components/Skeleton";
+import { BackLink } from "@/components/PageHeader";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
+
+import { PILL_PRIMARY } from "./common";
 
 /** El interruptor, igual que en Más › Inicio. */
 export function Switch({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onClick}
       className={`hit-area h-6.5 w-11 flex-none rounded-full transition-colors ${on ? "bg-primary" : "bg-input-line/50"}`}>
-      <span className={`absolute top-0.75 size-5 rounded-full bg-card shadow-sm transition-[left] ${on ? "left-5.25" : "left-0.75"}`} />
+      <span className={`absolute top-0.75 left-0.75 size-5 rounded-full bg-card shadow-sm transition-transform ${on ? "translate-x-4.5" : ""}`} />
     </button>
   );
 }
@@ -67,12 +69,12 @@ function ScopeForm({ scope: s, onDone }: { scope: BudgetScope; onDone: () => voi
           ? `El saldo de ${s.name} deja de ser plata para repartir. Lo que le pases después cuenta como ahorro.`
           : `El saldo de ${s.name} pasa a ser plata para repartir: entra a Por asignar.`}
       </p>
-      <div className="mt-4 border-b border-border pb-1 text-label text-muted-foreground">Desde cuándo</div>
+      <SectionHeading as="h3" className="mt-4">Desde cuándo</SectionHeading>
       <div role="radiogroup" aria-label="Desde cuándo" className="flex flex-col">
         {options.map((o) => (
           <button key={o.value} type="button" role="radio" aria-checked={since === o.value} onClick={() => setSince(o.value)}
-            className="flex min-h-14 items-center gap-3 border-b border-border text-left">
-            <span className={`size-5 flex-none rounded-full border-2 ${since === o.value ? "border-[6px] border-primary" : "border-input-line"}`} />
+            className="flex min-h-row-option items-center gap-3 border-b border-border py-2 text-left">
+            <span className={`size-5 flex-none rounded-full border-2 ${since === o.value ? "border-6 border-primary" : "border-input-line"}`} />
             <span className="flex flex-col"><span className="font-semibold">{o.label}</span><span className="text-caption text-muted-foreground">{o.hint}</span></span>
           </button>
         ))}
@@ -85,8 +87,8 @@ function ScopeForm({ scope: s, onDone }: { scope: BudgetScope; onDone: () => voi
       )}
       {set.isError && <div className="mt-3"><ErrorAlert>{set.error.message}</ErrorAlert></div>}
       <button type="button" onClick={save} disabled={set.isPending}
-        className="mt-5 flex h-12 items-center justify-center gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-        {set.isPending && <Icon name="progress_activity" className="animate-spin text-[20px]" />}{leaving ? "Sacar del presupuesto" : "Meter al presupuesto"}
+        className={`mt-5 ${PILL_PRIMARY}`}>
+        {set.isPending && <Icon name="progress_activity" className="animate-spin" />}{leaving ? "Sacar del presupuesto" : "Meter al presupuesto"}
       </button>
     </div>
   );
@@ -122,7 +124,7 @@ export function CuentasPresupuesto() {
   if (scopes.isPending) return <ListSkeleton back="/presupuesto" title="Cuentas del presupuesto" />;
   if (scopes.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{scopes.error.message}</ErrorAlert></main>;
   const rows = (on: boolean) => scopes.data.filter((s) => s.on_budget === on).map((s) => (
-    <div key={s.account_id} className="flex min-h-16 items-center gap-3 border-b border-border py-2">
+    <div key={s.account_id} className="flex min-h-row items-center gap-3 border-b border-border py-2">
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{s.name}</span>
         <span className="text-caption text-muted-foreground">{scopeText(s, name)}</span>
@@ -131,18 +133,18 @@ export function CuentasPresupuesto() {
     </div>
   ));
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10 lg:max-w-[640px] lg:pt-10">
-      <div className="-mx-2.5 flex items-center gap-1">
-        <Link to="/presupuesto" aria-label="Volver al presupuesto" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-10 lg:max-w-160 lg:pt-10">
+      <div className="-mx-2.5 flex min-h-control items-center gap-1">
+        <BackLink to="/presupuesto" label="Volver al presupuesto" />
         <h1 className="text-title-2">Cuentas del presupuesto</h1>
       </div>
       <span className="mt-2 text-caption text-muted-foreground">Dentro: su plata se reparte en sobres. Fuera: no cuenta hasta que la traes.</span>
-      <div className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Dentro</div>
+      <SectionHeading className="mt-5">Dentro</SectionHeading>
       {rows(true)}
-      <div className="mt-6 border-b border-border pb-1 text-label text-muted-foreground">Fuera</div>
+      <SectionHeading className="mt-6">Fuera</SectionHeading>
       {rows(false)}
       <span className="mt-3 text-caption text-muted-foreground">
-        Siempre dentro: Por pagar, Plata que guardo de otros y Cuotas por venir. Siempre fuera: Por cobrar y los pagos por adelantado.
+        Siempre dentro: Debo a personas, Plata que guardo de otros y Cuotas por venir. Siempre fuera: Me deben y los pagos por adelantado.
       </span>
       <ScopeSheet scope={editing} onClose={() => setEditing(null)} />
     </main>

@@ -7,13 +7,15 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { type BudgetMonth, useBudget, useStartBudget } from "@/api/hooks";
 import { OptionList, Segmented, Sheet } from "@/components/Sheet";
 import { ListSkeleton } from "@/components/Skeleton";
+import { IconButton } from "@/components/Button";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon, LineField } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { useDesktop } from "@/lib/desktop";
 import { isNegative, isZero } from "@/lib/money";
 import { monthName, monthOnly, monthOptions } from "@/lib/months";
 
-import { AgeOfMoney, abs, addMonth, Heading, PostRow, useBudgetMonth, useMoney, withMonth } from "./common";
+import { AgeOfMoney, abs, addMonth, Heading, PILL_PRIMARY, PostRow, useBudgetMonth, useMoney, withMonth } from "./common";
 import { ResetSheet, UndoMonthSheet } from "./Borrar";
 import { type AssignTarget, AssignSheet } from "./Sheets";
 
@@ -43,15 +45,14 @@ export function Presupuesto() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-7 pb-28 lg:px-6 lg:pt-7 lg:pb-10">
       <div className="flex items-center justify-between">
         <span className="hidden text-label text-muted-foreground lg:block">Presupuesto</span>
-        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex items-center gap-0.5 text-title-2 lg:hidden">
-          {monthName(month)}<Icon name="expand_more" className="text-[22px] text-muted-foreground" />
+        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex min-h-control items-center gap-0.5 text-title-2 lg:hidden">
+          {monthName(month)}<Icon name="expand_more" size="md" className="text-muted-foreground" />
         </button>
-        <button type="button" aria-label="Más opciones del presupuesto" aria-haspopup="dialog" onClick={() => setMenu(true)}
-          className="-mr-2.5 grid size-11 place-items-center rounded-full"><Icon name="more_vert" className="text-[22px]" /></button>
+        <IconButton icon="more_vert" label="Más opciones del presupuesto" aria-haspopup="dialog" onClick={() => setMenu(true)} className="-mr-2.5" />
       </div>
       <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)}
-        className="mt-2 hidden items-center gap-0.5 self-start font-display text-[22px] leading-7 font-extrabold tracking-[-0.02em] lg:flex">
-        {monthName(month)}<Icon name="expand_more" className="text-[20px] text-muted-foreground" />
+        className="mt-2 hidden min-h-control items-center gap-0.5 self-start text-title-2 font-extrabold lg:flex">
+        {monthName(month)}<Icon name="expand_more" className="text-muted-foreground" />
       </button>
 
       {before ? (
@@ -59,25 +60,25 @@ export function Presupuesto() {
       ) : (
         <>
           <section aria-label={red ? "Asignaste de más" : "Por asignar"}
-            className={`mt-3 flex flex-col gap-1 rounded-xl border bg-card p-4 ${red ? "border-expense" : "border-border"} ${desktop && path === "/presupuesto/por-asignar" ? "shadow-[inset_3px_0_0_var(--foreground)]" : ""}`}>
+            className={`mt-3 flex flex-col gap-1 rounded-xl border bg-card p-4 ${red ? "border-expense" : "border-border"} ${desktop && path === "/presupuesto/por-asignar" ? "mark-selected" : ""}`}>
             <Link to={withMonth("/presupuesto/por-asignar", month)} className="flex flex-col gap-1">
               <span className="flex items-center justify-between text-caption text-muted-foreground">
-                {red ? "Asignaste de más" : "Por asignar"}<Icon name="chevron_right" className="text-[20px]" />
+                {red ? "Asignaste de más" : "Por asignar"}<Icon name="chevron_right" />
               </span>
-              <span className={`font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.03em] tabular-nums ${red ? "text-expense" : ""}`}>{money(b.to_assign)}</span>
+              <span className={`text-amount-display ${red ? "text-expense" : ""}`}>{money(b.to_assign)}</span>
               <span className="text-caption text-muted-foreground">
                 {red ? "Saca plata de algún sobre para cuadrar." : "Plata que todavía no tiene trabajo."}
                 {!isZero(b.future) && ` Ya asignaste ${money(b.future)} a los meses que vienen.`}
               </span>
             </Link>
             <button type="button" onClick={() => setAssigning({ from: null, to: null, fixed: "from" })}
-              className="mt-2 flex h-11 items-center justify-center gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground">
-              <Icon name="call_split" className="text-[20px]" />Asignar
+              className={`mt-2 ${PILL_PRIMARY}`}>
+              <Icon name="call_split" />Asignar
             </button>
           </section>
 
           {(!isZero(b.unclassified.available) || !isZero(b.unclassified.activity)) && (
-            <Link to="/por-clasificar" className="mt-3 flex min-h-16 items-center gap-3 rounded-xl bg-attention-soft px-3 py-2">
+            <Link to="/por-clasificar" className="mt-3 flex min-h-row items-center gap-3 rounded-xl bg-attention-soft px-3 py-2">
               <span className="grid size-9 flex-none place-items-center rounded-full bg-card text-attention"><Icon name="inbox" /></span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">Por clasificar</span>
@@ -87,7 +88,7 @@ export function Presupuesto() {
                     : `${money(b.unclassified.available)} que entraron sin clasificar. Clasifícalos para poder repartirlos.`}
                 </span>
               </span>
-              <Icon name="chevron_right" className="text-[20px] text-muted-foreground" />
+              <Icon name="chevron_right" className="text-muted-foreground" />
             </Link>
           )}
 
@@ -106,20 +107,20 @@ export function Presupuesto() {
       </Sheet>
       <Sheet title="Presupuesto" open={menu} onClose={() => setMenu(false)}>
         <div className="mt-2 flex flex-col">
-          <Link to="/presupuesto/cuentas" className="flex min-h-14 items-center gap-3 border-b border-border">
-            <Icon name="account_balance_wallet" className="text-[22px]" />
+          <Link to="/presupuesto/cuentas" className="flex min-h-row-option items-center gap-3 border-b border-border py-2">
+            <Icon name="account_balance_wallet" size="md" />
             <span className="flex flex-1 flex-col"><span className="font-semibold">Cuentas del presupuesto</span>
               <span className="text-caption text-muted-foreground">Cuáles se reparten en sobres y cuáles quedan fuera</span></span>
           </Link>
           {!before && (
-            <button type="button" onClick={() => { setMenu(false); setErasing("month"); }} className="flex min-h-14 items-center gap-3 border-b border-border text-left">
-              <Icon name="undo" className="text-[22px]" />
+            <button type="button" onClick={() => { setMenu(false); setErasing("month"); }} className="flex min-h-row-option items-center gap-3 border-b border-border py-2 text-left">
+              <Icon name="undo" size="md" />
               <span className="flex flex-1 flex-col"><span className="font-semibold">Deshacer lo asignado en {monthOnly(month).toLowerCase()}</span>
                 <span className="text-caption text-muted-foreground">Todo lo que repartiste este mes vuelve a Por asignar</span></span>
             </button>
           )}
-          <button type="button" onClick={() => { setMenu(false); setErasing("all"); }} className="flex min-h-14 items-center gap-3 text-left text-destructive">
-            <Icon name="delete" className="text-[22px]" />
+          <button type="button" onClick={() => { setMenu(false); setErasing("all"); }} className="flex min-h-row-option items-center gap-3 py-2 text-left text-destructive">
+            <Icon name="delete" size="md" />
             <span className="flex flex-1 flex-col"><span className="font-semibold">Borrar el presupuesto</span>
               <span className="text-caption text-muted-foreground">Empezar de cero. Tus movimientos no cambian</span></span>
           </button>
@@ -150,44 +151,43 @@ function Empezar({ budget: b }: { budget: BudgetMonth }) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-10 pb-28 lg:pb-10">
-      <h1 className="font-display text-[30px] leading-[34px] font-extrabold tracking-[-0.03em]">Dale un trabajo a cada sol</h1>
+      <h1 className="text-title-1">Dale un trabajo a cada sol</h1>
       <p className="mt-3 text-muted-foreground">
         Repartes la plata que tienes hoy en sobres: comida, vivienda, transporte. Cuando gastas, sale del sobre. Si un sobre se acaba, decides de cuál sacar.
       </p>
       <div className="mt-4 flex flex-col gap-1 rounded-xl border border-border bg-card p-4">
         <span className="text-caption text-muted-foreground">Tu plata para repartir hoy</span>
-        <span className="font-display text-[30px] leading-9 font-extrabold tracking-[-0.03em] tabular-nums">{money(b.plata.total)}</span>
+        <span className="text-amount-display-2">{money(b.plata.total)}</span>
         <span className="text-caption text-muted-foreground">Tus cuentas y tarjetas. No cuenta lo que te deben ni tus inversiones.</span>
       </div>
       <div className="mt-5">
         <Segmented label="¿Desde qué mes?" value={month} onChange={setMonth} options={months.map((m) => ({ value: m, label: monthOnly(m) }))} />
         <span className="mt-1.5 block text-caption text-muted-foreground">Lo que gastaste antes de ese mes no cuenta.</span>
       </div>
-      <div className="mt-6 border-b border-border pb-1 text-label text-muted-foreground">Sobres para ahorrar</div>
-      <div className="flex min-h-14 items-center gap-3 border-b border-border">
-        <span className="grid size-5 flex-none place-items-center rounded-[5px] bg-primary/50 text-primary-foreground"><Icon name="lock" className="text-[14px]" /></span>
+      <SectionHeading className="mt-6">Sobres para ahorrar</SectionHeading>
+      <div className="flex min-h-row-option items-center gap-3 border-b border-border py-2">
+        <span className="grid size-5 flex-none place-items-center rounded-sm bg-primary/50 text-primary-foreground"><Icon name="lock" size="sm" /></span>
         <span className="flex flex-col"><span className="font-semibold">Construir patrimonio</span>
           <span className="text-caption text-muted-foreground">Para el capital de tus préstamos y lo que inviertes</span></span>
       </div>
-      <label className="flex min-h-14 items-center gap-3 border-b border-border">
+      <label className="flex min-h-row-option items-center gap-3 border-b border-border py-2">
         <input type="checkbox" checked={emergency} onChange={() => setEmergency(!emergency)} className="size-5 accent-primary" />
         <span className="flex flex-col"><span className="font-semibold">Fondo de emergencia</span>
           <span className="text-caption text-muted-foreground">Para lo que no esperabas</span></span>
       </label>
       {others.map((o) => (
-        <div key={o} className="flex min-h-14 items-center gap-3 border-b border-border">
-          <Icon name="savings" className="text-[20px]" /><span className="flex-1 font-semibold">{o}</span>
-          <button type="button" aria-label={`Quitar ${o}`} onClick={() => setOthers(others.filter((x) => x !== o))}
-            className="grid size-10 place-items-center rounded-full"><Icon name="close" /></button>
+        <div key={o} className="flex min-h-row-option items-center gap-3 border-b border-border">
+          <Icon name="savings" /><span className="flex-1 font-semibold">{o}</span>
+          <IconButton icon="close" label={`Quitar ${o}`} onClick={() => setOthers(others.filter((x) => x !== o))} className="-mr-2.5" />
         </div>
       ))}
-      <button type="button" onClick={() => setAdding(true)} className="flex min-h-14 items-center gap-3 border-b border-border font-semibold">
-        <Icon name="add" className="text-[20px]" />Otro sobre de ahorro
+      <button type="button" onClick={() => setAdding(true)} className="flex min-h-row-option items-center gap-3 border-b border-border font-semibold">
+        <Icon name="add" />Otro sobre de ahorro
       </button>
       {start.isError && <div className="mt-4"><ErrorAlert>{start.error.message}</ErrorAlert></div>}
       <button type="button" onClick={go} disabled={start.isPending}
-        className="mt-8 flex h-12 items-center justify-center gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-        {start.isPending && <Icon name="progress_activity" className="animate-spin text-[20px]" />}Siguiente
+        className={`mt-8 ${PILL_PRIMARY}`}>
+        {start.isPending && <Icon name="progress_activity" className="animate-spin" />}Siguiente
       </button>
 
       <Sheet title="Otro sobre de ahorro" open={adding} onClose={() => setAdding(false)}>
@@ -199,7 +199,7 @@ function Empezar({ budget: b }: { budget: BudgetMonth }) {
           setAdding(false);
         }}>
           <LineField label="¿Para qué ahorras?" placeholder="Casa, viaje, estudios" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
-          <button type="submit" className="flex h-12 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">Agregar</button>
+          <button type="submit" className={PILL_PRIMARY}>Agregar</button>
         </form>
       </Sheet>
     </main>

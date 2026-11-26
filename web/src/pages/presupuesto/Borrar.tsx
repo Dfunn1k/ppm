@@ -5,8 +5,10 @@ import { type FormEvent, type ReactNode, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { type BudgetPost, useBudgetMoves, useDeletePost, useRenamePost, useResetBudget, useUndoMonth } from "@/api/hooks";
+import { Button } from "@/components/Button";
 import { Sheet } from "@/components/Sheet";
 import { ErrorAlert, Icon, LineField } from "@/components/ui";
+import { add, subtract } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
 import { listText } from "@/lib/utils";
 
@@ -22,11 +24,8 @@ function Confirm({ open, onClose, title, children, action, icon, danger, pending
       <div className="flex flex-col gap-3 px-3">
         {children}
         {error && <ErrorAlert>{error}</ErrorAlert>}
-        <button type="button" disabled={pending} onClick={onConfirm}
-          className={`mt-1 flex h-14 items-center justify-between rounded-lg px-5 font-semibold disabled:opacity-60 ${danger ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`}>
-          <span>{action}</span><Icon name={pending ? "progress_activity" : icon} className={pending ? "animate-spin" : ""} />
-        </button>
-        <button type="button" onClick={onClose} className="h-11 font-semibold">Cancelar</button>
+        <Button variant={danger ? "destructive" : "primary"} pending={pending} icon={icon} onClick={onConfirm} className="mt-1">{action}</Button>
+        <button type="button" onClick={onClose} className="min-h-control rounded-md font-semibold hover:bg-muted">Cancelar</button>
       </div>
     </Sheet>
   );
@@ -35,7 +34,7 @@ function Confirm({ open, onClose, title, children, action, icon, danger, pending
 function Note({ icon, children }: { icon: string; children: ReactNode }) {
   return (
     <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-caption text-muted-foreground">
-      <Icon name={icon} className="text-[18px]" /><span>{children}</span>
+      <Icon name={icon} size="sm" /><span>{children}</span>
     </div>
   );
 }
@@ -46,15 +45,16 @@ export function UndoMonthSheet({ month, open, onClose }: { month: string; open: 
   const { money } = useMoney();
   const name = monthOnly(month).toLowerCase();
   // Lo que salió de Por asignar menos lo que volvió: eso es lo que regresa
-  const back = moves.reduce((t, m) => t + (m.from_post_id === null ? Number(m.amount) : m.to_post_id === null ? -Number(m.amount) : 0), 0);
+  const back = moves.reduce((t, m) => (m.from_post_id === null ? add(t, m.amount) : m.to_post_id === null ? subtract(t, m.amount) : t), "0.00");
+  const some = Number(back) > 0;
   const n = moves.length;
   return (
     <Confirm open={open} onClose={onClose} title={`Deshacer lo asignado en ${name}`} icon="undo"
-      action={back > 0 ? `Deshacer ${money(back.toFixed(2))}` : "Deshacer"} pending={undo.isPending} error={undo.error?.message}
+      action={some ? `Deshacer ${money(back)}` : "Deshacer"} pending={undo.isPending} error={undo.error?.message}
       onConfirm={() => undo.mutate(month, { onSuccess: onClose })}>
       <p className="text-muted-foreground tabular-nums">
         {n === 0 ? `No asignaste nada en ${name}.`
-          : `Se ${n === 1 ? "borra la asignación" : `borran las ${n} asignaciones y movimientos entre sobres`} de ${name}.${back > 0 ? ` ${money(back.toFixed(2))} vuelven a Por asignar.` : ""} Tus movimientos y los otros meses no cambian.`}
+          : `Se ${n === 1 ? "borra la asignación" : `borran las ${n} asignaciones y movimientos entre sobres`} de ${name}.${some ? ` ${money(back)} vuelven a Por asignar.` : ""} Tus movimientos y los otros meses no cambian.`}
       </p>
       {n > 0 && <Note icon="info">El mes siguiente empieza con lo que quede en cada sobre, así que también puede cambiar lo que traes.</Note>}
     </Confirm>
@@ -99,11 +99,11 @@ export function SavingMenu({ post, month, open, onClose, accounts }: {
     <>
       <Sheet title={post.name} open={open && step === "menu"} onClose={close}>
         <div className="mt-1 flex flex-col">
-          <button type="button" onClick={() => setStep("rename")} className="flex min-h-14 items-center gap-3 border-b border-border text-left">
-            <Icon name="edit" className="text-[22px]" /><span className="flex-1 font-semibold">Cambiar el nombre</span>
+          <button type="button" onClick={() => setStep("rename")} className="flex min-h-row-option items-center gap-3 border-b border-border py-2 text-left">
+            <Icon name="edit" size="md" /><span className="flex-1 font-semibold">Cambiar el nombre</span>
           </button>
-          <button type="button" onClick={() => setStep("delete")} className="flex min-h-14 items-center gap-3 text-left text-destructive">
-            <Icon name="delete" className="text-[22px]" />
+          <button type="button" onClick={() => setStep("delete")} className="flex min-h-row-option items-center gap-3 py-2 text-left text-destructive">
+            <Icon name="delete" size="md" />
             <span className="flex flex-1 flex-col"><span className="font-semibold">Eliminar sobre</span>
               <span className="text-caption text-muted-foreground">Lo guardado vuelve a Por asignar</span></span>
           </button>

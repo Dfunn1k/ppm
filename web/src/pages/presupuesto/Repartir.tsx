@@ -7,10 +7,10 @@ import { useNavigate } from "react-router";
 import { useAssign, useBudget } from "@/api/hooks";
 import { ListSkeleton } from "@/components/Skeleton";
 import { ErrorAlert, Icon } from "@/components/ui";
-import { formatNumber, parseAmount } from "@/lib/money";
+import { add, formatNumber, isNegative, parseAmount, subtract } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
 
-import { addMonth, Heading, PostChip, useBudgetMonth, useMoney, withMonth } from "./common";
+import { addMonth, Heading, PILL_PRIMARY, PILL_SECONDARY, PostChip, useBudgetMonth, useMoney, withMonth } from "./common";
 
 export function Repartir() {
   const [month] = useBudgetMonth();
@@ -25,8 +25,8 @@ export function Repartir() {
   const b = budget.data;
   const posts = b.posts.filter((p) => p.active);
   const parsed = posts.map((p) => ({ p, amount: parseAmount(values[p.id] ?? "", lang) }));
-  const total = parsed.reduce((s, x) => s + (x.amount ? Number(x.amount) : 0), 0);
-  const left = (Number(b.to_assign) - total).toFixed(2);
+  const total = parsed.reduce((s, x) => (x.amount ? add(s, x.amount) : s), "0.00");
+  const left = subtract(b.to_assign, total);
   const bad = parsed.some((x) => (values[x.p.id] ?? "").trim() !== "" && x.amount === null);
   const averages = () => setValues(Object.fromEntries(posts.filter((p) => p.kind === "expense" && Number(p.average) > 0)
     .map((p) => [p.id, formatNumber(p.average, lang)])));
@@ -40,7 +40,7 @@ export function Repartir() {
   };
 
   const row = (p: (typeof posts)[number]) => (
-    <label key={p.id} className="flex min-h-16 items-center gap-3 border-b border-border py-2">
+    <label key={p.id} className="flex min-h-row items-center gap-3 border-b border-border py-2">
       <PostChip post={p} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{p.name}</span>
@@ -51,25 +51,25 @@ export function Repartir() {
       <input inputMode="decimal" autoComplete="off" placeholder="0.00" aria-label={`Para ${p.name}`}
         value={values[p.id] ?? ""} onChange={(e) => setValues({ ...values, [p.id]: e.target.value })}
         aria-invalid={(values[p.id] ?? "").trim() !== "" && parseAmount(values[p.id]!, lang) === null ? true : undefined}
-        className="h-10 w-28 rounded-md border border-border bg-background px-3 text-right font-semibold tabular-nums aria-invalid:border-destructive" />
+        className="h-control w-28 rounded-md border border-border bg-background px-3 text-right font-semibold tabular-nums aria-invalid:border-destructive" />
     </label>
   );
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pb-10">
-      <div className="sticky top-0 z-10 -mx-6 border-b border-border bg-background px-6 pt-6 pb-3">
+      <div className="sticky top-0 z-raised -mx-6 border-b border-border bg-background px-6 pt-6 pb-3">
         <h1 className="text-label text-muted-foreground">Reparte tu plata de {monthOnly(month).toLowerCase()}</h1>
         <div className="mt-1 flex items-baseline justify-between">
           <span className="text-caption text-muted-foreground">Por asignar</span>
-          <span className={`font-display text-[26px] leading-8 font-extrabold tracking-[-0.03em] tabular-nums ${Number(left) < 0 ? "text-expense" : ""}`}>{money(left)}</span>
+          <span className={`text-amount-display-2 ${isNegative(left) ? "text-expense" : ""}`}>{money(left)}</span>
         </div>
         <span className="text-caption text-muted-foreground">
-          {Number(left) < 0 ? "Estás repartiendo más de lo que tienes." : `De ${money(b.to_assign)}. Baja mientras llenas los sobres.`}
+          {isNegative(left) ? "Estás repartiendo más de lo que tienes." : `De ${money(b.to_assign)}. Baja mientras llenas los sobres.`}
         </span>
       </div>
       <button type="button" onClick={averages}
-        className="mt-4 flex h-11 items-center justify-center gap-1.5 rounded-full bg-secondary font-semibold text-secondary-foreground">
-        <Icon name="auto_fix_high" className="text-[20px]" />Llenar con mis promedios
+        className={`mt-4 ${PILL_SECONDARY}`}>
+        <Icon name="auto_fix_high" />Llenar con mis promedios
       </button>
       <span className="mt-1.5 text-center text-caption text-muted-foreground">
         El promedio de lo que gastaste en {months[0]}, {months[1]} y {months[2]}.
@@ -80,8 +80,8 @@ export function Repartir() {
       {posts.filter((p) => p.kind === "saving").map(row)}
       {assign.isError && <div className="mt-4"><ErrorAlert>{assign.error.message}</ErrorAlert></div>}
       <button type="button" onClick={save} disabled={assign.isPending || bad}
-        className="mt-8 flex h-12 items-center justify-center gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-        {assign.isPending && <Icon name="progress_activity" className="animate-spin text-[20px]" />}Empezar
+        className={`mt-8 ${PILL_PRIMARY}`}>
+        {assign.isPending && <Icon name="progress_activity" className="animate-spin" />}Empezar
       </button>
       <span className="mt-2 text-center text-caption text-muted-foreground">Lo que no repartas queda en Por asignar; lo cambias cuando quieras.</span>
     </main>
