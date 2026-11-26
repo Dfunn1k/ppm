@@ -5,13 +5,16 @@ import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router";
 
 import { useBudget, useHome, useMe, usePending, useUpdateMe } from "@/api/hooks";
+import { Avatar } from "@/components/Avatar";
 import { CategoryChip } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, MoveLine, MoveName, moveBits } from "@/components/MoveBits";
 import { activityCaption, NoticeAmounts, noticeView, sectionOf } from "@/components/Pending";
+import { ProgressBar } from "@/components/ProgressBar";
+import { SectionAction, SectionHeading } from "@/components/SectionHeading";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { ErrorAlert, Facts, Icon } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
-import { CURRENCY_NAME, formatAmount, isNegative, isZero, rateText, symbolOf } from "@/lib/money";
+import { CURRENCY_NAME, formatAmount, isNegative, isZero, multiply, rateText, symbolOf } from "@/lib/money";
 import { monthName, monthOptions } from "@/lib/months";
 import { Pill } from "@/components/Pill";
 import { HomeSkeleton } from "@/components/Skeleton";
@@ -21,13 +24,9 @@ const ONE: Record<string, string> = { USD: "dólar", EUR: "euro" };
 /** En escritorio cada columna de abajo es una tarjeta. */
 const DESK_CARD = "lg:mt-0 lg:self-start lg:rounded-xl lg:border lg:border-border lg:bg-card lg:p-5";
 
+/** El encabezado de cada sección, con su enlace a la derecha (un <h2>; el enlace se toca en 44 px). */
 function Heading({ label, to, link }: { label: string; to: string; link: string }) {
-  return (
-    <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-      <span>{label}</span>
-      <Link to={to} className="text-primary-strong underline">{link}</Link>
-    </div>
-  );
+  return <SectionHeading action={<SectionAction to={to} className="underline">{link}</SectionAction>}>{label}</SectionHeading>;
 }
 
 export function Inicio() {
@@ -40,7 +39,7 @@ export function Inicio() {
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
   if (!me?.currency || home.isPending) return <HomeSkeleton />;
-  if (home.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{home.error.message}</ErrorAlert></main>;
+  if (home.isError) return <main className="mx-auto max-w-md px-6 pt-8 md:max-w-160"><ErrorAlert>{home.error.message}</ErrorAlert></main>;
   const h = home.data;
   const lang = me.lang ?? "es-PE";
   const hidden = me.ui_private;
@@ -50,7 +49,7 @@ export function Inicio() {
   const negative = isNegative(h.saved);
   // Lo que tienes, guardas y debes, como etiqueta y valor (caso 7)
   const today = hidden
-    ? <span className="inline-flex items-center gap-1"><Icon name="visibility_off" className="text-[16px]" />Montos escondidos. Toca el ojo para verlos</span>
+    ? <span className="inline-flex items-center gap-1"><Icon name="visibility_off" size="sm" />Montos escondidos. Toca el ojo para verlos</span>
     : <Facts items={[
       ["Tienes", money(h.have_total)],
       !isZero(h.custody_total) && ["Guardas", money(h.custody_total)],
@@ -59,20 +58,20 @@ export function Inicio() {
   const cards = h.accounts;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-7 pb-28 lg:grid lg:max-w-[1280px] lg:grid-cols-3 lg:content-start lg:gap-5 lg:px-10 lg:pt-10 lg:pb-10">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28 md:max-w-160 md:pb-10 lg:grid lg:max-w-7xl lg:grid-cols-3 lg:content-start lg:gap-5 lg:px-10 lg:pt-10">
       {/* En escritorio el saldo va a la izquierda y el mes con el ojo a la derecha; abajo, dos filas de tarjetas */}
       <div className="flex flex-col lg:col-span-3 lg:flex-row-reverse lg:items-end lg:gap-6">
       <div className="flex items-center gap-2 lg:flex-none">
-        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex flex-1 items-center gap-0.5 text-title-2 lg:h-11 lg:flex-none lg:rounded-lg lg:border lg:border-border lg:px-4 lg:text-body lg:font-semibold">
-          {monthName(month)}<Icon name="expand_more" className="text-[22px] text-muted-foreground" />
+        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex min-h-control flex-1 items-center gap-0.5 text-title-2 lg:flex-none lg:rounded-lg lg:border lg:border-border lg:px-4 lg:text-body lg:font-semibold">
+          {monthName(month)}<Icon name="expand_more" size="md" className="text-muted-foreground" />
         </button>
         <button type="button" aria-pressed={hidden} aria-label={hidden ? "Mostrar los montos" : "Esconder los montos"}
           onClick={() => update.mutate({ ui_private: !hidden })}
-          className={`grid size-10 place-items-center rounded-full ${hidden ? "bg-secondary text-secondary-foreground" : ""}`}>
-          <Icon name={hidden ? "visibility_off" : "visibility"} className="text-[22px]" />
+          className={`grid size-control flex-none place-items-center rounded-full ${hidden ? "bg-secondary text-secondary-foreground" : "hover:bg-muted"}`}>
+          <Icon name={hidden ? "visibility_off" : "visibility"} size="md" />
         </button>
         <Link to="/mas/cuenta" aria-label={`Mi cuenta: ${me.name}`}
-          className="grid size-10 place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground lg:hidden">
+          className="grid size-control flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground lg:hidden">
           {me.name[0]?.toUpperCase()}
         </Link>
       </div>
@@ -80,17 +79,17 @@ export function Inicio() {
       {notice && <div className="mt-4 lg:mt-0 lg:mb-4"><ErrorAlert>{notice}</ErrorAlert></div>}
 
       <span className="mt-5 text-caption text-muted-foreground lg:mt-0">Lo que realmente tengo hoy</span>
-      <h1 className="font-display text-[48px] leading-[50px] font-extrabold tracking-[-0.03em] tabular-nums">{money(h.real_total)}</h1>
+      <h1 className="text-amount-display">{money(h.real_total)}</h1>
       <span className="mt-1 text-caption text-muted-foreground tabular-nums">{today}</span>
       {h.foreign.map((f) => (
         <Facts key={f.currency} className="mt-1" items={[
           [`Tus ${CURRENCY_NAME[f.currency] ?? f.currency}`, amount(f.amount, f.currency)],
-          ["Son", money((Number(f.amount) * Number(f.rate)).toFixed(2))],
+          ["Son", money(multiply(f.amount, f.rate))],
           [`1 ${ONE[f.currency] ?? f.currency} ${f.rate_date === todayISO() ? "hoy" : `el ${shortDate(f.rate_date)}`}`, rateText(f.rate)],
         ]} />
       ))}
       {h.foreign.filter((f) => f.stale).map((f) => (
-        <div key={f.currency} role="status" className="mt-4 flex items-start gap-2.5 rounded-md bg-attention-soft p-3 text-caption text-attention">
+        <div key={f.currency} role="status" className="mt-4 flex items-start gap-3 rounded-md bg-attention-soft p-3 text-caption text-attention">
           <Icon name="currency_exchange" />
           <span>
             <b>El tipo de cambio del {ONE[f.currency] ?? f.currency} es del {shortDate(f.rate_date)}.</b>{" "}
@@ -104,15 +103,13 @@ export function Inicio() {
       <PendingCard lang={lang} hidden={hidden} />
       {me.home_budget && <BudgetCard month={month} money={money} />}
 
-      <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-xl border border-border bg-card p-4 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:p-5">
+      <section aria-label="Para mayo" className="mt-5 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:p-5">
         <div className="flex items-baseline justify-between">
-          <span className="text-label text-muted-foreground">Para mayo</span>
+          <h2 className="text-label text-muted-foreground">Para mayo</h2>
           <span className="text-caption text-muted-foreground tabular-nums">{h.saved_percent === null ? "" : `${hidden ? "••" : percent} % de lo que entró`}</span>
         </div>
-        <div role="img" aria-label={hidden ? "Barra de lo que te quedó en el mes" : negative || percent === 0 ? "Este mes no creció tu patrimonio" : `Te quedó el ${percent} % de lo que entró`}
-          className="h-3.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-3.5 rounded-full bg-trigo" style={{ width: `${Math.min(percent, 100)}%` }} />
-        </div>
+        <ProgressBar value={hidden ? 0 : Math.max(percent, 0)} max={100} tone="trigo" size="lg"
+          label={hidden ? "Barra de lo que te quedó en el mes" : negative || percent === 0 ? "Este mes no creció tu patrimonio" : `Te quedó el ${percent} % de lo que entró`} />
         <span className="font-semibold tabular-nums">
           {negative
             ? `Este mes salió ${money(h.saved.replace("-", ""))} más de lo que entró.`
@@ -120,14 +117,14 @@ export function Inicio() {
               ? "Todavía no hay movimientos este mes."
               : `Tu patrimonio creció ${money(h.saved)} este mes.`}
         </span>
-        <div className="grid grid-cols-2 gap-3 border-t border-border pt-2.5 tabular-nums">
+        <div className="grid grid-cols-2 gap-3 border-t border-border pt-3 tabular-nums">
           <span className="flex flex-col">
             <span className="text-caption text-muted-foreground">Entró</span>
-            <span className="flex items-center gap-0.5 font-semibold text-income"><Icon name="south_west" className="text-[18px]" />+ {money(h.income_total)}</span>
+            <span className="flex items-center gap-0.5 font-semibold text-income"><Icon name="south_west" />+ {money(h.income_total)}</span>
           </span>
           <span className="flex flex-col">
             <span className="text-caption text-muted-foreground">Salió</span>
-            <span className="flex items-center gap-0.5 font-semibold text-expense"><Icon name="north_east" className="text-[18px]" />− {money(h.expense_total)}</span>
+            <span className="flex items-center gap-0.5 font-semibold text-expense"><Icon name="north_east" />− {money(h.expense_total)}</span>
           </span>
         </div>
       </section>
@@ -137,16 +134,14 @@ export function Inicio() {
           <Heading label="En qué se va la plata" to={`/movimientos?mes=${month}&tipo=expense`} link="Ver todo" />
           {h.top.map((t) => (
             <Link key={t.id} to={`/movimientos?mes=${month}&categoria=${t.id}&categoria_nombre=${encodeURIComponent(t.name)}`}
-              className="flex min-h-[60px] items-center gap-3 border-b border-border">
+              className="flex min-h-row items-center gap-3 border-b border-border">
               <CategoryChip category={t} />
               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <span className="flex justify-between gap-2">
                   <span className="font-semibold">{t.name}</span>
                   <span className="text-amount">{money(t.amount)}</span>
                 </span>
-                <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <span className="block h-1.5 rounded-full" style={{ width: `${t.share}%`, background: `var(--cat-${t.color ?? 0})` }} />
-                </span>
+                <ProgressBar value={t.share} max={100} tone="category" color={t.color} />
               </span>
             </Link>
           ))}
@@ -158,8 +153,8 @@ export function Inicio() {
           <Heading label="Mis cuentas" to="/mas/inicio" link="Elegir cuáles" />
           <div className="-mr-6 flex gap-2 overflow-x-auto pr-6 pb-1 lg:mr-0 lg:flex-col lg:gap-0 lg:overflow-visible lg:pr-0 lg:pb-0">
             {cards.map((a) => (
-              <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-[150px] flex-none flex-col gap-2 rounded-xl border border-border bg-card p-3 lg:min-h-[60px] lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0 lg:border-b lg:bg-transparent lg:px-0 lg:py-2">
-                <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground lg:size-9"><Icon name={a.icon ?? "payments"} className="text-[18px]" /></span>
+              <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-38 flex-none flex-col gap-2 rounded-xl border border-border bg-card p-3 lg:min-h-row lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0 lg:border-b lg:bg-transparent lg:px-0 lg:py-2">
+                <Avatar kind="account" icon={a.icon ?? "payments"} />
                 <span className="truncate text-caption text-muted-foreground lg:flex-1 lg:text-body lg:font-semibold lg:text-foreground">{a.name}</span>
                 <span className="flex flex-col lg:items-end">
                   <span className="font-semibold tabular-nums">{amount(a.amount, a.currency)}</span>
@@ -177,7 +172,7 @@ export function Inicio() {
         <Heading label="Últimos movimientos" to="/movimientos" link="Ver todos" />
         {h.recent.length === 0 && <span className="py-3 text-caption text-muted-foreground">Todavía no registras nada. Toca + para empezar.</span>}
         {h.recent.map((x) => (
-          <Link key={x.id} to={`/movimientos/${x.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border py-2">
+          <Link key={x.id} to={`/movimientos/${x.id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2">
             <MoveIcon move={x} />
             <span className="flex min-w-0 flex-1 flex-col">
               <MoveName move={x} />
@@ -209,21 +204,21 @@ function BudgetCard({ month, money }: { month: string; money: (v: string) => str
   const busiest = expense.filter((p) => !isNegative(p.available)).sort((x, y) => Number(x.activity) - Number(y.activity))[0];
   const to = month === todayISO().slice(0, 7) ? "/presupuesto" : `/presupuesto?mes=${month}`;
   return (
-    <Link to={to} aria-label={`Presupuesto de ${monthName(month).toLowerCase()}`}
+    <Link to={to}
       className="mt-5 flex flex-col gap-2 rounded-xl border border-border bg-card p-4 lg:col-start-1 lg:row-start-4 lg:mt-0 lg:p-5">
       <span className="text-label text-muted-foreground">Presupuesto de {monthName(month).split(" ")[0]!.toLowerCase()}</span>
       <span className="flex items-baseline justify-between">
         <span className="text-caption text-muted-foreground">{isNegative(b.to_assign) ? "Asignaste de más" : "Por asignar"}</span>
-        <span className={`text-[20px] font-semibold tabular-nums ${isNegative(b.to_assign) ? "text-expense" : ""}`}>{money(b.to_assign)}</span>
+        <span className={`text-amount-xl ${isNegative(b.to_assign) ? "text-expense" : ""}`}>{money(b.to_assign)}</span>
       </span>
       {reds.slice(0, 2).map((p) => (
-        <span key={p.id} className="flex items-center gap-2 text-[14px] font-semibold text-expense tabular-nums">
-          <Icon name="error" className="text-[18px]" />{p.name} se pasó {money(p.available.replace("-", ""))}
+        <span key={p.id} className="flex items-center gap-2 text-body-sm font-semibold text-expense tabular-nums">
+          <Icon name="error" />{p.name} se pasó {money(p.available.replace("-", ""))}
         </span>
       ))}
       {reds.length > 2 && <span className="text-caption text-expense">y {reds.length - 2} sobres más en rojo</span>}
       {busiest && !isZero(busiest.activity) && (
-        <span className="flex justify-between gap-2 text-[14px] tabular-nums">
+        <span className="flex justify-between gap-2 text-body-sm tabular-nums">
           <span className="truncate text-muted-foreground">{busiest.name}</span><span className="flex-none">Quedan {money(busiest.available)}</span>
         </span>
       )}
@@ -254,11 +249,11 @@ function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
   if (items.length === 0) return null;
   return (
     <section aria-label="Pendientes" className="mt-5 flex flex-col rounded-xl border border-border bg-card px-4 pt-3 pb-1 lg:col-start-3 lg:row-start-2 lg:mt-0 lg:px-5">
-      <span className="flex items-center gap-1.5 text-label text-muted-foreground">
+      <h2 className="flex items-center gap-1.5 text-label text-muted-foreground">
         Pendientes<Pill>{items.length}</Pill>{box.late > 0 && <Pill attention>{box.late === 1 ? "1 vencido" : `${box.late} vencidos`}</Pill>}
-      </span>
+      </h2>
       {items.slice(0, 3).map((i) => (
-        <Link key={i.key} to={i.to} className="flex min-h-[52px] items-center gap-2.5 border-b border-border">
+        <Link key={i.key} to={i.to} className="flex min-h-row-sm items-center gap-3 border-b border-border">
           <span aria-hidden="true" className={`size-2 flex-none rounded-full ${i.late ? "bg-attention" : "bg-muted-foreground"}`} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate font-semibold">{i.title}</span>
@@ -268,7 +263,7 @@ function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
         </Link>
       ))}
       <Link to="/pendientes" className="flex min-h-12 items-center justify-between font-semibold">
-        Ver todo<Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        Ver todo<Icon name="chevron_right" size="md" className="text-muted-foreground" />
       </Link>
     </section>
   );

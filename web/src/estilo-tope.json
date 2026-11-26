@@ -117,10 +117,6 @@
  "pages/Entrar.tsx": {
   "arbitrario": 1
  },
- "pages/Inicio.tsx": {
-  "arbitrario": 20,
-  "aMano": 1
- },
  "pages/Pendientes.tsx": {
   "arbitrario": 12
  },
