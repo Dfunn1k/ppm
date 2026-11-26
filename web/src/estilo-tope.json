@@ -191,35 +191,6 @@
  "pages/movimientos/Movimientos.tsx": {
   "enLinea": 1
  },
- "pages/presupuesto/Borrar.tsx": {
-  "arbitrario": 3,
-  "aMano": 2
- },
- "pages/presupuesto/Cuentas.tsx": {
-  "arbitrario": 5
- },
- "pages/presupuesto/PorAsignar.tsx": {
-  "arbitrario": 8,
-  "aMano": 2
- },
- "pages/presupuesto/Presupuesto.tsx": {
-  "arbitrario": 25
- },
- "pages/presupuesto/Repartir.tsx": {
-  "arbitrario": 4,
-  "capa": 1,
-  "aMano": 1
- },
- "pages/presupuesto/Sheets.tsx": {
-  "arbitrario": 4,
-  "aMano": 2
- },
- "pages/presupuesto/Sobre.tsx": {
-  "arbitrario": 18
- },
- "pages/presupuesto/common.tsx": {
-  "arbitrario": 5
- },
  "pages/recurrentes/Recurrentes.tsx": {
   "arbitrario": 25,
   "aMano": 1
