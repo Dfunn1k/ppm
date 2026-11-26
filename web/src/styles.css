@@ -493,6 +493,9 @@
   }
 }
 
+/* Una línea de «Tu plata»: ícono, qué fue, monto y flecha */
+@utility grid-cols-cash-line { grid-template-columns: 1.75rem minmax(0, 1fr) auto 1.125rem; }
+
 /* Los movimientos de un sobre en escritorio: fecha, movimiento y monto */
 @utility grid-cols-post-ledger { grid-template-columns: 4.5rem minmax(0, 1fr) 8.75rem; }
 
