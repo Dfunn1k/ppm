@@ -67,10 +67,10 @@ export function Importar() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
         {back ? (
-          <Link to={back} aria-label="Cerrar sin importar" className="grid size-11 place-items-center rounded-full"><Icon name="close" className="text-[24px]" /></Link>
+          <Link to={back} aria-label="Cerrar sin importar" className="grid size-11 place-items-center rounded-full"><Icon name="close" size="md" /></Link>
         ) : (
           <button type="button" aria-label="Volver" onClick={() => setStep(step === "review" ? "columns" : "file")}
-            className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></button>
+            className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" size="md" /></button>
         )}
         <span className="flex min-w-0 items-center gap-1.5 pr-2.5 text-label text-muted-foreground uppercase"><span className="truncate">{label}</span><Pill>{stepNo} de 3</Pill></span>
       </div>
@@ -84,7 +84,7 @@ export function Importar() {
         <>
           <h1 className="mt-2 text-title-1">¿Qué columna es qué?</h1>
           <span className="mt-2 flex items-center gap-1.5 text-caption text-muted-foreground">
-            <Icon name={result.remembered ? "history" : "auto_awesome"} className="text-[18px]" />
+            <Icon name={result.remembered ? "history" : "auto_awesome"} size="sm" />
             {result.remembered ? "Son las columnas de la última vez con esta cuenta." : `Los encabezados están en la fila ${mapping.header_row}. Revisa lo que propusimos.`}
           </span>
           <ColumnsEditor result={result} mapping={mapping} onChange={(m) => { setMapping(m); read(file, m); }} />
@@ -102,7 +102,7 @@ export function Importar() {
             <span className="py-3 text-caption text-muted-foreground">Elige la fecha, la descripción y el monto para ver cómo se leen.</span>
           )}
           {result.sample.map((r, i) => (
-            <div key={i} className="flex min-h-11 items-center gap-2.5 border-b border-border text-[14px] leading-5">
+            <div key={i} className="flex min-h-11 items-center gap-2.5 border-b border-border text-body-sm">
               <span className="w-12 flex-none text-muted-foreground tabular-nums">{shortDate(r.date)}</span>
               <span className="min-w-0 flex-1 truncate">{r.payment_ref}</span>
               <span className={`font-medium tabular-nums ${isNegative(r.amount) ? "text-expense" : "text-income"}`}>
@@ -115,7 +115,7 @@ export function Importar() {
           <button type="button" disabled={preview.isPending || result.sample.length === 0} onClick={() => read(file, mapping, "review")}
             className="flex h-14 w-full items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">
             <span>Revisar las {result.total_rows} filas</span>
-            <Icon name={preview.isPending ? "progress_activity" : "arrow_forward"} className={`text-[22px] ${preview.isPending ? "animate-spin" : ""}`} />
+            <Icon name={preview.isPending ? "progress_activity" : "arrow_forward"} size="md" className={preview.isPending ? "animate-spin" : ""} />
           </button>
         </>
       )}
@@ -154,8 +154,8 @@ function FileStep({ accountId, pending, error, onFile, lang }: {
       <input ref={input} type="file" accept=".xlsx,.xls,.csv,.txt" className="sr-only" aria-label="Archivo del extracto"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
       <button type="button" disabled={pending} onClick={() => input.current?.click()}
-        className="mt-5 flex h-[132px] flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-input-line bg-card">
-        <Icon name={pending ? "progress_activity" : "upload_file"} className={`text-[32px] ${pending ? "animate-spin" : ""}`} />
+        className="mt-5 flex h-33 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input-line bg-card">
+        <Icon name={pending ? "progress_activity" : "upload_file"} size="lg" className={pending ? "animate-spin" : ""} />
         <span className="font-semibold">{pending ? "Leyendo el archivo…" : "Elegir archivo"}</span>
         <span className="text-caption text-muted-foreground">.xlsx, .xls o .csv</span>
         <span className="-mt-1.5 text-caption text-muted-foreground">Hasta 5 MB</span>
@@ -163,9 +163,9 @@ function FileStep({ accountId, pending, error, onFile, lang }: {
       {error && <div className="mt-3"><ErrorAlert>{error}</ErrorAlert></div>}
       {past.length === 0 ? (
         <div className="mt-4 flex flex-col gap-2.5 rounded-xl bg-muted p-3.5 text-caption text-muted-foreground">
-          <span className="flex gap-2"><Icon name="table_view" className="text-[18px] text-foreground" />
+          <span className="flex gap-2"><Icon name="table_view" size="sm" className="text-foreground" />
             Es tu primer extracto de esta cuenta: después de subirlo dirás qué columna es la fecha, cuál el monto y cuál la descripción. La próxima vez ya lo sabremos.</span>
-          <span className="flex gap-2"><Icon name="flag" className="text-[18px] text-foreground" />
+          <span className="flex gap-2"><Icon name="flag" size="sm" className="text-foreground" />
             Para que el saldo cuadre, el saldo inicial de la cuenta debe ser de antes del primer movimiento del archivo.</span>
         </div>
       ) : (
@@ -190,7 +190,7 @@ function PastRow({ s, lang }: { s: StatementRow; lang: string }) {
         <span className="truncate font-semibold">{s.name}</span>
         <Facts className="mt-0.5" items={[["Periodo", range], ["Movimientos", String(s.lines)]]} />
       </span>
-      {status && <span className={`flex items-center gap-1 text-caption font-semibold ${status.cls}`}><Icon name={status.icon} className="text-[18px]" />{status.text}</span>}
+      {status && <span className={`flex items-center gap-1 text-caption font-semibold ${status.cls}`}><Icon name={status.icon} size="sm" />{status.text}</span>}
     </Link>
   );
 }
@@ -223,11 +223,11 @@ function ColumnsEditor({ result, mapping, onChange }: { result: ImportResult; ma
       {shown.map((f) => {
         const col = mapping.columns[f.key];
         return (
-          <div key={f.key} className="flex min-h-[52px] items-center justify-between gap-3 border-b border-border">
-            <span className="flex flex-col"><span className="font-semibold">{f.name}</span><span className="text-[12px] leading-4 text-muted-foreground">{f.help}</span>{f.more && <span className="text-[12px] leading-4 text-muted-foreground">{f.more}</span>}</span>
+          <div key={f.key} className="flex min-h-row-sm items-center justify-between gap-3 border-b border-border">
+            <span className="flex flex-col"><span className="font-semibold">{f.name}</span><span className="text-caption-sm text-muted-foreground">{f.help}</span>{f.more && <span className="text-caption-sm text-muted-foreground">{f.more}</span>}</span>
             <button type="button" aria-label={`${f.name}: ${col ? `columna ${col}` : "no está en el archivo"}. Cambiar`} onClick={() => setEditing(f.key)}
-              className={`flex h-9 max-w-[190px] items-center gap-1 rounded-full border pr-2 pl-3 text-caption font-semibold ${col ? "border-foreground bg-card" : "border-border text-muted-foreground"}`}>
-              <span className="truncate">{col ? `«${col}»` : "No está"}</span><Icon name="expand_more" className="text-[18px]" />
+              className={`hit-area flex h-9 max-w-48 items-center gap-1 rounded-full border pr-2 pl-3 text-caption font-semibold ${col ? "border-foreground bg-card" : "border-border text-muted-foreground"}`}>
+              <span className="truncate">{col ? `«${col}»` : "No está"}</span><Icon name="expand_more" size="sm" />
             </button>
           </div>
         );
@@ -260,7 +260,7 @@ function Review({ result, lang }: { result: ImportResult; lang: string }) {
   const bal = ch.difference === null
     ? { icon: "help", title: "Sin control de saldo", text: "No escribiste el saldo de tu banco, así que no podemos comprobar que no falte nada. Puedes escribirlo en el paso anterior.", cls: "bg-muted" }
     : isZero(ch.difference)
-      ? { icon: "check_circle", title: "El saldo cuadra", text: `Después de importar tendrás ${formatAmount(ch.book, sym, lang)}, lo mismo que dice tu banco${result.date_to ? ` al ${shortDate(result.date_to)}` : ""}.`, cls: "bg-[color-mix(in_srgb,var(--income)_12%,transparent)] text-income" }
+      ? { icon: "check_circle", title: "El saldo cuadra", text: `Después de importar tendrás ${formatAmount(ch.book, sym, lang)}, lo mismo que dice tu banco${result.date_to ? ` al ${shortDate(result.date_to)}` : ""}.`, cls: "bg-income-soft text-income" }
       : { icon: "error", title: `${isNegative(ch.difference) ? "Sobran" : "Faltan"} ${formatAmount(ch.difference.replace("-", ""), sym, lang)}`,
           text: `Tu banco dice ${formatAmount(ch.bank!, sym, lang)} y PPM tendrá ${formatAmount(ch.book, sym, lang)}. Puede faltar un movimiento de antes del archivo o estar mal el saldo inicial. Puedes importar igual y revisarlo después.`,
           cls: "bg-attention-soft text-attention" };
@@ -277,7 +277,7 @@ function Review({ result, lang }: { result: ImportResult; lang: string }) {
               <Icon name={g.icon} />
             </span>
             <span className="flex min-w-0 flex-1 flex-col"><span className="font-semibold">{g.name}</span><span className="text-caption text-muted-foreground">{g.help}</span></span>
-            <span className="text-[20px] leading-[26px] font-semibold tabular-nums">{g.n}</span>
+            <span className="text-amount-xl tabular-nums">{g.n}</span>
           </div>
         ))}
       </div>
@@ -288,7 +288,7 @@ function Review({ result, lang }: { result: ImportResult; lang: string }) {
         </ul>
       )}
       <div role="status" className={`mt-4 flex gap-2.5 rounded-xl p-3.5 ${bal.cls}`}>
-        <Icon name={bal.icon} className="text-[22px]" />
+        <Icon name={bal.icon} size="md" />
         <span className="flex flex-col gap-0.5"><b>{bal.title}</b><span className="text-caption tabular-nums">{bal.text}</span></span>
       </div>
     </>
