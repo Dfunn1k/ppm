@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 1 terminado; esperando el visto bueno de Dany).
-- **Rama:** `frontend/fase-4-lote-1`
-- **Último commit:** ver `git log -1 frontend/fase-4-lote-1`
+- **Fase actual:** 4, migración por lotes (lote 2 terminado; esperando el visto bueno de Dany).
+- **Rama:** `frontend/fase-4-lote-2`
+- **Último commit:** ver `git log -1 frontend/fase-4-lote-2`
 
 ## Checklist
 
@@ -56,10 +56,12 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ### Fase 4 — Migración por lotes (en curso)
 Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en sus archivos, axe y teclado limpios en sus pantallas, toda la matriz en claro y oscuro, fotos de antes y después.
-- [x] Lote 1: Inicio (y las piezas de las filas que usa: CategoryChip, Avatar, MoveIcon, MoveLine y Facts). PR #133.
+- [x] Lote 1: Inicio (y las piezas de las filas que usa: CategoryChip, Avatar, MoveIcon, MoveLine y Facts). PR #133, aprobado por Dany (25-nov).
   - Inicio: 20 valores escritos a mano → 0; lo que se toca < 44 px: 0 en toda la matriz (antes «Ver todo», el ojo, Mi cuenta y el mes); axe sin violaciones (antes label-content-name-mismatch); foco tapado 5 → 0; sin cortes con texto grande.
   - Hallazgo: todos los íconos medían 20 px. La regla `.icon` le ganaba a las clases de tamaño, así que el código pedía 11 tamaños y ninguno se aplicaba. Ahora solo valen los tamaños del sistema, y cada pantalla los adopta al migrar.
-- [ ] Lote 2: Cuentas y Detalle de cuenta
+- [x] Lote 2: Cuentas y Detalle de cuenta. PR #134.
+  - Cuentas 7 y Detalle 22 valores escritos a mano → 0; lo que se toca < 44 px: 0 en toda la matriz (antes Copiar, Importar extracto y el interruptor «En el presupuesto»); axe sin violaciones; foco tapado 2 → 0; «Lo que tenía al empezar» se corta con «…» y no de golpe.
+  - El saldo de una cuenta pasa a Bricolage (decisión S2).
 - [ ] Lote 3: Movimientos y Registrar
 - [ ] Los demás lotes (se proponen al cerrar el 3)
 
@@ -67,7 +69,7 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 
 ## Siguiente paso
 
-Dany revisa el lote 1 (PR #133) y da su visto bueno. Con su OK: lote 2, Cuentas y Detalle de cuenta, en la rama `frontend/fase-4-lote-2` (sale de `main` después del merge).
+Dany revisa el lote 2 (PR #134) y da su visto bueno. Con su OK: lote 3, Movimientos y Registrar, en la rama `frontend/fase-4-lote-3` (sale de `main` después del merge).
 
 ## Decisiones de Dany
 
