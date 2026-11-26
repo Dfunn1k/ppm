@@ -8,7 +8,7 @@ import { type Reconciliation, useBankInstallment, useCard, useImportCardStatemen
 import { Pill } from "@/components/Pill";
 import { ErrorAlert, Facts, Icon, Screen, Segments, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
-import { add, formatAmount, subtract, symbolOf } from "@/lib/money";
+import { add, formatAmount, isNegative, multiply, subtract, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
 
 /** Subir el PDF del estado de cuenta: al leerlo, abre su conciliación. */
@@ -25,7 +25,7 @@ export function ImportStatement({ cardId, label = "Importar estado de cuenta (PD
           if (file) upload.mutate(file, { onSuccess: (r) => navigate(`/tarjetas/${cardId}/estado/${r.closing_date}`) });
         }} />
       <button type="button" disabled={upload.isPending} onClick={() => input.current?.click()}
-        className="flex min-h-11 items-center gap-1.5 self-start font-semibold disabled:opacity-60">
+        className="flex min-h-control items-center gap-1.5 self-start font-semibold disabled:opacity-60">
         <Icon name={upload.isPending ? "progress_activity" : "upload_file"} className={upload.isPending ? "animate-spin" : ""} />
         {upload.isPending ? "Leyendo el PDF…" : label}
       </button>
@@ -70,7 +70,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
       <section aria-label="Foto del corte" className="mt-5 flex flex-col">
         <span className="flex flex-col border-b border-border pb-1"><span className="text-label text-muted-foreground">Foto del corte</span><span className="text-caption text-muted-foreground">Lo que dice el banco</span></span>
         {photo.map(([label, value]) => (
-          <div key={label} className="flex min-h-11 items-center justify-between border-b border-border text-[14px] tabular-nums">
+          <div key={label} className="flex min-h-control items-center justify-between border-b border-border text-body-sm tabular-nums">
             <span className="font-semibold">{label}</span><span>{value}</span>
           </div>
         ))}
@@ -108,8 +108,8 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
               </>
             );
             return x.move_id === null
-              ? <div key={`${x.name}-${x.sequence}`} className="flex min-h-[58px] items-center gap-3 border-b border-border">{row}</div>
-              : <Link key={`${x.name}-${x.sequence}`} to={`/movimientos/${x.move_id}`} className="flex min-h-[58px] items-center gap-3 border-b border-border">{row}</Link>;
+              ? <div key={`${x.name}-${x.sequence}`} className="flex min-h-row items-center gap-3 border-b border-border">{row}</div>
+              : <Link key={`${x.name}-${x.sequence}`} to={`/movimientos/${x.move_id}`} className="flex min-h-row items-center gap-3 border-b border-border">{row}</Link>;
           })}
         </section>
       )}
@@ -117,18 +117,18 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
       {r.installments.filter((x) => x.differs).map((x) => {
         const g = x.differs!;
         const bank = add(x.capital, x.interest);
-        const up = (Number(bank) - Number(g.each)) * x.n_installments;
+        const up = multiply(subtract(bank, g.each), String(x.n_installments));
         return (
           <section key={x.id} aria-label="La cuota del banco es distinta"
             className="mt-4 flex flex-col gap-2 rounded-lg bg-attention-soft p-3.5 text-attention">
-            <span className="flex items-center gap-1.5 text-label"><Icon name="error" className="text-[18px]" />La cuota del banco es distinta</span>
-            <p className="text-[14px] leading-5 text-foreground">
+            <span className="flex items-center gap-1.5 text-label"><Icon name="error" size="sm" />La cuota del banco es distinta</span>
+            <p className="text-body-sm text-foreground">
               {g.ref}: el banco cobra <b>{money(bank, x.currency)}</b> por cuota ({money(x.capital, x.currency)} de capital
               + {money(x.interest, x.currency)} de interés). En PPM cada cuota es {money(g.each, x.currency)}.
             </p>
-            <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-y-0.5 text-[14px] leading-5 text-foreground tabular-nums">
+            <dl className="grid grid-cols-title-amount gap-y-0.5 text-body-sm text-foreground tabular-nums">
               <dt>Las {x.n_installments} cuotas pasan a</dt><dd className="text-right font-semibold">{money(bank, x.currency)}</dd>
-              <dt>La tarjeta {up >= 0 ? "sube" : "baja"}</dt><dd className="text-right font-semibold">{money(Math.abs(up).toFixed(2), x.currency)}</dd>
+              <dt>La tarjeta {isNegative(up) ? "baja" : "sube"}</dt><dd className="text-right font-semibold">{money(up.replace("-", ""), x.currency)}</dd>
               <dt>Esta cuota: capital + interés</dt><dd className="text-right font-semibold">{money(x.capital, x.currency)} + {money(x.interest, x.currency)}</dd>
             </dl>
             {bankInstallment.error && <ErrorAlert>{bankInstallment.error.message}</ErrorAlert>}
@@ -143,13 +143,13 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
       })}
 
       <section aria-label="PPM y el banco" className="mt-5 flex flex-col">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-3 border-b border-border pb-1 text-label text-muted-foreground">
+        <div className="grid grid-cols-currency-table gap-x-3 border-b border-border pb-1 text-label text-muted-foreground">
           <span /><span className="text-right">PPM</span><span className="text-right">Banco</span><span className="text-right">Diferencia</span>
         </div>
         {r.currencies.filter((c) => c.bank_subtotal !== null).map((c) => {
           const gap = subtract(c.bank_subtotal!, c.subtotal);
           return (
-            <div key={c.currency} className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 border-b border-border text-[14px] tabular-nums">
+            <div key={c.currency} className="grid min-h-control grid-cols-currency-table items-center gap-x-3 border-b border-border text-body-sm tabular-nums">
               <span className="font-semibold">Subtotal {symbolOf(c.currency)}</span>
               <span className="text-right">{money(c.subtotal, c.currency)}</span>
               <span className="text-right">{money(c.bank_subtotal!, c.currency)}</span>
@@ -160,7 +160,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
           );
         })}
         {r.fees.map((f) => (
-          <div key={f.name} className="flex min-h-11 items-center justify-between border-b border-border text-[14px] tabular-nums">
+          <div key={f.name} className="flex min-h-control items-center justify-between border-b border-border text-body-sm tabular-nums">
             <span>{f.name}</span><span>{money(f.amount, f.currency)}</span>
           </div>
         ))}
@@ -170,12 +170,12 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
       </section>
 
       {(r.explanations.length > 0 || notSplit.length > 0) && (
-        <section aria-label="De dónde sale" className="mt-5 flex flex-col gap-2 rounded-[12px] bg-muted p-3.5">
+        <section aria-label="De dónde sale" className="mt-5 flex flex-col gap-2 rounded-lg bg-muted p-3.5">
           <span className="text-label text-muted-foreground">De dónde sale</span>
-          {r.explanations.map((t) => <p key={t} className="text-[14px] leading-5">{t}</p>)}
+          {r.explanations.map((t) => <p key={t} className="text-body-sm">{t}</p>)}
           {/* Una cuota en un periodo cerrado: el nombre en negrita y la cuota en pastilla (caso 10, opción C) */}
           {notSplit.map((x) => (
-            <p key={`${x.name}-${x.sequence}`} className="text-[14px] leading-5">
+            <p key={`${x.name}-${x.sequence}`} className="text-body-sm">
               <b>{x.name}</b> <Pill>Cuota {x.sequence} de {x.n_installments}</Pill> cae en un periodo cerrado y no se dividió en
               capital e interés. Reabre el periodo y vuelve a importar el PDF para dividirla.
             </p>
@@ -184,9 +184,9 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
       )}
 
       {r.unread.length > 0 && (
-        <section aria-label="No se pudieron leer" className="mt-5 flex flex-col gap-1.5 rounded-[12px] bg-attention-soft p-3.5 text-attention">
+        <section aria-label="No se pudieron leer" className="mt-5 flex flex-col gap-1.5 rounded-lg bg-attention-soft p-3.5 text-attention">
           <span className="text-label">No se pudieron leer</span>
-          {r.unread.map((t) => <span key={t} className="font-mono text-[13px] leading-5">{t}</span>)}
+          {r.unread.map((t) => <span key={t} className="text-code leading-5">{t}</span>)}
           <span className="text-caption">Regístralas a mano si faltan en PPM.</span>
         </section>
       )}
@@ -195,7 +195,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
         <section aria-label="Del banco, sin par en PPM" className="mt-5 flex flex-col">
           <span className="border-b border-border pb-1 text-label text-muted-foreground">Del banco, sin par en PPM</span>
           {missing.map((l, k) => (
-            <div key={k} className="flex min-h-11 items-center gap-3 border-b border-border">
+            <div key={k} className="flex min-h-control items-center gap-3 border-b border-border">
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-semibold">{l.name}</span>
                 <span className="text-caption text-muted-foreground">{shortDate(l.date)}</span>
@@ -212,7 +212,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
         <section aria-label="De PPM, sin par en el banco" className="mt-5 flex flex-col">
           <span className="border-b border-border pb-1 text-label text-muted-foreground">De PPM, sin par en el banco</span>
           {r.unmatched.map((u) => (
-            <Link key={`${u.move_id}-${u.amount}`} to={`/movimientos/${u.move_id}`} className="flex min-h-11 items-center gap-3 border-b border-border">
+            <Link key={`${u.move_id}-${u.amount}`} to={`/movimientos/${u.move_id}`} className="flex min-h-control items-center gap-3 border-b border-border">
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-semibold">{u.ref}</span>
                 <Facts items={[["Del", shortDate(u.date)], ["Revisa", "El monto o la fecha"]]} attention />
