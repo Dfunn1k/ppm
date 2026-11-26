@@ -112,8 +112,12 @@ El ícono toma su tamaño de la pieza que lo contiene (`Icon size="md"`), no de 
 > - **Opción 2: nada fuera de los múltiplos de 4.** Es más simple de vigilar. Pero las pastillas y los pares etiqueta y valor quedarían o muy pegados (4) o muy sueltos (8).
 
 **Reglas del espacio**
-- Margen lateral: 16 en el celular, 24 en la tablet y 40 en un panel de escritorio (el que ya usa `.pane-detail`).
+- Margen lateral: 24 en el celular y la tablet, 40 en un panel de escritorio (el que ya usa `.pane-detail`). Ver S7.
 - Entre secciones: 32. Dentro de una sección: 12 o 16.
+
+> **Te toca (S7). El margen del celular.** El README dice «en el celular el margen lateral es `space-4`» (16 px). Las pantallas usan `px-6` en 88 lugares: 24 px pedidos, 22.5 de verdad (por la regla de 15).
+> - **Opción 1 (recomendada):** se escribe lo que se ve, 24 px, y se corrige el README. Como en A: la casa ya se construyó así.
+> - **Opción 2:** se baja a 16 px como dice el README. Entra más en cada fila, pero cambian todas las pantallas.
 
 ### 1.5 Alturas y áreas que se tocan
 
@@ -185,3 +189,64 @@ Los colores de los temas y de los acentos no cambian. Lo que se ordena:
 - **El acento como única señal:** lo elegido nunca se marca solo con el color del acento. Va con `selected`, un ícono de check o un borde de 2 px. Así el trigo en claro, con 1.87:1 contra el fondo, no deja nada invisible (AUDITORIA d10).
 - **Sobre colores de categoría** no se escribe texto chico, como el % dentro de la barra de Ingresos. El texto va al lado de la barra (AUDITORIA d8).
 - **Excepción documentada:** los 4 colores del logo de Google.
+
+## 2. Tamaños de pantalla
+
+**La analogía.** Una pantalla es una mesa. En el celular comes en un individual: un plato a la vez. En la tablet la mesa es más grande, pero sigues comiendo un plato a la vez, ahora con espacio para el pan y el vaso. En la computadora pones dos platos lado a lado: la lista y lo elegido. Lo que no se hace es estirar el individual hasta cubrir la mesa, que es lo que pasa hoy en la tablet.
+
+### 2.1 Los cortes
+
+Se diseña primero el celular y se agrega hacia arriba. Hoy hay un solo corte (1024); quedan cuatro, más un ajuste para lo muy angosto:
+
+| Ancho | Nombre en el código | Qué es | Navegación | Contenido |
+|---|---|---|---|---|
+| 280–359 | `narrow` (por debajo de 360) | Plegable cerrado, celulares chicos | Barra de abajo | Una columna. `title-hero` y `amount-display` bajan solos (1.2). Los nombres se cortan con «…» y los montos nunca se parten |
+| 360–767 | (base) | Celular, también en horizontal hasta 767 | Barra de abajo | Una columna de hasta 448 px (como hoy) |
+| 768–1023 | `md` | Tablet en vertical, celular grande en horizontal (844×390) | **Riel** (decisión G1) | Una columna de hasta 640 px, centrada en lo que queda junto al riel. Registrar como panel lateral; las hojas como ventana al centro |
+| 1024–1279 | `lg` | Laptop chica, tablet en horizontal | Riel | **Dos paneles: lista de 320 px** y el detalle al lado (decisión G2) |
+| 1280–1439 | `xl` | Laptop | Riel | Lista de 400 px |
+| 1440 en adelante | `2xl` (se cambia a 1440, Tailwind trae 1536) | Monitor | Riel | Lista de 440 px. El detalle no pasa de 52 rem (832 px) y se centra |
+
+**Qué cambia en cada corte, nada más:**
+- **`md`:** la barra de abajo se va y aparece el riel. Lo que hoy se activa en `lg` por ser «escritorio» se divide en dos:
+  - desde `md`: el riel, el panel de Registrar y las hojas al centro;
+  - desde `lg`: los dos paneles (`Split`) y las pantallas de escritorio propias (Inicio en 3 columnas, Pendientes en 3, Más con índice).
+  - `useDesktop()` se parte en `useRail()` (768) y `useSplit()` (1024).
+- **`lg`, `xl` y `2xl`:** solo cambia el ancho de la lista. El detalle se adapta solo (2.2).
+- **El riel con poco alto** (1024×768, el celular en horizontal) ya manda lo que no cabe a «Más» (`useRailSpill`). Así está pensado y se mantiene.
+
+### 2.2 Que cada pieza se adapte a su lugar, no a la ventana
+
+**La analogía.** Hoy cada mueble mira el tamaño de la casa para decidir cómo se acomoda. Pero el detalle de una cuenta puede estar en una casa grande y aun así en una pieza chica (el panel de la derecha a 1024 px). Por eso a 1024 se corta «BBVA dól…» aunque la ventana sea ancha.
+
+**La regla:** la pantalla decide con los cortes de 2.1 (`md:`, `lg:`) solo dónde va cada panel. Lo de adentro (una tabla, una tarjeta con datos lado a lado, un gráfico) se adapta al ancho de su panel, con *container queries* (`@container` y `@md:` en Tailwind 4, que ya viene incluido: no es una dependencia nueva). Ejemplos:
+- **La tabla de movimientos de una cuenta:** con menos de 560 px de panel, el saldo baja debajo del monto en lugar de ser una columna, y la descripción se corta con «…».
+- **Los datos de Inicio** («Tienes / Debes / Tus dólares»): de a 3 si hay lugar y de a 2 si no, en vez de partirse.
+- **Un monto nunca se parte en dos líneas** (`whitespace-nowrap` en la pieza `Amount`). Lo que cede es el nombre de al lado, que se corta con «…».
+
+### 2.3 Lo que tapa: barra, notch, barra de gestos y teclado
+
+- **La barra de gestos y el notch** (`safe-area-inset`). La página ya pide ocupar toda la pantalla (`viewport-fit=cover`), pero nada se corre para dejarles lugar.
+  - La barra de abajo suma `env(safe-area-inset-bottom)` a su alto.
+  - El contenido suma el mismo espacio abajo.
+  - En horizontal, el riel y el contenido suman `safe-area-inset-left` y `-right`, por el notch al costado.
+  - Arriba, la primera fila suma `safe-area-inset-top` cuando PPM está instalada.
+  - Esto no se puede ver en Playwright: va con la prueba en un iPhone real (PROGRESO).
+- **El foco escondido detrás de la barra** (AUDITORIA d1). Se resuelve con `scroll-padding-bottom` en la página, igual al alto de la barra más la barra de gestos. Cuando el teclado lleva el foco a algo, el navegador lo deja por encima de la barra. Pasa lo mismo arriba con lo que se pega al bajar (`scroll-padding-top`).
+- **El teclado del celular.** Las hojas y el panel usan `dvh` (el alto que de verdad queda, que se achica con el teclado), no `vh`. El botón principal de un formulario largo queda al final del formulario y no fijo abajo, para que el teclado no lo tape. Hoy ya es así y se escribe como regla.
+- **Alto de pantalla:** `min-h-dvh` en las pantallas (ya está). `svh` para lo que no debe saltar cuando aparece o se esconde la barra del navegador (la portada de acceso).
+
+### 2.4 Dedo, mouse y teclado
+
+- **El hover** (lo que cambia al pasar el mouse) solo existe con mouse. Tailwind 4 ya lo hace así (`hover:` va dentro de `@media (hover: hover)`), así que en el celular no queda nada «pegado» después de tocar.
+- **Las áreas táctiles** son de 44 px con dedo y con mouse. No se achican con mouse: es una sola regla y nadie pierde.
+- **Los atajos de teclado** (N, /, ↑ ↓, E, Esc, Ctrl ↵) funcionan en todos los tamaños. Su ayuda (el botón del riel y «Atajos» en Más) se muestra solo con mouse (`pointer: fine`), porque en una tablet sin teclado no sirve.
+
+### 2.5 Cómo se comprueba
+
+La matriz de la misión (16 tamaños, más zoom, texto grande y teclado) se fotografía con `pnpm capturas`. Se miden:
+- cero scroll horizontal;
+- nada de menos de 44 px;
+- montos sin partir;
+- cero paradas de teclado tapadas (`teclado.spec.ts`);
+- y, desde la Fase 3, que **texto grande** (raíz a 20 px) ya no sea idéntica a 390×844.

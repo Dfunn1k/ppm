@@ -32,7 +32,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 ### Fase 2 — Sistema (en curso, `docs/frontend/SISTEMA.md`)
 - [x] Decisiones A a H de Dany (25-nov, abajo)
 - [x] 1. Tokens (base, letra, íconos, espacio, alturas, radios, bordes, sombras, capas, movimiento, colores)
-- [ ] 2. Estrategia responsive
+- [x] 2. Estrategia responsive
 - [ ] 3. Componentes compartidos, con variantes y estados
 - [ ] 4. Reglas de código
 - [ ] ⏸ Punto de control 2; con el OK, registrar en `design-system/` y en `docs/modelo-contable.md`
@@ -41,7 +41,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Siguiente paso
 
-Escribir `SISTEMA.md` sección 2 (responsive), luego 3 y 4, con un commit por sección. Después, ⏸ punto de control 2.
+Escribir `SISTEMA.md` sección 3 (componentes), luego 4, con un commit por sección. Después, ⏸ punto de control 2.
 
 ## Decisiones de Dany
 
