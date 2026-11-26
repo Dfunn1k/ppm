@@ -75,14 +75,14 @@ export function Paso2() {
                   type="checkbox"
                   checked={choices.currencies.includes(c.code)}
                   onChange={() => toggle(c.code)}
-                  className="size-[22px] flex-none accent-primary"
+                  className="size-6 flex-none accent-primary"
                 />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[16px] leading-[22px] font-semibold">{c.name}</span>
+                  <span className="text-body-strong">{c.name}</span>
                   {CAPTION[c.code] && <span className="text-caption text-muted-foreground">{CAPTION[c.code]}</span>}
                   {c.decimals === 0 && <span className="text-caption text-muted-foreground">Sin decimales</span>}
                 </span>
-                <span className="font-display text-[18px] leading-[22px] font-bold">{CURRENCY_SYMBOL[c.code] ?? c.code}</span>
+                <span className="font-display text-title-2 font-bold">{CURRENCY_SYMBOL[c.code] ?? c.code}</span>
               </label>
             ))}
             {catalog && shown.length === 0 && (

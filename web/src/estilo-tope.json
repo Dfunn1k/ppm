@@ -1,7 +1,4 @@
 {
- "components/AccessLayout.tsx": {
-  "arbitrario": 24
- },
  "components/AllIcons.tsx": {
   "arbitrario": 1
  },
@@ -37,9 +34,6 @@
  },
  "components/EmptyState.tsx": {
   "arbitrario": 2
- },
- "components/GoogleButton.tsx": {
-  "arbitrario": 1
  },
  "components/InstallSheet.tsx": {
   "arbitrario": 4,
@@ -93,35 +87,8 @@
  "components/ui.tsx": {
   "arbitrario": 5
  },
- "pages/CrearCuenta.tsx": {
-  "arbitrario": 2
- },
- "pages/Entrar.tsx": {
-  "arbitrario": 1
- },
  "pages/Privacidad.tsx": {
   "arbitrario": 4
- },
- "pages/Recuperar.tsx": {
-  "arbitrario": 2
- },
- "pages/Restablecer.tsx": {
-  "arbitrario": 2
- },
- "pages/UnirGoogle.tsx": {
-  "arbitrario": 1
- },
- "pages/bienvenida/Paso1.tsx": {
-  "arbitrario": 5
- },
- "pages/bienvenida/Paso2.tsx": {
-  "arbitrario": 5
- },
- "pages/bienvenida/Paso3.tsx": {
-  "arbitrario": 2
- },
- "pages/bienvenida/wizard.tsx": {
-  "arbitrario": 2
  },
  "pages/cuentas/CuentaForm.tsx": {
   "arbitrario": 13
