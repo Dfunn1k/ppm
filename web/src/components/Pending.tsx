@@ -129,7 +129,7 @@ export function NoticeItem({ n, today, lang, split }: { n: Notice; today: string
   const done = useReminderDone();
   return (
     <div className="flex flex-col gap-2 border-b border-border py-2.5">
-      <Link to={v.to} className="flex items-center gap-3">
+      <Link to={v.to} className="flex min-h-control items-center gap-3">
         <span className={chip(n.late)}><Icon name={v.icon} /></span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold">{v.name}</span>
