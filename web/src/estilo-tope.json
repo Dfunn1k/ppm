@@ -143,45 +143,6 @@
   "arbitrario": 20,
   "rgb": 1
  },
- "pages/mas/Apariencia.tsx": {
-  "arbitrario": 5
- },
- "pages/mas/Atajos.tsx": {
-  "arbitrario": 13
- },
- "pages/mas/Categorias.tsx": {
-  "arbitrario": 11
- },
- "pages/mas/Cierre.tsx": {
-  "arbitrario": 6
- },
- "pages/mas/EliminarCuenta.tsx": {
-  "arbitrario": 7,
-  "aMano": 1
- },
- "pages/mas/Etiquetas.tsx": {
-  "arbitrario": 2,
-  "enLinea": 2
- },
- "pages/mas/ExportarDatos.tsx": {
-  "arbitrario": 7,
-  "aMano": 2
- },
- "pages/mas/InicioAjustes.tsx": {
-  "arbitrario": 13
- },
- "pages/mas/Mas.tsx": {
-  "arbitrario": 38
- },
- "pages/mas/MiCuenta.tsx": {
-  "arbitrario": 14
- },
- "pages/mas/Monedas.tsx": {
-  "arbitrario": 12
- },
- "pages/mas/TipoCambio.tsx": {
-  "arbitrario": 12
- },
  "pages/movimientos/Movimientos.tsx": {
   "enLinea": 1
  },

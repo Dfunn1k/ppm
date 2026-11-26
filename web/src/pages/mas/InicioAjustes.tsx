@@ -1,9 +1,11 @@
 // X0 · Más › Inicio: qué cuentas de dinero se ven en el Inicio, en qué orden (flechas ↑↓) y con qué
 // cuenta arranca el +. Cada cambio se guarda al instante.
-import { Link } from "react-router";
+import { Switch } from "@/pages/presupuesto/Cuentas";
 
 import { type HomeSetup, useAccounts, useHomeSetup, useMe, useSaveHomeSetup, useUpdateMe } from "@/api/hooks";
 import { SheetSelect } from "@/components/Sheet";
+import { SectionHeading } from "@/components/SectionHeading";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { formatAmount, symbolOf } from "@/lib/money";
 import { accountOption } from "@/components/AccountSub";
@@ -37,18 +39,18 @@ export function InicioAjustes() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <h1 className="mt-6 text-title-hero">Tu Inicio</h1>
       <p className="mt-3 text-muted-foreground">Qué cuentas ves al abrir PPM, en qué orden, y con cuál arranca el + al registrar.</p>
 
       <section aria-label="Cuentas en el Inicio" className="mt-6 flex flex-col">
-        <span className="border-b border-border pb-1 text-label text-muted-foreground">Cuentas en el Inicio</span>
+        <SectionHeading>Cuentas en el Inicio</SectionHeading>
         {s.accounts.map((a, i) => (
           <div key={a.id} className={`flex min-h-16 items-center gap-2.5 border-b border-border ${a.shown ? "" : "opacity-60"}`}>
             <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
-              <Icon name={a.icon ?? "payments"} className="text-[20px]" />
+              <Icon name={a.icon ?? "payments"} />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-semibold">{a.name}</span>
@@ -57,31 +59,24 @@ export function InicioAjustes() {
               </span>
             </span>
             <button type="button" aria-label={`Subir ${a.name}`} disabled={i === 0} onClick={() => move(i, -1)}
-              className="grid size-9 place-items-center rounded-full disabled:opacity-30"><Icon name="arrow_upward" /></button>
+              className="hit-area grid size-9 place-items-center rounded-full hover:bg-muted disabled:opacity-30"><Icon name="arrow_upward" /></button>
             <button type="button" aria-label={`Bajar ${a.name}`} disabled={i === s.accounts.length - 1} onClick={() => move(i, 1)}
-              className="grid size-9 place-items-center rounded-full disabled:opacity-30"><Icon name="arrow_downward" /></button>
-            <button type="button" role="switch" aria-checked={a.shown} aria-label={`Ver ${a.name} en el Inicio`} onClick={() => toggle(a.id)}
-              className={`relative h-[26px] w-11 flex-none rounded-full transition-colors ${a.shown ? "bg-primary" : "bg-input-line/50"}`}>
-              <span className={`absolute top-[3px] size-5 rounded-full bg-card shadow-sm transition-[left] ${a.shown ? "left-[21px]" : "left-[3px]"}`} />
-            </button>
+              className="hit-area grid size-9 place-items-center rounded-full hover:bg-muted disabled:opacity-30"><Icon name="arrow_downward" /></button>
+            <Switch on={a.shown} label={`Ver ${a.name} en el Inicio`} onClick={() => toggle(a.id)} />
           </div>
         ))}
         <span className="mt-1.5 text-caption text-muted-foreground">Las apagadas siguen en Cuentas; solo no aparecen en el Inicio.</span>
       </section>
 
       <section aria-label="Presupuesto en el Inicio" className="mt-6 flex flex-col">
-        <span className="border-b border-border pb-1 text-label text-muted-foreground">Presupuesto</span>
+        <SectionHeading>Presupuesto</SectionHeading>
         <div className="flex min-h-16 items-center gap-2.5 border-b border-border">
-          <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="savings" className="text-[20px]" /></span>
+          <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="savings" /></span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="font-semibold">Tarjeta del presupuesto</span>
             <span className="text-caption text-muted-foreground">Por asignar y el sobre que se pasó, si ya empezaste tu presupuesto</span>
           </span>
-          <button type="button" role="switch" aria-checked={me.home_budget} aria-label="Ver el presupuesto en el Inicio"
-            onClick={() => updateMe.mutate({ home_budget: !me.home_budget })}
-            className={`relative h-[26px] w-11 flex-none rounded-full transition-colors ${me.home_budget ? "bg-primary" : "bg-input-line/50"}`}>
-            <span className={`absolute top-[3px] size-5 rounded-full bg-card shadow-sm transition-[left] ${me.home_budget ? "left-[21px]" : "left-[3px]"}`} />
-          </button>
+          <Switch on={me.home_budget} label="Ver el presupuesto en el Inicio" onClick={() => updateMe.mutate({ home_budget: !me.home_budget })} />
         </div>
       </section>
 

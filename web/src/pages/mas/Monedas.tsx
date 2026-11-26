@@ -7,6 +7,8 @@ import { Link } from "react-router";
 import { type MyCurrency, useCatalog, useMe, useMyCurrencies, useToggleCurrency, useUpdateMe } from "@/api/hooks";
 import { Sheet } from "@/components/Sheet";
 import { DetailSkeleton } from "@/components/Skeleton";
+import { SectionHeading } from "@/components/SectionHeading";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, FormatSample, Icon } from "@/components/ui";
 import { formatAmount, symbolOf } from "@/lib/money";
 
@@ -23,7 +25,7 @@ function rateCaption(c: MyCurrency) {
 
 function Badge({ symbol }: { symbol: string }) {
   return (
-    <span className="grid h-9 min-w-11 flex-none place-items-center rounded-[10px] bg-secondary px-1.5 text-[14px] font-bold text-secondary-foreground">
+    <span className="grid h-9 min-w-11 flex-none place-items-center rounded-md bg-secondary px-1.5 text-body-sm font-bold text-secondary-foreground">
       {symbol}
     </span>
   );
@@ -53,42 +55,42 @@ export function Monedas() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <h1 className="mt-4 text-title-hero">Monedas y formato</h1>
       {toggle.isError && <div className="mt-4"><ErrorAlert>{toggle.error.message}</ErrorAlert></div>}
 
       {base && (
         <section aria-label="Moneda principal" className="mt-5 flex flex-col">
-          <span className="border-b border-border pb-1 text-label text-muted-foreground">Moneda principal</span>
-          <div className="flex min-h-[62px] items-center gap-3 border-b border-border py-2">
+          <SectionHeading>Moneda principal</SectionHeading>
+          <div className="flex min-h-row items-center gap-3 border-b border-border py-2">
             <Badge symbol={base.symbol} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">{base.name}</span>
               <span className="text-caption text-muted-foreground">Con ella se ven tus totales. No se cambia: todo tu historial está en ella.</span>
             </span>
-            <Icon name="lock" className="text-[20px] text-muted-foreground" />
+            <Icon name="lock" className="text-muted-foreground" />
           </div>
         </section>
       )}
 
       <section aria-label="Otras monedas" className="mt-6 flex flex-col">
-        <span className="border-b border-border pb-1 text-label text-muted-foreground">Otras monedas</span>
+        <SectionHeading>Otras monedas</SectionHeading>
         {others.length === 0 && <span className="py-3 text-caption text-muted-foreground">Solo usas {base?.name.toLowerCase() ?? "tu moneda"}.</span>}
         {others.map((c) => {
           const rate = rateCaption(c);
           const used = c.accounts.length > 0;
           return (
-            <div key={c.code} className="flex min-h-[62px] items-center gap-3 border-b border-border py-2">
+            <div key={c.code} className="flex min-h-row items-center gap-3 border-b border-border py-2">
               <Badge symbol={c.symbol} />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">{c.name}</span>
                 {/* Cada dato con su ícono (caso 7): en qué cuentas y de dónde sale el tipo de cambio */}
                 <span className="flex flex-wrap items-center gap-x-3 text-caption text-muted-foreground">
-                  <span className="inline-flex items-center gap-1"><Icon name="account_balance" className="text-[15px]" />{used ? c.accounts.join(", ") : "Sin cuentas todavía"}</span>
-                  {rate ? <span className="inline-flex items-center gap-1"><Icon name="sync" className="text-[15px]" />{rate}</span>
-                    : <span className="inline-flex items-center gap-1 font-semibold text-attention"><Icon name="error" className="text-[15px]" />{me.is_admin
+                  <span className="inline-flex items-center gap-1"><Icon name="account_balance" size="sm" />{used ? c.accounts.join(", ") : "Sin cuentas todavía"}</span>
+                  {rate ? <span className="inline-flex items-center gap-1"><Icon name="sync" size="sm" />{rate}</span>
+                    : <span className="inline-flex items-center gap-1 font-semibold text-attention"><Icon name="error" size="sm" />{me.is_admin
                       ? <>Sin tipo de cambio: cárgalo en <Link to="/mas/tipo-de-cambio" className="underline">Más › Tipo de cambio</Link></>
                       : "Sin tipo de cambio: el administrador lo carga"}</span>}
                 </span>
@@ -110,19 +112,19 @@ export function Monedas() {
       </section>
 
       <section aria-label="Formato de números y fechas" className="mt-4 flex flex-col">
-        <span className="border-b border-border pb-1 text-label text-muted-foreground">Formato de números y fechas</span>
+        <SectionHeading>Formato de números y fechas</SectionHeading>
         <div role="radiogroup" aria-label="Formato de números y fechas" className="mt-2 flex flex-col gap-1">
           {langs.map((l) => {
             const on = me.lang === l.code;
             const country = /\((.+)\)/.exec(l.name)?.[1] ?? l.name;
             return (
               <button key={l.code} type="button" role="radio" aria-checked={on} onClick={() => !on && update.mutate({ lang: l.code })}
-                className={`flex min-h-[60px] items-center gap-3 rounded-md px-3 text-left ${on ? "bg-muted" : ""}`}>
+                className={`flex min-h-row items-center gap-3 rounded-md px-3 text-left ${on ? "bg-muted" : ""}`}>
                 <span className="flex flex-1 flex-col">
                   <span className="font-semibold">{country}</span>
                   <FormatSample amount={formatAmount("1284.90", symbolOf(me.currency), l.code)} date={sampleDate()} />
                 </span>
-                {on ? <Icon name="check_circle" fill className="text-[22px]" /> : <span aria-hidden="true" className="size-5 rounded-full border-2 border-input-line" />}
+                {on ? <Icon name="check_circle" fill size="md" /> : <span aria-hidden="true" className="size-5 rounded-full border-2 border-input-line" />}
               </button>
             );
           })}
@@ -141,7 +143,7 @@ export function Monedas() {
             <button key={c.code} type="button" disabled={toggle.isPending}
               onClick={() => toggle.mutate({ code: c.code, add: true }, { onSuccess: () => setAdding(false) })}
               className="flex min-h-14 items-center gap-3 rounded-md px-3 text-left">
-              <span className="min-w-11 text-[14px] font-bold tabular-nums">{c.code}</span>
+              <span className="min-w-11 text-body-sm font-bold tabular-nums">{c.code}</span>
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">{c.name}</span>
                 {c.decimals === 0 && <span className="text-caption text-muted-foreground">Sin decimales</span>}

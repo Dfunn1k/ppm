@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 10 terminado; esperando el visto bueno de Dany).
+- **Fase actual:** 4, migración por lotes (lote 11 terminado; esperando el visto bueno de Dany).
 - **Rama:** `frontend/fase-4-lote-6`
 - **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
 
@@ -85,17 +85,20 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 9: Reportes (el índice, Gastos, Ingresos, Flujo con Tu plata, Patrimonio, Personas y Etiquetas), más los botones del presupuesto pasados al botón de la app. PR #141, aprobado por Dany (26-nov).
   - 127 valores escritos a mano → 0; lo que se toca < 44 px: 0; axe 22 → 0 (los gráficos chicos del índice recibían foco dentro de algo escondido, el % blanco dentro de la barra verde no llegaba a 4.5:1 y los tramos de Personas eran una imagen con botones adentro); foco tapado 2 → 0.
   - Los colores de las series pasan a clases (catBg, bg-trigo…) en vez de estilos en línea; utilidad nueva `grid-cols-cash-line`; los ejes de los gráficos suben de 11 a 12 px (nada por debajo de 12).
-- [x] Lote 10: Recurrentes, el detalle de una recurrente y Pendientes (con la pieza de recordatorios, que también sale en Persona y en el detalle de una cuenta). PR #142.
+- [x] Lote 10: Recurrentes, el detalle de una recurrente y Pendientes (con la pieza de recordatorios, que también sale en Persona y en el detalle de una cuenta). PR #142, aprobado por Dany (26-nov).
   - 46 valores escritos a mano → 0; lo que se toca < 44 px: 4 a 10 por pantalla → 0 (el aviso de Pendientes, − y +, Traer ahora, Posponer); axe sin violaciones; foco sin tapar.
   - El monto de una recurrente pasa a amount-display-2 (S2); su título en escritorio usa title-hero como el resto. Los botones de guardar, pausar y terminar usan el botón de la app (decisión del 26-nov). Utilidad nueva `grid-cols-title-amount`.
+- [x] Lote 11: Más y sus ajustes (Mi cuenta, Exportar, Eliminar cuenta, Tu Inicio, Apariencia, Atajos, Categorías y Nueva categoría, Etiquetas, Cierre, Monedas y Tipo de cambio). PR #143.
+  - 145 valores escritos a mano → 0; lo que se toca < 44 px: 5 a 82 por pantalla → 0; axe sin violaciones; foco tapado 2 → 0.
+  - La grilla de íconos de Nueva categoría pasa de 7 columnas fijas a las que quepan, ninguna de menos de 44 px (6 en el celular). Tu Inicio usa el mismo interruptor que el presupuesto. `formatCount` en money.ts para contar filas. Utilidades nuevas `grid-cols-rates` y `grid-cols-icons`.
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
-- [ ] Después, de a 2 o 3: Más y sus ajustes; acceso y bienvenida; importar
+- [ ] Después, de a 2 o 3: acceso y bienvenida; importar
 
 ### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-Dany revisa el lote 10 (PR #142) y da su visto bueno. Con su OK: lote 11, Más y sus ajustes, en la rama `frontend/fase-4-lote-11`.
+Dany revisa el lote 11 (PR #143) y da su visto bueno. Con su OK: lote 12, acceso y bienvenida, en la rama `frontend/fase-4-lote-12`.
 
 ## Decisiones de Dany
 

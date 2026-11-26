@@ -493,6 +493,12 @@
   }
 }
 
+/* La grilla de íconos de una categoría: tantas columnas como quepan, ninguna de menos de 44 px */
+@utility grid-cols-icons { grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr)); }
+
+/* El historial del tipo de cambio: la fecha, compra, venta y de dónde vino */
+@utility grid-cols-rates { grid-template-columns: minmax(0, 1fr) 4rem 4rem 4.75rem; }
+
 /* Un título con su monto a la derecha (el detalle de una recurrente en la computadora) */
 @utility grid-cols-title-amount { grid-template-columns: minmax(0, 1fr) auto; }
 

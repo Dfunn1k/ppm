@@ -4,10 +4,10 @@
 // verdad que tocas para reasignarla; al tocarla espera la nueva. Esc, Ctrl + Enter y las flechas son
 // fijas (las respeta todo programa): van aparte, más tenues y con candado.
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 
 import { useMe, useUpdateMe } from "@/api/hooks";
 import { Kbd } from "@/components/ShortcutsHelp";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { type Action, DEFAULT_KEYS, keyLabel, SHORTCUT_GROUPS, useShortcuts } from "@/lib/shortcuts";
 
@@ -47,10 +47,8 @@ export function Atajos() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
+      <div className="-mx-2.5 flex min-h-control items-center">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <h1 className="mt-1 text-title-hero">Atajos de teclado</h1>
       <p className="mt-1 text-caption text-muted-foreground">
@@ -65,7 +63,7 @@ export function Atajos() {
         </span>
         <input type="checkbox" role="switch" checked={showHints}
           onChange={(e) => { setHintsOn(e.target.checked); save.mutate({ shortcut_hints: e.target.checked }); }}
-          className="size-[22px] accent-primary" />
+          className="size-6 accent-primary" />
       </label>
 
       <section aria-label="Los que puedes cambiar" className="mt-5 flex flex-col">
@@ -75,7 +73,7 @@ export function Atajos() {
           return (
             <div key={r.action} className={`flex min-h-13 items-center gap-4 border-b border-border ${on ? "-mx-3 rounded-md bg-muted px-3" : ""}`}>
               <span className="flex flex-1 flex-col">
-                <span className="text-[14px] leading-5">{r.label}</span>
+                <span className="text-body-sm">{r.label}</span>
                 {on && (
                   <span role="status" className="flex flex-col text-caption text-muted-foreground">
                     <span className="flex flex-wrap items-center gap-1"><Kbd>Esc</Kbd> para dejarla en <Kbd>{keyLabel(keys[r.action])}</Kbd></span>
@@ -86,10 +84,10 @@ export function Atajos() {
               <button type="button" onClick={() => { save.reset(); setWaiting(on ? null : r.action); }}
                 aria-label={`Cambiar la tecla de ${NAMES[r.action]}`} aria-pressed={on} title={on ? undefined : "Cambiar"}
                 className={on
-                  ? "flex h-9 min-w-[150px] items-center justify-center gap-1.5 rounded-[9px] border-2 border-dashed border-foreground bg-card px-3 text-[13px] font-semibold"
-                  : "flex h-9 min-w-11 items-center gap-1.5 rounded-[9px] border border-b-[3px] border-input-line bg-card pr-1.5 pl-3 font-mono text-[14px] font-semibold hover:ring-3 hover:ring-muted focus-visible:ring-3 focus-visible:ring-muted"}>
-                {on ? <><Icon name="keyboard" className="text-[18px]" />Aprieta una tecla…</>
-                  : <>{keyLabel(keys[r.action])}<Icon name="edit" className="text-[16px] text-muted-foreground" /></>}
+                  ? "hit-area flex h-9 min-w-38 items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-foreground bg-card px-3 text-caption font-semibold"
+                  : "hit-area flex h-9 min-w-11 items-center gap-1.5 rounded-md border border-b-3 border-input-line bg-card pr-1.5 pl-3 font-mono text-body-sm font-semibold hover:ring-3 hover:ring-muted focus-visible:ring-3 focus-visible:ring-muted"}>
+                {on ? <><Icon name="keyboard" size="sm" />Aprieta una tecla…</>
+                  : <>{keyLabel(keys[r.action])}<Icon name="edit" size="sm" className="text-muted-foreground" /></>}
               </button>
             </div>
           );
@@ -99,8 +97,8 @@ export function Atajos() {
       <section aria-label="Fijas" className="mt-6 flex flex-col">
         <span className="flex flex-col"><span className="text-label text-muted-foreground uppercase">Fijas</span><span className="text-caption text-muted-foreground">Las respeta todo programa</span></span>
         {FIXED.map((r) => (
-          <div key={r.label} className="flex min-h-11 items-center gap-4 border-b border-border">
-            <span className="flex-1 text-[14px] leading-5 text-muted-foreground">{r.label}</span>
+          <div key={r.label} className="flex min-h-control items-center gap-4 border-b border-border">
+            <span className="flex-1 text-body-sm text-muted-foreground">{r.label}</span>
             <span className="flex items-center gap-1 opacity-75">
               {r.fixed.map((k, i) => (
                 <span key={k} className="flex items-center gap-1">
@@ -108,7 +106,7 @@ export function Atajos() {
                 </span>
               ))}
             </span>
-            <span title="Fija" className="grid"><Icon name="lock" className="text-[16px] text-muted-foreground" /><span className="sr-only">Fija</span></span>
+            <span title="Fija" className="grid"><Icon name="lock" size="sm" className="text-muted-foreground" /><span className="sr-only">Fija</span></span>
           </div>
         ))}
       </section>

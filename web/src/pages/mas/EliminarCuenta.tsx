@@ -1,12 +1,14 @@
 // X6 · Eliminar tu cuenta: como cerrar la cuenta en el banco. Se ve lo que se va, se firma con la
 // contraseña (o con el correo, si la cuenta se creó con Google y no tiene) y se borra todo al instante.
+import { formatCount } from "@/lib/money";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { ApiError, useDeleteAccount, useDeletion, useMe } from "@/api/hooks";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, LineField, PasswordField } from "@/components/ui";
 
-const n = (v: number) => v.toLocaleString("en-US");
+const n = (v: number) => formatCount(v);
 
 export function EliminarCuenta() {
   const navigate = useNavigate();
@@ -28,27 +30,27 @@ export function EliminarCuenta() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center">
-        <Link to="/mas/cuenta" aria-label="Volver a Mi cuenta" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center">
+        <BackLink to="/mas/cuenta" label="Volver a Mi cuenta" />
       </div>
       <h1 className="mt-4 text-title-hero">Eliminar tu cuenta</h1>
       <p className="mt-3 text-muted-foreground">
         Se borra al instante todo lo que registraste en PPM. <b className="text-foreground">No se puede deshacer.</b>
       </p>
 
-      <Link to="/mas/cuenta/exportar" className="mt-5 flex min-h-[60px] items-center gap-3 rounded-md border border-border bg-card px-3.5 py-2.5">
-        <Icon name="download" className="text-[22px] text-muted-foreground" />
+      <Link to="/mas/cuenta/exportar" className="mt-5 flex min-h-row items-center gap-3 rounded-md border border-border bg-card px-3.5 py-2.5">
+        <Icon name="download" size="md" className="text-muted-foreground" />
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">¿Te llevas tus datos?</span>
           <span className="text-caption text-muted-foreground">Exporta un ZIP antes de borrar</span>
         </span>
-        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        <Icon name="chevron_right" size="md" className="text-muted-foreground" />
       </Link>
 
       <dl aria-label="Lo que se borra" className="mt-4 flex flex-col rounded-md bg-muted px-3.5 py-1">
         {rows.map(([icon, label, count], i) => (
-          <div key={label} className={`flex min-h-11 items-center gap-3 ${i < rows.length - 1 ? "border-b border-border" : ""}`}>
-            <Icon name={icon} className="text-[20px] text-muted-foreground" />
+          <div key={label} className={`flex min-h-control items-center gap-3 ${i < rows.length - 1 ? "border-b border-border" : ""}`}>
+            <Icon name={icon} className="text-muted-foreground" />
             <dt className="flex-1">{label}</dt>
             <dd className="font-semibold tabular-nums">{count === undefined ? "…" : n(count)}</dd>
           </div>
@@ -56,7 +58,7 @@ export function EliminarCuenta() {
       </dl>
 
       <div className="mt-5 flex items-start gap-2.5 rounded-md bg-destructive-soft p-3 text-caption text-destructive">
-        <Icon name="info" className="text-[20px]" />
+        <Icon name="info" />
         <span>Las copias de seguridad del servidor se renuevan solas: en 14 días ya no queda nada tuyo.</span>
       </div>
 
@@ -77,9 +79,9 @@ export function EliminarCuenta() {
         {del.error && !wrong && <ErrorAlert>{del.error.message}</ErrorAlert>}
         <button type="submit" disabled={del.isPending}
           className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-60">
-          <Icon name="delete_forever" className="text-[22px]" />Eliminar mi cuenta
+          <Icon name="delete_forever" size="md" />Eliminar mi cuenta
         </button>
-        <Link to="/mas/cuenta" className="py-2 text-center text-caption font-semibold underline">No, volver</Link>
+        <Link to="/mas/cuenta" className="flex min-h-control items-center justify-center text-caption font-semibold underline">No, volver</Link>
       </form>
     </main>
   );

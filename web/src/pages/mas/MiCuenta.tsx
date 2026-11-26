@@ -9,6 +9,7 @@ import { z } from "zod";
 import { ApiError, useChangePassword, useGoogleUnlink, useLogout, useLogoutAll, useMe, useProviders } from "@/api/hooks";
 import { GoogleMark, googleStart } from "@/components/GoogleButton";
 import { Sheet } from "@/components/Sheet";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Facts, Icon, PasswordField, PrimaryButton } from "@/components/ui";
 import { capitalize } from "@/lib/utils";
 import { CURRENCY_NAME } from "@/lib/money";
@@ -31,7 +32,7 @@ function googleNews(code: string | null): [boolean, string] | null {
 function Row({ icon, title, hint, onClick, disabled }: { icon: string; title: string; hint: string; onClick?: () => void; disabled?: boolean }) {
   const body = (
     <>
-      <Icon name={icon} className="w-9 text-center text-[22px] text-muted-foreground" />
+      <Icon name={icon} size="md" className="w-9 text-center text-muted-foreground" />
       <span className="flex flex-1 flex-col">
         <span className="font-semibold">{title}</span>
         <span className="text-caption text-muted-foreground">{hint}</span>
@@ -39,8 +40,8 @@ function Row({ icon, title, hint, onClick, disabled }: { icon: string; title: st
     </>
   );
   return disabled
-    ? <div aria-disabled="true" className="flex min-h-[60px] items-center gap-3.5 border-b border-border text-muted-foreground">{body}</div>
-    : <button type="button" onClick={onClick} className="flex min-h-[60px] items-center gap-3.5 border-b border-border text-left">{body}</button>;
+    ? <div aria-disabled="true" className="flex min-h-row items-center gap-3.5 border-b border-border text-muted-foreground">{body}</div>
+    : <button type="button" onClick={onClick} className="flex min-h-row items-center gap-3.5 border-b border-border text-left">{body}</button>;
 }
 
 export function MiCuenta() {
@@ -58,8 +59,8 @@ export function MiCuenta() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <span className="mt-6 hidden text-label text-muted-foreground lg:block">Mi cuenta</span>
       <h1 className="mt-6 text-title-hero lg:mt-1">{me.name}</h1>
@@ -78,7 +79,7 @@ export function MiCuenta() {
         <span className="hidden text-label text-muted-foreground lg:block">Cómo entras</span>
         <div className="flex flex-col lg:rounded-xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
         {me.google_email ? (
-          <div className="flex min-h-[60px] items-center gap-3.5 border-b border-border py-2">
+          <div className="flex min-h-row items-center gap-3.5 border-b border-border py-2">
             <span className="grid w-9 place-items-center"><GoogleMark /></span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">Google</span>
@@ -95,13 +96,13 @@ export function MiCuenta() {
             )}
           </div>
         ) : google && (
-          <a href={googleStart("link")} className="flex min-h-[60px] items-center gap-3.5 border-b border-border py-2">
+          <a href={googleStart("link")} className="flex min-h-row items-center gap-3.5 border-b border-border py-2">
             <span className="grid w-9 place-items-center"><GoogleMark /></span>
             <span className="flex flex-1 flex-col">
               <span className="font-semibold">Vincular con Google</span>
               <span className="text-caption text-muted-foreground">Para entrar con un toque, sin escribir tu contraseña</span>
             </span>
-            <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+            <Icon name="chevron_right" size="md" className="text-muted-foreground" />
           </a>
         )}
         {me.has_password
@@ -113,21 +114,21 @@ export function MiCuenta() {
       <section aria-label="Tus datos" className="flex flex-col lg:gap-2">
         <span className="hidden text-label text-muted-foreground lg:block">Tus datos</span>
         <div className="flex flex-col lg:rounded-xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
-        <Link to="/mas/cuenta/exportar" className="flex min-h-[60px] items-center gap-3.5 border-b border-border">
-          <Icon name="download" className="w-9 text-center text-[22px] text-muted-foreground" />
+        <Link to="/mas/cuenta/exportar" className="flex min-h-row items-center gap-3.5 border-b border-border">
+          <Icon name="download" size="md" className="w-9 text-center text-muted-foreground" />
           <span className="flex flex-1 flex-col">
             <span className="font-semibold">Exportar mis datos</span>
             <span className="text-caption text-muted-foreground">Un ZIP con todo: para Excel y de respaldo</span>
           </span>
-          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+          <Icon name="chevron_right" size="md" className="text-muted-foreground" />
         </Link>
-        <Link to="/mas/cuenta/eliminar" className="flex min-h-[60px] items-center gap-3.5 border-b border-border text-destructive">
-          <Icon name="person_remove" className="w-9 text-center text-[22px]" />
+        <Link to="/mas/cuenta/eliminar" className="flex min-h-row items-center gap-3.5 border-b border-border text-destructive">
+          <Icon name="person_remove" size="md" className="w-9 text-center" />
           <span className="flex flex-1 flex-col">
             <span className="font-semibold">Eliminar mi cuenta</span>
             <span className="text-caption text-muted-foreground">Borra tu cuenta y todo lo que registraste</span>
           </span>
-          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+          <Icon name="chevron_right" size="md" className="text-muted-foreground" />
         </Link>
         </div>
       </section>
@@ -143,7 +144,7 @@ export function MiCuenta() {
       <button type="button" disabled={logout.isPending}
         onClick={() => logout.mutate(undefined, { onSuccess: () => navigate("/entrar", { replace: true }) })}
         className="flex h-14 items-center justify-center gap-2 rounded-lg border border-input-line font-semibold lg:w-72 lg:self-start">
-        <Icon name="logout" className="text-[22px]" />Cerrar sesión
+        <Icon name="logout" size="md" />Cerrar sesión
       </button>
 
       <PasswordSheet open={sheet === "password"} create={!me.has_password} onClose={() => setSheet(null)}

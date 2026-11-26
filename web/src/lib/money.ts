@@ -37,6 +37,11 @@ export function formatAmount(amount: number | string, symbol: string, lang = "es
   return `${negative ? "− " : ""}${symbol ? `${symbol} ` : ""}${grouped}${tail}`;
 }
 
+/** Una cantidad entera (filas, adjuntos), con separador de miles y sin decimales: «12,480». */
+export function formatCount(n: number, lang = "es-PE"): string {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, sep(lang).thousands);
+}
+
 /** Solo el número, sin símbolo: «8,240.30». */
 export function formatNumber(amount: number | string, lang = "es-PE"): string {
   return formatAmount(amount, "", lang);

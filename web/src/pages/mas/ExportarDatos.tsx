@@ -1,17 +1,19 @@
 // X6 · Exportar tus datos: como pedirle al banco el historial antes de cerrar la cuenta. Un ZIP con
 // datos.json (el respaldo, fiel al modelo), csv/ (una tabla por archivo, para Excel) y adjuntos/,
 // que se pueden dejar fuera si pesan mucho. Se arma al momento y no queda en el servidor.
+import { formatCount } from "@/lib/money";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router";
 
 import { useExportSummary, useExportZip } from "@/api/hooks";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Facts, Icon } from "@/components/ui";
 
-const n = (v: number) => v.toLocaleString("en-US");
+const n = (v: number) => formatCount(v);
 
 /** 18.3 MB, 640 KB: lo que se ve en el botón. */
 function size(bytes: number) {
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024 * 1024) return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
@@ -35,8 +37,8 @@ export function ExportarDatos() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center">
-        <Link to="/mas/cuenta" aria-label="Volver a Mi cuenta" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center">
+        <BackLink to="/mas/cuenta" label="Volver a Mi cuenta" />
       </div>
       <h1 className="mt-4 text-title-hero">Exportar tus datos</h1>
       <p className="mt-3 text-muted-foreground">
@@ -46,10 +48,10 @@ export function ExportarDatos() {
       <h2 className="mt-6 text-label text-muted-foreground">QUÉ TRAE EL ZIP</h2>
       <ul aria-label="Qué trae el ZIP" className="mt-2 flex flex-col rounded-md bg-muted px-3.5 py-1">
         {contents.map(([icon, name, hint, off], i) => (
-          <li key={name} className={`flex min-h-[60px] items-center gap-3 ${i < contents.length - 1 ? "border-b border-border" : ""} ${off ? "text-muted-foreground" : ""}`}>
-            <Icon name={icon} className="text-[20px] text-muted-foreground" />
+          <li key={name} className={`flex min-h-row items-center gap-3 ${i < contents.length - 1 ? "border-b border-border" : ""} ${off ? "text-muted-foreground" : ""}`}>
+            <Icon name={icon} className="text-muted-foreground" />
             <span className="flex flex-1 flex-col">
-              <span className={`font-mono text-[14px] font-medium ${off ? "line-through" : ""}`}>{name}</span>
+              <span className={`font-mono text-body-sm font-medium ${off ? "line-through" : ""}`}>{name}</span>
               <span className="text-caption text-muted-foreground">{hint}</span>
             </span>
           </li>
@@ -61,7 +63,7 @@ export function ExportarDatos() {
           <span className="font-semibold">Incluir adjuntos</span>
           <span className="text-caption text-muted-foreground">Si pesan mucho, déjalos fuera</span>
         </span>
-        <input type="checkbox" role="switch" checked={withFiles} className="size-[22px] accent-primary"
+        <input type="checkbox" role="switch" checked={withFiles} className="size-6 accent-primary"
           onChange={() => { setWithFiles(!withFiles); zip.reset(); }} />
       </label>
 
@@ -91,10 +93,10 @@ export function ExportarDatos() {
       <button type="button" disabled={zip.isPending || !what} onClick={() => zip.mutate(withFiles)}
         className="mt-5 flex h-14 items-center justify-center gap-2 rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-70">
         {zip.isPending
-          ? <><Icon name="progress_activity" className="animate-spin text-[22px]" />Armando tu ZIP…</>
-          : <><Icon name="download" className="text-[22px]" />Descargar ZIP{what && withFiles && what.attachments_bytes > 0 ? ` (${size(what.attachments_bytes)})` : ""}</>}
+          ? <><Icon name="progress_activity" size="md" className="animate-spin" />Armando tu ZIP…</>
+          : <><Icon name="download" size="md" />Descargar ZIP{what && withFiles && what.attachments_bytes > 0 ? ` (${size(what.attachments_bytes)})` : ""}</>}
       </button>
-      <Link to="/mas/cuenta" className="mt-3 py-2 text-center text-caption font-semibold underline">Volver</Link>
+      <Link to="/mas/cuenta" className="mt-3 flex min-h-control items-center justify-center text-caption font-semibold underline">Volver</Link>
     </main>
   );
 }
