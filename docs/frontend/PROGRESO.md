@@ -100,6 +100,7 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 14: lo que quedaba de cuentas y tarjetas (Nueva cuenta, el formulario de banco y efectivo, Guardo de otros, Editar banco, Nueva tarjeta, Cuotas de antes y Conciliar). PR #146.
   - 49 valores escritos a mano → 0; lo que se toca < 44 px: 4 a 14 por pantalla → 0; axe sin violaciones; foco sin tapar.
   - El campo de monto que comparten los formularios (AmountField: cuenta nueva, Guardo, Nueva tarjeta, De antes de PPM, saldo inicial) pasa de 34 a 40 px (amount-hero, el token más cercano). El nombre de una cuenta o tarjeta nueva pasa de 30 a 28 px (title-1). La diferencia de la cuota en Conciliar se calcula con money.ts. Utilidad nueva `grid-cols-currency-table`.
+  - Conciliar no sale en las capturas (necesita un estado de cuenta importado) ni lo abre ninguna prueba e2e: revisarlo a mano en la Fase 5.
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
 - [ ] Después: adjuntos (lote 15); las piezas compartidas (lote 16: riel, barra, hojas, calendario, categorías, etiquetas y las demás)
 
