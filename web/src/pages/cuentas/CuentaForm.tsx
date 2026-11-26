@@ -116,7 +116,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
         label="Nombre"
         placeholder={kind === "bank" ? "Cuenta digital BCP" : "Billetera"}
         error={errors.name?.message}
-        className="h-[52px] font-display text-[30px] leading-9 font-extrabold tracking-[-0.02em]"
+        className="h-13 text-title-1 font-extrabold"
         {...form.register("name")}
       />
 
@@ -182,12 +182,12 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)} className={chip}>
-          <Icon name="event" className="text-[18px]" />
-          {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" className="text-[18px] text-muted-foreground" /></>}
+          <Icon name="event" size="sm" />
+          {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" size="sm" className="text-muted-foreground" /></>}
         </button>
         {kind === "bank" && (
           <button type="button" aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)} className={chip}>
-            <Icon name="tag" className="text-[18px]" />
+            <Icon name="tag" size="sm" />
             Número y CCI
           </button>
         )}
@@ -199,9 +199,9 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
       )}
       {kind === "bank" && moreOpen && (
         <div className="mt-3 flex flex-col gap-3">
-          <LineField label="Número de cuenta" optional inputMode="numeric" className="font-mono text-[15px]"
+          <LineField label="Número de cuenta" optional inputMode="numeric" className="font-mono text-body"
             error={errors.accNumber?.message} {...form.register("accNumber")} />
-          <LineField label="CCI" optional hint="20 dígitos" inputMode="numeric" className="font-mono text-[15px]"
+          <LineField label="CCI" optional hint="20 dígitos" inputMode="numeric" className="font-mono text-body"
             error={errors.cci?.message} {...form.register("cci")} />
         </div>
       )}
@@ -227,20 +227,20 @@ export function AmountField({ label, symbol, hint, error, ...props }: React.Comp
       <label className="flex flex-col gap-0.5 text-caption font-semibold">
         {label}
         <span className={`flex items-baseline gap-2 border-b-2 ${error ? "border-destructive" : "border-input-line"}`}>
-          <span aria-hidden="true" className="text-[22px] leading-7 font-semibold text-muted-foreground">{symbol}</span>
+          <span aria-hidden="true" className="text-amount-xl text-muted-foreground">{symbol}</span>
           <input
             inputMode="decimal"
             placeholder="0.00"
             aria-description={`En ${symbol}`}
             aria-invalid={error ? true : undefined}
-            className="h-[52px] min-w-0 flex-1 border-0 bg-transparent p-0 text-[34px] leading-10 font-semibold tracking-[-0.02em] text-foreground tabular-nums"
+            className="h-13 min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-hero text-foreground"
             {...props}
           />
         </span>
       </label>
       {error ? (
         <span className="flex items-center gap-1 text-caption text-destructive">
-          <Icon name="error" className="text-[18px]" />
+          <Icon name="error" size="sm" />
           {error}
         </span>
       ) : (
