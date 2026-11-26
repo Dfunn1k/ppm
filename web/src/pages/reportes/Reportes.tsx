@@ -68,9 +68,9 @@ export function Reportes() {
         <Card to={`/mas/reportes/gastos${q}`} label="Gastos" value={money(s.expense)} icon="donut_large" empty={isZero(s.expense) ? nothing : undefined}
           note={<Versus now={s.expense} before={s.expense_previous} against={prevMonth} />}>
           {s.expense_groups.length > 0 ? (
-            <PieChart width={64} height={64} accessibilityLayer={false}>
+            <PieChart width={64} height={64} accessibilityLayer={false} tabIndex={-1}>
               <Pie data={s.expense_groups.map((g) => ({ value: Number(g.amount), color: g.color }))} dataKey="value" innerRadius={19} outerRadius={30}
-                paddingAngle={2} startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false}>
+                paddingAngle={2} startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false} rootTabIndex={-1}>
                 {s.expense_groups.map((g, i) => <Cell key={i} fill={catColor(g.color)} />)}
               </Pie>
             </PieChart>
@@ -105,7 +105,7 @@ export function Reportes() {
             <Icon name={grew ? "north_east" : "south_east"} size="sm" />
             {money(yearChange.replace("-", ""))} {grew ? "más" : "menos"} que hace un año
           </span>}>
-          <AreaChart width={64} height={48} accessibilityLayer={false} data={nw} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+          <AreaChart width={64} height={48} accessibilityLayer={false} tabIndex={-1} data={nw} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
             <Area type="monotone" dataKey="v" stroke="var(--foreground)" strokeWidth={2} fill="var(--foreground)" fillOpacity={0.1} isAnimationActive={false} dot={false} />
           </AreaChart>
         </Card>
