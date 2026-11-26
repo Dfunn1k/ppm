@@ -493,6 +493,9 @@
   }
 }
 
+/* Los movimientos de un sobre en escritorio: fecha, movimiento y monto */
+@utility grid-cols-post-ledger { grid-template-columns: 4.5rem minmax(0, 1fr) 8.75rem; }
+
 /* La tabla de movimientos de una cuenta en escritorio: fecha, movimiento, monto y saldo */
 @utility grid-cols-ledger { grid-template-columns: 4rem minmax(0, 1fr) 7.5rem 7rem; }
 
