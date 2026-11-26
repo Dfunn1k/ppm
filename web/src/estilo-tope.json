@@ -195,40 +195,6 @@
   "arbitrario": 25,
   "aMano": 1
  },
- "pages/reportes/Categorias.tsx": {
-  "arbitrario": 14,
-  "aMano": 2
- },
- "pages/reportes/Etiquetas.tsx": {
-  "arbitrario": 6
- },
- "pages/reportes/Flujo.tsx": {
-  "arbitrario": 8,
-  "enLinea": 1,
-  "aMano": 3
- },
- "pages/reportes/Patrimonio.tsx": {
-  "arbitrario": 11,
-  "enLinea": 2,
-  "aMano": 5
- },
- "pages/reportes/Personas.tsx": {
-  "arbitrario": 8
- },
- "pages/reportes/Reportes.tsx": {
-  "arbitrario": 17,
-  "enLinea": 2,
-  "aMano": 1
- },
- "pages/reportes/TuPlata.tsx": {
-  "arbitrario": 12,
-  "enLinea": 1,
-  "aMano": 5
- },
- "pages/reportes/common.tsx": {
-  "arbitrario": 10,
-  "enLinea": 1
- },
  "pages/tarjetas/Conciliar.tsx": {
   "arbitrario": 16,
   "aMano": 1
