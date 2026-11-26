@@ -1227,17 +1227,6 @@ export function useRecurringList() {
   });
 }
 
-export function useRecurringPending() {
-  return useQuery({
-    queryKey: [...RECURRING, "pending"],
-    queryFn: async () => {
-      const { data, error, response } = await api.GET("/recurring/pending");
-      if (!data) fail(response, error);
-      return data;
-    },
-  });
-}
-
 export function useRecurring(id: number) {
   return useQuery({
     queryKey: [...RECURRING, id],
