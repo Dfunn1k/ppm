@@ -5,10 +5,14 @@ import { Link, useSearchParams } from "react-router";
 
 import { type BudgetMonth, type BudgetPost, useMe } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
+import { chipVariants } from "@/components/Chip";
+import { ProgressBar } from "@/components/ProgressBar";
+import { SectionHeading } from "@/components/SectionHeading";
 import { Icon } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
+import { cn } from "@/lib/utils";
 
 /** El mes que se mira: «?mes=2026-10», o el de hoy. */
 export function useBudgetMonth(): [string, (m: string) => void] {
@@ -33,6 +37,11 @@ export function useMoney() {
     signed: (v: string) => (isNegative(v) || isZero(v) ? formatAmount(v, symbol, lang) : `+ ${formatAmount(v, symbol, lang)}`),
   };
 }
+
+/** Los botones del presupuesto: redondos y centrados, como en el boceto de la sección. */
+export const PILL = "flex min-h-12 items-center justify-center gap-1.5 rounded-full font-semibold disabled:opacity-50";
+export const PILL_PRIMARY = cn(PILL, "bg-primary text-primary-foreground hover:bg-primary/90");
+export const PILL_SECONDARY = cn(PILL, "bg-secondary text-secondary-foreground hover:bg-secondary/80");
 
 export function abs(v: string) {
   return v.replace(/^-/, "");
@@ -59,8 +68,12 @@ export function PostChip({ post, size = 36 }: { post: Pick<BudgetPost, "icon" | 
 
 /** Lo que queda en un sobre: verde si hay, gris en cero, rojo si se pasó. */
 export function AvailablePill({ value, money }: { value: string; money: (v: string) => string }) {
-  const tone = isNegative(value) ? "bg-destructive-soft text-expense" : isZero(value) ? "bg-muted text-muted-foreground" : "bg-income/12 text-income";
-  return <span className={`inline-flex h-[26px] flex-none items-center rounded-full px-2.5 text-[14px] font-semibold tabular-nums ${tone}`}>{money(value)}</span>;
+  const tone = isNegative(value) ? "expense" : isZero(value) ? "muted" : "income";
+  return (
+    <span className={cn(chipVariants({ tone }), "h-7 px-2.5 text-body-sm font-semibold", tone === "muted" && "text-muted-foreground")}>
+      {money(value)}
+    </span>
+  );
 }
 
 /** Lo que el sobre tuvo para el mes (lo que traía más lo asignado) y lo que salió de él. */
@@ -86,16 +99,14 @@ export function PostRow({ post: p, month, money, selected }: {
   const red = isNegative(p.available);
   return (
     <Link to={withMonth(`/presupuesto/sobres/${p.id}`, month)} aria-current={selected ? "page" : undefined}
-      className="flex min-h-[72px] items-center gap-3 border-b border-border py-2 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
+      className="flex min-h-row items-center gap-3 border-b border-border py-2.5 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:mark-selected">
       <PostChip post={p} />
       <span className="flex min-w-0 flex-1 flex-col gap-1.5">
         <span className="flex items-center justify-between gap-2">
           <span className="truncate font-semibold">{p.name}</span>
           <AvailablePill value={p.available} money={money} />
         </span>
-        <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-muted">
-          <span className="block h-1.5 rounded-full" style={{ width: `${share * 100}%`, background: red ? "var(--expense)" : `var(--cat-${p.color ?? 0})` }} />
-        </span>
+        <ProgressBar value={share} tone={red ? "expense" : "category"} color={p.color} />
         <span className={`text-caption tabular-nums ${red ? "font-semibold text-expense" : "text-muted-foreground"}`}>{postSentence(p, money)}</span>
       </span>
     </Link>
@@ -106,7 +117,7 @@ export function PostRow({ post: p, month, money, selected }: {
 export function AgeOfMoney({ age }: { age: BudgetMonth["age"] }) {
   return (
     <div className="mt-4 flex items-center gap-3 border-t border-border py-3">
-      <Icon name="hourglass" className="text-[22px]" />
+      <Icon name="hourglass" size="md" />
       <span className="flex flex-col">
         {age.days === null ? (
           <>
@@ -129,8 +140,6 @@ export function AgeOfMoney({ age }: { age: BudgetMonth["age"] }) {
 /** El encabezado de una sección de la lista: «Gastos» a la izquierda, «Disponible» a la derecha. */
 export function Heading({ label, right }: { label: string; right?: string }) {
   return (
-    <div className="mt-6 flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-      <span>{label}</span>{right && <span>{right}</span>}
-    </div>
+    <SectionHeading className="mt-6" action={right && <span className="text-label text-muted-foreground">{right}</span>}>{label}</SectionHeading>
   );
 }
