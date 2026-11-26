@@ -1,5 +1,8 @@
 // M3 · Por clasificar: la bandeja de lo que trajiste del banco y falta decir en qué fue. Hasta
 // entonces no cuenta como gasto ni ingreso. Uno por uno («¿En qué fue?») o varios a la vez.
+import { SectionHeading } from "@/components/SectionHeading";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/Button";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
@@ -55,35 +58,29 @@ export function PorClasificar() {
   const done = () => { setPicked([]); setSelecting(false); };
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/movimientos" aria-label="Volver a movimientos" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
-        {items.length > 1 && (
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28 md:max-w-160">
+      <PageHeader back={{ to: "/movimientos", label: "Volver a movimientos" }} eyebrow="Movimientos" title="Por clasificar"
+        actions={items.length > 1 && (
           <button type="button" aria-pressed={selecting} onClick={() => (selecting ? done() : setSelecting(true))}
-            className="h-10 rounded-full px-3.5 text-[14px] font-semibold">
+            className="min-h-control rounded-full px-3.5 text-body-sm font-semibold hover:bg-muted">
             {selecting ? "Listo" : "Elegir varios"}
           </button>
-        )}
-      </div>
-      <span className="mt-2 text-label text-muted-foreground">Movimientos</span>
-      <h1 className="mt-1.5 text-title-hero">Por clasificar</h1>
+        )} />
       {list.isError && <div className="mt-4"><ErrorAlert>{list.error.message}</ErrorAlert></div>}
 
       {items.length === 0 ? (
-        <div className="mt-16 flex flex-col items-center gap-2.5 text-center">
+        <div className="mt-16 flex flex-col items-center gap-3 text-center">
           <span className="grid size-16 place-items-center rounded-full bg-secondary text-secondary-foreground">
-            <Icon name="inbox" className="text-[32px]" />
+            <Icon name="inbox" size="lg" />
           </span>
           <span className="text-title-2">Bandeja vacía</span>
-          <span className="max-w-[280px] text-caption text-muted-foreground">
+          <span className="max-w-70 text-caption text-muted-foreground">
             Todo lo que trajiste del banco ya tiene su lugar. Cuando importes otro extracto, lo nuevo llega aquí.
           </span>
         </div>
       ) : (
         <>
-          <p className="mt-2.5 text-caption text-muted-foreground">
+          <p className="mt-3 text-caption text-muted-foreground">
             {items.length === 1 ? "1 movimiento que trajiste" : `${items.length} movimientos que trajiste`} del banco. Hasta que digas en qué
             fueron, no cuentan como gasto ni ingreso.
           </p>
@@ -94,12 +91,12 @@ export function PorClasificar() {
               const newDay = k === 0 || items[k - 1]!.date !== u.date;
               return (
                 <li key={u.move_id} className="flex flex-col">
-                {newDay && <span className="mt-4 border-b border-border pb-1 text-label text-muted-foreground">{dayHeader(u.date)}</span>}
-                <div className="flex min-h-[76px] items-center gap-3 border-b border-border">
+                {newDay && <SectionHeading className="mt-4">{dayHeader(u.date)}</SectionHeading>}
+                <div className="flex min-h-19 items-center gap-3 border-b border-border">
                   {selecting && (
                     <button type="button" role="checkbox" aria-checked={on} aria-label={`Elegir ${u.payment_ref ?? u.ref}`}
-                      onClick={() => toggle(u.move_id)} className="-ml-2.5 grid size-11 flex-none place-items-center">
-                      <Icon name={on ? "check_box" : "check_box_outline_blank"} fill={on} className="text-[24px]" />
+                      onClick={() => toggle(u.move_id)} className="-ml-2.5 grid size-control flex-none place-items-center">
+                      <Icon name={on ? "check_box" : "check_box_outline_blank"} fill={on} size="md" />
                     </button>
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -115,8 +112,8 @@ export function PorClasificar() {
                       </span>
                       {!selecting && (
                         <button type="button" onClick={() => setSheet([toClassify(u)])}
-                          className="flex h-8 flex-none items-center gap-0.5 rounded-full border border-border bg-card pr-1.5 pl-3 text-caption font-semibold">
-                          ¿En qué fue?<Icon name="expand_more" className="text-[18px]" />
+                          className="hit-area flex h-8 flex-none items-center gap-0.5 rounded-full border border-border bg-card pr-1.5 pl-3 text-caption font-semibold hover:bg-muted">
+                          ¿En qué fue?<Icon name="expand_more" />
                         </button>
                       )}
                     </span>
@@ -140,10 +137,9 @@ export function PorClasificar() {
                     : "En varias monedas"}
               </span>
             </span>
-            <button type="button" disabled={chosen.length === 0} onClick={() => setSheet(chosen.map(toClassify))}
-              className="flex h-12 items-center gap-1.5 rounded-lg bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50">
-              ¿En qué fueron?<Icon name="arrow_forward" className="text-[20px]" />
-            </button>
+            <Button size="sm" disabled={chosen.length === 0} onClick={() => setSheet(chosen.map(toClassify))} className="w-auto flex-none gap-1.5 px-4">
+              ¿En qué fueron?
+            </Button>
           </div>
         </div>
       )}
