@@ -83,7 +83,7 @@ export function Privacidad() {
 
       {contact && (
         <Section title="Contacto">
-          <a href={`mailto:${contact}`} className="self-start underline">{contact}</a>
+          <a href={`mailto:${contact}`} className="hit-area self-start underline">{contact}</a>
         </Section>
       )}
     </Screen>
