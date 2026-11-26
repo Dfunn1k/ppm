@@ -58,7 +58,7 @@ export function NuevaGuardo() {
     }
   };
 
-  const pill = "flex h-10 items-center gap-2 rounded-full border text-[15px] leading-[22px] font-semibold";
+  const pill = "hit-area flex h-10 items-center gap-2 rounded-full border text-body font-semibold";
   return (
     <Screen className="pt-4">
       <FormHeader back="/cuentas/nueva" label="Guardo de otros" />
@@ -106,9 +106,9 @@ export function NuevaGuardo() {
             <RateField input={rate} currency={currency} />
           )}
           <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
-            className="flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold">
-            <Icon name="event" className="text-[18px]" />
-            {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" className="text-[18px] text-muted-foreground" /></>}
+            className="hit-area flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted">
+            <Icon name="event" size="sm" />
+            {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" size="sm" className="text-muted-foreground" /></>}
           </button>
           {dateOpen && <DateField label="Te la dio el" max={todayISO()} value={date} onChange={setDate} booked />}
           {(problem || failure) && (

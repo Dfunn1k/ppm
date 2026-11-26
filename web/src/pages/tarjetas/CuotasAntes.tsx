@@ -46,7 +46,7 @@ export function CuotasAntes() {
       { onSuccess: () => navigate(`/tarjetas/${id}`, { replace: true }) });
   };
 
-  const step = "grid size-9 place-items-center rounded-full border border-border";
+  const step = "hit-area grid size-9 place-items-center rounded-full border border-border hover:bg-muted";
   return (
     <Screen className="pt-4">
       <FormHeader back={`/tarjetas/${id}`} label={d.account.name} />
@@ -63,14 +63,16 @@ export function CuotasAntes() {
             <CurrencyChoice label="Moneda" size="sm" value={currency} onChange={setCurrency}
               options={me.currencies.map(currencyOption)} />
           )}
-          <div className="grid grid-cols-[minmax(0,1fr)_140px] items-end gap-4">
-            <LineField label="¿Cuánto es el capital de cada cuota?" inputMode="decimal" placeholder="0.00" value={each} onChange={(e) => setEach(e.target.value)}
-              className="text-[22px] font-semibold tabular-nums" />
-            <div className="flex flex-col gap-1.5">
+          <div className="flex items-end gap-4">
+            <div className="min-w-0 flex-1">
+              <LineField label="¿Cuánto es el capital de cada cuota?" inputMode="decimal" placeholder="0.00" value={each} onChange={(e) => setEach(e.target.value)}
+                className="text-amount-xl tabular-nums" />
+            </div>
+            <div className="flex w-35 flex-none flex-col gap-1.5">
               <span id="faltan" className="text-caption font-semibold">¿Cuántas faltan?</span>
               <div role="group" aria-labelledby="faltan" className="flex h-11 items-center justify-between border-b-2 border-input-line">
                 <button type="button" aria-label="Una menos" onClick={() => setN(Math.max(1, n - 1))} className={step}><Icon name="remove" /></button>
-                <span className="text-[22px] font-semibold tabular-nums">{n}</span>
+                <span className="text-amount-xl tabular-nums">{n}</span>
                 <button type="button" aria-label="Una más" onClick={() => setN(Math.min(59, n + 1))} className={step}><Icon name="add" /></button>
               </div>
             </div>
@@ -79,7 +81,7 @@ export function CuotasAntes() {
         </div>
 
         {total && (
-          <div role="status" className="mt-5 flex flex-col gap-1 rounded-[12px] bg-muted p-3.5 tabular-nums">
+          <div role="status" className="mt-5 flex flex-col gap-1 rounded-lg bg-muted p-3.5 tabular-nums">
             <span className="font-semibold">Le debes {formatAmount(total, symbolOf(currency), lang)} al banco{what.trim() ? ` por ${what.trim().toLowerCase()}` : ""}</span>
             <span className="text-caption text-muted-foreground">
               {n === 1 ? `Una cuota de ${formatAmount(value!, symbolOf(currency), lang)}, en el corte del ${shortDate(closings[0]!)}.`

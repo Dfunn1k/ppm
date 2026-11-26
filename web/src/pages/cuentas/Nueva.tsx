@@ -10,7 +10,7 @@ function Header({ back, label, icon = "arrow_back" }: { back: string; label: str
   return (
     <div className="-mx-2.5 flex items-center justify-between">
       <Link to={back} aria-label={icon === "close" ? "Cerrar y volver a cuentas" : "Volver"} className="grid size-11 place-items-center rounded-full">
-        <Icon name={icon} className="text-[24px]" />
+        <Icon name={icon} size="md" />
       </Link>
       <span className="pr-2.5 text-label text-muted-foreground">{label}</span>
     </div>
@@ -36,15 +36,15 @@ export function NuevaCuenta() {
       <ul className="flex flex-col">
         {TYPES.map((t) => (
           <li key={t.to}>
-            <Link to={t.to} className="flex min-h-[72px] items-center gap-3.5 border-b border-border">
+            <Link to={t.to} className="flex min-h-row items-center gap-3.5 border-b border-border py-2.5">
               <span className="grid size-11 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
-                <Icon name={t.icon} className="text-[22px]" />
+                <Icon name={t.icon} size="md" />
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="text-[17px] leading-6 font-semibold">{t.name}</span>
+                <span className="text-body-lg font-semibold">{t.name}</span>
                 <span className="text-caption text-muted-foreground">{t.hint}</span>
               </span>
-              <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+              <Icon name="chevron_right" size="md" className="text-muted-foreground" />
             </Link>
           </li>
         ))}

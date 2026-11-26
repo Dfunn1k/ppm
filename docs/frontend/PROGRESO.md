@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 13 terminado; esperando el visto bueno de Dany).
+- **Fase actual:** 4, migración por lotes (lote 14 terminado; esperando el visto bueno de Dany).
 - **Rama:** `frontend/fase-4-lote-6`
 - **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
 
@@ -94,17 +94,21 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 12: acceso (la portada de la computadora, Entrar, Crear cuenta, Recuperar, Restablecer, Unir Google) y la bienvenida (3 pasos). PR #144, aprobado por Dany (26-nov).
   - 47 valores escritos a mano → 0; lo que se toca < 44 px: 2 a 6 por pantalla → 0 (los enlaces «Crea tu cuenta», «Inicia sesión», «¿Olvidaste tu contraseña?», Privacidad y el campo de efectivo); axe sin violaciones; foco sin tapar.
   - El panel de «Pan para mayo» crece con la ventana igual que antes, ahora con utilidades con nombre (`text-poster`, `mark-mayo`, `px-access`, `gap-access`, `pt-access`, `text-access-lead`, `grid-cols-access`). La vista previa de la bienvenida usa amount-display, como el Inicio.
-- [x] Lote 13: Importar extracto (los 3 pasos) y el detalle de un extracto importado. PR #145.
+- [x] Lote 13: Importar extracto (los 3 pasos) y el detalle de un extracto importado. PR #145, aprobado por Dany (26-nov).
   - 29 valores escritos a mano → 0; lo que se toca < 44 px: 4 → 0 (la pastilla de cada columna del archivo); axe sin violaciones; foco sin tapar.
   - «El saldo cuadra» usa income-soft en vez de un color-mix; Deshacer la importación usa el botón de la app (secundario y de borrar). Los íconos recuperan el tamaño que pedían (el de subir archivo, 32 px), que antes no se aplicaba.
+- [x] Lote 14: lo que quedaba de cuentas y tarjetas (Nueva cuenta, el formulario de banco y efectivo, Guardo de otros, Editar banco, Nueva tarjeta, Cuotas de antes y Conciliar). PR #146.
+  - 49 valores escritos a mano → 0; lo que se toca < 44 px: 4 a 14 por pantalla → 0; axe sin violaciones; foco sin tapar.
+  - El campo de monto que comparten los formularios (AmountField: cuenta nueva, Guardo, Nueva tarjeta, De antes de PPM, saldo inicial) pasa de 34 a 40 px (amount-hero, el token más cercano). El nombre de una cuenta o tarjeta nueva pasa de 30 a 28 px (title-1). La diferencia de la cuota en Conciliar se calcula con money.ts. Utilidad nueva `grid-cols-currency-table`.
+  - Conciliar no sale en las capturas (necesita un estado de cuenta importado) ni lo abre ninguna prueba e2e: revisarlo a mano en la Fase 5.
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
-- [ ] Después: lo que queda de cuentas y tarjetas (lote 14: Conciliar, CuentaForm, Nueva, Guardo, CuotasAntes, NuevaTarjeta, EditarBanco); adjuntos (lote 15); las piezas compartidas (lote 16: riel, barra, hojas, calendario, categorías, etiquetas y las demás)
+- [ ] Después: adjuntos (lote 15); las piezas compartidas (lote 16: riel, barra, hojas, calendario, categorías, etiquetas y las demás)
 
 ### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-Dany revisa el lote 13 (PR #145) y da su visto bueno. Con su OK: lote 14, lo que queda de cuentas y tarjetas, en la rama `frontend/fase-4-lote-14`.
+Dany revisa el lote 14 (PR #146) y da su visto bueno. Con su OK: lote 15, adjuntos (el visor de fotos y PDF y la lista de adjuntos), en la rama `frontend/fase-4-lote-15`.
 
 ## Decisiones de Dany
 

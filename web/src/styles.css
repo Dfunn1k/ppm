@@ -493,6 +493,9 @@
   }
 }
 
+/* Una tabla chica por moneda (Conciliar): el nombre y tres montos */
+@utility grid-cols-currency-table { grid-template-columns: minmax(0, 1fr) auto auto auto; }
+
 /* La portada de acceso en la computadora (Entrar, Crear cuenta, Recuperar): el panel oscuro con
    «Pan para mayo» crece con la ventana, entre un mínimo y un máximo */
 @utility grid-cols-access { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
