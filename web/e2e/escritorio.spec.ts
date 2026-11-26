@@ -280,3 +280,31 @@ test("con poco alto el + no se encoge y lo que no cabe en el riel pasa a Más", 
   await expect(riel.getByRole("link", { name: "Reportes" })).toBeVisible();
   await expect(riel.getByRole("link", { name: "Presupuesto" })).toBeVisible();
 });
+
+test("Por clasificar en escritorio: la lista a la izquierda y se clasifica al lado, uno tras otro", async ({ page }) => {
+  await readyUser(page);
+  const accounts = (await (await page.request.get("/api/accounts")).json()) as { have: { id: number; name: string }[] };
+  const bcp = accounts.have.find((a) => a.name === "BCP")!.id;
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });
+  for (const [amount, ref] of [["48.90", "TOTTUS LA MOLINA"], ["18.70", "UBER TRIP"]] as const) {
+    const r = await page.request.post("/api/moves", { data: {
+      kind: "expense", account_id: bcp, amount, date: today, ref, pending: false, splits: [], lines: [], later: true,
+      to_account_id: null, to_amount: null, rate: null, currency: null, paid_by_partner_id: null, installments: null, installment_amount: null, tag_ids: [],
+    } });
+    expect(r.ok()).toBeTruthy();
+  }
+  await page.goto("/por-clasificar");
+  // Sin ventana: el primero ya está abierto al lado
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByText("1 de 2")).toBeVisible();
+  const first = (await page.getByRole("heading", { level: 2, name: /TOTTUS|UBER/ }).textContent())!;
+  await page.getByRole("radio", { name: "Supermercado y mercado" }).click();
+  await page.getByRole("button", { name: "Clasificar como Supermercado y mercado" }).click();
+  // Queda el otro, ya abierto
+  await expect(page.getByText("1 de 1")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: /TOTTUS|UBER/ })).not.toHaveText(first);
+  // Enter sobre la categoría elegida clasifica y la bandeja queda vacía
+  await page.getByRole("radio", { name: "Taxi y apps" }).click();
+  await page.getByRole("radio", { name: "Taxi y apps" }).press("Enter");
+  await expect(page.getByText("Bandeja vacía")).toBeVisible();
+});
