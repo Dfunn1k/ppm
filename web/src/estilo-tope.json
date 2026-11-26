@@ -16,7 +16,7 @@
   "aMano": 1
  },
  "components/Attachments.tsx": {
-  "arbitrario": 18,
+  "arbitrario": 17,
   "hex": 1,
   "colorTailwind": 1
  },
@@ -56,9 +56,6 @@
  "components/Installments.tsx": {
   "arbitrario": 2,
   "aMano": 2
- },
- "components/MasTipos.tsx": {
-  "arbitrario": 10
  },
  "components/MaturitySheet.tsx": {
   "arbitrario": 2
@@ -220,10 +217,6 @@
  "pages/movimientos/Reembolso.tsx": {
   "arbitrario": 12,
   "aMano": 1
- },
- "pages/movimientos/Registrar.tsx": {
-  "arbitrario": 42,
-  "aMano": 6
  },
  "pages/movimientos/RegistrarPersona.tsx": {
   "arbitrario": 22,
