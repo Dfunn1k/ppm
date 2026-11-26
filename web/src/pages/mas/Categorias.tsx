@@ -7,6 +7,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { ApiError, useCategories, useCreateCategory } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { Segmented, SheetSelect } from "@/components/Sheet";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen } from "@/components/ui";
 
 type Kind = "expense" | "income";
@@ -47,10 +48,8 @@ export function Categorias() {
   const data = useCategories(kind).data;
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
+      <div className="-mx-2.5 flex min-h-control items-center">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <h1 className="mt-1 text-title-hero">Categorías</h1>
       <div className="mt-4">
@@ -76,8 +75,8 @@ export function Categorias() {
             </span>
             <span className="mt-2 ml-12 flex flex-wrap gap-1.5">
               {g.children.map((k) => (
-                <span key={k.id} className="flex h-7 items-center gap-1 rounded-full bg-muted pr-2.5 pl-1.5 text-[13px] leading-[18px]">
-                  <span style={{ color: `var(--cat-${k.color ?? 0})` }}><Icon name={k.icon ?? "category"} className="text-[16px]" /></span>
+                <span key={k.id} className="flex h-7 items-center gap-1 rounded-full bg-muted pr-2.5 pl-1.5 text-caption">
+                  <span style={{ color: `var(--cat-${k.color ?? 0})` }}><Icon name={k.icon ?? "category"} size="sm" /></span>
                   {k.name}
                 </span>
               ))}
@@ -144,10 +143,10 @@ export function NuevaCategoria() {
 
   return (
     <Screen className="pt-4">
-      <div className="-mx-2.5 flex items-center justify-between">
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
         <Link to={income ? "/mas/categorias?tipo=ingreso" : "/mas/categorias"} aria-label="Cerrar sin crear"
           className="grid size-11 place-items-center rounded-full">
-          <Icon name="close" className="text-[24px]" />
+          <Icon name="close" size="md" />
         </Link>
       </div>
       <form noValidate onSubmit={save} className="flex flex-1 flex-col">
@@ -186,7 +185,7 @@ export function NuevaCategoria() {
                 <button key={n} type="button" role="radio" aria-label={n} aria-checked={n === icon} onClick={() => setIcon(n)}
                   className={`grid h-10 place-items-center rounded-md ${n === icon ? "" : "border border-border"}`}
                   style={n === icon ? { background: `var(--cat-${shown.color})`, color: "var(--on-category)" } : undefined}>
-                  <Icon name={n} className="text-[22px]" />
+                  <Icon name={n} size="md" />
                 </button>
               ))}
               {icons.length === 0 && <span className="col-span-7 py-2 text-caption text-muted-foreground">No hay íconos con «{q}».</span>}
@@ -194,7 +193,7 @@ export function NuevaCategoria() {
             {icon && !ICONS.some(([n]) => n === icon) && (
               <span className="flex items-center gap-2 text-caption text-muted-foreground">
                 Elegiste <span className="grid size-8 place-items-center rounded-md" style={{ background: `var(--cat-${shown.color})`, color: "var(--on-category)" }}>
-                  <Icon name={icon} className="text-[20px]" /></span> del catálogo completo
+                  <Icon name={icon} /></span> del catálogo completo
               </span>
             )}
             {all ? (
@@ -205,7 +204,7 @@ export function NuevaCategoria() {
             ) : (
               <button type="button" onClick={() => setAll(true)}
                 className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-border text-caption font-semibold">
-                <Icon name="apps" className="text-[18px]" />Ver todos los íconos
+                <Icon name="apps" size="sm" />Ver todos los íconos
               </button>
             )}
           </div>
@@ -215,13 +214,13 @@ export function NuevaCategoria() {
             <div role="radiogroup" aria-label="Color" className="flex flex-wrap items-center gap-2">
               {!income && !fresh && (
                 <button type="button" role="radio" aria-checked={color === null} onClick={() => setColor(null)}
-                  className={`h-[30px] rounded-full px-2.5 text-[12px] leading-4 font-semibold ${color === null ? "border-2 border-foreground" : "border border-border"}`}>
+                  className={`hit-area h-8 rounded-full px-2.5 text-caption-sm leading-4 font-semibold ${color === null ? "border-2 border-foreground" : "border border-border"}`}>
                   El del grupo
                 </button>
               )}
               {COLORS.map((label, i) => (
                 <button key={label} type="button" role="radio" aria-label={label} aria-checked={ownColor === i} onClick={() => setColor(i)}
-                  className={`size-[30px] rounded-full ${ownColor === i ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
+                  className={`hit-area size-8 rounded-full ${ownColor === i ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
                   style={{ background: `var(--cat-${i})` }} />
               ))}
             </div>

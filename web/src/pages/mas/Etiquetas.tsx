@@ -2,12 +2,14 @@
 // cambiarle el color, archivarla (ya no se ofrece al elegir, pero sus movimientos la conservan) o
 // eliminarla (sale de sus movimientos, que no se tocan).
 import { useState } from "react";
-import { Link } from "react-router";
 
 import { type Tag, useCreateTag, useDeleteTag, useTags, useUpdateTag } from "@/api/hooks";
 import { Sheet } from "@/components/Sheet";
-import { tagColor } from "@/components/Tags";
+
+import { catBg } from "@/components/Avatar";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, LineField, Spinner, Status } from "@/components/ui";
+import { cn } from "@/lib/utils";
 
 const COLORS = ["gris", "rojo", "naranja", "mostaza", "turquesa", "morado", "marrón", "verde azulado", "azul", "frambuesa", "verde", "índigo"];
 
@@ -20,10 +22,8 @@ export function Etiquetas() {
   const list = tags.data ?? [];
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <h1 className="mt-1 text-title-hero">Etiquetas</h1>
       <p className="mt-1 text-caption text-muted-foreground">
@@ -39,12 +39,12 @@ export function Etiquetas() {
           <li key={t.id}>
             <button type="button" onClick={() => setEditing(t)}
               className={`flex min-h-14 w-full items-center gap-3 border-b border-border text-left ${t.active ? "" : "opacity-60"}`}>
-              <span aria-hidden="true" className="size-3 flex-none rounded-full" style={{ background: tagColor(t.color) }} />
+              <span aria-hidden="true" className={cn("size-3 flex-none rounded-full", catBg(t.color))} />
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">{t.name}</span>
                 <span className="flex items-center gap-2.5 text-caption text-muted-foreground">{!t.active && <Status icon="inventory_2">Archivada</Status>}{t.active ? count(t.moves) : count(t.moves).toLowerCase()}</span>
               </span>
-              <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+              <Icon name="chevron_right" size="md" className="text-muted-foreground" />
             </button>
           </li>
         ))}
@@ -93,8 +93,7 @@ function TagForm({ tag, onDone }: { tag: Tag | null; onDone: () => void }) {
             const on = (color ?? -1) === i;
             return (
               <button key={i} type="button" role="radio" aria-checked={on} aria-label={label} onClick={() => setColor(i)}
-                className={`size-10 rounded-full ${on ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""}`}
-                style={{ background: tagColor(i) }} />
+                className={cn("hit-area size-10 rounded-full", catBg(i), on && "ring-2 ring-foreground ring-offset-2 ring-offset-card")} />
             );
           })}
         </div>
