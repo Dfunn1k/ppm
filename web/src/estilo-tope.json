@@ -64,7 +64,7 @@
   "arbitrario": 2
  },
  "components/MoveBits.tsx": {
-  "arbitrario": 2,
+  "arbitrario": 1,
   "enLinea": 2,
   "aMano": 1
  },
@@ -109,7 +109,7 @@
   "arbitrario": 3
  },
  "components/ui.tsx": {
-  "arbitrario": 10
+  "arbitrario": 7
  },
  "pages/CrearCuenta.tsx": {
   "arbitrario": 2

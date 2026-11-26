@@ -86,7 +86,7 @@ export function Facts({ items, attention, className }: { items: Fact[]; attentio
       {xs.map(([label, value], i) => (
         <span key={label} className="flex flex-col">
           {/* Para el lector de pantalla se lee «Faltan: 3 días, …» */}
-          <span className="text-[10px] leading-[14px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+          <span className="text-label text-muted-foreground">
             {i > 0 && <span className="sr-only">, </span>}{label}<span className="sr-only">: </span>
           </span>
           <span className={cn("text-caption font-semibold text-foreground tabular-nums normal-case tracking-normal", attention && "text-attention")}>{value}</span>

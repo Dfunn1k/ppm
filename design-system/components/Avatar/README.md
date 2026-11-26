@@ -4,7 +4,7 @@ El círculo de la izquierda de una fila. En el código, `Avatar`, que reúne a `
 | --- | --- | --- |
 | `category` | `cat-N` (el color de la categoría) | El ícono de la categoría en `on-category` (ver CategoryChip) |
 | `account` | `secondary` | El ícono del tipo de cuenta en `secondary-foreground` |
-| `person` | `muted` | Las iniciales en `caption-sm` |
+| `person` | `secondary` | La inicial en `body` 600 (en el chico, `caption-sm`), en `secondary-foreground` |
 | `status` | `muted` o `attention-soft` | Un ícono de estado (por clasificar, saldo inicial) |
 
 - **Tamaños:** `md` de 40px en las filas y `sm` de 24px para una persona dentro de un texto. El ícono va en `icon` (20px). El tamaño va en la variante, nunca en `style`.

@@ -5,10 +5,14 @@ import { useState } from "react";
 
 import { type Category, useCategories } from "@/api/hooks";
 
+import { Avatar } from "./Avatar";
 import { Sheet } from "./Sheet";
 import { Icon } from "./ui";
 
-export function CategoryChip({ category, size = 36 }: { category: Pick<Category, "icon" | "color">; size?: number }) {
+/** El círculo de una categoría: el `Avatar` de categoría (40 px). `size` con un número queda solo para las
+ *  pantallas que todavía no pasaron a los moldes (Fase 4). */
+export function CategoryChip({ category, size }: { category: Pick<Category, "icon" | "color">; size?: number }) {
+  if (size === undefined) return <Avatar kind="category" color={category.color} icon={category.icon ?? "category"} />;
   return (
     <span
       className="grid flex-none place-items-center rounded-full"
