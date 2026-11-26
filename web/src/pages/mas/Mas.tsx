@@ -15,7 +15,7 @@ import { shortDate } from "@/lib/dates";
 import { CURRENCY_NAME, formatNumber } from "@/lib/money";
 import { capitalize, listText } from "@/lib/utils";
 
-const CURRENT = "lg:-mx-3 lg:rounded-lg lg:border-0 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]";
+const CURRENT = "lg:-mx-3 lg:rounded-xl lg:border-0 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]";
 const ROW = `flex min-h-16 items-center gap-3.5 border-b border-border lg:min-h-14 ${CURRENT}`;
 
 export function Mas() {
@@ -165,7 +165,7 @@ export function Mas() {
       <div className="flex flex-col lg:mt-auto">
       <section aria-label="En este equipo" className="mt-6 flex flex-col gap-2">
         <span className="border-b border-border pb-1 text-label text-muted-foreground">En este equipo</span>
-        <div className="flex items-center gap-3.5 rounded-lg bg-muted p-3.5">
+        <div className="flex items-center gap-3.5 rounded-xl bg-muted p-3.5">
           <Logo size={44} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="font-semibold">{install.state === "installed" ? "PPM está instalada" : "Instalar PPM"}</span>

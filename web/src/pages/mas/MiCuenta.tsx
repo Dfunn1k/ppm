@@ -76,7 +76,7 @@ export function MiCuenta() {
       <div className="mt-6 flex flex-col lg:mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
       <section aria-label="Cómo entras" className="flex flex-col lg:gap-2">
         <span className="hidden text-label text-muted-foreground lg:block">Cómo entras</span>
-        <div className="flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
+        <div className="flex flex-col lg:rounded-xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
         {me.google_email ? (
           <div className="flex min-h-[60px] items-center gap-3.5 border-b border-border py-2">
             <span className="grid w-9 place-items-center"><GoogleMark /></span>
@@ -112,7 +112,7 @@ export function MiCuenta() {
       </section>
       <section aria-label="Tus datos" className="flex flex-col lg:gap-2">
         <span className="hidden text-label text-muted-foreground lg:block">Tus datos</span>
-        <div className="flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
+        <div className="flex flex-col lg:rounded-xl lg:border lg:border-border lg:bg-card lg:px-5 lg:[&>*:last-child]:border-b-0">
         <Link to="/mas/cuenta/exportar" className="flex min-h-[60px] items-center gap-3.5 border-b border-border">
           <Icon name="download" className="w-9 text-center text-[22px] text-muted-foreground" />
           <span className="flex flex-1 flex-col">
@@ -142,7 +142,7 @@ export function MiCuenta() {
       {logout.error && <ErrorAlert>{logout.error.message}</ErrorAlert>}
       <button type="button" disabled={logout.isPending}
         onClick={() => logout.mutate(undefined, { onSuccess: () => navigate("/entrar", { replace: true }) })}
-        className="flex h-14 items-center justify-center gap-2 rounded-xl border border-input-line font-semibold lg:w-72 lg:self-start">
+        className="flex h-14 items-center justify-center gap-2 rounded-lg border border-input-line font-semibold lg:w-72 lg:self-start">
         <Icon name="logout" className="text-[22px]" />Cerrar sesión
       </button>
 

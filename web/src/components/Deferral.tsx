@@ -99,7 +99,7 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
             : `Cada parte es ingreso de «${f.category.name}» cuando llega su fecha. Mientras, es algo que debes: «Cobrado por adelantado».`}
         </p>
         {c && (
-          <div className="mt-3 flex flex-col gap-1 rounded-xl bg-muted p-3.5">
+          <div className="mt-3 flex flex-col gap-1 rounded-lg bg-muted p-3.5">
             <span className="font-semibold">Lo cancelaste el {longDay(c.date)}</span>
             <span className="text-caption text-muted-foreground">
               {Number(c.refund) > 0
@@ -119,7 +119,7 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
       {!c && posted && left.length > 0 && !locked && (
         <div className="mt-4 flex flex-col gap-2">
           <button type="button" onClick={() => setCanceling(true)}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+            className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
             <Icon name="event_busy" />Cancelar lo que falta
           </button>
           <p className="text-caption text-muted-foreground">
@@ -229,7 +229,7 @@ function CancelDeferralSheet({ moveId, deferral: f, open, onClose }: {
         <DateField label="Fecha" value={date} onChange={setDate} max={todayISO()} min={minDate} booked
           sheetTitle={expense ? "¿Cuándo lo cancelaste?" : "¿Cuándo devolviste el adelanto?"} />
 
-        <section aria-label="Qué pasa al cancelar" className="flex flex-col gap-1.5 rounded-xl bg-muted p-3.5">
+        <section aria-label="Qué pasa al cancelar" className="flex flex-col gap-1.5 rounded-lg bg-muted p-3.5">
           {result.map((line) => <span key={line} className="text-[14px] leading-5">{line}</span>)}
         </section>
 

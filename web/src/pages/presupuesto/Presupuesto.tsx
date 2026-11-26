@@ -59,7 +59,7 @@ export function Presupuesto() {
       ) : (
         <>
           <section aria-label={red ? "Asignaste de más" : "Por asignar"}
-            className={`mt-3 flex flex-col gap-1 rounded-lg border bg-card p-4 ${red ? "border-expense" : "border-border"} ${desktop && path === "/presupuesto/por-asignar" ? "shadow-[inset_3px_0_0_var(--foreground)]" : ""}`}>
+            className={`mt-3 flex flex-col gap-1 rounded-xl border bg-card p-4 ${red ? "border-expense" : "border-border"} ${desktop && path === "/presupuesto/por-asignar" ? "shadow-[inset_3px_0_0_var(--foreground)]" : ""}`}>
             <Link to={withMonth("/presupuesto/por-asignar", month)} className="flex flex-col gap-1">
               <span className="flex items-center justify-between text-caption text-muted-foreground">
                 {red ? "Asignaste de más" : "Por asignar"}<Icon name="chevron_right" className="text-[20px]" />
@@ -77,7 +77,7 @@ export function Presupuesto() {
           </section>
 
           {(!isZero(b.unclassified.available) || !isZero(b.unclassified.activity)) && (
-            <Link to="/por-clasificar" className="mt-3 flex min-h-16 items-center gap-3 rounded-lg bg-attention-soft px-3 py-2">
+            <Link to="/por-clasificar" className="mt-3 flex min-h-16 items-center gap-3 rounded-xl bg-attention-soft px-3 py-2">
               <span className="grid size-9 flex-none place-items-center rounded-full bg-card text-attention"><Icon name="inbox" /></span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">Por clasificar</span>
@@ -154,7 +154,7 @@ function Empezar({ budget: b }: { budget: BudgetMonth }) {
       <p className="mt-3 text-muted-foreground">
         Repartes la plata que tienes hoy en sobres: comida, vivienda, transporte. Cuando gastas, sale del sobre. Si un sobre se acaba, decides de cuál sacar.
       </p>
-      <div className="mt-4 flex flex-col gap-1 rounded-lg border border-border bg-card p-4">
+      <div className="mt-4 flex flex-col gap-1 rounded-xl border border-border bg-card p-4">
         <span className="text-caption text-muted-foreground">Tu plata para repartir hoy</span>
         <span className="font-display text-[30px] leading-9 font-extrabold tracking-[-0.03em] tabular-nums">{money(b.plata.total)}</span>
         <span className="text-caption text-muted-foreground">Tus cuentas y tarjetas. No cuenta lo que te deben ni tus inversiones.</span>

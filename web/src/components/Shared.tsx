@@ -72,7 +72,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
   }
 
   return (
-    <section aria-label="Compartido" className={`my-2 flex flex-col gap-3 rounded-xl border bg-card p-3.5 ${s.on ? "border-foreground" : "border-border"}`}>
+    <section aria-label="Compartido" className={`my-2 flex flex-col gap-3 rounded-lg border bg-card p-3.5 ${s.on ? "border-foreground" : "border-border"}`}>
       <label className="flex cursor-pointer items-center gap-3">
         <Icon name="group" className="text-[22px]" />
         <span className="flex flex-1 flex-col">
@@ -151,7 +151,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
             only={partners.filter((p) => !s.people.some((x) => x.id === p.id) || picking === "payer").map((p) => p.id)}
             onChange={(id) => add(id, picking === "payer")} />
           <button type="button" onClick={() => { setAdding(picking); setPicking(null); }}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
+            className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
             <Icon name="person_add" />Nueva persona
           </button>
         </div>

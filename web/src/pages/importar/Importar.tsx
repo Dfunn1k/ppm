@@ -113,7 +113,7 @@ export function Importar() {
           <div className="min-h-6 flex-1" />
           {(problem || preview.error) && <div className="mb-3"><ErrorAlert>{problem ?? preview.error?.message}</ErrorAlert></div>}
           <button type="button" disabled={preview.isPending || result.sample.length === 0} onClick={() => read(file, mapping, "review")}
-            className="flex h-14 w-full items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">
+            className="flex h-14 w-full items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">
             <span>Revisar las {result.total_rows} filas</span>
             <Icon name={preview.isPending ? "progress_activity" : "arrow_forward"} className={`text-[22px] ${preview.isPending ? "animate-spin" : ""}`} />
           </button>
@@ -154,7 +154,7 @@ function FileStep({ accountId, pending, error, onFile, lang }: {
       <input ref={input} type="file" accept=".xlsx,.xls,.csv,.txt" className="sr-only" aria-label="Archivo del extracto"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
       <button type="button" disabled={pending} onClick={() => input.current?.click()}
-        className="mt-5 flex h-[132px] flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-input-line bg-card">
+        className="mt-5 flex h-[132px] flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-input-line bg-card">
         <Icon name={pending ? "progress_activity" : "upload_file"} className={`text-[32px] ${pending ? "animate-spin" : ""}`} />
         <span className="font-semibold">{pending ? "Leyendo el archivo…" : "Elegir archivo"}</span>
         <span className="text-caption text-muted-foreground">.xlsx, .xls o .csv</span>
@@ -162,7 +162,7 @@ function FileStep({ accountId, pending, error, onFile, lang }: {
       </button>
       {error && <div className="mt-3"><ErrorAlert>{error}</ErrorAlert></div>}
       {past.length === 0 ? (
-        <div className="mt-4 flex flex-col gap-2.5 rounded-lg bg-muted p-3.5 text-caption text-muted-foreground">
+        <div className="mt-4 flex flex-col gap-2.5 rounded-xl bg-muted p-3.5 text-caption text-muted-foreground">
           <span className="flex gap-2"><Icon name="table_view" className="text-[18px] text-foreground" />
             Es tu primer extracto de esta cuenta: después de subirlo dirás qué columna es la fecha, cuál el monto y cuál la descripción. La próxima vez ya lo sabremos.</span>
           <span className="flex gap-2"><Icon name="flag" className="text-[18px] text-foreground" />
@@ -287,7 +287,7 @@ function Review({ result, lang }: { result: ImportResult; lang: string }) {
           {result.problems.length > 5 && <li>… y {result.problems.length - 5} más.</li>}
         </ul>
       )}
-      <div role="status" className={`mt-4 flex gap-2.5 rounded-lg p-3.5 ${bal.cls}`}>
+      <div role="status" className={`mt-4 flex gap-2.5 rounded-xl p-3.5 ${bal.cls}`}>
         <Icon name={bal.icon} className="text-[22px]" />
         <span className="flex flex-col gap-0.5"><b>{bal.title}</b><span className="text-caption tabular-nums">{bal.text}</span></span>
       </div>

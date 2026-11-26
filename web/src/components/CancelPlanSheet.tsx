@@ -77,7 +77,7 @@ export function CancelPlanSheet({ plan, open, onClose }: { plan: Plan; title: st
             ["prepaid", "Pagué lo que faltaba", "Lo terminaste de pagar antes: te quedas con él"],
           ] as const).map(([value, label, hint]) => (
             <label key={value}
-              className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-xl px-3.5 py-3 ${kind === value ? "border-2 border-primary" : "border border-border"}`}>
+              className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-lg px-3.5 py-3 ${kind === value ? "border-2 border-primary" : "border border-border"}`}>
               <input type="radio" name="salida" checked={kind === value} onChange={() => setKind(value)} className="size-5 accent-primary" />
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">{label}</span>
@@ -110,7 +110,7 @@ export function CancelPlanSheet({ plan, open, onClose }: { plan: Plan; title: st
             ]} />
         )}
 
-        <section aria-label="Así queda" className="flex flex-col gap-1.5 rounded-xl bg-muted p-3.5">
+        <section aria-label="Así queda" className="flex flex-col gap-1.5 rounded-lg bg-muted p-3.5">
           <span className="text-label text-muted-foreground">Así queda</span>
           {result.map(([label, value]) => (
             <div key={label} className="flex justify-between gap-3 text-[14px] leading-5 tabular-nums">

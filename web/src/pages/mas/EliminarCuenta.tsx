@@ -76,7 +76,7 @@ export function EliminarCuenta() {
               error={empty ? "Escribe tu correo" : wrong ? "No es tu correo" : undefined} />}
         {del.error && !wrong && <ErrorAlert>{del.error.message}</ErrorAlert>}
         <button type="submit" disabled={del.isPending}
-          className="flex h-14 items-center justify-center gap-2 rounded-xl bg-destructive font-semibold text-destructive-foreground disabled:opacity-60">
+          className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-60">
           <Icon name="delete_forever" className="text-[22px]" />Eliminar mi cuenta
         </button>
         <Link to="/mas/cuenta" className="py-2 text-center text-caption font-semibold underline">No, volver</Link>

@@ -38,7 +38,7 @@ export function Apariencia() {
             return (
               <button key={a.value} type="button" role="radio" aria-checked={on} onClick={() => update.mutate({ ui_accent: a.value })}
                 className={`flex flex-col items-center gap-1.5 rounded-[12px] border-2 bg-card py-2.5 text-caption font-semibold ${on ? "border-primary" : "border-border"}`}>
-                <span className={`grid size-9 place-items-center rounded-full swatch-${a.value}`}>
+                <span data-accent={a.value} className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground">
                   {on && <Icon name="check" fill className="text-[20px]" />}
                 </span>
                 {a.label}
@@ -48,13 +48,13 @@ export function Apariencia() {
         </div>
       </div>
 
-      <section aria-label="Así se ve" className="mt-6 flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+      <section aria-label="Así se ve" className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
         <span className="text-label text-muted-foreground">Así se ve</span>
         <div className="flex items-center gap-2.5">
           <span className="grid h-8 place-items-center rounded-full bg-secondary px-3 text-caption font-semibold text-secondary-foreground">Pestaña activa</span>
           <span className="font-semibold text-primary-strong underline">Un enlace</span>
         </div>
-        <span className="flex h-12 items-center justify-between rounded-xl bg-primary px-4 font-semibold text-primary-foreground">
+        <span className="flex h-12 items-center justify-between rounded-lg bg-primary px-4 font-semibold text-primary-foreground">
           Registrar gasto<Icon name="arrow_forward" className="text-[22px]" />
         </span>
         <div className="flex flex-col gap-1.5">

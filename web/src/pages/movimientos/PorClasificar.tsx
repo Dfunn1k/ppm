@@ -141,7 +141,7 @@ export function PorClasificar() {
               </span>
             </span>
             <button type="button" disabled={chosen.length === 0} onClick={() => setSheet(chosen.map(toClassify))}
-              className="flex h-12 items-center gap-1.5 rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50">
+              className="flex h-12 items-center gap-1.5 rounded-lg bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50">
               ¿En qué fueron?<Icon name="arrow_forward" className="text-[20px]" />
             </button>
           </div>

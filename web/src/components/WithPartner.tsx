@@ -75,12 +75,12 @@ export function WithPartnerRow({ moveId, partnerId, partner, locked }: {
           {save.error && <ErrorAlert>{save.error.message}</ErrorAlert>}
           <button type="button" disabled={save.isPending || chosen === null || chosen === partnerId}
             onClick={() => save.mutate(chosen, { onSuccess: () => setOpen(false) })}
-            className="flex h-13 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
+            className="flex h-13 items-center justify-center rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-60">
             Guardar
           </button>
           {partnerId && (
             <button type="button" disabled={save.isPending} onClick={() => save.mutate(null, { onSuccess: () => setOpen(false) })}
-              className="flex h-11 items-center justify-center rounded-xl border border-border font-semibold">
+              className="flex h-11 items-center justify-center rounded-lg border border-border font-semibold">
               Quitar: no fue con nadie
             </button>
           )}

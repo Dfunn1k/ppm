@@ -30,6 +30,8 @@
   --transfer: var(--muted-foreground);
   --attention: #9a5b00;
   --attention-soft: #fbf1df;
+  --income-soft: #e8f3ef;
+  --overlay: rgba(0, 0, 0, 0.4);
   --trigo: #e8b04b;
   --on-trigo: #2a1d05;
   --on-category: #ffffff;
@@ -55,21 +57,28 @@
   --secondary-foreground: #171717;
   --primary-strong: #171717;
 }
-:root[data-accent="trigo"] {
+:root [data-accent="tinta"] {
+  --primary: #171717;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #171717;
+  --primary-strong: #171717;
+}
+:root[data-accent="trigo"], [data-accent="trigo"] {
   --primary: #e8b04b;
   --primary-foreground: #2a1d05;
   --secondary: #faf0dc;
   --secondary-foreground: #5a3d08;
   --primary-strong: #8a5a0a;
 }
-:root[data-accent="morado"] {
+:root[data-accent="morado"], [data-accent="morado"] {
   --primary: #5b2a86;
   --primary-foreground: #ffffff;
   --secondary: #efeaf7;
   --secondary-foreground: #3b2457;
   --primary-strong: #5b2a86;
 }
-:root[data-accent="azul"] {
+:root[data-accent="azul"], [data-accent="azul"] {
   --primary: #1f4fb8;
   --primary-foreground: #ffffff;
   --secondary: #e8eefb;
@@ -77,7 +86,7 @@
   --primary-strong: #1f4fb8;
 }
 
-/* Oscuro: el mismo bloque dos veces, por sistema y por elección */
+/* Oscuro: el mismo bloque dos veces, por sistema y por elección (los dos con todo, también las categorías) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -86,8 +95,6 @@
     --card: #171717;
     --popover: #171717;
     --muted: #262626;
-  --selected: #fafafa;
-  --selected-foreground: #0a0a0a;
     --selected: #fafafa;
     --selected-foreground: #0a0a0a;
     --muted-foreground: #a3a3a3;
@@ -102,20 +109,9 @@
     --expense: #ff8a7a;
     --attention: #f0b45a;
     --attention-soft: #2c2416;
+    --income-soft: #10241d;
     --trigo: #e3a83e;
     --on-category: #0a0a0a;
-  --cat-0: #a3afa8;
-  --cat-1: #ee7b6f;
-  --cat-2: #f2a25c;
-  --cat-3: #e2c04f;
-  --cat-4: #5ec4db;
-  --cat-5: #b98bdf;
-  --cat-6: #d3a88a;
-  --cat-7: #5cc6b3;
-  --cat-8: #7fade6;
-  --cat-9: #eb7fa6;
-  --cat-10: #7cc77f;
-  --cat-11: #a898ec;
     --cat-0: #a3afa8;
     --cat-1: #ee7b6f;
     --cat-2: #f2a25c;
@@ -136,21 +132,22 @@
     --secondary-foreground: #fafafa;
     --primary-strong: #fafafa;
   }
-  :root:not([data-theme="light"])[data-accent="trigo"] {
+  :root:not([data-theme="light"]) [data-accent="tinta"] { --primary: #fafafa; --primary-foreground: #0a0a0a; --secondary: #262626; --secondary-foreground: #fafafa; --primary-strong: #fafafa; }
+  :root:not([data-theme="light"])[data-accent="trigo"], :root:not([data-theme="light"]) [data-accent="trigo"] {
     --primary: #e3a83e;
     --primary-foreground: #2a1d05;
     --secondary: #2c2416;
     --secondary-foreground: #f6e3b8;
     --primary-strong: #f0c06a;
   }
-  :root:not([data-theme="light"])[data-accent="morado"] {
+  :root:not([data-theme="light"])[data-accent="morado"], :root:not([data-theme="light"]) [data-accent="morado"] {
     --primary: #b794e6;
     --primary-foreground: #1d1028;
     --secondary: #2a2335;
     --secondary-foreground: #e7defa;
     --primary-strong: #b794e6;
   }
-  :root:not([data-theme="light"])[data-accent="azul"] {
+  :root:not([data-theme="light"])[data-accent="azul"], :root:not([data-theme="light"]) [data-accent="azul"] {
     --primary: #8fb0ff;
     --primary-foreground: #0b1530;
     --secondary: #1f2740;
@@ -179,8 +176,21 @@
   --expense: #ff8a7a;
   --attention: #f0b45a;
   --attention-soft: #2c2416;
+  --income-soft: #10241d;
   --trigo: #e3a83e;
   --on-category: #0a0a0a;
+  --cat-0: #a3afa8;
+  --cat-1: #ee7b6f;
+  --cat-2: #f2a25c;
+  --cat-3: #e2c04f;
+  --cat-4: #5ec4db;
+  --cat-5: #b98bdf;
+  --cat-6: #d3a88a;
+  --cat-7: #5cc6b3;
+  --cat-8: #7fade6;
+  --cat-9: #eb7fa6;
+  --cat-10: #7cc77f;
+  --cat-11: #a898ec;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
   --primary: #fafafa;
@@ -189,21 +199,28 @@
   --secondary-foreground: #fafafa;
   --primary-strong: #fafafa;
 }
-:root[data-theme="dark"][data-accent="trigo"] {
+:root[data-theme="dark"] [data-accent="tinta"] {
+  --primary: #fafafa;
+  --primary-foreground: #0a0a0a;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --primary-strong: #fafafa;
+}
+:root[data-theme="dark"][data-accent="trigo"], :root[data-theme="dark"] [data-accent="trigo"] {
   --primary: #e3a83e;
   --primary-foreground: #2a1d05;
   --secondary: #2c2416;
   --secondary-foreground: #f6e3b8;
   --primary-strong: #f0c06a;
 }
-:root[data-theme="dark"][data-accent="morado"] {
+:root[data-theme="dark"][data-accent="morado"], :root[data-theme="dark"] [data-accent="morado"] {
   --primary: #b794e6;
   --primary-foreground: #1d1028;
   --secondary: #2a2335;
   --secondary-foreground: #e7defa;
   --primary-strong: #b794e6;
 }
-:root[data-theme="dark"][data-accent="azul"] {
+:root[data-theme="dark"][data-accent="azul"], :root[data-theme="dark"] [data-accent="azul"] {
   --primary: #8fb0ff;
   --primary-foreground: #0b1530;
   --secondary: #1f2740;
@@ -242,6 +259,20 @@
   --color-transfer: var(--transfer);
   --color-attention: var(--attention);
   --color-attention-soft: var(--attention-soft);
+  --color-income-soft: var(--income-soft);
+  --color-overlay: var(--overlay);
+  --color-cat-0: var(--cat-0);
+  --color-cat-1: var(--cat-1);
+  --color-cat-2: var(--cat-2);
+  --color-cat-3: var(--cat-3);
+  --color-cat-4: var(--cat-4);
+  --color-cat-5: var(--cat-5);
+  --color-cat-6: var(--cat-6);
+  --color-cat-7: var(--cat-7);
+  --color-cat-8: var(--cat-8);
+  --color-cat-9: var(--cat-9);
+  --color-cat-10: var(--cat-10);
+  --color-cat-11: var(--cat-11);
   --color-trigo: var(--trigo);
   --color-on-trigo: var(--on-trigo);
   --color-on-category: var(--on-category);
@@ -255,71 +286,207 @@
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 14px; /* el botón principal de acceso */
+  /* Radios de menor a mayor (SISTEMA 1.6) */
+  --radius-xs: 0.25rem;  /* 4: barras de los reportes */
+  --radius-sm: 0.375rem; /* 6: chips de texto */
+  --radius-md: 0.625rem; /* 10: filas que se tocan, campos con fondo */
+  --radius-lg: 0.875rem; /* 14: botones */
+  --radius-xl: 1rem;     /* 16: tarjetas y hojas */
+
+  /* Alturas y áreas que se tocan (SISTEMA 1.5): min-h-row, size-avatar, h-control… */
+  --spacing-target: 2.75rem;
+  --spacing-control: 2.75rem;
+  --spacing-button: 3.5rem;
+  --spacing-button-sm: 2.75rem;
+  --spacing-row-sm: 3.25rem;
+  --spacing-row: 3.75rem;
+  --spacing-row-option: 3.5rem;
+  --spacing-avatar: 2.5rem;
+  --spacing-avatar-sm: 1.5rem;
+
+  /* Tamaños de ícono (SISTEMA 1.3): text-icon-sm … text-icon-xl */
+  --text-icon-sm: 1rem;
+  --text-icon-sm--line-height: 1;
+  --text-icon: 1.25rem;
+  --text-icon--line-height: 1;
+  --text-icon-md: 1.5rem;
+  --text-icon-md--line-height: 1;
+  --text-icon-lg: 2rem;
+  --text-icon-lg--line-height: 1;
+  --text-icon-xl: 2.5rem;
+  --text-icon-xl--line-height: 1;
+
+  /* Cortes de pantalla (SISTEMA 2.1): md 768, lg 1024, xl 1280 y 2xl 1440 */
+  --breakpoint-2xl: 90rem;
+
+  /* Movimiento (SISTEMA 1.9) */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   --shadow-sm: var(--shadow-sm);
   --shadow-lg: var(--shadow-lg);
 }
 
-/* Estilos de texto del sistema de diseño */
+/* Estilos de texto (design-system/README.md › Tipografía; SISTEMA 1.2). En rem, para que crezcan con la
+   letra del teléfono; a tamaño normal miden lo que dice el comentario de tokens.json. */
 @utility text-title-display {
   font-family: var(--font-display);
-  font-size: 84px;
-  line-height: 76px;
+  font-size: 5.25rem;
+  line-height: 4.75rem;
   font-weight: 800;
   letter-spacing: -0.04em;
 }
 @utility text-title-hero {
   font-family: var(--font-display);
-  font-size: 48px;
-  line-height: 46px;
+  font-size: 3rem;
+  line-height: 2.875rem;
   font-weight: 800;
   letter-spacing: -0.03em;
+  @media (max-width: 359.98px) {
+    font-size: 2.25rem;
+    line-height: 2.375rem;
+  }
 }
 @utility text-title-1 {
   font-family: var(--font-display);
-  font-size: 28px;
-  line-height: 32px;
+  font-size: 1.75rem;
+  line-height: 2rem;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 @utility text-title-2 {
   font-family: var(--font-display);
-  font-size: 20px;
-  line-height: 26px;
+  font-size: 1.25rem;
+  line-height: 1.625rem;
   font-weight: 600;
 }
+@utility text-amount-display {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 3.125rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  @media (max-width: 359.98px) {
+    font-size: 2.5rem;
+    line-height: 2.75rem;
+  }
+}
+@utility text-amount-display-2 {
+  font-family: var(--font-display);
+  font-size: 1.875rem;
+  line-height: 2.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+@utility text-amount-input {
+  font-size: 3rem;
+  line-height: 3.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+@utility text-amount-input-symbol {
+  font-size: 1.75rem;
+  line-height: 2rem;
+  font-weight: 500;
+}
+@utility text-amount-xl {
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+@utility text-amount-lg {
+  font-size: 1.0625rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 @utility text-amount-hero {
-  font-size: 40px;
-  line-height: 44px;
+  font-size: 2.5rem;
+  line-height: 2.75rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 @utility text-amount {
-  font-size: 15px;
-  line-height: 22px;
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 @utility text-body {
-  font-size: 15px;
-  line-height: 22px;
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+}
+@utility text-body-strong {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+@utility text-body-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 @utility text-caption {
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+@utility text-caption-sm {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
 }
 @utility text-label {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 0.75rem;
+  line-height: 1rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+@utility text-code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 400;
+}
+
+/* Capas, de abajo arriba (SISTEMA 1.8) */
+@utility z-raised { z-index: 10; }
+@utility z-dropdown { z-index: 20; }
+@utility z-nav { z-index: 30; }
+@utility z-panel { z-index: 40; }
+@utility z-sheet { z-index: 50; }
+@utility z-toast { z-index: 60; }
+
+/* La fila elegida de una lista de escritorio: una raya de 3 px a la izquierda */
+@utility mark-selected { box-shadow: inset 3px 0 0 var(--foreground); }
+
+/* Una fila que se toca: el fondo del hover sale 8 px a cada lado sin mover el texto */
+@utility row-bleed {
+  margin-inline: -0.5rem;
+  padding-inline: 0.5rem;
+  width: calc(100% + 1rem);
+}
+
+/* Algo que se ve chico («Ver todo») pero se toca en 44×44 */
+@utility hit-area {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 2.75rem);
+    height: max(100%, 2.75rem);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Lo muy angosto (plegable cerrado, 320 px): narrow:… */
+@custom-variant narrow (@media (max-width: 359.98px));
 
 @layer base {
   html,
@@ -327,8 +494,13 @@
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
-    font-size: 15px;
-    line-height: 22px;
+    font-size: 0.9375rem;
+    line-height: 1.375rem;
+  }
+  /* La base es la letra del navegador (16 px salvo que la persona la cambie): así 1 paso de Tailwind
+     mide 4 px y la letra crece con la del teléfono (SISTEMA 1.1). */
+  html {
+    font-size: 100%;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -341,7 +513,7 @@
   font-family: "Material Symbols Rounded";
   font-weight: normal;
   font-style: normal;
-  font-size: 20px;
+  font-size: 1.25rem;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
@@ -354,21 +526,6 @@
   font-variation-settings: "FILL" 1, "wght" 400, "opsz" 24;
 }
 
-/* Muestras de los acentos (Más › Apariencia): cada una con su color, en el tema que se ve */
-.swatch-tinta { background: #171717; color: #ffffff; }
-.swatch-trigo { background: #e8b04b; color: #2a1d05; }
-.swatch-morado { background: #5b2a86; color: #ffffff; }
-.swatch-azul { background: #1f4fb8; color: #ffffff; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .swatch-tinta { background: #fafafa; color: #0a0a0a; }
-  :root:not([data-theme="light"]) .swatch-trigo { background: #e3a83e; color: #2a1d05; }
-  :root:not([data-theme="light"]) .swatch-morado { background: #b794e6; color: #1d1028; }
-  :root:not([data-theme="light"]) .swatch-azul { background: #8fb0ff; color: #0b1530; }
-}
-:root[data-theme="dark"] .swatch-tinta { background: #fafafa; color: #0a0a0a; }
-:root[data-theme="dark"] .swatch-trigo { background: #e3a83e; color: #2a1d05; }
-:root[data-theme="dark"] .swatch-morado { background: #b794e6; color: #1d1028; }
-:root[data-theme="dark"] .swatch-azul { background: #8fb0ff; color: #0b1530; }
 
 /* Antigüedad de lo que te deben (Reportes › Personas): un solo tono, de 0–30 días a +90 días; en
    oscuro lo más antiguo es lo más claro, para que siempre resalte lo que más espera */
@@ -391,17 +548,17 @@
    el fondo se oscurece de a poco. Con «reducir movimiento», nada se anima. */
 .app-nav { view-transition-name: app-nav; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 180ms; }
-:root[data-nav="forward"]::view-transition-old(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-out-left; }
-:root[data-nav="forward"]::view-transition-new(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-in-right; }
-:root[data-nav="back"]::view-transition-old(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-out-right; z-index: 1; }
-:root[data-nav="back"]::view-transition-new(root) { animation: 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-in-left; }
+:root[data-nav="forward"]::view-transition-old(root) { animation: 280ms var(--ease-out) both vt-out-left; }
+:root[data-nav="forward"]::view-transition-new(root) { animation: 280ms var(--ease-out) both vt-in-right; }
+:root[data-nav="back"]::view-transition-old(root) { animation: 280ms var(--ease-out) both vt-out-right; z-index: 1; }
+:root[data-nav="back"]::view-transition-new(root) { animation: 280ms var(--ease-out) both vt-in-left; }
 @keyframes vt-in-right { from { transform: translateX(100%); } }
 @keyframes vt-out-left { to { transform: translateX(-25%); } }
 @keyframes vt-in-left { from { transform: translateX(-25%); } }
 @keyframes vt-out-right { to { transform: translateX(100%); } }
 
 .sheet-backdrop { animation: sheet-fade-in 180ms ease both; }
-.sheet-panel { animation: sheet-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sheet-panel { animation: sheet-up 280ms var(--ease-out) both; }
 .sheet-leaving .sheet-backdrop { animation: sheet-fade-out 180ms ease both; }
 .sheet-leaving .sheet-panel { animation: sheet-down 200ms ease-in both; }
 @keyframes sheet-fade-in { from { opacity: 0; } }
@@ -412,9 +569,9 @@
 /* Escritorio (desde 1024 px): las hojas se abren como una ventana al centro en vez de subir desde
    abajo, y el panel de Registrar entra por la derecha. */
 @media (min-width: 1024px) {
-  .sheet-panel { animation: sheet-pop 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .sheet-panel { animation: sheet-pop 180ms var(--ease-out) both; }
   .sheet-leaving .sheet-panel { animation: sheet-fade-out 150ms ease-in both; }
-  .register-panel { animation: panel-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .register-panel { animation: panel-in 240ms var(--ease-out) both; }
 }
 @keyframes sheet-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
 @keyframes panel-in { from { transform: translateX(100%); } }
@@ -429,6 +586,8 @@
 .pane :is(a, button)[aria-label^="Volver"] { visibility: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Las siluetas dejan de latir; el círculo que gira se queda (README › Foco y accesibilidad) */
+  .animate-pulse { animation: none !important; }
   .register-panel { animation: none !important; }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
   .sheet-backdrop, .sheet-panel { animation: none !important; }

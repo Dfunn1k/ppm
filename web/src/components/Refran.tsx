@@ -10,7 +10,7 @@ export function Refran({ label = "PPM" }: { label?: string }) {
       <h1 aria-label="Pan para mayo" className="text-title-display flex flex-col">
         <span>Pan</span>
         <span>para</span>
-        <span className="-ml-3 self-start rounded-lg bg-trigo px-3 pb-1 text-on-trigo">mayo.</span>
+        <span className="-ml-3 self-start rounded-xl bg-trigo px-3 pb-1 text-on-trigo">mayo.</span>
       </h1>
       <div aria-hidden="true" className="flex flex-col gap-2">
         <div className="grid grid-cols-12 items-end gap-1">

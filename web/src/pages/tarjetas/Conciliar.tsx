@@ -120,7 +120,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
         const up = (Number(bank) - Number(g.each)) * x.n_installments;
         return (
           <section key={x.id} aria-label="La cuota del banco es distinta"
-            className="mt-4 flex flex-col gap-2 rounded-xl bg-attention-soft p-3.5 text-attention">
+            className="mt-4 flex flex-col gap-2 rounded-lg bg-attention-soft p-3.5 text-attention">
             <span className="flex items-center gap-1.5 text-label"><Icon name="error" className="text-[18px]" />La cuota del banco es distinta</span>
             <p className="text-[14px] leading-5 text-foreground">
               {g.ref}: el banco cobra <b>{money(bank, x.currency)}</b> por cuota ({money(x.capital, x.currency)} de capital
@@ -134,9 +134,9 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
             {bankInstallment.error && <ErrorAlert>{bankInstallment.error.message}</ErrorAlert>}
             <div className="mt-1 flex gap-2">
               <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id })}
-                className="h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
+                className="h-11 flex-1 rounded-lg bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
               <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id, rejectPlan: g.plan_id })}
-                className="h-11 rounded-xl border border-input-line px-3.5 font-semibold text-foreground">No es esta compra</button>
+                className="h-11 rounded-lg border border-input-line px-3.5 font-semibold text-foreground">No es esta compra</button>
             </div>
           </section>
         );

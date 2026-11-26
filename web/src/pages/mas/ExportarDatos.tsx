@@ -89,7 +89,7 @@ export function ExportarDatos() {
       {zip.error && <div className="mt-5"><ErrorAlert>{zip.error.message}</ErrorAlert></div>}
 
       <button type="button" disabled={zip.isPending || !what} onClick={() => zip.mutate(withFiles)}
-        className="mt-5 flex h-14 items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-70">
+        className="mt-5 flex h-14 items-center justify-center gap-2 rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-70">
         {zip.isPending
           ? <><Icon name="progress_activity" className="animate-spin text-[22px]" />Armando tu ZIP…</>
           : <><Icon name="download" className="text-[22px]" />Descargar ZIP{what && withFiles && what.attachments_bytes > 0 ? ` (${size(what.attachments_bytes)})` : ""}</>}

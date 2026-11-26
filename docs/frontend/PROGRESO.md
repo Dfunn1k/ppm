@@ -41,7 +41,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ### Fase 3 — Cimientos (en curso, un PR)
 - [x] Fotos base de toda la matriz, antes de tocar nada (`web/capturas-base/`, no se suben)
-- [ ] Tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas, colores nuevos, categorías en oscuro)
+- [x] Tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas, colores nuevos, categorías en oscuro)
 - [ ] El inspector (`web/src/estilo.test.ts`, `estilo-tope.json`, `estilo-excepciones.ts`)
 - [ ] Moldes con `cva`: Button, IconButton, SectionHeading, PageHeader, Avatar, Row, Amount, Chip, ProgressBar, SearchField; ajustar PrimaryButton, Pill, Segmented, Icon
 - [ ] Cortes de pantalla: el riel desde 768 px, la lista de 320/400/440 px, safe-area y el foco tapado por la barra

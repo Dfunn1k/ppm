@@ -327,7 +327,7 @@ function ArchiveSheet({ open, onClose, detail }: { open: boolean; onClose: () =>
         {archive.error && <ErrorAlert>{archive.error instanceof ApiError ? archive.error.message : "No se pudo archivar"}</ErrorAlert>}
         <button type="button" disabled={hasMoney || archive.isPending}
           onClick={() => archive.mutate(undefined, { onSuccess: () => navigate("/cuentas", { replace: true }) })}
-          className="flex h-14 items-center justify-center gap-2 rounded-xl bg-destructive font-semibold text-destructive-foreground disabled:opacity-50">
+          className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-50">
           <Icon name="archive" />
           Archivar cuenta
         </button>

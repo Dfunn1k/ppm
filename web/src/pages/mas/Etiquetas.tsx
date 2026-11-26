@@ -30,7 +30,7 @@ export function Etiquetas() {
         Pónselas a un movimiento al registrarlo o desde su detalle. En Movimientos y en Reportes juntas todo lo que la lleva.
       </p>
       <button type="button" onClick={() => setEditing("new")}
-        className="mt-4 flex h-12 items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
+        className="mt-4 flex h-12 items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
         <Icon name="add" />Nueva etiqueta
       </button>
       {tags.isError && <div className="mt-4"><ErrorAlert>{tags.error.message}</ErrorAlert></div>}
@@ -101,17 +101,17 @@ function TagForm({ tag, onDone }: { tag: Tag | null; onDone: () => void }) {
       </div>
       {error && <ErrorAlert>{error.message}</ErrorAlert>}
       <button type="submit" disabled={busy || !name.trim()}
-        className="flex h-13 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
+        className="flex h-13 items-center justify-center rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-60">
         {tag ? "Guardar" : "Crear etiqueta"}
       </button>
       {tag && !confirming && (
         <div className="flex gap-2">
           <button type="button" disabled={busy} onClick={() => update.mutate({ id: tag.id, active: !tag.active }, { onSuccess: onDone })}
-            className="flex h-11 flex-1 items-center justify-center rounded-xl border border-border font-semibold">
+            className="flex h-11 flex-1 items-center justify-center rounded-lg border border-border font-semibold">
             {tag.active ? "Archivar" : "Desarchivar"}
           </button>
           <button type="button" disabled={busy} onClick={() => setConfirming(true)}
-            className="flex h-11 flex-1 items-center justify-center rounded-xl border border-border font-semibold text-expense">
+            className="flex h-11 flex-1 items-center justify-center rounded-lg border border-border font-semibold text-expense">
             Eliminar
           </button>
         </div>
@@ -122,9 +122,9 @@ function TagForm({ tag, onDone }: { tag: Tag | null; onDone: () => void }) {
             {tag.moves ? `Sale de ${count(tag.moves).toLowerCase()}; los movimientos no se tocan.` : "No la lleva ningún movimiento."}
           </span>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setConfirming(false)} className="flex h-11 flex-1 items-center justify-center rounded-xl border border-border bg-card font-semibold">No</button>
+            <button type="button" onClick={() => setConfirming(false)} className="flex h-11 flex-1 items-center justify-center rounded-lg border border-border bg-card font-semibold">No</button>
             <button type="button" disabled={busy} onClick={() => remove.mutate(tag.id, { onSuccess: onDone })}
-              className="flex h-11 flex-1 items-center justify-center rounded-xl bg-expense font-semibold text-background">Sí, eliminarla</button>
+              className="flex h-11 flex-1 items-center justify-center rounded-lg bg-expense font-semibold text-background">Sí, eliminarla</button>
           </div>
         </div>
       )}

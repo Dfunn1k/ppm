@@ -72,7 +72,7 @@ export function Pendientes() {
         const late = s === "late";
         return (
           <section key={s} aria-label={TITLES[s]}
-            className="mt-5 flex flex-col lg:mt-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border lg:bg-card">
+            className="mt-5 flex flex-col lg:mt-0 lg:overflow-hidden lg:rounded-xl lg:border lg:border-border lg:bg-card">
             <span className={`flex items-center justify-between border-b border-border pb-1 text-label lg:px-4 lg:py-3 ${late ? "text-attention lg:bg-attention-soft" : "text-muted-foreground"}`}>
               {TITLES[s]}
               {desktop && (
@@ -94,7 +94,7 @@ export function Pendientes() {
       <ActivitySheet open={adding} onClose={() => setAdding(false)} />
 
       {box.snoozed.length > 0 && (
-        <section aria-label="Pospuestos" className="mt-5 flex flex-col lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:px-4">
+        <section aria-label="Pospuestos" className="mt-5 flex flex-col lg:rounded-xl lg:border lg:border-border lg:bg-card lg:px-4">
           <button type="button" aria-expanded={showSnoozed} onClick={() => setShowSnoozed(!showSnoozed)}
             className="flex min-h-12 items-center justify-between border-b border-border font-semibold">
             Pospuestos ({box.snoozed.length})

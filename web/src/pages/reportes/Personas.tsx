@@ -39,7 +39,7 @@ export function ReportePersonas() {
 
       <div className="mt-4 grid grid-cols-3 gap-2">
         {[["Me deben", r.owes_me, "me-deben"], ["Debo", r.i_owe, "debo"], ["Guardo", r.keep, "guardo"]].map(([label, amount, ver]) => (
-          <Link key={label} to={`/personas?ver=${ver}`} className="flex flex-col gap-0.5 rounded-lg border border-border bg-card p-3">
+          <Link key={label} to={`/personas?ver=${ver}`} className="flex flex-col gap-0.5 rounded-xl border border-border bg-card p-3">
             <span className="text-caption text-muted-foreground">{label}</span>
             <span className="text-[17px] leading-6 font-semibold tabular-nums">{money(amount!)}</span>
           </Link>

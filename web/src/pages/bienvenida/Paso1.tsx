@@ -28,7 +28,7 @@ export function Paso1() {
       <h1 className="mt-10 text-title-hero">¿Dónde vives?</h1>
       <p className="mt-4 text-muted-foreground">Con esto elegimos tu moneda y cómo se ven los números y las fechas.</p>
 
-      <section aria-label="Vista previa" className="mt-6 flex flex-col gap-1 rounded-lg border border-border bg-card p-4 shadow-sm">
+      <section aria-label="Vista previa" className="mt-6 flex flex-col gap-1 rounded-xl border border-border bg-card p-4 shadow-sm">
         <span className="text-label text-muted-foreground">Así verás tu inicio</span>
         <span className="mt-1 text-caption text-muted-foreground">Lo que realmente tengo</span>
         <span className="text-[36px] leading-10 font-semibold tracking-[-0.02em] tabular-nums">

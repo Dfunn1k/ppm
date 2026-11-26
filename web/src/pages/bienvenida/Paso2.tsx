@@ -53,7 +53,7 @@ export function Paso2() {
           navigate("/bienvenida/3");
         }}
       >
-        <section aria-label="Otras monedas" className="flex min-h-40 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <section aria-label="Otras monedas" className="flex min-h-40 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border p-3">
             <label className="flex h-11 items-center gap-2 rounded-md bg-muted px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
               <Icon name="search" className="text-muted-foreground" />

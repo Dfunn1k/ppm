@@ -350,7 +350,7 @@ export function DetalleMovimiento() {
               : "Una compra de antes de PPM: no es un gasto de este mes. Si te equivocaste, bórrala y vuelve a anotarla desde la tarjeta."}
           </p>
           {canceled && (
-            <div className="mt-3 flex flex-col gap-1 rounded-xl bg-muted p-3.5">
+            <div className="mt-3 flex flex-col gap-1 rounded-lg bg-muted p-3.5">
               <span className="font-semibold">
                 {canceled.kind === "returned" ? "Lo devolviste" : "Pagaste lo que faltaba"} el {shortDate(canceled.date)}
               </span>
@@ -378,7 +378,7 @@ export function DetalleMovimiento() {
 
       {s.fx != null && (d.cost != null || debtBook != null) && (
         <section aria-label={gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}
-          className="mt-4 flex flex-col gap-2 rounded-lg border border-border bg-card p-3.5">
+          className="mt-4 flex flex-col gap-2 rounded-xl border border-border bg-card p-3.5">
           <span className="flex items-center gap-3">
             <CategoryChip category={{ icon: "currency_exchange", color: gain ? 10 : 1 }} />
             <span className="flex flex-1 flex-col">
@@ -418,7 +418,7 @@ export function DetalleMovimiento() {
         {cancelable && (
           <>
             <button type="button" onClick={() => setCanceling(true)}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+              className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
               <Icon name="event_busy" />Cancelar las cuotas que faltan
             </button>
             <p className="text-caption text-muted-foreground">Si lo devolviste o pagaste lo que faltaba. Las cuotas ya facturadas se quedan donde están.</p>
@@ -426,14 +426,14 @@ export function DetalleMovimiento() {
         )}
         {editable && (
           <Link to={`/movimientos/${s.id}/editar`}
-            className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground">
+            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground">
             <span>Editar</span>
             <span className="flex items-center gap-2">{hints && <Kbd dark>{keyLabel(keys.edit)}</Kbd>}<Icon name="edit" className="text-[22px]" /></span>
           </Link>
         )}
         {s.posted && !(plan || cancels || deferral || of) && !locked && (
           <button type="button" disabled={state.isPending} onClick={() => state.mutate(s.posted)}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+            className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
             <Icon name={s.posted ? "schedule" : "check"} />
             {s.posted ? "Pasar a por confirmar" : "Confirmar"}
           </button>
@@ -479,7 +479,7 @@ export function DetalleMovimiento() {
           </p>
           <button type="button" disabled={remove.isPending}
             onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : cancels ? `/movimientos/${cancels.move_id}` : of ? `/movimientos/${of.move_id}` : "/movimientos", { replace: true }) })}
-            className="flex h-14 items-center justify-center gap-2 rounded-xl bg-destructive font-semibold text-destructive-foreground">
+            className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground">
             <Icon name={cancels || of ? "undo" : "delete"} />{cancels || of ? "Deshacer la cancelación" : "Borrar movimiento"}
           </button>
           <button type="button" onClick={() => setConfirmDelete(false)} className="h-11 text-caption font-semibold text-primary-strong underline">

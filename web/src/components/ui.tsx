@@ -5,9 +5,13 @@ import { Link, type LinkProps } from "react-router";
 
 import { cn } from "@/lib/utils";
 
-export function Icon({ name, fill, className }: { name: string; fill?: boolean; className?: string }) {
+const ICON_SIZE = { sm: "text-icon-sm", md: "text-icon-md", lg: "text-icon-lg", xl: "text-icon-xl" } as const;
+
+/** Un ícono de Material Symbols. Sin `size` mide 20 px (`icon`, filas y botones); `sm` 16, `md` 24
+ * (navegación y Volver), `lg` 32 y `xl` 40 (estado vacío). */
+export function Icon({ name, fill, size, className }: { name: string; fill?: boolean; size?: keyof typeof ICON_SIZE; className?: string }) {
   return (
-    <span aria-hidden="true" className={cn("icon", fill && "icon-fill", className)}>
+    <span aria-hidden="true" className={cn("icon", size && ICON_SIZE[size], fill && "icon-fill", className)}>
       {name}
     </span>
   );
@@ -23,7 +27,7 @@ export function Screen({ children, className }: { children: ReactNode; className
 }
 
 const primary =
-  "flex h-14 w-full items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground transition-opacity disabled:opacity-60";
+  "flex h-14 w-full items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground transition-opacity disabled:opacity-60";
 
 /** El botón principal: texto a la izquierda y flecha a la derecha. */
 export function PrimaryButton({ children, pending, ...props }: ComponentProps<"button"> & { pending?: boolean }) {

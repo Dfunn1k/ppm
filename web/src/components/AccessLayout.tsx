@@ -47,7 +47,7 @@ function Panel() {
       <ul className="grid grid-cols-3 gap-8 border-t border-panel-line pt-[clamp(16px,3vh,32px)]">
         {FEATURES.map((f) => (
           <li key={f.title} className="flex flex-col gap-2.5">
-            <span className="grid size-11 place-items-center rounded-xl bg-panel-chip"><Icon name={f.icon} className="text-[24px]" /></span>
+            <span className="grid size-11 place-items-center rounded-lg bg-panel-chip"><Icon name={f.icon} className="text-[24px]" /></span>
             <span className="font-semibold">{f.title}</span>
             <span className="text-[14px] leading-5 text-panel-muted">{f.text}</span>
           </li>
