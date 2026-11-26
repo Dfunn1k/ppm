@@ -28,11 +28,11 @@ export function Restablecer() {
 
   return (
     <AccessLayout>
-    <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
+    <Screen className="lg:min-h-0 lg:max-w-120 lg:py-16">
       <span className="text-label text-muted-foreground">PPM</span>
       {expired ? (
         <div className="flex flex-1 flex-col pt-11">
-          <Icon name="link_off" className="text-[40px] text-destructive" />
+          <Icon name="link_off" size="lg" className="text-destructive" />
           <h1 className="mt-4 text-title-hero">Este enlace ya no sirve.</h1>
           <p className="mt-4 text-muted-foreground">Venció o ya se usó. Pide uno nuevo: llega en un momento y dura 60 minutos.</p>
           <div className="min-h-8 flex-1" />

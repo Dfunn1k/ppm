@@ -23,7 +23,7 @@ export function GoogleButton() {
   return (
     <>
       <a href={googleStart("login")}
-        className="flex h-[52px] items-center justify-center gap-2.5 rounded-lg border border-input-line bg-card font-semibold text-foreground">
+        className="flex min-h-row-sm items-center justify-center gap-2.5 rounded-lg border border-input-line bg-card font-semibold text-foreground">
         <GoogleMark />Continuar con Google
       </a>
       <div className="flex items-center gap-3 text-caption text-muted-foreground">

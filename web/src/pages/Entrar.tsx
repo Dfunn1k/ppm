@@ -33,7 +33,7 @@ export function Entrar() {
 
   return (
     <AccessLayout>
-    <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
+    <Screen className="lg:min-h-0 lg:max-w-120 lg:py-16">
       <div className="flex flex-col lg:hidden">
         <Refran />
         <p className="mt-5 text-muted-foreground">

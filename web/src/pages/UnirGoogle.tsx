@@ -20,7 +20,7 @@ export function UnirGoogle() {
   return (
     <Screen className="pt-4">
       <div className="-mx-2.5 flex items-center">
-        <Link to="/entrar" aria-label="Volver a iniciar sesión" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+        <Link to="/entrar" aria-label="Volver a iniciar sesión" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" size="md" /></Link>
       </div>
       <h1 className="mt-4 text-title-hero">Une tu cuenta con Google</h1>
       {pending.isPending && <p className="mt-3 text-muted-foreground">Un momento…</p>}

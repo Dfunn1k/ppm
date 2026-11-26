@@ -19,10 +19,10 @@ export function Recuperar() {
 
   return (
     <AccessLayout>
-    <Screen className="pt-4 lg:min-h-0 lg:max-w-[480px] lg:py-16">
+    <Screen className="pt-4 lg:min-h-0 lg:max-w-120 lg:py-16">
       <div className="-mx-2.5 flex items-center justify-between">
         <Link to="/entrar" aria-label="Volver a iniciar sesión" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
+          <Icon name="arrow_back" size="md" />
         </Link>
         <span className="pr-2.5 text-label text-muted-foreground lg:hidden">PPM</span>
       </div>
