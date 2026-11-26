@@ -6,9 +6,11 @@ import { useState } from "react";
 
 import { type Activity, type Notice, useMe, usePending, useSnooze, useUpdateMe } from "@/api/hooks";
 import { ActivityItem, ActivitySheet, NoticeAmounts, NoticeItem, type Section, noticeView, sectionOf } from "@/components/Pending";
+import { buttonVariants } from "@/components/Button";
 import { ErrorAlert, Icon, Spinner } from "@/components/ui";
 import { useDesktop } from "@/lib/desktop";
 import { shortDate } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 
 const TITLES: Record<Section, string> = { late: "Vencidos", today: "Hoy", soon: "Próximos días" };
 
@@ -38,9 +40,9 @@ export function Pendientes() {
   const writeButton = (
     <button type="button" aria-haspopup="dialog" onClick={() => setAdding(true)}
       className={desktop
-        ? "flex h-10 flex-none items-center gap-1.5 rounded-[10px] bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground"
+        ? cn(buttonVariants({ size: "sm" }), "w-auto flex-none justify-start gap-1.5 px-3.5 text-body-sm")
         : "mt-3 flex min-h-12 items-center gap-1.5 font-semibold"}>
-      <Icon name="add" className={desktop ? "text-[20px]" : undefined} />Escribir un recordatorio
+      <Icon name="add" />Escribir un recordatorio
     </button>
   );
 
@@ -55,8 +57,8 @@ export function Pendientes() {
         </div>
         {desktop && (
           <div className="flex items-center gap-3">
-            <div className="flex h-10 items-center gap-2.5 rounded-[10px] border border-border bg-card pr-1.5 pl-3.5">
-              <span id="dias" className="text-[14px] font-semibold">{daysLabel(days)}</span>
+            <div className="flex min-h-control items-center gap-2.5 rounded-lg border border-border bg-card pr-1.5 pl-3.5">
+              <span id="dias" className="text-body-sm font-semibold">{daysLabel(days)}</span>
               <DaysStepper days={days} onChange={setDays} small />
             </div>
             {writeButton}
@@ -76,7 +78,7 @@ export function Pendientes() {
             <span className={`flex items-center justify-between border-b border-border pb-1 text-label lg:px-4 lg:py-3 ${late ? "text-attention lg:bg-attention-soft" : "text-muted-foreground"}`}>
               {TITLES[s]}
               {desktop && (
-                <span className={`grid h-[22px] min-w-[22px] place-items-center rounded-full px-1.5 tabular-nums ${late ? "bg-card" : "bg-secondary text-secondary-foreground"}`}>{list.length}</span>
+                <span className={`grid h-6 min-w-6 place-items-center rounded-full px-1.5 tabular-nums ${late ? "bg-card" : "bg-secondary text-secondary-foreground"}`}>{list.length}</span>
               )}
             </span>
             <div className="flex flex-col lg:px-4 lg:[&>*:last-child]:border-b-0">
@@ -98,10 +100,10 @@ export function Pendientes() {
           <button type="button" aria-expanded={showSnoozed} onClick={() => setShowSnoozed(!showSnoozed)}
             className="flex min-h-12 items-center justify-between border-b border-border font-semibold">
             Pospuestos ({box.snoozed.length})
-            <Icon name={showSnoozed ? "expand_less" : "expand_more"} className="text-[22px] text-muted-foreground" />
+            <Icon name={showSnoozed ? "expand_less" : "expand_more"} size="md" className="text-muted-foreground" />
           </button>
           {showSnoozed && box.snoozed.map((n) => (
-            <div key={n.key} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+            <div key={n.key} className="flex min-h-row items-center gap-3 border-b border-border py-2">
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold">{noticeView(n, box.today, lang).name}</span>
@@ -110,7 +112,7 @@ export function Pendientes() {
                 <span className="text-caption text-muted-foreground">Vuelve el {shortDate(n.snooze_until!)}</span>
               </span>
               <button type="button" disabled={snooze.isPending} onClick={() => snooze.mutate({ key: n.key, until: null })}
-                className="h-9 rounded-full border border-border px-3 text-[14px] font-semibold">Traer ahora</button>
+                className="hit-area h-9 flex-none rounded-full border border-border px-3 text-body-sm font-semibold hover:bg-muted">Traer ahora</button>
             </div>
           ))}
         </section>
@@ -134,15 +136,15 @@ const daysLabel = (days: number) => `Avisarme ${days === 0 ? "el mismo día" : `
 
 /** Con cuántos días de anticipación avisa: − el número +. */
 function DaysStepper({ days, onChange, small }: { days: number; onChange: (d: number) => void; small?: boolean }) {
-  const btn = `grid place-items-center rounded-full border border-border disabled:opacity-40 ${small ? "size-7" : "size-9"}`;
+  const btn = `hit-area grid place-items-center rounded-full border border-border hover:bg-muted disabled:opacity-40 ${small ? "size-7" : "size-9"}`;
   return (
     <span role="group" aria-labelledby="dias" className="flex items-center gap-2">
       <button type="button" aria-label="Un día menos" disabled={days <= 0} onClick={() => onChange(days - 1)} className={btn}>
-        <Icon name="remove" className={small ? "text-[18px]" : undefined} />
+        <Icon name="remove" size={small ? "sm" : undefined} />
       </button>
       {!small && <span className="w-6 text-center font-semibold tabular-nums">{days}</span>}
       <button type="button" aria-label="Un día más" disabled={days >= 60} onClick={() => onChange(days + 1)} className={btn}>
-        <Icon name="add" className={small ? "text-[18px]" : undefined} />
+        <Icon name="add" size={small ? "sm" : undefined} />
       </button>
     </span>
   );

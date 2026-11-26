@@ -493,6 +493,9 @@
   }
 }
 
+/* Un título con su monto a la derecha (el detalle de una recurrente en la computadora) */
+@utility grid-cols-title-amount { grid-template-columns: minmax(0, 1fr) auto; }
+
 /* Una línea de «Tu plata»: ícono, qué fue, monto y flecha */
 @utility grid-cols-cash-line { grid-template-columns: 1.75rem minmax(0, 1fr) auto 1.125rem; }
 

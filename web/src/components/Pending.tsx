@@ -14,6 +14,7 @@ import {
 import { shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, isNegative, symbolOf } from "@/lib/money";
 
+import { Button } from "./Button";
 import { DateField, DateSheet, addDays } from "./DateSheet";
 import { Sheet } from "./Sheet";
 import { Pill } from "./Pill";
@@ -109,10 +110,10 @@ export function activityCaption(a: Activity, today: string, withTarget = true): 
   return target ? withPill(target, date, a.late && !a.done_date) : date;
 }
 
-const row = "flex min-h-[60px] items-center gap-3 border-b border-border";
+const row = "flex min-h-row items-center gap-3 border-b border-border py-2";
 const chip = (late: boolean) =>
   `grid size-10 flex-none place-items-center rounded-full ${late ? "bg-attention-soft text-attention" : "bg-secondary text-secondary-foreground"}`;
-const small = "h-9 rounded-full border border-border px-3 text-[14px] font-semibold";
+const small = "hit-area h-9 rounded-full border border-border px-3 text-body-sm font-semibold";
 
 /** Los montos de un aviso, a la derecha y uno por línea. */
 export function NoticeAmounts({ amounts }: { amounts: string[] }) {
@@ -128,16 +129,16 @@ export function NoticeItem({ n, today, lang, split }: { n: Notice; today: string
   const done = useReminderDone();
   return (
     <div className="flex flex-col gap-2 border-b border-border py-2.5">
-      <Link to={v.to} className="flex items-center gap-3">
-        <span className={chip(n.late)}><Icon name={v.icon} className="text-[20px]" /></span>
+      <Link to={v.to} className="flex min-h-control items-center gap-3">
+        <span className={chip(n.late)}><Icon name={v.icon} /></span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold">{v.name}</span>
           <span className={`text-caption ${n.late ? "text-attention" : "text-muted-foreground"}`}>{v.caption}</span>
         </span>
         <NoticeAmounts amounts={v.amounts} />
-        {!split && <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />}
+        {!split && <Icon name="chevron_right" size="md" className="text-muted-foreground" />}
       </Link>
-      <div className="flex flex-wrap gap-2 pl-[52px]">
+      <div className="flex flex-wrap gap-2 pl-13">
         {n.kind === "recurring" && (
           <>
             <Link to={v.to} className={`${small} flex items-center border-primary bg-primary text-primary-foreground`}>
@@ -148,7 +149,7 @@ export function NoticeItem({ n, today, lang, split }: { n: Notice; today: string
           </>
         )}
         <button type="button" aria-haspopup="dialog" onClick={() => setSnoozing(true)} className={`${small} flex items-center gap-1`}>
-          <Icon name="snooze" className="text-[18px]" />Posponer
+          <Icon name="snooze" size="sm" />Posponer
         </button>
       </div>
       <SnoozeSheet open={snoozing} onClose={() => setSnoozing(false)} noticeKey={n.key} title={v.name} today={today} />
@@ -183,9 +184,9 @@ export function ActivityItem({ a, today, withTarget = true }: { a: Activity; tod
     <div className={row}>
       <button type="button" role="checkbox" aria-checked={isDone} aria-label={isDone ? `Deshacer: ${a.summary}` : `Hecho: ${a.summary}`}
         disabled={done.isPending} onClick={() => done.mutate({ id: a.id, done: !isDone })}
-        className="grid size-10 flex-none place-items-center">
-        <Icon name={isDone ? "check_box" : "check_box_outline_blank"} fill={isDone}
-          className={`text-[24px] ${a.late ? "text-attention" : isDone ? "text-muted-foreground" : ""}`} />
+        className="grid size-control flex-none place-items-center">
+        <Icon name={isDone ? "check_box" : "check_box_outline_blank"} fill={isDone} size="md"
+          className={a.late ? "text-attention" : isDone ? "text-muted-foreground" : ""} />
       </button>
       <button type="button" aria-haspopup="dialog" onClick={() => setEditing(true)} className="flex min-w-0 flex-1 flex-col text-left">
         <span className={`font-semibold ${isDone ? "text-muted-foreground line-through" : ""}`}>{a.summary}</span>
@@ -228,13 +229,10 @@ function ActivityForm({ activity, target, onDone }: { activity?: Activity; targe
       <DateField label="Para cuándo" value={date} onChange={(d) => form.setValue("date", d)}
         shortcuts={[{ label: "Hoy", value: todayISO() }, { label: "Mañana", value: addDays(1) }, { label: "En una semana", value: addDays(7) }]} />
       {(save.error ?? remove.error) && <ErrorAlert>{(save.error ?? remove.error)!.message}</ErrorAlert>}
-      <button type="submit" disabled={save.isPending}
-        className="h-12 rounded-full bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-        {activity ? "Guardar" : "Agregar recordatorio"}
-      </button>
+      <Button type="submit" pending={save.isPending}>{activity ? "Guardar" : "Agregar recordatorio"}</Button>
       {activity && (
         <button type="button" disabled={remove.isPending} onClick={() => remove.mutate(activity.id, { onSuccess: onDone })}
-          className="h-11 text-[14px] font-semibold text-destructive underline">Borrar el recordatorio</button>
+          className="min-h-control text-body-sm font-semibold text-destructive underline">Borrar el recordatorio</button>
       )}
     </form>
   );
