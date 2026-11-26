@@ -16,15 +16,16 @@ export function ProgressBar({ value, max = 1, tone, color, size = "sm", label, c
   value: number; max?: number;
   /** El color de categoría, si `tone` es category. */
   color?: number | null;
-  size?: "sm" | "md";
+  /** sm 6 px, md 10 px, lg 14 px (la barra «para mayo» del Inicio). */
+  size?: "sm" | "md" | "lg";
   /** Lo que dice el lector de pantalla: «57 % de lo que entró». Sin él, la barra es decorativa. */
   label?: string;
   className?: string;
 }) {
   const pct = Math.max(0, Math.min(100, Math.round((value / (max || 1)) * 100)));
-  const a11y = label ? { role: "meter", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": pct, "aria-valuetext": label } : { "aria-hidden": true };
+  const a11y = label ? { role: "meter", "aria-label": label, "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": pct, "aria-valuetext": label } : { "aria-hidden": true };
   return (
-    <span {...a11y} className={cn("block overflow-hidden rounded-full bg-muted", size === "sm" ? "h-1.5" : "h-2.5", className)}>
+    <span {...a11y} className={cn("block overflow-hidden rounded-full bg-muted", size === "sm" ? "h-1.5" : size === "md" ? "h-2.5" : "h-3.5", className)}>
       <span className={cn(barVariants({ tone }), tone === "category" && catBg(color))} style={{ width: `${pct}%` }} />
     </span>
   );
