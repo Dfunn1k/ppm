@@ -1,0 +1,355 @@
+{
+ "App.tsx": {
+  "arbitrario": 1
+ },
+ "components/AccessLayout.tsx": {
+  "arbitrario": 24
+ },
+ "components/AllIcons.tsx": {
+  "arbitrario": 1
+ },
+ "components/AppNav.tsx": {
+  "arbitrario": 8,
+  "capa": 1
+ },
+ "components/AttachmentViewer.tsx": {
+  "arbitrario": 55,
+  "hex": 27,
+  "colorTailwind": 10,
+  "capa": 1,
+  "aMano": 1
+ },
+ "components/Attachments.tsx": {
+  "arbitrario": 18,
+  "hex": 1,
+  "colorTailwind": 1
+ },
+ "components/CancelPlanSheet.tsx": {
+  "arbitrario": 2
+ },
+ "components/CategorySheet.tsx": {
+  "arbitrario": 9
+ },
+ "components/ClassifySheet.tsx": {
+  "arbitrario": 6
+ },
+ "components/DateSheet.tsx": {
+  "arbitrario": 11
+ },
+ "components/DebtCard.tsx": {
+  "arbitrario": 15,
+  "rgb": 1,
+  "aMano": 1
+ },
+ "components/Deferral.tsx": {
+  "arbitrario": 6
+ },
+ "components/DeferralFields.tsx": {
+  "arbitrario": 7
+ },
+ "components/EmptyState.tsx": {
+  "arbitrario": 2
+ },
+ "components/GoogleButton.tsx": {
+  "arbitrario": 1
+ },
+ "components/InstallSheet.tsx": {
+  "arbitrario": 4,
+  "enLinea": 1
+ },
+ "components/Installments.tsx": {
+  "arbitrario": 2,
+  "aMano": 2
+ },
+ "components/MasTipos.tsx": {
+  "arbitrario": 10
+ },
+ "components/MaturitySheet.tsx": {
+  "arbitrario": 2
+ },
+ "components/MoveBits.tsx": {
+  "arbitrario": 2,
+  "enLinea": 2,
+  "aMano": 1
+ },
+ "components/Pending.tsx": {
+  "arbitrario": 8
+ },
+ "components/PersonPicker.tsx": {
+  "arbitrario": 5,
+  "capa": 1
+ },
+ "components/Rail.tsx": {
+  "arbitrario": 17,
+  "sombra": 1,
+  "capa": 3
+ },
+ "components/RateField.tsx": {
+  "arbitrario": 1
+ },
+ "components/Refran.tsx": {
+  "arbitrario": 2
+ },
+ "components/RegisterPanel.tsx": {
+  "arbitrario": 2,
+  "colorTailwind": 1
+ },
+ "components/Shared.tsx": {
+  "arbitrario": 9,
+  "aMano": 1
+ },
+ "components/Sheet.tsx": {
+  "arbitrario": 9,
+  "colorTailwind": 1,
+  "capa": 2
+ },
+ "components/ShortcutsHelp.tsx": {
+  "arbitrario": 4,
+  "colorTailwind": 1
+ },
+ "components/Skeleton.tsx": {
+  "arbitrario": 5
+ },
+ "components/Split.tsx": {
+  "arbitrario": 2
+ },
+ "components/Tags.tsx": {
+  "arbitrario": 7,
+  "enLinea": 2
+ },
+ "components/WithPartner.tsx": {
+  "arbitrario": 3
+ },
+ "components/ui.tsx": {
+  "arbitrario": 10
+ },
+ "pages/CrearCuenta.tsx": {
+  "arbitrario": 2
+ },
+ "pages/Entrar.tsx": {
+  "arbitrario": 1
+ },
+ "pages/Inicio.tsx": {
+  "arbitrario": 20,
+  "aMano": 1
+ },
+ "pages/Pendientes.tsx": {
+  "arbitrario": 12
+ },
+ "pages/Privacidad.tsx": {
+  "arbitrario": 4
+ },
+ "pages/Recuperar.tsx": {
+  "arbitrario": 2
+ },
+ "pages/Restablecer.tsx": {
+  "arbitrario": 2
+ },
+ "pages/UnirGoogle.tsx": {
+  "arbitrario": 1
+ },
+ "pages/bienvenida/Paso1.tsx": {
+  "arbitrario": 5
+ },
+ "pages/bienvenida/Paso2.tsx": {
+  "arbitrario": 5
+ },
+ "pages/bienvenida/Paso3.tsx": {
+  "arbitrario": 2
+ },
+ "pages/bienvenida/wizard.tsx": {
+  "arbitrario": 2
+ },
+ "pages/cuentas/CuentaForm.tsx": {
+  "arbitrario": 13
+ },
+ "pages/cuentas/Cuentas.tsx": {
+  "arbitrario": 7
+ },
+ "pages/cuentas/Detalle.tsx": {
+  "arbitrario": 19,
+  "enLinea": 2,
+  "aMano": 1
+ },
+ "pages/cuentas/EditarBanco.tsx": {
+  "arbitrario": 2
+ },
+ "pages/cuentas/Guardo.tsx": {
+  "arbitrario": 4
+ },
+ "pages/cuentas/Nueva.tsx": {
+  "arbitrario": 5
+ },
+ "pages/importar/Extracto.tsx": {
+  "arbitrario": 7,
+  "rgb": 1
+ },
+ "pages/importar/Importar.tsx": {
+  "arbitrario": 20,
+  "rgb": 1
+ },
+ "pages/mas/Apariencia.tsx": {
+  "arbitrario": 5
+ },
+ "pages/mas/Atajos.tsx": {
+  "arbitrario": 13
+ },
+ "pages/mas/Categorias.tsx": {
+  "arbitrario": 11
+ },
+ "pages/mas/Cierre.tsx": {
+  "arbitrario": 6
+ },
+ "pages/mas/EliminarCuenta.tsx": {
+  "arbitrario": 7,
+  "aMano": 1
+ },
+ "pages/mas/Etiquetas.tsx": {
+  "arbitrario": 2,
+  "enLinea": 2
+ },
+ "pages/mas/ExportarDatos.tsx": {
+  "arbitrario": 7,
+  "aMano": 2
+ },
+ "pages/mas/InicioAjustes.tsx": {
+  "arbitrario": 13
+ },
+ "pages/mas/Mas.tsx": {
+  "arbitrario": 38
+ },
+ "pages/mas/MiCuenta.tsx": {
+  "arbitrario": 14
+ },
+ "pages/mas/Monedas.tsx": {
+  "arbitrario": 12
+ },
+ "pages/mas/TipoCambio.tsx": {
+  "arbitrario": 12
+ },
+ "pages/movimientos/AsientoManual.tsx": {
+  "arbitrario": 14,
+  "aMano": 3
+ },
+ "pages/movimientos/Detalle.tsx": {
+  "arbitrario": 32,
+  "aMano": 2
+ },
+ "pages/movimientos/Movimientos.tsx": {
+  "arbitrario": 16,
+  "enLinea": 1
+ },
+ "pages/movimientos/PorClasificar.tsx": {
+  "arbitrario": 10
+ },
+ "pages/movimientos/Reembolso.tsx": {
+  "arbitrario": 12,
+  "aMano": 1
+ },
+ "pages/movimientos/Registrar.tsx": {
+  "arbitrario": 42,
+  "aMano": 6
+ },
+ "pages/movimientos/RegistrarPersona.tsx": {
+  "arbitrario": 22,
+  "aMano": 2
+ },
+ "pages/personas/Persona.tsx": {
+  "arbitrario": 21,
+  "aMano": 3
+ },
+ "pages/personas/Personas.tsx": {
+  "arbitrario": 11
+ },
+ "pages/personas/YaDebia.tsx": {
+  "arbitrario": 1
+ },
+ "pages/prestamos/Prestamos.tsx": {
+  "arbitrario": 23
+ },
+ "pages/presupuesto/Borrar.tsx": {
+  "arbitrario": 3,
+  "aMano": 2
+ },
+ "pages/presupuesto/Cuentas.tsx": {
+  "arbitrario": 9
+ },
+ "pages/presupuesto/PorAsignar.tsx": {
+  "arbitrario": 8,
+  "aMano": 2
+ },
+ "pages/presupuesto/Presupuesto.tsx": {
+  "arbitrario": 25
+ },
+ "pages/presupuesto/Repartir.tsx": {
+  "arbitrario": 4,
+  "capa": 1,
+  "aMano": 1
+ },
+ "pages/presupuesto/Sheets.tsx": {
+  "arbitrario": 4,
+  "aMano": 2
+ },
+ "pages/presupuesto/Sobre.tsx": {
+  "arbitrario": 18
+ },
+ "pages/presupuesto/common.tsx": {
+  "arbitrario": 5
+ },
+ "pages/recurrentes/Recurrentes.tsx": {
+  "arbitrario": 25,
+  "aMano": 1
+ },
+ "pages/reportes/Categorias.tsx": {
+  "arbitrario": 14,
+  "aMano": 2
+ },
+ "pages/reportes/Etiquetas.tsx": {
+  "arbitrario": 6
+ },
+ "pages/reportes/Flujo.tsx": {
+  "arbitrario": 8,
+  "enLinea": 1,
+  "aMano": 3
+ },
+ "pages/reportes/Patrimonio.tsx": {
+  "arbitrario": 11,
+  "enLinea": 2,
+  "aMano": 5
+ },
+ "pages/reportes/Personas.tsx": {
+  "arbitrario": 8
+ },
+ "pages/reportes/Reportes.tsx": {
+  "arbitrario": 17,
+  "enLinea": 2,
+  "aMano": 1
+ },
+ "pages/reportes/TuPlata.tsx": {
+  "arbitrario": 12,
+  "enLinea": 1,
+  "aMano": 5
+ },
+ "pages/reportes/common.tsx": {
+  "arbitrario": 10,
+  "enLinea": 1
+ },
+ "pages/tarjetas/Conciliar.tsx": {
+  "arbitrario": 16,
+  "aMano": 1
+ },
+ "pages/tarjetas/CuotasAntes.tsx": {
+  "arbitrario": 4
+ },
+ "pages/tarjetas/NuevaTarjeta.tsx": {
+  "arbitrario": 4
+ },
+ "pages/tarjetas/PagarTarjeta.tsx": {
+  "arbitrario": 18
+ },
+ "pages/tarjetas/Tarjeta.tsx": {
+  "arbitrario": 20,
+  "enLinea": 2,
+  "aMano": 3
+ }
+}
