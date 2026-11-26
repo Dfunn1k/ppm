@@ -185,7 +185,7 @@ export function Mas() {
       </section>
       {/* Al pie: Privacidad, la versión y que PPM está en beta (decisión «Versiones de PPM») */}
       <div className="mt-6 flex flex-col items-center gap-1 text-center text-caption text-muted-foreground">
-        <Link to="/privacidad" className="underline">Privacidad</Link>
+        <Link to="/privacidad" className="hit-area underline">Privacidad</Link>
         <span className="mt-1 tabular-nums">v{__PPM_VERSION__}</span>
         {__PPM_VERSION__.startsWith("0.") && (
           <Chip tone="muted" className="border border-border px-2 tracking-wide">BETA</Chip>

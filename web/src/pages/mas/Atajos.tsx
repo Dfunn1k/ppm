@@ -84,8 +84,8 @@ export function Atajos() {
               <button type="button" onClick={() => { save.reset(); setWaiting(on ? null : r.action); }}
                 aria-label={`Cambiar la tecla de ${NAMES[r.action]}`} aria-pressed={on} title={on ? undefined : "Cambiar"}
                 className={on
-                  ? "flex h-9 min-w-38 items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-foreground bg-card px-3 text-caption font-semibold"
-                  : "flex h-9 min-w-11 items-center gap-1.5 rounded-md border border-b-3 border-input-line bg-card pr-1.5 pl-3 font-mono text-body-sm font-semibold hover:ring-3 hover:ring-muted focus-visible:ring-3 focus-visible:ring-muted"}>
+                  ? "hit-area flex h-9 min-w-38 items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-foreground bg-card px-3 text-caption font-semibold"
+                  : "hit-area flex h-9 min-w-11 items-center gap-1.5 rounded-md border border-b-3 border-input-line bg-card pr-1.5 pl-3 font-mono text-body-sm font-semibold hover:ring-3 hover:ring-muted focus-visible:ring-3 focus-visible:ring-muted"}>
                 {on ? <><Icon name="keyboard" size="sm" />Aprieta una tecla…</>
                   : <>{keyLabel(keys[r.action])}<Icon name="edit" size="sm" className="text-muted-foreground" /></>}
               </button>

@@ -96,7 +96,7 @@ export function ExportarDatos() {
           ? <><Icon name="progress_activity" size="md" className="animate-spin" />Armando tu ZIP…</>
           : <><Icon name="download" size="md" />Descargar ZIP{what && withFiles && what.attachments_bytes > 0 ? ` (${size(what.attachments_bytes)})` : ""}</>}
       </button>
-      <Link to="/mas/cuenta" className="mt-3 py-2 text-center text-caption font-semibold underline">Volver</Link>
+      <Link to="/mas/cuenta" className="mt-3 flex min-h-control items-center justify-center text-caption font-semibold underline">Volver</Link>
     </main>
   );
 }

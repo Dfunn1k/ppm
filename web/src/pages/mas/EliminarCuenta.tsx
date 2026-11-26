@@ -81,7 +81,7 @@ export function EliminarCuenta() {
           className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-60">
           <Icon name="delete_forever" size="md" />Eliminar mi cuenta
         </button>
-        <Link to="/mas/cuenta" className="py-2 text-center text-caption font-semibold underline">No, volver</Link>
+        <Link to="/mas/cuenta" className="flex min-h-control items-center justify-center text-caption font-semibold underline">No, volver</Link>
       </form>
     </main>
   );

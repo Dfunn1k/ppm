@@ -175,7 +175,7 @@ export function NuevaCategoria() {
 
           <div className="flex flex-col gap-1.5">
             <span className="text-caption font-semibold">Ícono</span>
-            <label className="flex h-10 items-center gap-2 rounded-md bg-muted px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
+            <label className="flex h-control items-center gap-2 rounded-md bg-muted px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
               <Icon name="search" className="text-muted-foreground" />
               <input aria-label="Buscar ícono" placeholder="Buscar: perro, gym, bebé…" value={q} onChange={(e) => setQ(e.target.value)}
                 className="min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
@@ -183,7 +183,7 @@ export function NuevaCategoria() {
             <div role="radiogroup" aria-label="Ícono" className="grid grid-cols-7 gap-1.5">
               {icons.map((n) => (
                 <button key={n} type="button" role="radio" aria-label={n} aria-checked={n === icon} onClick={() => setIcon(n)}
-                  className={`grid h-10 place-items-center rounded-md ${n === icon ? "" : "border border-border"}`}
+                  className={`grid h-control place-items-center rounded-md ${n === icon ? "" : "border border-border"}`}
                   style={n === icon ? { background: `var(--cat-${shown.color})`, color: "var(--on-category)" } : undefined}>
                   <Icon name={n} size="md" />
                 </button>
@@ -203,7 +203,7 @@ export function NuevaCategoria() {
               </Suspense>
             ) : (
               <button type="button" onClick={() => setAll(true)}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-border text-caption font-semibold">
+                className="flex h-control items-center justify-center gap-1.5 rounded-md border border-border text-caption font-semibold">
                 <Icon name="apps" size="sm" />Ver todos los íconos
               </button>
             )}

@@ -47,11 +47,11 @@ export function Cierre() {
       <SectionHeading className="mt-5">Cerrar hasta</SectionHeading>
       <div role="radiogroup" aria-label="Cerrar hasta" className="mt-2.5 flex flex-wrap gap-2">
         <button type="button" role="radio" aria-checked={!custom} onClick={() => setDate(null)}
-          className={`flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${!custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+          className={`hit-area flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${!custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
           Fin del mes pasado, {shortDate(c.suggested)}
         </button>
         <button type="button" role="radio" aria-checked={custom} onClick={() => setPicking("close")}
-          className={`flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+          className={`hit-area flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
           {custom ? shortDate(when) : "Otra fecha"}
         </button>
       </div>
