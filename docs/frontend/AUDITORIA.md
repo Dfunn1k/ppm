@@ -60,6 +60,8 @@ Lo que más se repite como receta completa:
 | 7, 10, 11, 12, 14, 16, 20, 28 | 28 a 112 | 82 | Múltiplos de 4, fuera de la escala |
 | 1, 2, 3, 4, 6, 8 | 4 a 32 | 1,651 | Sí |
 
+> **Corrección de la Fase 2:** como la letra base de la página está fija en 15 px, cada paso de Tailwind mide en realidad 3.75 px y no 4 (`p-4` = 15 px, `size-11` = 41.25 px). Las medidas en px de esta tabla son las nominales. Ver `SISTEMA.md` 1.1.
+
 **482 usos (2, 6, 10 y 14 px) rompen la regla de los 4 px.** Además hay 9 espaciados arbitrarios (`p-[3px]`, `gap-[3px]`, `px-[7px]`, tres `clamp()` en el acceso). → **Decisión de Fase 2**: ¿ampliar la escala (20, 40, 48…) y prohibir los medios pasos, o aceptar algunos medios pasos con nombre?
 
 ### 3. Alturas de fila y áreas que se tocan

@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 1, auditoría (terminada; ⏸ punto de control 1, esperando a Dany).
-- **Rama:** `frontend/fase-1`
-- **Último commit:** ver `git log -1 frontend/fase-1`
+- **Fase actual:** 2, sistema (aprobado por Dany el 25-nov; PR #131 esperando su merge).
+- **Rama:** `frontend/fase-2`
+- **Último commit:** ver `git log -1 frontend/fase-2`
 
 ## Checklist
 
@@ -27,18 +27,40 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] e) Código contra decisiones
 - [x] f) Hallazgos priorizados
 
-### Fases 2 a 5 (pendientes)
+- [x] PR de la Fase 1 aprobado por Dany (#130, 25-nov).
+
+### Fase 2 — Sistema (en curso, `docs/frontend/SISTEMA.md`)
+- [x] Decisiones A a H de Dany (25-nov, abajo)
+- [x] 1. Tokens (base, letra, íconos, espacio, alturas, radios, bordes, sombras, capas, movimiento, colores)
+- [x] 2. Estrategia responsive
+- [x] 3. Componentes compartidos, con variantes y estados
+- [x] 4. Reglas de código
+- [x] ⏸ Punto de control 2: Dany aprueba el documento y S1 a S8 como se recomendaron (25-nov)
+- [x] Registrado en `design-system/` (README y los README de Button, Amount, Row, SectionHeading, PageHeader, Avatar, Chip y CategoryChip), en `docs/modelo-contable.md` (8 decisiones y la bitácora), en `CLAUDE.md` (S8) y en la skill `ppm-interfaz`
+- [ ] Merge del PR #131 (Dany)
+
+### Fases 3 a 5 (pendientes)
 
 ## Siguiente paso
 
-⏸ Punto de control 1: Dany revisa `AUDITORIA.md` y el PR de la Fase 1. Con su OK: Fase 2, `docs/frontend/SISTEMA.md`, empezando por las decisiones de la sección e (A a F) y la estrategia para la tablet y los 1024 px.
+Dany hace el merge del #131. Con su OK, Fase 3 (cimientos) en la rama `frontend/fase-3`: tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas de 1.2 a 1.10, arreglo de las categorías en oscuro), moldes de `SISTEMA.md` 3 con `cva`, el inspector `web/src/estilo.test.ts` con el tope por archivo y las capturas base. Un commit por pieza.
 
-## Decisiones que le tocan a Dany
+## Decisiones de Dany
 
-Para la Fase 2 (con opciones, no se deciden en la auditoría):
-- Las 6 diferencias entre la fuente y el código de `AUDITORIA.md`, e (A a F): formularios con caja o con línea, montos en Bricolage, la regla de títulos, «asiento» y «por cobrar», el símbolo en las filas y el README de Button.
-- Qué pasa en la tablet (768–1023 px) y entre 1024 y ~1200 px.
-- Cambiar el texto «como el debe y el haber» de Por asignar (texto visible).
+Tomadas el 25-nov (todas las recomendadas). Se escriben en `design-system/` y en `docs/modelo-contable.md` al cerrar la Fase 2:
+- **A. Formularios:** la línea de abajo en toda la app; se corrige el README («caja con borde» queda fuera).
+- **B. Montos protagonistas:** en Bricolage, con 2 tamaños en lugar de 7.
+- **C. Título de las pantallas a las que entras:** `title-hero` (48 px) como hoy; más chico entre 280 y 359 px.
+- **D. Palabras:** «Asiento manual» y «Por cobrar» de las cuotas quedan como excepciones aprobadas; en Presupuesto › Cuentas, «Por pagar» y «Por cobrar» pasan a «Debo a personas» y «Me deben» (Fase 4).
+- **E. Símbolo:** en las filas, tu moneda va sin símbolo y las otras con el suyo; totales y saldos siempre con símbolo.
+- **F. README de Button:** se reescribe con lo que hay (56 px).
+- **G1. Tablet (768–1023 px):** el riel y una columna ancha (~640 px).
+- **G2. Laptop chica (1024–1279 px):** lista de 320 px y detalle que se adapta a su ancho; desde 1280 px, 400 px.
+- **H. Por asignar:** «Siempre cuadra: cada sol está en un solo lugar.» (Fase 4).
+
+Del punto de control 2 (25-nov, todas las recomendadas): S1 base en 16 px y letra en `rem`; S2 el monto principal de los detalles también en Bricolage; S3 2 y 6 px solo dentro de piezas chicas; S4 filas de 52, 60 y 56 px; S5 radios 4, 6, 10, 14 y 16 con nombres en orden; S6 con «reducir movimiento» solo gira el círculo; S7 margen de 24 px en el celular; S8 moldes propios con `cva`.
+
+Pendientes:
 - Revisar en un iPhone, con PPM instalada, si la barra de abajo queda bajo la barra de gestos.
 
 ## Fuera de alcance (errores funcionales encontrados, sin arreglar)
