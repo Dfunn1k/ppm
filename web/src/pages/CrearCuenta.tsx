@@ -84,7 +84,7 @@ export function CrearCuenta() {
           ¿Ya tienes cuenta? <TextLink to="/entrar">Inicia sesión</TextLink>
         </p>
         <p className="mt-2 text-center text-caption text-muted-foreground">
-          <Link to="/privacidad" className="underline">Privacidad</Link>
+          <Link to="/privacidad" className="hit-area underline">Privacidad</Link>
         </p>
       </form>
     </Screen>

@@ -62,7 +62,7 @@ export function Paso3() {
                 aria-label="Lo que hay hoy en Efectivo"
                 value={choices.cash}
                 onChange={(e) => update({ cash: e.target.value })}
-                className="h-9 min-w-0 flex-1 border-0 bg-transparent p-0 text-right text-body-lg font-medium tabular-nums"
+                className="h-control min-w-0 flex-1 border-0 bg-transparent p-0 text-right text-body-lg font-medium tabular-nums"
               />
             </label>
           </li>

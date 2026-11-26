@@ -42,7 +42,7 @@ export function PrimaryLink({ children, ...props }: LinkProps) {
 
 /** Enlace de texto subrayado en el color del acento. */
 export function TextLink({ className, ...props }: LinkProps) {
-  return <Link className={cn("font-semibold text-primary-strong underline", className)} {...props} />;
+  return <Link className={cn("hit-area font-semibold text-primary-strong underline", className)} {...props} />;
 }
 
 type FieldProps = ComponentProps<"input"> & { label: string; error?: string; hint?: ReactNode; action?: ReactNode; optional?: boolean };
