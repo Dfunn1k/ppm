@@ -1,7 +1,4 @@
 {
- "App.tsx": {
-  "arbitrario": 1
- },
  "components/AccessLayout.tsx": {
   "arbitrario": 24
  },
@@ -9,8 +6,7 @@
   "arbitrario": 1
  },
  "components/AppNav.tsx": {
-  "arbitrario": 8,
-  "capa": 1
+  "arbitrario": 8
  },
  "components/AttachmentViewer.tsx": {
   "arbitrario": 55,
@@ -80,9 +76,9 @@
   "capa": 1
  },
  "components/Rail.tsx": {
-  "arbitrario": 17,
+  "arbitrario": 16,
   "sombra": 1,
-  "capa": 3
+  "capa": 2
  },
  "components/RateField.tsx": {
   "arbitrario": 1
@@ -90,18 +86,13 @@
  "components/Refran.tsx": {
   "arbitrario": 2
  },
- "components/RegisterPanel.tsx": {
-  "arbitrario": 2,
-  "colorTailwind": 1
- },
  "components/Shared.tsx": {
   "arbitrario": 9,
   "aMano": 1
  },
  "components/Sheet.tsx": {
   "arbitrario": 9,
-  "colorTailwind": 1,
-  "capa": 2
+  "capa": 1
  },
  "components/ShortcutsHelp.tsx": {
   "arbitrario": 4,
@@ -109,9 +100,6 @@
  },
  "components/Skeleton.tsx": {
   "arbitrario": 5
- },
- "components/Split.tsx": {
-  "arbitrario": 2
  },
  "components/Tags.tsx": {
   "arbitrario": 7,
@@ -236,11 +224,11 @@
   "aMano": 2
  },
  "pages/movimientos/Movimientos.tsx": {
-  "arbitrario": 16,
+  "arbitrario": 14,
   "enLinea": 1
  },
  "pages/movimientos/PorClasificar.tsx": {
-  "arbitrario": 10
+  "arbitrario": 8
  },
  "pages/movimientos/Reembolso.tsx": {
   "arbitrario": 12,

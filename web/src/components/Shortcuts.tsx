@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 import { useMe } from "@/api/hooks";
-import { isDesktop } from "@/lib/desktop";
+import { isRail } from "@/lib/desktop";
 import { matches, openShortcutsHelp, useShortcuts } from "@/lib/shortcuts";
 
 import { registerLink } from "./AppNav";
@@ -38,7 +38,7 @@ export function Shortcuts() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!isDesktop() || e.defaultPrevented || e.isComposing) return;
+      if (!isRail() || e.defaultPrevented || e.isComposing) return;
       const { location: loc, home: homeAccount, keys: k } = now.current;
       const path = loc.pathname;
       // Una hoja, el visor de adjuntos o el panel de registrar abiertos: ellos escuchan el teclado

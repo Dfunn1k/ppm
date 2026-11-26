@@ -84,7 +84,7 @@ export function Rail() {
   rememberMoves(me?.id, location.pathname, location.search);
   return (
     <nav aria-label="Navegación principal"
-      className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center gap-1 overflow-y-auto border-r border-border bg-card py-4 lg:flex">
+      className="rail fixed inset-y-0 left-0 z-nav hidden w-rail flex-col items-center gap-1 overflow-y-auto border-r border-border bg-card py-4 md:flex">
       <Link to="/inicio" aria-label="Inicio de PPM" className="mb-3 flex-none"><Logo size={36} /></Link>
       <Link to={registerLink(location.pathname, me?.home_account_id)} state={{ background: location }}
         aria-label="Registrar un movimiento" aria-keyshortcuts={keyLabel(keys.register)}

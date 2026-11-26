@@ -10,7 +10,7 @@ import { RegisterPanel } from "./components/RegisterPanel";
 import { Shortcuts } from "./components/Shortcuts";
 import { ShortcutsHelp } from "./components/ShortcutsHelp";
 import { Split, SplitIndex } from "./components/Split";
-import { useDesktop } from "./lib/desktop";
+import { useRail } from "./lib/desktop";
 import { Spinner } from "./components/ui";
 import { WizardProvider } from "./pages/bienvenida/wizard";
 import { Entrar } from "./pages/Entrar";
@@ -109,15 +109,15 @@ function WithNav() {
   );
 }
 
-/** Dentro de la app: en escritorio, el riel a la izquierda y los atajos de teclado. */
+/** Dentro de la app: desde la tablet, el riel a la izquierda y los atajos de teclado. */
 function Shell() {
-  const desktop = useDesktop();
+  const rail = useRail();
   return (
     <>
-      {desktop && <Rail />}
-      {desktop && <Shortcuts />}
-      {desktop && <ShortcutsHelp />}
-      <div className="lg:pl-[88px]"><Outlet /></div>
+      {rail && <Rail />}
+      {rail && <Shortcuts />}
+      {rail && <ShortcutsHelp />}
+      <div className="md:pl-rail"><Outlet /></div>
     </>
   );
 }
@@ -138,9 +138,9 @@ export function App() {
   // Antes de pintar: los montos se escriben con el símbolo y los decimales de cada moneda de la persona
   if (me.data?.formats) setCurrencyFormats(me.data.formats);
   const location = useLocation();
-  const desktop = useDesktop();
-  // En escritorio el + abre Registrar en un panel sobre la pantalla de la que viniste
-  const background = desktop ? (location.state as { background?: Location } | null)?.background : undefined;
+  const rail = useRail();
+  // Desde la tablet el + abre Registrar en un panel sobre la pantalla de la que viniste
+  const background = rail ? (location.state as { background?: Location } | null)?.background : undefined;
   useTheme(me.data);
   useEffect(() => applyIconsOf(me.data?.icons), [me.data]);
 

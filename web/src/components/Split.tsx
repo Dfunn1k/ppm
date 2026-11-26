@@ -19,7 +19,7 @@ export function Split({ list }: { list: ReactNode }) {
   return (
     <ListContext.Provider value={list}>
       <div className={desktop ? "flex h-dvh" : "contents"}>
-        {desktop && <div className="pane pane-list w-[400px] flex-none overflow-y-auto border-r border-border xl:w-[440px]">{list}</div>}
+        {desktop && <div className="pane pane-list w-80 flex-none overflow-y-auto border-r border-border xl:w-100 2xl:w-110">{list}</div>}
         <div className={desktop ? "pane pane-detail min-w-0 flex-1 overflow-y-auto" : "contents"}>{outlet}</div>
       </div>
     </ListContext.Provider>

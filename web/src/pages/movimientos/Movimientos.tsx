@@ -187,7 +187,7 @@ export function Movimientos() {
         </div>
       </Sheet>
       {sheet === "category" && (
-        <div className="fixed inset-x-0 top-3 z-[60] lg:left-[88px] mx-auto flex max-w-md justify-center gap-1">
+        <div className="fixed inset-x-0 top-3 z-toast md:left-rail mx-auto flex max-w-md justify-center gap-1">
           {(["expense", "income"] as const).map((k) => (
             <button key={k} type="button" aria-pressed={categoryKind === k} onClick={() => setCategoryKind(k)}
               className={`h-9 rounded-full px-4 text-caption font-semibold ${categoryKind === k ? "bg-primary text-primary-foreground" : "bg-card"}`}>

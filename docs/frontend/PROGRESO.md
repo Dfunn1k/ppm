@@ -44,7 +44,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] Tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas, colores nuevos, categorías en oscuro)
 - [x] El inspector (`web/src/estilo.test.ts`, `estilo-tope.json`, `estilo-excepciones.ts`)
 - [x] Moldes con `cva`: Button, IconButton, SectionHeading, PageHeader, Avatar, Row, Amount, Chip, ProgressBar, SearchField; ajustar PrimaryButton, Pill, Segmented, Icon
-- [ ] Cortes de pantalla: el riel desde 768 px, la lista de 320/400/440 px, safe-area y el foco tapado por la barra
+- [x] Cortes de pantalla: el riel desde 768 px, la lista de 320/400/440 px, safe-area y el foco tapado por la barra
 - [ ] Fotos después, comparadas con las base; typecheck, Vitest, Playwright y build
 
 ### Fases 4 y 5 (pendientes)
