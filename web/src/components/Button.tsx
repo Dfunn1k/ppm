@@ -3,7 +3,6 @@
 // pasa a ser el círculo que gira, sin cambiar de ancho.
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
-import { Link, type LinkProps } from "react-router";
 
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/utils";
@@ -42,15 +41,6 @@ export function Button({ variant, size, pending, icon, className, children, type
       <span>{children}</span>
       <Trailing variant={variant} pending={pending} icon={icon} />
     </button>
-  );
-}
-
-export function ButtonLink({ variant, size, icon, className, children, ...props }: LinkProps & Variants & { icon?: string | false }) {
-  return (
-    <Link className={cn(buttonVariants({ variant, size }), className)} {...props}>
-      <span>{children}</span>
-      <Trailing variant={variant} icon={icon} />
-    </Link>
   );
 }
 

@@ -12,8 +12,6 @@ import { ErrorAlert, Icon, Optional } from "./ui";
 
 const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
 
-export const tagColor = (c: number | null | undefined) => `var(--cat-${c ?? 0})`;
-
 /** Las etiquetas como chips de color, para el detalle y la lista. */
 export function TagChips({ tags, small }: { tags: TagRef[]; small?: boolean }) {
   return (

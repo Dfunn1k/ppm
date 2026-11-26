@@ -132,11 +132,11 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
               <dt>Esta cuota: capital + interés</dt><dd className="text-right font-semibold">{money(x.capital, x.currency)} + {money(x.interest, x.currency)}</dd>
             </dl>
             {bankInstallment.error && <ErrorAlert>{bankInstallment.error.message}</ErrorAlert>}
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex flex-wrap gap-2">
               <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id })}
-                className="h-11 flex-1 rounded-lg bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
+                className="h-11 flex-1 basis-40 rounded-lg bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
               <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id, rejectPlan: g.plan_id })}
-                className="h-11 rounded-lg border border-input-line px-3.5 font-semibold text-foreground">No es esta compra</button>
+                className="h-11 rounded-lg border border-input-line px-3.5 whitespace-nowrap font-semibold text-foreground">No es esta compra</button>
             </div>
           </section>
         );

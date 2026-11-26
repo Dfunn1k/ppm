@@ -1,7 +1,9 @@
 // La persona de muestra de las capturas: una cuenta con datos de varios meses, para que cada
 // pantalla muestre algo (listas, gráficos, tarjetas, personas, presupuesto). Se arma por la API,
 // igual que las pruebas e2e.
-import type { APIRequestContext } from "@playwright/test";
+import type { APIRequestContext, Browser } from "@playwright/test";
+
+import { type FileIds, seedFiles } from "./archivos";
 
 export type Ids = {
   email: string;
@@ -14,6 +16,7 @@ export type Ids = {
   move: number;
   recurring: number | null;
   post: number | null;
+  files: FileIds | null;           // solo la persona de las pantallas: el estado de cuenta y el extracto
 };
 
 const PASSWORD = "pan-para-mayo-2026";
@@ -42,7 +45,7 @@ function findAccount(tree: unknown, name: string): number {
   throw new Error(`No encontré la cuenta ${name}`);
 }
 
-export async function seed(api: APIRequestContext, tag: string): Promise<Ids> {
+export async function seed(api: APIRequestContext, tag: string, browser?: Browser): Promise<Ids> {
   const email = `e2e-capturas-${tag}-${Date.now()}@prueba.ppm`;
   await json(await api.post("/api/auth/signup", { data: { name: "Ana Torres", email, password: PASSWORD } }), "signup");
   await json(await api.post("/api/me/setup", { data: { country: "PE", other_currencies: ["USD"] } }), "setup");
@@ -106,5 +109,6 @@ export async function seed(api: APIRequestContext, tag: string): Promise<Ids> {
     if (post) await api.post("/api/budget/moves", { data: { month, to_post_id: post, amount: "600" } });
   }
 
-  return { email, cash, bank: bcp, usd, card, loan, partner, move: first, recurring: recurringId, post };
+  const files = browser ? await seedFiles(api, browser, bcp, cat) : null;
+  return { email, cash, bank: bcp, usd, card, loan, partner, move: first, recurring: recurringId, post, files };
 }

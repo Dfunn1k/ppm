@@ -1,6 +1,6 @@
-// Todas las pantallas de web/src/App.tsx que se pueden abrir con la persona de muestra. Las que
-// necesitan un dato que la muestra no tiene (un extracto importado, el estado de cuenta de un
-// corte, un aviso de recurrente) quedan en SKIPPED con su motivo, para que la auditoría lo diga.
+// Todas las pantallas de web/src/App.tsx que se pueden abrir con la persona de muestra (con su
+// estado de cuenta y su extracto importados, ver archivos.ts). Las que necesitan un dato que la
+// muestra no tiene (un aviso de recurrente) quedan en SKIPPED con su motivo, para que la auditoría lo diga.
 import type { Ids } from "./datos";
 
 export type Screen = { id: string; path: string; auth: boolean; form?: boolean };
@@ -33,6 +33,8 @@ export function screens(ids: Ids): Screen[] {
     s("tarjeta", `/tarjetas/${ids.card}`),
     s("tarjeta-pagar", `/tarjetas/${ids.card}/pagar`, true),
     s("tarjeta-cuotas-antes", `/tarjetas/${ids.card}/cuotas-antes`, true),
+    ids.files ? s("tarjeta-estado", `/tarjetas/${ids.files.statementCard}/estado/${ids.files.closing}`) : null,
+    ids.files ? s("extracto", `/extractos/${ids.files.extract}`) : null,
     ids.loan ? s("prestamo", `/prestamos/${ids.loan}`) : null,
     ids.loan ? s("prestamo-pagar", `/prestamos/${ids.loan}/pagar`, true) : null,
     s("presupuesto", "/presupuesto"),
@@ -84,5 +86,4 @@ export const SKIPPED = [
   ["/bienvenida/1, /2, /3 y /3/banco", "solo se ven antes de terminar la configuración: van en «bienvenida» con una cuenta nueva"],
   ["/entrar/google y /restablecer", "necesitan Google o un enlace del correo"],
   ["/registrar/aviso/:id/:occurrence", "necesita el aviso de una recurrente que ya tocó"],
-  ["/tarjetas/:id/estado/:closing y /extractos/:id", "necesitan un estado de cuenta o un extracto importado"],
 ] as const;
