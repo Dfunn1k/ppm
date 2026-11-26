@@ -62,18 +62,18 @@ export function Recurrentes() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
       <div className="-mx-2.5 flex items-center justify-between lg:hidden">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" size="md" /></Link>
       </div>
       <div className="flex items-center justify-between gap-3 lg:pt-4">
         <h1 className="mt-1 text-title-hero lg:mt-0 lg:text-[36px] lg:leading-10">Recurrentes</h1>
         <Link to="/registrar?repite=1"
           className="hidden h-10 flex-none items-center gap-1.5 rounded-[10px] border border-border bg-card px-3.5 text-[14px] font-semibold lg:flex">
-          <Icon name="add" className="text-[20px]" />Nuevo recurrente
+          <Icon name="add" />Nuevo recurrente
         </Link>
       </div>
       {rows.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
-          <span className="grid size-16 place-items-center rounded-full bg-muted"><Icon name="repeat" className="text-[30px]" /></span>
+          <span className="grid size-16 place-items-center rounded-full bg-muted"><Icon name="repeat" size="lg" /></span>
           <span className="font-display text-[22px] font-bold">Nada se repite todavía</span>
           <p className="text-muted-foreground">El sueldo, el alquiler o Netflix: anótalos una vez y PPM los registra cada vez que toca. Al registrar cualquier movimiento, activa «Se repite».</p>
         </div>
@@ -151,9 +151,9 @@ export function Recurrente() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8 lg:pt-8">
       <div className="-mx-2.5 flex items-center justify-between lg:hidden">
-        <Link to="/mas/recurrentes" aria-label="Volver a Recurrentes" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+        <Link to="/mas/recurrentes" aria-label="Volver a Recurrentes" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" size="md" /></Link>
         {!done && (
-          <Link to={`/mas/recurrentes/${id}/editar`} aria-label="Cambiar la recurrente" className="grid size-11 place-items-center rounded-full lg:hidden"><Icon name="edit" className="text-[24px]" /></Link>
+          <Link to={`/mas/recurrentes/${id}/editar`} aria-label="Cambiar la recurrente" className="grid size-11 place-items-center rounded-full lg:hidden"><Icon name="edit" size="md" /></Link>
         )}
       </div>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-4">
@@ -164,12 +164,12 @@ export function Recurrente() {
         {/* En la computadora las acciones van arriba, como en el detalle de una cuenta */}
         {!done && (
           <span className="hidden flex-none gap-2 lg:flex">
-            <Link to={`/mas/recurrentes/${id}/editar`} className={DESK_BTN}><Icon name="edit" className="text-[20px]" />Cambiar</Link>
+            <Link to={`/mas/recurrentes/${id}/editar`} className={DESK_BTN}><Icon name="edit" />Cambiar</Link>
             <button type="button" onClick={() => state.mutate(paused ? "resume" : "pause")} className={DESK_BTN}>
-              <Icon name={paused ? "play_circle" : "pause_circle"} className="text-[20px]" />{paused ? "Reanudar" : "Pausar"}
+              <Icon name={paused ? "play_circle" : "pause_circle"} />{paused ? "Reanudar" : "Pausar"}
             </button>
             <button type="button" onClick={() => setEnding(true)} className={`${DESK_BTN} text-destructive`}>
-              <Icon name="stop_circle" className="text-[20px]" />Terminar
+              <Icon name="stop_circle" />Terminar
             </button>
           </span>
         )}
@@ -228,7 +228,7 @@ export function Recurrente() {
               <li key={n.occurrence}>
                 <button type="button" onClick={() => setPicked(n)} disabled={paused}
                   className="flex min-h-14 w-full items-center gap-3 border-b border-border text-left">
-                  <Icon name={n.skipped ? "event_busy" : n.moved || n.changed ? "edit_calendar" : "event"} className="text-[22px] text-muted-foreground" />
+                  <Icon name={n.skipped ? "event_busy" : n.moved || n.changed ? "edit_calendar" : "event"} size="md" className="text-muted-foreground" />
                   <span className="flex flex-1 flex-col">
                     <span className={`font-semibold ${n.skipped ? "line-through" : ""}`}>{dayDate(n.date)}</span>
                     <span className="text-caption text-muted-foreground">
