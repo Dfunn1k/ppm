@@ -156,7 +156,8 @@ export function PorClasificar() {
             </>
           )}
         </div>
-        <div className="min-w-0 flex-1 overflow-y-auto">
+        {/* scroll-pb: que el botón fijo de abajo no tape lo que tiene el foco */}
+        <div className="min-w-0 flex-1 overflow-y-auto scroll-pb-32">
           <div className="mx-auto flex max-w-180 flex-col px-10 pt-8 pb-10">
             {forms.length === 0 ? (
               items.length > 0 && (
@@ -216,7 +217,7 @@ export function PorClasificar() {
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="flex items-baseline gap-2">
-                      <Link to={`/movimientos/${u.move_id}`} className="min-w-0 flex-1 truncate font-semibold">{u.payment_ref ?? u.ref}</Link>
+                      <Link to={`/movimientos/${u.move_id}`} className="hit-area min-w-0 flex-1 font-semibold"><span className="block truncate">{u.payment_ref ?? u.ref}</span></Link>
                       <span className={`font-medium tabular-nums ${out ? "text-expense" : "text-income"}`}>
                         {out ? "− " : "+ "}{u.currency === me.currency ? formatNumber(u.amount.replace("-", ""), lang) : formatAmount(u.amount.replace("-", ""), symbolOf(u.currency), lang)}
                       </span>
