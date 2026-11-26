@@ -18,7 +18,7 @@ export const avatarVariants = cva("grid flex-none place-items-center rounded-ful
     kind: {
       category: "text-on-category",
       account: "bg-secondary text-secondary-foreground",
-      person: "bg-muted font-semibold text-foreground",
+      person: "bg-secondary font-semibold text-secondary-foreground",
       status: "bg-muted text-muted-foreground",
       attention: "bg-attention-soft text-attention",
     },
@@ -32,7 +32,7 @@ export function Avatar({ kind, size, icon, color, initials, className }: Variant
 }) {
   return (
     <span aria-hidden="true" className={cn(avatarVariants({ kind, size }), kind === "category" && catBg(color), className)}>
-      {initials ? <span className={size === "sm" ? "text-caption-sm" : "text-caption"}>{initials}</span>
+      {initials ? <span className={size === "sm" ? "text-caption-sm" : "text-body"}>{initials}</span>
         : icon && <Icon name={icon} size={size === "sm" ? "sm" : undefined} />}
     </span>
   );

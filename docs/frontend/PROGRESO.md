@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 3, cimientos (terminada; ⏸ punto de control 3, esperando a Dany).
-- **Rama:** `frontend/fase-3`
-- **Último commit:** ver `git log -1 frontend/fase-3`
+- **Fase actual:** 4, migración por lotes (lote 1 terminado; esperando el visto bueno de Dany).
+- **Rama:** `frontend/fase-4-lote-1`
+- **Último commit:** ver `git log -1 frontend/fase-4-lote-1`
 
 ## Checklist
 
@@ -52,13 +52,22 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
   - axe: las mismas 4 reglas (aria-hidden-focus, label-content-name-mismatch, color-contrast, nested-interactive), que se arreglan pantalla por pantalla en la Fase 4.
   - «Texto grande» ya no es idéntica a 390×844: la letra crece, y aparecen 18 posibles cortes que la Fase 4 debe resolver.
   - `teclado.spec.ts` ahora reconoce la vuelta por el elemento y no por su posición. La de antes contaba paradas repetidas cuando la página se movía: las 1,180 paradas de la Fase 1 eran 783 sin repetir.
-- [ ] PR de la Fase 3 (Dany)
+- [x] PR de la Fase 3 aprobado por Dany (#132, 25-nov)
 
-### Fases 4 y 5 (pendientes)
+### Fase 4 — Migración por lotes (en curso)
+Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en sus archivos, axe y teclado limpios en sus pantallas, toda la matriz en claro y oscuro, fotos de antes y después.
+- [x] Lote 1: Inicio (y las piezas de las filas que usa: CategoryChip, Avatar, MoveIcon, MoveLine y Facts). PR #133.
+  - Inicio: 20 valores escritos a mano → 0; lo que se toca < 44 px: 0 en toda la matriz (antes «Ver todo», el ojo, Mi cuenta y el mes); axe sin violaciones (antes label-content-name-mismatch); foco tapado 5 → 0; sin cortes con texto grande.
+  - Hallazgo: todos los íconos medían 20 px. La regla `.icon` le ganaba a las clases de tamaño, así que el código pedía 11 tamaños y ninguno se aplicaba. Ahora solo valen los tamaños del sistema, y cada pantalla los adopta al migrar.
+- [ ] Lote 2: Cuentas y Detalle de cuenta
+- [ ] Lote 3: Movimientos y Registrar
+- [ ] Los demás lotes (se proponen al cerrar el 3)
+
+### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-⏸ Punto de control 3: Dany revisa el PR de la Fase 3. Con su OK: Fase 4, migración por lotes de 1 a 3 pantallas (un commit por pantalla, un PR por lote). Propuesta de orden: 1) Inicio, 2) Cuentas y Detalle de cuenta, 3) Movimientos y Registrar, y después el resto, empezando por los moldes que más se repiten (Row, SectionHeading, PageHeader, Screen con su ancho de tablet). En cada lote: bajar el tope del inspector, arreglar lo de axe de esas pantallas y los cortes de «texto grande», y fotos de antes y después.
+Dany revisa el lote 1 (PR #133) y da su visto bueno. Con su OK: lote 2, Cuentas y Detalle de cuenta, en la rama `frontend/fase-4-lote-2` (sale de `main` después del merge).
 
 ## Decisiones de Dany
 

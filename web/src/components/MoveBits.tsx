@@ -4,30 +4,35 @@ import type { MoveSummary, TagRef } from "@/api/hooks";
 import { flow, isPersonKind, tone } from "@/lib/kinds";
 import { formatAmount, formatNumber, symbolOf } from "@/lib/money";
 
+import { Avatar as Circle } from "./Avatar";
 import { CategoryChip } from "./CategorySheet";
 import { Pill } from "./Pill";
 import { TagChips, tagColor } from "./Tags";
 import { Icon } from "./ui";
 
-export function Avatar({ name, size = 36 }: { name: string | null | undefined; size?: number }) {
+/** Las iniciales de una persona en su círculo (`Avatar` de persona, 40 px). `size` con un número queda solo
+ *  para las pantallas que todavía no pasaron a los moldes (Fase 4). */
+export function Avatar({ name, size }: { name: string | null | undefined; size?: number }) {
+  const initial = (name ?? "?").trim()[0]?.toUpperCase() ?? "?";
+  if (size === undefined) return <Circle kind="person" initials={initial} />;
   return (
     <span className="grid flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground"
       style={{ width: size, height: size, fontSize: size < 36 ? 13 : 15 }}>
-      {(name ?? "?").trim()[0]?.toUpperCase() ?? "?"}
+      {initial}
     </span>
   );
 }
 
 export function MoveIcon({ move: x }: { move: MoveSummary }) {
   if (x.kind === "transfer") {
-    return <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="sync_alt" /></span>;
+    return <Circle kind="account" icon="sync_alt" />;
   }
   if (x.kind === "unclassified") {
-    return <span className="grid size-9 flex-none place-items-center rounded-full bg-attention-soft text-attention"><Icon name="inbox" /></span>;
+    return <Circle kind="attention" icon="inbox" />;
   }
   if (isPersonKind(x.kind) || x.kind === "offset") return <Avatar name={x.partner} />;
   if (x.kind === "other") {
-    return <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground"><Icon name="edit_note" /></span>;
+    return <Circle kind="account" icon="edit_note" />;
   }
   const single = x.categories.length === 1 ? x.categories[0]! : null;
   return <CategoryChip category={single ?? { icon: "call_split", color: x.categories[0]?.color ?? 0 }} />;
@@ -47,11 +52,11 @@ export function MoveLine({ bits, tags, wide }: { bits: Bit[]; tags: TagRef[]; wi
   return (
     <>
       {(bits.length > 0 || (wide && tags.length > 0)) && (
-        <span className="flex min-w-0 items-center gap-2.5 overflow-hidden whitespace-nowrap text-caption text-muted-foreground">
+        <span className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap text-caption text-muted-foreground">
           {bits.map((b, i) => (
             <span key={i} aria-label={b.label} title={b.label}
               className={`inline-flex min-w-0 items-center gap-1 ${b.shrink ? "shrink" : "flex-none"} ${b.attention ? "font-semibold text-attention" : ""}`}>
-              {b.icon && <Icon name={b.icon} className="text-[15px]" />}
+              {b.icon && <Icon name={b.icon} size="sm" />}
               {b.text && <span className="truncate">{b.text}</span>}
             </span>
           ))}

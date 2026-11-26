@@ -27,7 +27,11 @@ export function medir(page: Page): Promise<Medidas> {
       // Un campo dentro de su etiqueta (o con label for) se toca por toda la etiqueta: se mide la más grande
       const own = el.getBoundingClientRect();
       const lab = el.closest("label") ?? (el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null);
-      const r = lab && lab.getBoundingClientRect().width * lab.getBoundingClientRect().height > own.width * own.height ? lab.getBoundingClientRect() : own;
+      const box = lab && lab.getBoundingClientRect().width * lab.getBoundingClientRect().height > own.width * own.height ? lab.getBoundingClientRect() : own;
+      // Lo que se ve chico pero se toca en grande (la utilidad hit-area: un ::after de al menos 44×44)
+      const after = getComputedStyle(el, "::after");
+      const grow = after.position === "absolute" && after.content !== "none" ? { w: parseFloat(after.width) || 0, h: parseFloat(after.height) || 0 } : { w: 0, h: 0 };
+      const r = { width: Math.max(box.width, grow.w), height: Math.max(box.height, grow.h) };
       if (r.width < 44 || r.height < 44) {
         small.push({ what: label(lab ?? el), w: Math.round(r.width), h: Math.round(r.height), inline: getComputedStyle(el).display === "inline" });
       }

@@ -85,7 +85,7 @@ export function Rail() {
   return (
     <nav aria-label="Navegación principal"
       className="rail fixed inset-y-0 left-0 z-nav hidden w-rail flex-col items-center gap-1 overflow-y-auto border-r border-border bg-card py-4 md:flex">
-      <Link to="/inicio" aria-label="Inicio de PPM" className="mb-3 flex-none"><Logo size={36} /></Link>
+      <Link to="/inicio" aria-label="Inicio de PPM" className="mb-2 grid size-control flex-none place-items-center"><Logo size={36} /></Link>
       <Link to={registerLink(location.pathname, me?.home_account_id)} state={{ background: location }}
         aria-label="Registrar un movimiento" aria-keyshortcuts={keyLabel(keys.register)}
         className="group relative mb-4 grid size-[52px] flex-none place-items-center rounded-xl bg-primary text-primary-foreground shadow-md">
@@ -122,7 +122,7 @@ export function Rail() {
       </button>
       {me && (
         <Link to="/mas/cuenta" aria-label={`Mi cuenta: ${me.name}`} title={me.name}
-          className="grid size-10 flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground">
+          className="grid size-control flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground">
           {me.name[0]?.toUpperCase()}
         </Link>
       )}
