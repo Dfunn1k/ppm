@@ -6,6 +6,7 @@
 import { useState } from "react";
 
 import { usePartners } from "@/api/hooks";
+import { fromCents } from "@/lib/money";
 import { PersonaSheet } from "@/pages/personas/PersonaForm";
 
 import { Avatar } from "./MoveBits";
@@ -18,7 +19,7 @@ export type SharedState = { on: boolean; payer: number | "me"; people: SharedPer
 export const NO_SHARED: SharedState = { on: false, payer: "me", people: [], mode: "equal", mine: "" };
 
 const cents = (v: string | null | undefined) => Math.round(Number(v || "0") * 100);
-const money2 = (c: number) => (c / 100).toFixed(2);
+const money2 = (c: number) => fromCents(c);
 
 /** Las partes en céntimos: la tuya y la de cada persona. En partes iguales, el céntimo que sobra es tuyo. */
 export function shares(s: SharedState, total: string | null, parse: (v: string) => string | null): { mine: number; theirs: number[] } {
@@ -74,12 +75,12 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
   return (
     <section aria-label="Compartido" className={`my-2 flex flex-col gap-3 rounded-lg border bg-card p-3.5 ${s.on ? "border-foreground" : "border-border"}`}>
       <label className="flex cursor-pointer items-center gap-3">
-        <Icon name="group" className="text-[22px]" />
+        <Icon name="group" size="md" />
         <span className="flex flex-1 flex-col">
           <span className="font-semibold">Compartido</span>
           <span className="text-caption text-muted-foreground">{income ? "Con una o varias personas: quién cobró y cuánto es de cada uno" : "Con una o varias personas: quién pagó y cuánto pone cada uno"}</span>
         </span>
-        <input type="checkbox" role="switch" checked={s.on} onChange={() => set({ on: !s.on })} className="size-[22px] accent-primary" />
+        <input type="checkbox" role="switch" checked={s.on} onChange={() => set({ on: !s.on })} className="size-6 accent-primary" />
       </label>
       {s.on && (
         <>
@@ -88,11 +89,11 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
             <div className="flex flex-wrap gap-1.5">
               {[{ id: "me" as const, label: "Yo" }, ...s.people.map((p) => ({ id: p.id, label: first(p.id) }))].map((o) => (
                 <button key={String(o.id)} type="button" role="radio" aria-checked={s.payer === o.id} onClick={() => set({ payer: o.id })}
-                  className={`h-8 rounded-full border px-3 text-[13px] font-semibold ${s.payer === o.id ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+                  className={`h-8 rounded-full border px-3 text-caption font-semibold ${s.payer === o.id ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
                   {o.label}
                 </button>
               ))}
-              <button type="button" onClick={() => setPicking("payer")} className="h-8 rounded-full border border-dashed border-input-line px-3 text-[13px] font-semibold">
+              <button type="button" onClick={() => setPicking("payer")} className="h-8 rounded-full border border-dashed border-input-line px-3 text-caption font-semibold">
                 Otra persona…
               </button>
             </div>
@@ -101,7 +102,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
           <div className="flex flex-col">
             <span className="text-caption font-semibold">¿Entre quiénes?</span>
             <div className="flex min-h-12 items-center gap-2.5 border-b border-border">
-              <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-[12px] font-semibold">Tú</span>
+              <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-caption-sm font-semibold">Tú</span>
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">Tú</span>
                 <span className="text-caption text-muted-foreground">Tu parte es {what} {where}</span>
@@ -130,18 +131,18 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
                   ) : mePaid || s.mode === "equal" ? <span className="font-semibold tabular-nums">{format(money2(theirs[i]!))}</span> : null}
                   <button type="button" aria-label={`Quitar a ${name(p.id)}`}
                     onClick={() => onChange({ ...s, payer: isPayer ? "me" : s.payer, people: s.people.filter((x) => x.id !== p.id) })}
-                    className="grid size-8 place-items-center text-muted-foreground"><Icon name="close" className="text-[18px]" /></button>
+                    className="grid size-8 place-items-center text-muted-foreground"><Icon name="close" size="sm" /></button>
                 </div>
               );
             })}
-            <button type="button" onClick={() => setPicking("add")} className="flex min-h-11 items-center gap-1.5 text-[14px] font-semibold">
-              <Icon name="person_add" className="text-[20px]" />Agregar a alguien
+            <button type="button" onClick={() => setPicking("add")} className="flex min-h-11 items-center gap-1.5 text-body-sm font-semibold">
+              <Icon name="person_add" />Agregar a alguien
             </button>
           </div>
 
           <Segmented label="Cómo se reparte" size="sm" value={s.mode} onChange={(v) => set({ mode: v as SharedState["mode"] })}
             options={[{ value: "equal", label: "Partes iguales" }, { value: "amounts", label: "Por montos" }]} />
-          <p role="status" className="rounded-md bg-muted px-3 py-2.5 text-[14px] leading-5">{result}</p>
+          <p role="status" className="rounded-md bg-muted px-3 py-2.5 text-body-sm">{result}</p>
         </>
       )}
 

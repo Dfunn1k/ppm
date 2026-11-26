@@ -43,7 +43,7 @@ export function RateField({ input, currency, side = "buy", error, aside }: {
   aside?: React.ReactNode;     // al costado: «Son S/ 68.86»
 }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+    <div className="grid grid-cols-title-amount items-start gap-4">
       <LineField label="Tipo de cambio" inputMode="decimal" value={input.value} error={error}
         onChange={(e) => input.setValue(e.target.value)} hint={rateHint(side, input.suggestion.date, currency)} />
       {aside && <span className="flex flex-col items-end pt-6 tabular-nums">{aside}</span>}

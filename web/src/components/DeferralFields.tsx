@@ -39,7 +39,7 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
 
   return (
     <>
-      <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${v.on ? "" : "border-b border-border"}`}>
+      <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${v.on ? "" : "border-b border-border"}`}>
         <Icon name="date_range" className="w-9 text-center text-muted-foreground" />
         <span className="flex flex-1 flex-col">
           <span>Repartir en el tiempo</span>
@@ -47,7 +47,7 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
             {kind === "expense" ? "Lo pagas hoy; cuenta como gasto mes a mes" : "Entra hoy; cuenta como ingreso mes a mes"}
           </span>
         </span>
-        <input type="checkbox" role="switch" checked={v.on} onChange={() => set({ on: !v.on })} className="size-[22px] accent-primary" />
+        <input type="checkbox" role="switch" checked={v.on} onChange={() => set({ on: !v.on })} className="size-6 accent-primary" />
       </label>
       {v.on && (
         <div className="flex flex-col gap-3 border-b border-border pb-3">
@@ -80,12 +80,12 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
             {parts ? (
               <>
                 {shown!.map((p) => (
-                  <div key={p.date} className="flex min-h-[30px] items-center justify-between text-[14px] tabular-nums">
+                  <div key={p.date} className="flex min-h-8 items-center justify-between text-body-sm tabular-nums">
                     <span className="text-muted-foreground">{label(p)}</span><span className="font-medium">{money(p.amount)}</span>
                   </div>
                 ))}
                 {parts.length > shown!.length && (
-                  <span className="min-h-[30px] text-[14px] text-muted-foreground">… y {parts.length - shown!.length} más</span>
+                  <span className="min-h-8 text-body-sm text-muted-foreground">… y {parts.length - shown!.length} más</span>
                 )}
               </>
             ) : (
