@@ -3,19 +3,12 @@
 import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { Link, type LinkProps } from "react-router";
 
+import { buttonVariants } from "@/components/Button";
+import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/utils";
 
-const ICON_SIZE = { sm: "text-icon-sm", md: "text-icon-md", lg: "text-icon-lg", xl: "text-icon-xl" } as const;
+export { Icon };
 
-/** Un ícono de Material Symbols. Sin `size` mide 20 px (`icon`, filas y botones); `sm` 16, `md` 24
- * (navegación y Volver), `lg` 32 y `xl` 40 (estado vacío). */
-export function Icon({ name, fill, size, className }: { name: string; fill?: boolean; size?: keyof typeof ICON_SIZE; className?: string }) {
-  return (
-    <span aria-hidden="true" className={cn("icon", size && ICON_SIZE[size], fill && "icon-fill", className)}>
-      {name}
-    </span>
-  );
-}
 
 /** La pantalla de acceso: una columna centrada del ancho de un celular. */
 export function Screen({ children, className }: { children: ReactNode; className?: string }) {
@@ -26,15 +19,14 @@ export function Screen({ children, className }: { children: ReactNode; className
   );
 }
 
-const primary =
-  "flex h-14 w-full items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground transition-opacity disabled:opacity-60";
+const primary = buttonVariants({ variant: "primary" });
 
-/** El botón principal: texto a la izquierda y flecha a la derecha. */
+/** El botón principal: texto a la izquierda y flecha a la derecha (es `Button` con `type="submit"`). */
 export function PrimaryButton({ children, pending, ...props }: ComponentProps<"button"> & { pending?: boolean }) {
   return (
-    <button type="submit" className={primary} disabled={pending || props.disabled} {...props}>
+    <button type="submit" className={primary} aria-busy={pending || undefined} disabled={pending || props.disabled} {...props}>
       <span>{children}</span>
-      <Icon name={pending ? "progress_activity" : "arrow_forward"} className={cn("text-[22px]", pending && "animate-spin")} />
+      <Icon name={pending ? "progress_activity" : "arrow_forward"} size="md" className={cn(pending && "animate-spin")} />
     </button>
   );
 }
@@ -43,7 +35,7 @@ export function PrimaryLink({ children, ...props }: LinkProps) {
   return (
     <Link className={primary} {...props}>
       <span>{children}</span>
-      <Icon name="arrow_forward" className="text-[22px]" />
+      <Icon name="arrow_forward" size="md" />
     </Link>
   );
 }

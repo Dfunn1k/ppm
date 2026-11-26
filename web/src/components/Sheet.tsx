@@ -201,7 +201,7 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
       <div
         role="radiogroup"
         aria-label={label}
-        className="grid gap-1 rounded-md bg-muted p-[3px]"
+        className="grid gap-1 rounded-md bg-muted p-0.5"
         style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
       >
         {options.map((o) => (
@@ -211,7 +211,7 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
             role="radio"
             aria-checked={o.value === value}
             onClick={() => onChange(o.value)}
-            className={`rounded-[8px] font-semibold ${size === "sm" ? "h-9 text-caption" : "h-10"} ${o.value === value ? "bg-selected text-selected-foreground shadow-sm" : ""}`}
+            className={`min-h-control rounded-sm font-semibold ${size === "sm" ? "text-caption" : ""} ${o.value === value ? "bg-selected text-selected-foreground shadow-sm" : ""}`}
           >
             {o.label}
           </button>
