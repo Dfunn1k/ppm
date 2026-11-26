@@ -108,7 +108,7 @@ export function CuentaForm({ kind, base, currencies, banks, lang, submitLabel, p
     });
   });
 
-  const chip = "flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold";
+  const chip = "hit-area flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted";
 
   return (
     <form noValidate onSubmit={submit} className="flex flex-1 flex-col">

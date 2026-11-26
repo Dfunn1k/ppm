@@ -106,7 +106,7 @@ export function NuevaGuardo() {
             <RateField input={rate} currency={currency} />
           )}
           <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
-            className="flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold">
+            className="hit-area flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted">
             <Icon name="event" size="sm" />
             {dateOpen ? `Al ${date.split("-").reverse().join("/")}` : <>Hoy<Icon name="expand_more" size="sm" className="text-muted-foreground" /></>}
           </button>
