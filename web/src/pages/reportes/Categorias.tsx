@@ -8,7 +8,10 @@ import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis
 
 import { type CategoryReport, useCategoryReport } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
+import { catBg } from "@/components/Avatar";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon } from "@/components/ui";
+import { add } from "@/lib/money";
 import { ReportBones } from "@/components/Skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { monthName, monthOnly } from "@/lib/months";
@@ -41,7 +44,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
   const picked = top.filter((g) => marked.includes(g.id));
   const lit = (id: number) => marked.length === 0 || marked.includes(id);
   const centerLabel = picked.length === 0 ? "Total" : picked.length === 1 ? picked[0]!.name.split(" ")[0] : `${picked.length} grupos`;
-  const centerAmount = picked.length === 0 ? r.total : (picked.reduce((s, g) => s + Math.round(Number(g.amount) * 100), 0) / 100).toFixed(2);
+  const centerAmount = picked.length === 0 ? r.total : picked.reduce((s, g) => add(s, g.amount), "0.00");
   const markToggle = (id: number) => setMarked((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
   // Lo que pesa en el total: la barra de cada fila se llena hasta ahí y la dona lo dice al elegir un grupo
   const share = (amount: string | number) => (Number(r.total) ? Math.round((Number(amount) / Number(r.total)) * 100) : 0);
@@ -61,6 +64,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
   const months: MonthRow[] = r.months.map((m, i) => ({
     label: MONTH_SHORT[i]!, month: m.month, total: Number(m.total),
     ...Object.fromEntries(r.groups.map((g, k) => [`g${g.id}`, Number(m.groups[k] ?? 0)])),
+    ...Object.fromEntries(r.groups.map((g, k) => [`s${g.id}`, m.groups[k] ?? "0"])),
   }));
 
   const when = p.year ? `en ${p.year}` : `en ${monthName(p.month).split(" ")[0]!.toLowerCase()}`;
@@ -75,10 +79,10 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
             : "Cuando registres un ingreso, aquí ves de dónde entra la plata."}
         </EmptyState>
         {r.unclassified.count > 0 && (
-          <Link to="/por-clasificar" className="mt-6 flex min-h-11 items-center gap-2 rounded-md bg-attention-soft px-3 text-caption font-semibold text-attention">
-            <Icon name="inbox" className="text-[18px]" />
+          <Link to="/por-clasificar" className="mt-6 flex min-h-control items-center gap-2 rounded-md bg-attention-soft px-3 text-caption font-semibold text-attention">
+            <Icon name="inbox" size="sm" />
             <span className="flex-1">{r.unclassified.count === 1 ? "1 movimiento por clasificar no entra" : `${r.unclassified.count} movimientos por clasificar no entran`}</span>
-            <Icon name="chevron_right" className="text-[18px]" />
+            <Icon name="chevron_right" size="sm" />
           </Link>
         )}
       </main>
@@ -92,7 +96,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
 
       <div className="flex items-center gap-5">
         {expense && top.length > 0 && (
-          <div className="relative size-[148px] flex-none" role="img"
+          <div className="relative size-37 flex-none" role="img"
             aria-label={`Gasto por grupo: ${top.map((g) => `${g.name} ${money(g.amount)}`).join(", ")}`}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -108,7 +112,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
               <span className="text-caption text-muted-foreground">{centerLabel}</span>
-              <span className={`${money(centerAmount).length > 11 ? "text-[12px]" : "text-[15px]"} leading-5 font-semibold tabular-nums`}>
+              <span className={`${money(centerAmount).length > 11 ? "text-caption-sm" : "text-body"} leading-5 font-semibold tabular-nums`}>
                 {money(centerAmount)}
               </span>
               {picked.length > 0 && <span className="text-caption font-semibold tabular-nums">{share(centerAmount)} %</span>}
@@ -117,23 +121,23 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
         )}
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-caption text-muted-foreground">{expense ? "Gastaste" : "Entró"}</span>
-          <span className="font-display text-[30px] leading-[34px] font-extrabold tracking-[-0.02em] tabular-nums">{money(r.total)}</span>
+          <span className="text-amount-display-2">{money(r.total)}</span>
           <Versus now={r.total} before={r.previous} against={vs} />
         </div>
       </div>
 
       {p.year && (
         <section aria-label="Mes a mes" className="mt-5 flex flex-col gap-1.5">
-          <span className="border-b border-border pb-1 text-label text-muted-foreground">Mes a mes</span>
-          <div className="h-[160px]" role="img" aria-label={`${expense ? "Gasto" : "Ingreso"} de cada mes: ${months.map((m) => `${m.month} ${money(m.total)}`).join(", ")}`}>
+          <SectionHeading>Mes a mes</SectionHeading>
+          <div className="h-40" role="img" aria-label={`${expense ? "Gasto" : "Ingreso"} de cada mes: ${months.map((m) => `${m.month} ${money(m.total)}`).join(", ")}`}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={months} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: "var(--border)" }} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
                 <Tooltip cursor={{ fill: "var(--muted)" }} content={({ active, payload }) => {
                   const m = payload?.[0]?.payload as MonthRow | undefined;
                   return <ChartTip active={active && !!m} title={m ? <span className="flex justify-between gap-3"><span>{monthOnly(m.month)}</span><span className="tabular-nums">{money(m.total)}</span></span> : ""}
                     rows={expense && m ? r.groups.filter((g) => Number(m[`g${g.id}`])).map((g) => ({
-                      color: catColor(g.color), label: g.name, value: money(Number(m[`g${g.id}`]).toFixed(2)) })) : []} />;
+                      dot: catBg(g.color), label: g.name, value: money(m[`s${g.id}`]!) })) : []} />;
                 }} />
                 {expense ? r.groups.map((g, k) => (
                   <Bar key={g.id} dataKey={`g${g.id}`} stackId="a" fill={catColor(g.color)} stroke="var(--background)" strokeWidth={2}
@@ -146,19 +150,17 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
       )}
 
       {r.unclassified.count > 0 && (
-        <Link to="/por-clasificar" className="mt-4 flex min-h-11 items-center gap-2 rounded-md bg-attention-soft px-3 text-caption font-semibold text-attention">
-          <Icon name="inbox" className="text-[18px]" />
+        <Link to="/por-clasificar" className="mt-4 flex min-h-control items-center gap-2 rounded-md bg-attention-soft px-3 text-caption font-semibold text-attention">
+          <Icon name="inbox" size="sm" />
           <span className="flex-1">
             {r.unclassified.count === 1 ? "1 movimiento por clasificar no entra" : `${r.unclassified.count} movimientos por clasificar no entran`} ({money(r.unclassified.amount)})
           </span>
-          <Icon name="chevron_right" className="text-[18px]" />
+          <Icon name="chevron_right" size="sm" />
         </Link>
       )}
 
       <section aria-label={expense ? "Por grupo" : "Por categoría"} className="mt-5 flex flex-col">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-          <span>{expense ? "Por grupo" : "Por categoría"}</span><span>vs. {vs}</span>
-        </div>
+        <SectionHeading action={<span className="text-label text-muted-foreground">vs. {vs}</span>}>{expense ? "Por grupo" : "Por categoría"}</SectionHeading>
         {r.groups.map((g) => {
           const isOpen = open.includes(g.id);
           const expandable = g.children.length > 0;
@@ -167,7 +169,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
               <CategoryChip category={g} />
               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <span className="flex justify-between gap-2"><span className="font-semibold">{g.name}</span><span className="text-amount">{money(g.amount)}</span></span>
-                <ShareBar pct={share(g.amount)} color={catColor(g.color)} />
+                <ShareBar pct={share(g.amount)} color={g.color} />
                 <span className="flex justify-end text-caption text-muted-foreground tabular-nums">
                   <span className="sr-only">Cambio: </span><Trend now={g.amount} before={g.previous} />
                 </span>
@@ -178,11 +180,11 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
             <div key={g.id} className={`flex flex-col border-b border-border ${marked.includes(g.id) ? "bg-card" : ""}`}>
               {expandable ? (
                 <button type="button" aria-expanded={isOpen} onClick={() => toggle(g)} className="flex min-h-16 items-center gap-3 text-left">
-                  {row}<Icon name={isOpen ? "expand_less" : "expand_more"} className="text-[22px] text-muted-foreground" />
+                  {row}<Icon name={isOpen ? "expand_less" : "expand_more"} size="md" className="text-muted-foreground" />
                 </button>
               ) : (
                 <Link to={moves(g.id, g.name)} className="flex min-h-16 items-center gap-3">
-                  {row}<Icon name="chevron_right" className="text-[20px] text-muted-foreground" />
+                  {row}<Icon name="chevron_right" className="text-muted-foreground" />
                 </Link>
               )}
               {expandable && isOpen && (
@@ -200,7 +202,7 @@ function CategoryReportView({ kind, p }: { kind: "expense" | "income"; p: Return
                         <span className="font-medium">{money(k.amount)}</span>
                         <span className="text-caption text-muted-foreground">{delta(k.amount, k.previous)}</span>
                       </span>
-                      <Icon name="chevron_right" className="text-[20px] text-muted-foreground" />
+                      <Icon name="chevron_right" className="text-muted-foreground" />
                     </Link>
                   ))}
                 </div>

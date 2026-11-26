@@ -7,7 +7,10 @@ import { useState } from "react";
 import { CartesianGrid, Layer, Line, LineChart, Rectangle, ResponsiveContainer, Sankey, Tooltip, XAxis, YAxis } from "recharts";
 
 import { type FlowReport, useFlowReport } from "@/api/hooks";
+import { catBg } from "@/components/Avatar";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon } from "@/components/ui";
+import { isNegative, subtract } from "@/lib/money";
 import { monthName } from "@/lib/months";
 
 import { ChartTip, MONTH_SHORT, PeriodBar, ReportHeader, catColor, useMoney, usePeriod } from "./common";
@@ -16,7 +19,7 @@ import { todayISO } from "@/lib/dates";
 import { TuPlata } from "./TuPlata";
 import { EmptyState } from "@/components/EmptyState";
 
-type Node = FlowReport["uses"][number] & { side: "in" | "out"; fill: string };
+type Node = FlowReport["uses"][number] & { side: "in" | "out"; fill: string; dot?: string };
 
 /** En el Sankey va el nombre corto (el tooltip dice el completo): «Salario y facturas» → «Salario». */
 function short(name: string) {
@@ -26,6 +29,12 @@ function short(name: string) {
 function fillOf(n: FlowReport["uses"][number], side: "in" | "out") {
   if (n.id === null) return n.name === "Patrimonio" ? "var(--trigo)" : "var(--muted-foreground)";
   return side === "in" ? catColor(10) : catColor(n.color);
+}
+
+/** El mismo color como clase, para el punto del tooltip. */
+function dotOf(n: FlowReport["uses"][number], side: "in" | "out") {
+  if (n.id === null) return n.name === "Patrimonio" ? "bg-trigo" : "bg-muted-foreground";
+  return side === "in" ? catBg(10) : catBg(n.color);
 }
 
 export function ReporteFlujo() {
@@ -38,8 +47,8 @@ export function ReporteFlujo() {
   if (report.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{report.error.message}</ErrorAlert></main>;
   const r = report.data;
   const nodes: Node[] = [
-    ...r.sources.map((n) => ({ ...n, side: "in" as const, fill: fillOf(n, "in") })),
-    ...r.uses.map((n) => ({ ...n, side: "out" as const, fill: fillOf(n, "out") })),
+    ...r.sources.map((n) => ({ ...n, side: "in" as const, fill: fillOf(n, "in"), dot: dotOf(n, "in") })),
+    ...r.uses.map((n) => ({ ...n, side: "out" as const, fill: fillOf(n, "out"), dot: dotOf(n, "out") })),
   ];
   const inTotal = r.sources.reduce((a, n) => a + Number(n.amount), 0);
   // Cada fuente reparte su plata entre los destinos en la proporción de cada destino
@@ -48,7 +57,8 @@ export function ReporteFlujo() {
   }))).filter((l) => l.value > 0);
   const savings = r.savings.map((m) => ({ ...m, label: MONTH_SHORT[Number(m.month.slice(5, 7)) - 1], pct: m.percent }));
   const negative = Number(r.saved) < 0;
-  const plata = Number(r.cash.end) - Number(r.cash.start);
+  const plata = subtract(r.cash.end, r.cash.start);
+  const plataUp = !isNegative(plata);
 
   if (links.length === 0) {
     return (
@@ -70,22 +80,22 @@ export function ReporteFlujo() {
       <PeriodBar p={p} />
 
       <span className="text-caption text-muted-foreground">{negative ? "Bajó tu patrimonio" : "Creció tu patrimonio"}</span>
-      <span className="font-display text-[34px] leading-[38px] font-extrabold tracking-[-0.02em] tabular-nums">{money(String(Math.abs(Number(r.saved)).toFixed(2)))}</span>
+      <span className="text-amount-display-2">{money(r.saved.replace("-", ""))}</span>
       <span className="mt-0.5 text-caption text-muted-foreground tabular-nums">
         {Number(r.income) > 0 ? `${Math.round((Number(r.saved) / Number(r.income)) * 100)} % de ${money(r.income)} que entraron; ` : "No entró nada; "}gastaste {money(r.expense)}
       </span>
       <a href="#tu-plata" className="mt-2.5 flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5">
-        <Icon name="account_balance" className="text-[20px]" />
+        <Icon name="account_balance" />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[14px] leading-5 font-semibold tabular-nums">Tu plata en cuentas {plata >= 0 ? "subió" : "bajó"} {money(Math.abs(plata).toFixed(2))}</span>
+          <span className="text-body-sm font-semibold tabular-nums">Tu plata en cuentas {plataUp ? "subió" : "bajó"} {money(plata.replace("-", ""))}</span>
           <span className="text-caption text-muted-foreground">Mira abajo por qué no es lo mismo</span>
         </span>
-        <Icon name="arrow_downward" className="text-[20px]" />
+        <Icon name="arrow_downward" />
       </a>
 
       <section aria-label="De dónde entró y a dónde fue" className="mt-5 flex flex-col gap-1.5">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Entró</span><span>{negative ? "Gastaste" : "Gastaste y te quedó"}</span></div>
-          <div className="h-[320px]" role="img"
+        <SectionHeading action={<span className="text-label text-muted-foreground">{negative ? "Gastaste" : "Gastaste y te quedó"}</span>}>Entró</SectionHeading>
+          <div className="h-80" role="img"
             aria-label={`Entró ${money(r.income)}: ${r.sources.map((n) => `${n.name} ${money(n.amount)}`).join(", ")}. Fue a: ${r.uses.map((n) => `${n.name} ${money(n.amount)}`).join(", ")}`}>
             <ResponsiveContainer width="100%" height="100%">
               <Sankey data={{ nodes, links }} nodeWidth={8} nodePadding={24} iterations={0} sort={false}
@@ -96,10 +106,10 @@ export function ReporteFlujo() {
                   const left = n.side === "in";
                   const mid = y + height / 2;
                   return (
-                    <Layer key={`n${index}`} onClick={left ? undefined : () => setSel((s) => (s === index ? null : index))} style={{ cursor: left ? "default" : "pointer" }}>
+                    <Layer key={`n${index}`} onClick={left ? undefined : () => setSel((s) => (s === index ? null : index))} className={left ? "cursor-default" : "cursor-pointer"}>
                       <Rectangle x={x} y={y} width={width} height={Math.max(height, 2)} radius={2} fill={n.fill} />
                       <text x={left ? x - 6 : x + width + 6} y={mid - 2} textAnchor={left ? "end" : "start"} fontSize={12} fontWeight={600} fill="var(--foreground)">{short(n.name)}</text>
-                      <text x={left ? x - 6 : x + width + 6} y={mid + 12} textAnchor={left ? "end" : "start"} fontSize={11} fill="var(--muted-foreground)">{money(n.amount)}</text>
+                      <text x={left ? x - 6 : x + width + 6} y={mid + 12} textAnchor={left ? "end" : "start"} fontSize={12} fill="var(--muted-foreground)">{money(n.amount)}</text>
                     </Layer>
                   );
                 }}
@@ -122,10 +132,10 @@ export function ReporteFlujo() {
                   if (!entry || entry.value == null || !link) return null;
                   if (link.source && link.target) {
                     return <ChartTip active={active} title={`${link.source.name} → ${link.target.name}`}
-                      rows={[{ color: link.target.fill, label: "Plata", value: money(Number(entry.value).toFixed(2)) }]} />;
+                      rows={[{ dot: link.target.dot, label: "Plata", value: money(Number(entry.value)) }]} />;
                   }
                   const n = link as unknown as Node;
-                  return <ChartTip active={active} rows={[{ color: n.fill, label: n.name, value: money(n.amount) }]} />;
+                  return <ChartTip active={active} rows={[{ dot: n.dot, label: n.name, value: money(n.amount) }]} />;
                 }} />
               </Sankey>
             </ResponsiveContainer>
@@ -136,18 +146,18 @@ export function ReporteFlujo() {
       <TuPlata cash={r.cash} period={p.period} year={p.year} today={todayISO()} />
 
       {savings.some((m) => m.pct !== null) && <section aria-label="Cuánto creció tu patrimonio" className="mt-6 flex flex-col gap-1.5">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground"><span>Cuánto creció tu patrimonio</span><span>12 meses</span></div>
-        <div className="h-[170px]" role="img" aria-label={`Lo que te quedó de lo que entró: ${savings.map((m) => `${monthName(m.month)} ${m.pct ?? "sin ingresos"}${m.pct === null ? "" : " %"}`).join(", ")}`}>
+        <SectionHeading action={<span className="text-label text-muted-foreground">12 meses</span>}>Cuánto creció tu patrimonio</SectionHeading>
+        <div className="h-42" role="img" aria-label={`Lo que te quedó de lo que entró: ${savings.map((m) => `${monthName(m.month)} ${m.pct ?? "sin ingresos"}${m.pct === null ? "" : " %"}`).join(", ")}`}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={savings} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
               <CartesianGrid vertical={false} stroke="var(--border)" />
-              <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v: number) => `${v}%`}
+              <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
+              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} tickFormatter={(v: number) => `${v}%`}
                 domain={[(min: number) => Math.min(0, Math.floor(min / 10) * 10), (max: number) => Math.max(80, Math.ceil(max / 10) * 10)]} />
               <Tooltip cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "3 3" }} content={({ active, payload }) => {
                 const m = payload?.[0]?.payload as (typeof savings)[number] | undefined;
                 return <ChartTip active={active && !!m} title={m ? monthName(m.month) : ""} rows={m ? [
-                  { color: "var(--trigo)", label: "Te quedó", value: m.pct === null ? "—" : `${m.pct} %` },
+                  { dot: "bg-trigo", label: "Te quedó", value: m.pct === null ? "—" : `${m.pct} %` },
                   { label: "Entró", value: money(m.income) }, { label: "Gastaste", value: money(m.expense) }] : []} />;
               }} />
               <Line type="monotone" dataKey="pct" stroke="var(--trigo)" strokeWidth={2} connectNulls={false} isAnimationActive={false}

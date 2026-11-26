@@ -7,9 +7,12 @@ import { Link } from "react-router";
 import { useTagReport } from "@/api/hooks";
 import { EmptyState } from "@/components/EmptyState";
 import { ReportBones } from "@/components/Skeleton";
-import { tagColor } from "@/components/Tags";
+import { catBg } from "@/components/Avatar";
+import { ProgressBar } from "@/components/ProgressBar";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { monthName } from "@/lib/months";
+import { cn } from "@/lib/utils";
 
 import { PeriodBar, ReportHeader, useMoney, usePeriod } from "./common";
 
@@ -42,37 +45,35 @@ function TagReportView({ p }: { p: ReturnType<typeof usePeriod> }) {
       ) : (
         <>
           <span className="text-caption text-muted-foreground">Gastaste con etiqueta</span>
-          <span className="font-display text-[30px] leading-[34px] font-extrabold tracking-[-0.02em] tabular-nums">{money(r.total)}</span>
+          <span className="text-amount-display-2">{money(r.total)}</span>
           <section aria-label="Por etiqueta" className="mt-5 flex flex-col">
-            <span className="border-b border-border pb-1 text-label text-muted-foreground">Por etiqueta</span>
+            <SectionHeading>Por etiqueta</SectionHeading>
             {r.tags.map((t) => {
               const isOpen = open.includes(t.id);
               const moves = `/movimientos?mes=${p.month}&etiqueta=${t.id}`;
               return (
                 <div key={t.id} className="flex flex-col border-b border-border">
                   <button type="button" aria-expanded={isOpen} onClick={() => toggle(t.id)} className="flex min-h-16 items-center gap-3 text-left">
-                    <span aria-hidden="true" className="grid size-9 flex-none place-items-center rounded-full" style={{ background: tagColor(t.color), color: "var(--on-category)" }}>
-                      <Icon name="sell" className="text-[18px]" />
+                    <span aria-hidden="true" className={cn("grid size-9 flex-none place-items-center rounded-full text-on-category", catBg(t.color))}>
+                      <Icon name="sell" size="sm" />
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <span className="flex justify-between gap-2"><span className="font-semibold">{t.name}</span><span className="text-amount">{money(t.amount)}</span></span>
-                      <span aria-hidden="true" className="block h-1.5 overflow-hidden rounded-full bg-muted">
-                        <span className="block h-1.5 rounded-full" style={{ width: `${Math.max(0, (Number(t.amount) / max) * 100)}%`, background: tagColor(t.color) }} />
-                      </span>
+                      <ProgressBar value={Math.max(0, Number(t.amount))} max={max} tone="category" color={t.color} />
                       <span className="text-caption text-muted-foreground tabular-nums">{t.moves === 1 ? "1 movimiento" : `${t.moves} movimientos`}</span>
                     </span>
-                    <Icon name={isOpen ? "expand_less" : "expand_more"} className="text-[22px] text-muted-foreground" />
+                    <Icon name={isOpen ? "expand_less" : "expand_more"} size="md" className="text-muted-foreground" />
                   </button>
                   {isOpen && (
                     <div className="flex flex-col pb-2 pl-12">
                       {t.categories.map((k) => (
-                        <div key={k.id} className="flex min-h-11 items-center justify-between gap-2">
+                        <div key={k.id} className="flex min-h-control items-center justify-between gap-2">
                           <span className="truncate">{k.name}</span>
                           <span className="tabular-nums">{money(k.amount)}</span>
                         </div>
                       ))}
-                      <Link to={moves} className="flex min-h-11 items-center gap-1 font-semibold">
-                        Ver sus movimientos<Icon name="chevron_right" className="text-[20px]" />
+                      <Link to={moves} className="flex min-h-control items-center gap-1 font-semibold">
+                        Ver sus movimientos<Icon name="chevron_right" />
                       </Link>
                     </div>
                   )}

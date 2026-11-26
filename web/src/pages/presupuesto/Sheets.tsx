@@ -3,12 +3,13 @@
 import { type FormEvent, useState } from "react";
 
 import { type BudgetMonth, type BudgetPost, useAssign, useBudget } from "@/api/hooks";
+import { Button } from "@/components/Button";
 import { Sheet, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField } from "@/components/ui";
+import { ErrorAlert, LineField } from "@/components/ui";
 import { add, isNegative, isZero, parseAmount, subtract } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
 
-import { abs, addMonth, PILL_PRIMARY, useMoney } from "./common";
+import { abs, addMonth, useMoney } from "./common";
 
 const POR_ASIGNAR = "";
 
@@ -109,11 +110,7 @@ function AssignForm({ budget: b, month, target, onDone }: { budget: BudgetMonth;
         </span>
       )}
       {error && <ErrorAlert>{error}</ErrorAlert>}
-      <button type="submit" disabled={assign.isPending}
-        className={PILL_PRIMARY}>
-        {assign.isPending && <Icon name="progress_activity" className="animate-spin" />}
-        {target.fixed === "to" || target.from === null ? "Asignar" : "Mover"}
-      </button>
+      <Button type="submit" pending={assign.isPending}>{target.fixed === "to" || target.from === null ? "Asignar" : "Mover"}</Button>
     </form>
   );
 }
@@ -163,10 +160,7 @@ function CoverForm({ budget: b, month, post, onDone }: { budget: BudgetMonth; mo
         ))}
       </div>
       {error && <div className="mt-3"><ErrorAlert>{error}</ErrorAlert></div>}
-      <button type="button" onClick={cover} disabled={assign.isPending}
-        className={`mt-4 ${PILL_PRIMARY}`}>
-        {assign.isPending && <Icon name="progress_activity" className="animate-spin" />}Cubrir {money(need)}
-      </button>
+      <Button onClick={cover} pending={assign.isPending} className="mt-4">Cubrir {money(need)}</Button>
     </div>
   );
 }

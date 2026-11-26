@@ -7,8 +7,10 @@ import { Link } from "react-router";
 
 import { type CashLine, type FlowReport, useFlowMoves } from "@/api/hooks";
 import { Sheet } from "@/components/Sheet";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
+import { isNegative, isZero, subtract } from "@/lib/money";
 import { monthName, monthOnly } from "@/lib/months";
 import { cn } from "@/lib/utils";
 
@@ -68,8 +70,8 @@ function nextDay(iso: string) {
 export function TuPlata({ cash, period, year, today }: { cash: Cash; period: string; year: boolean; today: string }) {
   const money = useMoney();
   const [open, setOpen] = useState<CashLine | null>(null);
-  const signed = (v: string) => `${Number(v) > 0 ? "+" : "−"} ${money(String(Math.abs(Number(v)).toFixed(2)))}`;
-  const rose = Number(cash.end) - Number(cash.start);
+  const signed = (v: string) => `${Number(v) > 0 ? "+" : "−"} ${money(v.replace("-", ""))}`;
+  const rose = subtract(cash.end, cash.start);
   const note = (l: CashLine) => {
     if (l.kind === "expense" && l.other && Number(l.other) > 0)
       return `Otros ${money(l.other)} se pagaron con tarjeta u otras cuentas: salen de tu plata cuando los pagas`;
@@ -81,9 +83,9 @@ export function TuPlata({ cash, period, year, today }: { cash: Cash; period: str
   return (
     <>
       <section id="tu-plata" aria-label="Tu plata" className="mt-6 flex scroll-mt-4 flex-col">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-          <span>Tu plata en {year ? period : monthOnly(period).toLowerCase()}</span><span>Efectivo y bancos</span>
-        </div>
+        <SectionHeading action={<span className="text-label text-muted-foreground">Efectivo y bancos</span>}>
+          Tu plata en {year ? period : monthOnly(period).toLowerCase()}
+        </SectionHeading>
         <div className="flex items-baseline justify-between gap-3 py-2.5">
           <span>Empezaste el {dayWords(nextDay(cash.start_date))} con</span>
           <span className="font-semibold tabular-nums">{money(cash.start)}</span>
@@ -92,24 +94,24 @@ export function TuPlata({ cash, period, year, today }: { cash: Cash; period: str
           const sub = note(l);
           const body = (
             <>
-              <Icon name={l.kind === "receivable" && l.direction === "out" ? "person_add" : LINES[l.kind].icon} className="text-[22px] text-muted-foreground" />
+              <Icon name={l.kind === "receivable" && l.direction === "out" ? "person_add" : LINES[l.kind].icon} size="md" className="text-muted-foreground" />
               <span className="min-w-0">{lineLabel(l)}</span>
               <span className={cn("font-medium tabular-nums", Number(l.amount) > 0 && "text-income")}>{signed(l.amount)}</span>
-              {l.kind === "fx" ? <span /> : <Icon name="chevron_right" className="text-[18px] text-muted-foreground" />}
+              {l.kind === "fx" ? <span /> : <Icon name="chevron_right" size="sm" className="text-muted-foreground" />}
               {sub && <span className="col-start-2 col-end-4 -mt-0.5 text-caption text-muted-foreground">{sub}</span>}
             </>
           );
-          const cls = "-mx-2 grid min-h-[52px] grid-cols-[28px_1fr_auto_18px] items-center gap-x-2.5 rounded-xl border-b border-border px-2 py-1.5 text-left";
+          const cls = "row-bleed grid min-h-row-sm grid-cols-cash-line items-center gap-x-2.5 rounded-xl border-b border-border py-1.5 text-left";
           return l.kind === "fx"
             ? <div key={`${l.kind}-${l.direction}`} className={cls}>{body}</div>
             : <button key={`${l.kind}-${l.direction}`} type="button" onClick={() => setOpen(l)} className={cn(cls, "hover:bg-muted/60")}>{body}</button>;
         })}
         <div className="flex items-baseline justify-between gap-3 border-b-2 border-foreground py-2.5">
           <span className="font-semibold">{cash.end_date === today ? `Hoy, ${dayWords(cash.end_date)}, tienes` : `Terminaste el ${dayWords(cash.end_date)} con`}</span>
-          <span className="font-display text-[24px] leading-[30px] font-extrabold tracking-[-0.02em] tabular-nums">{money(cash.end)}</span>
+          <span className="font-display text-amount-xl font-extrabold tabular-nums">{money(cash.end)}</span>
         </div>
         <span className="mt-1.5 text-caption text-muted-foreground">
-          {rose === 0 ? "Quedó igual." : `${rose > 0 ? "Subió" : "Bajó"} ${money(Math.abs(rose).toFixed(2))}.`} Es lo que suman tus cuentas de efectivo y bancos, igual que en el Inicio.
+          {isZero(rose) ? "Quedó igual." : `${isNegative(rose) ? "Bajó" : "Subió"} ${money(rose.replace("-", ""))}.`} Es lo que suman tus cuentas de efectivo y bancos, igual que en el Inicio.
           {cash.lines.some((l) => l.kind !== "fx") && " Toca una línea para ver sus movimientos."}
         </span>
       </section>
@@ -135,15 +137,15 @@ function LineMoves({ period, line }: { period: string; line: CashLine }) {
       <span className="text-caption text-muted-foreground">{n === 1 ? "1 movimiento" : `${n} movimientos`}{year && ", mes por mes"}</span>
       <ul className="mt-1 flex flex-col">
         {moves.data.map((m) => {
-          const amount = money(String(Math.abs(Number(m.amount)).toFixed(2)));
+          const amount = money(m.amount.replace("-", ""));
           return m.move_id === null ? (
-            <li key={m.ref} className="flex min-h-[52px] items-center justify-between gap-3 border-b border-border">
+            <li key={m.ref} className="flex min-h-row-sm items-center justify-between gap-3 border-b border-border">
               <span className="flex flex-col"><span className="font-semibold">{monthName(m.ref)}</span>
                 <span className="text-caption text-muted-foreground">{m.count === 1 ? "1 movimiento" : `${m.count} movimientos`}</span></span>
               <span className="font-medium tabular-nums">{amount}</span>
             </li>
           ) : (
-            <li key={m.move_id} className="relative flex min-h-[56px] items-center gap-3 border-b border-border">
+            <li key={m.move_id} className="relative flex min-h-row-option items-center gap-3 border-b border-border">
               <span className="flex min-w-0 flex-1 flex-col">
                 <Link to={`/movimientos/${m.move_id}`} className="truncate font-semibold after:absolute after:inset-0">{m.ref}</Link>
                 <span className="text-caption text-muted-foreground">{shortDate(m.date)}{m.accounts && `, ${m.accounts}`}</span>
@@ -155,7 +157,7 @@ function LineMoves({ period, line }: { period: string; line: CashLine }) {
       </ul>
       <div className="flex items-baseline justify-between py-3">
         <span className="font-semibold">Total</span>
-        <span className="font-semibold tabular-nums">{money(String(Math.abs(moves.data.reduce((a, m) => a + Number(m.amount), 0)).toFixed(2)))}</span>
+        <span className="font-semibold tabular-nums">{money(Math.abs(moves.data.reduce((a, m) => a + Number(m.amount), 0)))}</span>
       </div>
     </div>
   );
@@ -166,7 +168,7 @@ function Why({ cash }: { cash: Cash }) {
   const money = useMoney();
   const [sel, setSel] = useState<number | null>(null);
   if (cash.diffs.length === 0) return null;
-  const abs = (v: number) => money(Math.abs(v).toFixed(2));
+  const abs = (v: number) => money(Math.abs(v));
   const plata = Number(cash.end) - Number(cash.start);
   const pat = Number(cash.patrimony);
   let cum = plata;
@@ -201,22 +203,22 @@ function Why({ cash }: { cash: Cash }) {
   };
   const diff = pat - plata;
   const rows = [
-    { label: plata >= 0 ? "Tu plata en cuentas subió" : "Tu plata en cuentas bajó", amount: abs(plata), sub: "Efectivo y bancos", color: "var(--cat-8)", tone: "", details: [] as { name: string; text: string }[], strong: false },
+    { label: plata >= 0 ? "Tu plata en cuentas subió" : "Tu plata en cuentas bajó", amount: abs(plata), sub: "Efectivo y bancos", color: "bg-cat-8", tone: "", details: [] as { name: string; text: string }[], strong: false },
     ...cash.diffs.map((d) => {
       const v = Number(d.amount);
       return {
         label: DIFFS[d.kind][v > 0 ? 0 : 1], amount: `${v > 0 ? "+" : "−"} ${abs(v)}`, sub: sub(d),
-        color: v > 0 ? "var(--income)" : "var(--expense)", tone: v > 0 ? "text-income" : "text-expense",
+        color: v > 0 ? "bg-income" : "bg-expense", tone: v > 0 ? "text-income" : "text-expense",
         details: d.details.map((x) => ({ name: x.name, text: detail(d, Number(x.amount)) })), strong: false,
       };
     }),
-    { label: pat >= 0 ? "Creció tu patrimonio" : "Bajó tu patrimonio", amount: abs(pat), sub: "Lo que entró menos lo que gastaste", color: "var(--foreground)", tone: "", details: [], strong: true },
+    { label: pat >= 0 ? "Creció tu patrimonio" : "Bajó tu patrimonio", amount: abs(pat), sub: "Lo que entró menos lo que gastaste", color: "bg-foreground", tone: "", details: [], strong: true },
   ];
 
   return (
     <section aria-label="Por qué no subió lo mismo" className="mt-6 flex flex-col">
-      <div className="border-b border-border pb-1 text-label text-muted-foreground">¿Por qué no subió lo mismo?</div>
-      <p className="mt-2.5 mb-1 text-[14px] leading-5 text-muted-foreground">
+      <SectionHeading>¿Por qué no subió lo mismo?</SectionHeading>
+      <p className="mt-2.5 mb-1 text-body-sm text-muted-foreground">
         {diff >= 0
           ? `La diferencia, ${abs(diff)}, no se perdió: es tuya, solo que no está en tus cuentas.`
           : `Tu plata subió ${abs(diff)} más que tu patrimonio: parte es plata que todavía debes.`}
@@ -232,12 +234,12 @@ function Why({ cash }: { cash: Cash }) {
                 <span className={cn("font-semibold tabular-nums", r.tone)}>{r.amount}</span>
               </span>
               <span className="block h-2.5 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
-                <span className="block h-2.5 rounded-xs" style={{ ...bar(spans[i]!), background: r.color }} />
+                <span className={cn("block h-2.5 rounded-xs", r.color)} style={bar(spans[i]!)} />
               </span>
               {r.sub && <span className="text-caption text-muted-foreground">{r.sub}</span>}
             </>
           );
-          const cls = cn("-mx-2 flex w-[calc(100%+16px)] flex-col gap-1 rounded-xl border-b border-border px-2 py-2.5 text-left",
+          const cls = cn("row-bleed flex flex-col gap-1 rounded-xl border-b border-border py-2.5 text-left",
             sel !== null && sel !== i && "opacity-45", sel === i && "bg-muted");
           return (
             <li key={i}>
@@ -247,7 +249,7 @@ function Why({ cash }: { cash: Cash }) {
               {opened && (
                 <ul className="my-1 mb-2 flex flex-col gap-2 rounded-lg border border-border bg-card px-3 py-2.5">
                   {r.details.map((x) => (
-                    <li key={x.name} className="flex flex-col"><span className="text-[14px] font-semibold">{x.name}</span>
+                    <li key={x.name} className="flex flex-col"><span className="text-body-sm font-semibold">{x.name}</span>
                       <span className="text-caption text-muted-foreground">{x.text}</span></li>
                   ))}
                 </ul>
