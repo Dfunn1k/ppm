@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 12 terminado; esperando el visto bueno de Dany).
+- **Fase actual:** 4, migración por lotes (lote 13 terminado; esperando el visto bueno de Dany).
 - **Rama:** `frontend/fase-4-lote-6`
 - **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
 
@@ -91,17 +91,20 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 11: Más y sus ajustes (Mi cuenta, Exportar, Eliminar cuenta, Tu Inicio, Apariencia, Atajos, Categorías y Nueva categoría, Etiquetas, Cierre, Monedas y Tipo de cambio). PR #143, aprobado por Dany (26-nov; el CI no corrió hasta que el repo pasó a público, porque se acabaron los minutos de Actions del mes).
   - 145 valores escritos a mano → 0; lo que se toca < 44 px: 5 a 82 por pantalla → 0; axe sin violaciones; foco tapado 2 → 0.
   - La grilla de íconos de Nueva categoría pasa de 7 columnas fijas a las que quepan, ninguna de menos de 44 px (6 en el celular). Tu Inicio usa el mismo interruptor que el presupuesto. `formatCount` en money.ts para contar filas. Utilidades nuevas `grid-cols-rates` y `grid-cols-icons`.
-- [x] Lote 12: acceso (la portada de la computadora, Entrar, Crear cuenta, Recuperar, Restablecer, Unir Google) y la bienvenida (3 pasos). PR #144.
+- [x] Lote 12: acceso (la portada de la computadora, Entrar, Crear cuenta, Recuperar, Restablecer, Unir Google) y la bienvenida (3 pasos). PR #144, aprobado por Dany (26-nov).
   - 47 valores escritos a mano → 0; lo que se toca < 44 px: 2 a 6 por pantalla → 0 (los enlaces «Crea tu cuenta», «Inicia sesión», «¿Olvidaste tu contraseña?», Privacidad y el campo de efectivo); axe sin violaciones; foco sin tapar.
   - El panel de «Pan para mayo» crece con la ventana igual que antes, ahora con utilidades con nombre (`text-poster`, `mark-mayo`, `px-access`, `gap-access`, `pt-access`, `text-access-lead`, `grid-cols-access`). La vista previa de la bienvenida usa amount-display, como el Inicio.
+- [x] Lote 13: Importar extracto (los 3 pasos) y el detalle de un extracto importado. PR #145.
+  - 29 valores escritos a mano → 0; lo que se toca < 44 px: 4 → 0 (la pastilla de cada columna del archivo); axe sin violaciones; foco sin tapar.
+  - «El saldo cuadra» usa income-soft en vez de un color-mix; Deshacer la importación usa el botón de la app (secundario y de borrar). Los íconos recuperan el tamaño que pedían (el de subir archivo, 32 px), que antes no se aplicaba.
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
-- [ ] Después: importar (lote 13); lo que queda de cuentas y tarjetas (lote 14: Conciliar, CuentaForm, Nueva, Guardo, CuotasAntes, NuevaTarjeta, EditarBanco); adjuntos (lote 15); las piezas compartidas (lote 16: riel, barra, hojas, calendario, categorías, etiquetas y las demás)
+- [ ] Después: lo que queda de cuentas y tarjetas (lote 14: Conciliar, CuentaForm, Nueva, Guardo, CuotasAntes, NuevaTarjeta, EditarBanco); adjuntos (lote 15); las piezas compartidas (lote 16: riel, barra, hojas, calendario, categorías, etiquetas y las demás)
 
 ### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-Dany revisa el lote 12 (PR #144) y da su visto bueno. Con su OK: lote 13, importar, en la rama `frontend/fase-4-lote-13`.
+Dany revisa el lote 13 (PR #145) y da su visto bueno. Con su OK: lote 14, lo que queda de cuentas y tarjetas, en la rama `frontend/fase-4-lote-14`.
 
 ## Decisiones de Dany
 
