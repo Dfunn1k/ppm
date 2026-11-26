@@ -5,8 +5,8 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 ## Dónde estamos
 
 - **Fase actual:** 5, QA final (en curso).
-- **Rama:** `frontend/fase-5-limpieza`
-- **Último commit:** ver `git log -1 frontend/fase-5-limpieza`
+- **Rama:** `frontend/fase-5-lighthouse`
+- **Último commit:** ver `git log -1 frontend/fase-5-lighthouse`
 
 ## Checklist
 
@@ -116,14 +116,19 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] La persona de muestra trae un estado de cuenta de tarjeta y un extracto de banco importados (`capturas/archivos.ts`): Conciliar («tarjeta-estado»), Extracto y Por clasificar con movimientos entran a las capturas, a axe y al teclado (72 pantallas).
 - [x] Toda la matriz, claro y oscuro (26-nov): scroll horizontal 0; lo que se toca < 44 px 0; cortes 0; axe 0; foco tapado o sin verse 0.
   - Con los datos nuevos aparecieron 4 y se arreglaron sin cambiar cómo se ve: el nombre en las filas de Por clasificar (22 px de alto, ahora con `hit-area`), los dos botones de «La cuota del banco es distinta» a 280 px (ahora bajan de línea), «Por clasificar» cortado sin «…» en Inicio a 1024 px, y en Por clasificar de escritorio el botón fijo tapaba la categoría con el foco (`scroll-pb-32`).
-- [ ] Piezas hechas a mano en vez del molde (recuento del 26-nov): 10 botones principales, 18 de contorno, 6 de borrar y 8 «Cancelar»; 13 pastillas para elegir; ~33 títulos de sección; 15 cabeceras con «Volver»; 7 buscadores; ~45 filas. Dany decide el alcance.
-- [ ] Lighthouse (necesita permiso de Dany).
+- [x] PR #150 (limpieza y QA con datos), aprobado por Dany (26-nov).
+- [ ] Piezas hechas a mano en vez del molde (recuento del 26-nov): 10 botones principales, 18 de contorno, 6 de borrar y 8 «Cancelar»; 13 pastillas para elegir; ~33 títulos de sección; 15 cabeceras con «Volver»; 7 buscadores; ~45 filas. Dany eligió (26-nov) la opción 1: botones y pastillas ahora, con boceto (Caso18Botones en el lienzo); títulos, cabeceras, buscadores y filas quedan para el informe final.
+- [x] Lighthouse 12.8.2 (permiso de Dany, 26-nov), contra la web construida (`vite preview`) en Docker, 11 pantallas, celular y escritorio, con la persona de muestra:
+  - Accesibilidad 100 en todas. Buenas prácticas 79: solo por no tener HTTPS en local (en producción lo pone Caddy).
+  - Velocidad: escritorio 99–100; celular 82–94 (Lighthouse simula un 4G lento: LCP de 2.7 a 4.7 s; el más lento es Reportes).
+  - Encontró saltos de la página al cargar (CLS 0.41 en Inicio y 0.54 en Por clasificar de escritorio; lo bueno es < 0.1). Arreglados sin cambiar cómo se ve: Inicio espera Pendientes y el presupuesto junto con lo demás; el panel de Por clasificar tiene su ancho desde el principio (`w-full`); y cada ícono tiene su cuadrado reservado mientras llega la fuente (`.icon` en la capa base). Después: CLS 0 a 0.04 en todas.
+  - Cómo se corre: ver «Lighthouse» abajo.
 - [ ] La prueba en un iPhone (Dany).
 - [ ] `docs/frontend/INFORME-FINAL.md` y la skill `ppm-interfaz` con lo aprendido.
 
 ## Siguiente paso
 
-Dany elige el alcance de las piezas hechas a mano (1: botones y pastillas, con boceto; 2: todo; 3: solo anotarlo) y si da permiso para Lighthouse. Luego el informe final.
+Dany revisa el PR de Lighthouse y el boceto Caso18Botones (botones: lo que ya dice el sistema; pastillas: A, B o C). Con su elección, el PR de botones y pastillas; luego el informe final.
 
 ## Decisiones de Dany
 
@@ -181,3 +186,12 @@ docker compose exec web corepack pnpm typecheck
 docker compose exec web corepack pnpm test
 docker compose run --rm e2e
 ```
+
+## Lighthouse
+
+No se agrega al proyecto: corre en el contenedor de Playwright con `npx lighthouse@12.8.2`, contra la web construida.
+1. `docker compose exec web corepack pnpm build` y la persona de muestra (`pnpm capturas -g preparar`).
+2. Una red aparte para que la web construida se llame `web` (Vite solo acepta ese nombre): `docker network create ppm_lh`, `docker network connect --alias api ppm_lh ppm-api-1` y `vite preview --host 0.0.0.0 --port 4173` en un contenedor de Node en esa red con el alias `web`.
+3. Lighthouse con la cookie de `capturas-salida/muestra.sesion.json` en `--extra-headers`, `--preset=desktop` para escritorio, y Chrome de Playwright (`CHROME_PATH`), con `--headless=new --no-sandbox --disable-dev-shm-usage`.
+Ojo: cada `docker compose run e2e` borra los usuarios de prueba; la persona de muestra se vuelve a crear antes de medir.
+
