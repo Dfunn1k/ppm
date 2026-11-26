@@ -1,6 +1,6 @@
 {
   "name": "ppm-web",
-  "version": "0.41.3",
+  "version": "0.41.4",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.15.1",

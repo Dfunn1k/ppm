@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 3 terminado; esperando el visto bueno de Dany).
-- **Rama:** `frontend/fase-4-lote-3`
-- **Último commit:** ver `git log -1 frontend/fase-4-lote-3`
+- **Fase actual:** 4, migración por lotes (lote 4 terminado; esperando el visto bueno de Dany).
+- **Rama:** `frontend/fase-4-lote-4`
+- **Último commit:** ver `git log -1 frontend/fase-4-lote-4`
 
 ## Checklist
 
@@ -62,18 +62,20 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 2: Cuentas y Detalle de cuenta. PR #134, aprobado por Dany (25-nov).
   - Cuentas 7 y Detalle 22 valores escritos a mano → 0; lo que se toca < 44 px: 0 en toda la matriz (antes Copiar, Importar extracto y el interruptor «En el presupuesto»); axe sin violaciones; foco tapado 2 → 0; «Lo que tenía al empezar» se corta con «…» y no de golpe.
   - El saldo de una cuenta pasa a Bricolage (decisión S2).
-- [x] Lote 3: Movimientos y Registrar (y la barra de tipo de MasTipos). PR #135.
+- [x] Lote 3: Movimientos y Registrar (y la barra de tipo de MasTipos). PR #135, aprobado por Dany (25-nov).
   - Token nuevo `body-lg` (17 px) para lo que escribes y las opciones de una hoja (elegido por Dany, 25-nov).
   - Movimientos 15, Registrar 48 y MasTipos 10 valores escritos a mano → 0; axe sin violaciones; foco tapado 1 → 0 y sin anillo 15 → 5 (los 5 son de PersonPicker, en Registrar con persona).
   - Lo que todavía mide < 44 px en esas rutas es de RegistrarPersona, AsientoManual, Reembolso y PersonPicker: van en el lote 4.
-- [ ] Lote 4 (propuesto): Registrar con persona, Asiento manual y Reembolso (con PersonPicker)
+- [x] Lote 4: Registrar con persona, Asiento manual y Reembolso (con PersonPicker). PR #136.
+  - 58 valores escritos a mano → 0; lo que se toca < 44 px en esas 8 rutas: 0 (antes «¿A quién?», «Elige la cuenta», «Otra línea», Hoy y las celdas de monto); axe sin violaciones; foco sin anillo 15 → 0 (AUDITORIA d12).
+  - Los totales del asiento manual ya usan money.ts (AUDITORIA e3).
 - [ ] Después, de a 2 o 3: Detalle de movimiento y Por clasificar; Tarjeta y Préstamo; Personas y Persona; Presupuesto, Sobre y Por asignar; Reportes (Gastos, Ingresos, Flujo, Patrimonio, Etiquetas, Tu plata); Recurrentes y Pendientes; Más y sus ajustes; acceso y bienvenida; importar
 
 ### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-Dany revisa el lote 3 (PR #135) y da su visto bueno. Con su OK: lote 4, Registrar con persona, Asiento manual y Reembolso (con PersonPicker), en la rama `frontend/fase-4-lote-4`.
+Dany revisa el lote 4 (PR #136) y da su visto bueno. Con su OK: lote 5, Detalle de movimiento y Por clasificar (que además gana su versión de escritorio, AUDITORIA e2), en la rama `frontend/fase-4-lote-5`.
 
 ## Decisiones de Dany
 
