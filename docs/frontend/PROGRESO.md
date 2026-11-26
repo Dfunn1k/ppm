@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 16 terminado, el último de migración; esperando el visto bueno de Dany).
+- **Fase actual:** 4, migración por lotes (terminada; Por clasificar en escritorio esperando el visto bueno de Dany).
 - **Rama:** `frontend/fase-4-lote-6`
 - **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
 
@@ -105,17 +105,17 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
   - 113 valores escritos a mano → 0, entre ellos 28 colores hex y 11 colores de Tailwind fuera del tema; lo que se toca < 44 px: 0; axe sin violaciones.
   - Dany eligió (26-nov) que el visor use la paleta siempre oscura del panel (`panel-*`), con `panel-border` (#707070, 3:1) y `panel-danger` (#ff7b6e) nuevos. El fondo pasa de #0a0a0a a #171717. Utilidad nueva `aspect-a4`.
   - El visor no sale en las capturas: se fotografió con una prueba temporal (celular), antes y después.
-- [x] Lote 16: las piezas compartidas (riel, barra de abajo, hojas, calendario, ayuda de atajos, categorías, etiquetas, las piezas de un movimiento, cuotas, diferidos, compartidos, esqueleto, refrán, vacío, instalar y Privacidad). PR #148.
+- [x] Lote 16: las piezas compartidas (riel, barra de abajo, hojas, calendario, ayuda de atajos, categorías, etiquetas, las piezas de un movimiento, cuotas, diferidos, compartidos, esqueleto, refrán, vacío, instalar y Privacidad). PR #148, aprobado por Dany (26-nov).
   - 129 valores escritos a mano → 0. **Todo `web/src` queda en cero**: estilo-tope.json vacío; solo valen las excepciones de estilo-excepciones.ts (el logo de Google y «reducir movimiento»).
   - Toda la app (70 pantallas, toda la matriz): lo que se toca < 44 px 17 330 → 0; textos cortados 14 → 0; axe 34 → 0; foco tapado 39 → 0; scroll horizontal 0.
   - Los colores de etiqueta pasan a clases (catBg); las alturas de la hoja a utilidades con nombre (`max-h-sheet`, `max-h-sheet-dialog`, `top-sheet`); el globo del riel se corre 2 px; los números de las insignias suben de 10 a 12 px.
-- [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
+- [x] Por clasificar en escritorio: boceto Caso17 en el lienzo, Dany eligió A, lista y panel (26-nov). PR #149. Prueba nueva en `e2e/escritorio.spec.ts`.
 
 ### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-Dany revisa el lote 16 (PR #148) y da su visto bueno. Con eso termina la migración. Queda de la Fase 4 solo «Por clasificar en escritorio» (boceto en el lienzo con 2 o 3 opciones, Dany elige, PR propio). Después, la Fase 5 (QA final; Lighthouse con su permiso).
+Dany revisa Por clasificar en escritorio (PR #149) y da su visto bueno. Con eso termina la Fase 4. Después, la Fase 5: QA final de toda la app (con Conciliar a mano), Lighthouse con su permiso y la prueba en un iPhone.
 
 ## Decisiones de Dany
 

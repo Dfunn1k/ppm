@@ -3,7 +3,7 @@
 // le pagué, le devolví; me pagó, me prestó, me dio para guardar). Un cobro o un pago no pasa de lo
 // que se debe: si pasa, la API lo dice con sus palabras.
 import { SearchField } from "@/components/SearchField";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { type Category, type ClassifyIn, useAccounts, useCategories, useClassify, useMe } from "@/api/hooks";
 import { formatAmount, symbolOf } from "@/lib/money";
@@ -33,11 +33,34 @@ const PERSON_OPTIONS: Record<"in" | "out", { role: Role; label: string; hint: st
   ],
 };
 
+/** El título: el movimiento, o cuántos son. */
+export function classifyTitle(items: ToClassify[]) {
+  return items.length === 1 ? items[0]!.title : `${items.length} movimientos`;
+}
+
+/** La hoja del celular (y de «Elegir varios» en el celular). */
 export function ClassifySheet({ open, onClose, items, onDone }: {
   open: boolean;
   onClose: () => void;
   items: ToClassify[];
   onDone?: () => void;
+}) {
+  return (
+    <Sheet title={classifyTitle(items)} open={open} onClose={onClose}>
+      <ClassifyForm items={items} onDone={onDone} onClose={onClose} />
+    </Sheet>
+  );
+}
+
+/** Lo de adentro: qué fue y el botón. En la computadora va abierto en el panel de Por clasificar
+ *  (`inline`: con el título arriba), y Enter en una opción clasifica (decisión del 26-nov). */
+export function ClassifyForm({ items, onDone, onClose, inline, footer }: {
+  items: ToClassify[];
+  onDone?: () => void;
+  onClose: () => void;
+  inline?: boolean;
+  /** Bajo el botón, en el panel: las teclas. */
+  footer?: ReactNode;
 }) {
   const me = useMe().data;
   const lang = me?.lang ?? "es-PE";
@@ -53,7 +76,6 @@ export function ClassifySheet({ open, onClose, items, onDone }: {
   const classify = useClassify();
 
   const one = items.length === 1 ? items[0]! : null;
-  const title = one ? one.title : `${items.length} movimientos`;
   // Uno solo: su día, la cuenta y el monto como etiqueta y valor (caso 9, opción B)
   const caption = one
     ? <Facts items={[["Día", one.date], ["Cuenta", one.account], ["Monto", formatAmount(one.amount, symbolOf(one.currency), lang)]]} />
@@ -66,14 +88,23 @@ export function ClassifySheet({ open, onClose, items, onDone }: {
           : null;
 
   return (
-    <Sheet title={title} open={open} onClose={onClose}>
-      <span className="mx-3 -mt-1 text-caption text-muted-foreground tabular-nums">{caption}</span>
+    <>
+      {inline && <h2 className="mx-3 text-title-1 break-words">{classifyTitle(items)}</h2>}
+      <span className={inline ? "mx-3 mt-2 text-caption text-muted-foreground tabular-nums" : "mx-3 -mt-1 text-caption text-muted-foreground tabular-nums"}>{caption}</span>
       <div className="mx-1 mt-3">
         <Segmented label="Qué fue" size="sm" value={tab} onChange={(v) => { setTab(v as Tab); classify.reset(); }}
           options={[{ value: "category", label: "Categoría" }, { value: "account", label: "Mis cuentas" }, { value: "person", label: "Persona" }]} />
       </div>
 
       <form className="mt-2 flex flex-col gap-3"
+        onKeyDown={(e) => {
+          // En el panel, Enter sobre la opción ya elegida (una categoría, una cuenta) clasifica; sobre otra, la elige
+          const t = e.target as HTMLElement;
+          if (inline && e.key === "Enter" && t.getAttribute("role") === "radio" && t.getAttribute("aria-checked") === "true" && body) {
+            e.preventDefault();
+            e.currentTarget.requestSubmit();
+          }
+        }}
         onSubmit={(e) => {
           e.preventDefault();
           if (body) classify.mutate(body, { onSuccess: () => { onDone?.(); onClose(); } });
@@ -86,7 +117,7 @@ export function ClassifySheet({ open, onClose, items, onDone }: {
                   options={[{ value: "income", label: "Un ingreso" }, { value: "expense", label: "Me devolvieron un gasto" }]} />
               </div>
             )}
-            <CategoryList kind={catKind} selected={category?.id ?? null} onPick={setCategory} />
+            <CategoryList kind={catKind} selected={category?.id ?? null} onPick={setCategory} columns={inline} />
             {withWho ? (
               <div className="mx-3"><PersonPicker label="Con quién" optional value={partnerId} onChange={setPartnerId} /></div>
             ) : (
@@ -134,14 +165,16 @@ export function ClassifySheet({ open, onClose, items, onDone }: {
           </div>
         )}
 
-        <div className="mx-1 flex flex-col gap-2">
+        {/* En el panel, el botón queda a la vista abajo mientras bajas por las categorías */}
+        <div className={inline ? "sticky bottom-0 z-raised mx-1 flex flex-col gap-2 bg-background pt-3 pb-4" : "mx-1 flex flex-col gap-2"}>
           {classify.error && <ErrorAlert>{classify.error.message}</ErrorAlert>}
           <PrimaryButton pending={classify.isPending} disabled={!body}>
             {submitLabel(tab, category, items.length)}
           </PrimaryButton>
+          {footer}
         </div>
       </form>
-    </Sheet>
+    </>
   );
 }
 
@@ -153,7 +186,7 @@ function submitLabel(tab: Tab, category: Category | null, n: number) {
 }
 
 /** Las categorías por grupo, con búsqueda; la elegida lleva su check. */
-function CategoryList({ kind, selected, onPick }: { kind: "expense" | "income"; selected: number | null; onPick: (c: Category) => void }) {
+function CategoryList({ kind, selected, onPick, columns }: { kind: "expense" | "income"; selected: number | null; onPick: (c: Category) => void; columns?: boolean }) {
   const data = useCategories(kind).data;
   const [q, setQ] = useState("");
   const needle = q.trim().toLowerCase();
@@ -170,6 +203,7 @@ function CategoryList({ kind, selected, onPick }: { kind: "expense" | "income"; 
               <span className="size-2.5 rounded-full" style={{ background: `var(--cat-${g.color ?? 0})` }} />
               {g.name}
             </span>
+            <div className={columns ? "grid grid-cols-2 gap-x-2" : "flex flex-col"}>
             {g.children.map((k) => (
               <button key={k.id} type="button" role="radio" aria-checked={k.id === selected} onClick={() => onPick(k)}
                 className={`flex min-h-row-sm items-center gap-3 rounded-md px-3 text-left ${k.id === selected ? "bg-muted" : ""}`}>
@@ -178,6 +212,7 @@ function CategoryList({ kind, selected, onPick }: { kind: "expense" | "income"; 
                 {k.id === selected && <Icon name="check_circle" fill size="md" />}
               </button>
             ))}
+            </div>
           </div>
         ))}
       </div>
