@@ -4,6 +4,8 @@
 import { useState } from "react";
 
 import { type TagRef, useCreateTag, useSetMoveTags, useTags } from "@/api/hooks";
+import { cn } from "@/lib/utils";
+import { catBg } from "./Avatar";
 
 import { Sheet } from "./Sheet";
 import { ErrorAlert, Icon, Optional } from "./ui";
@@ -17,8 +19,8 @@ export function TagChips({ tags, small }: { tags: TagRef[]; small?: boolean }) {
   return (
     <span className="flex flex-wrap gap-1.5">
       {tags.map((t) => (
-        <span key={t.id} className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-card font-semibold ${small ? "h-6 px-2 text-[12px]" : "h-7 px-2.5 text-caption"}`}>
-          <span aria-hidden="true" className="size-2 rounded-full" style={{ background: tagColor(t.color) }} />
+        <span key={t.id} className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-card font-semibold ${small ? "h-6 px-2 text-caption-sm" : "h-7 px-2.5 text-caption"}`}>
+          <span aria-hidden="true" className={cn("size-2 rounded-full", catBg(t.color))} />
           {t.name}
         </span>
       ))}
@@ -35,12 +37,12 @@ export function TagField({ value, onChange }: { value: number[]; onChange: (ids:
     <>
       <button type="button" aria-haspopup="dialog" onClick={() => setOpen(true)}
         className="flex min-h-13 items-center gap-3 border-b border-border py-2 text-left">
-        <Icon name="sell" className="w-8 text-center text-[20px] text-muted-foreground" />
+        <Icon name="sell" className="w-8 text-center text-muted-foreground" />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex justify-between gap-2 text-caption text-muted-foreground">Etiquetas<Optional /></span>
           {chosen.length ? <TagChips tags={chosen} small /> : <span className="font-semibold">Ninguna</span>}
         </span>
-        <Icon name="expand_more" className="text-[20px] text-muted-foreground" />
+        <Icon name="expand_more" className="text-muted-foreground" />
       </button>
       <TagSheet open={open} onClose={() => setOpen(false)} value={value} onDone={(ids) => { onChange(ids); setOpen(false); }} />
     </>
@@ -78,7 +80,7 @@ function TagSheetBody({ value, onDone, pending, error }: { value: number[]; onDo
     <div className="flex flex-col gap-2 px-1 pb-2">
       <span className="mx-2 -mt-1 text-caption text-muted-foreground">Post-its que cruzan categorías: «Viaje a Cusco» en el taxi, la comida y el hotel.</span>
       <label className="mx-1 flex h-11 items-center gap-2 rounded-md bg-muted px-3">
-        <Icon name="search" className="text-[20px] text-muted-foreground" />
+        <Icon name="search" className="text-muted-foreground" />
         <input aria-label="Buscar o crear etiqueta" placeholder="Buscar o crear" value={q} maxLength={40}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && needle && !exact) { e.preventDefault(); add(); } }}
@@ -90,16 +92,16 @@ function TagSheetBody({ value, onDone, pending, error }: { value: number[]; onDo
           return (
             <button key={t.id} type="button" role="checkbox" aria-checked={on} onClick={() => toggle(t.id)}
               className="flex min-h-13 items-center gap-3 rounded-md px-2 text-left">
-              <span aria-hidden="true" className="size-3 rounded-full" style={{ background: tagColor(t.color) }} />
+              <span aria-hidden="true" className={cn("size-3 rounded-full", catBg(t.color))} />
               <span className="flex-1 font-semibold">{t.name}</span>
-              <Icon name={on ? "check_box" : "check_box_outline_blank"} fill={on} className="text-[22px]" />
+              <Icon name={on ? "check_box" : "check_box_outline_blank"} fill={on} size="md" />
             </button>
           );
         })}
         {needle && !exact && (
           <button type="button" onClick={add} disabled={create.isPending}
             className="flex min-h-13 items-center gap-3 border-t border-border px-2 text-left disabled:opacity-60">
-            <Icon name="add" className="text-[22px]" />
+            <Icon name="add" size="md" />
             <span>Crear «<b>{q.trim()}</b>»</span>
           </button>
         )}
@@ -143,7 +145,7 @@ export function MoveTagsRow({ moveId, tags, inherited }: { moveId: number; tags:
           <span className="text-caption text-muted-foreground">Etiquetas</span>
           {tags.length ? <TagChips tags={tags} /> : <><span className="font-semibold">Ninguna</span><span className="-mt-1 text-caption text-muted-foreground">Toca para ponerle una</span></>}
         </span>
-        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        <Icon name="chevron_right" size="md" className="text-muted-foreground" />
       </button>
       <TagSheet open={open} onClose={() => setOpen(false)} value={tags.map((t) => t.id)} pending={save.isPending}
         error={save.error?.message} onDone={(ids) => save.mutate(ids, { onSuccess: () => setOpen(false) })} />

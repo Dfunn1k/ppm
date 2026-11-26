@@ -11,10 +11,11 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { BoneRows } from "@/components/Skeleton";
 import { Kbd } from "@/components/ShortcutsHelp";
-import { tagColor } from "@/components/Tags";
+import { catBg } from "@/components/Avatar";
 import { keyLabel, useShortcuts } from "@/lib/shortcuts";
 import { ErrorAlert, Icon, Status } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import { useDesktop } from "@/lib/desktop";
 import { monthName, monthOptions } from "@/lib/months";
 import { formatAmount, isZero, symbolOf } from "@/lib/money";
@@ -180,7 +181,7 @@ export function Movimientos() {
             <button key={t.id} type="button" role="radio" aria-checked={t.id === filters.tag_id}
               onClick={() => { set("etiqueta", String(t.id)); setSheet(null); }}
               className={`flex min-h-row-option items-center gap-3 rounded-md px-3 text-left text-body-lg ${t.id === filters.tag_id ? "bg-muted" : "hover:bg-muted"}`}>
-              <span aria-hidden="true" className="size-3 rounded-full" style={{ background: tagColor(t.color) }} />
+              <span aria-hidden="true" className={cn("size-3 rounded-full", catBg(t.color))} />
               <span className="flex-1">{t.name}</span>
             </button>
           ))}
