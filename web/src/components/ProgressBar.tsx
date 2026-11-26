@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export const barVariants = cva("block h-full rounded-full", {
   variants: {
-    tone: { foreground: "bg-foreground", trigo: "bg-trigo", expense: "bg-expense", income: "bg-income", category: "" },
+    tone: { foreground: "bg-foreground", primary: "bg-primary", trigo: "bg-trigo", expense: "bg-expense", income: "bg-income", category: "" },
   },
   defaultVariants: { tone: "foreground" },
 });

@@ -500,6 +500,9 @@
 /* Pares de dato y valor en una ficha: el nombre se corta antes que el monto */
 @utility grid-cols-pairs { grid-template-columns: minmax(0, 1fr) auto; }
 
+/* La tabla de una tarjeta en escritorio: fecha, movimiento y monto */
+@utility grid-cols-card-ledger { grid-template-columns: 4rem minmax(0, 1fr) 7.5rem; }
+
 /* Lo muy angosto (plegable cerrado, 320 px): narrow:… */
 @custom-variant narrow (@media (max-width: 359.98px));
 
