@@ -9,10 +9,11 @@ import { MasHeader } from "@/components/MasTipos";
 import { afterRegister, pickAccount } from "@/lib/startAccount";
 import { RateField, useRateInput } from "@/components/RateField";
 import { SheetSelect } from "@/components/Sheet";
+import { IconButton } from "@/components/Button";
 import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
-import { formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
+import { formatAmount, formatNumber, parseAmount, rateText, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 import { useDesktopFocus } from "@/lib/desktop";
 
@@ -40,7 +41,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
   const account = editing ? accounts.find((a) => String(a.id) === accountId)
     : pickAccount(accounts, accountId, search.get("cuenta"), me?.home_account_id);
   const currency = account?.currency ?? base;
-  const rate = useRateInput(currency, base, date, "buy", editing?.rate ? Number(editing.rate).toFixed(3) : null);
+  const rate = useRateInput(currency, base, date, "buy", editing?.rate ? rateText(editing.rate) : null);
   if (!me?.currency || !overview) return <Spinner />;
   const foreign = currency !== base;
 
@@ -61,9 +62,7 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin guardar" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="close" className="text-[24px]" />
-        </button>
+        <IconButton icon="close" label="Cerrar sin guardar" onClick={back} />
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
@@ -71,37 +70,37 @@ export function Reembolso({ editing }: { editing?: MoveDetail }) {
         <label className="mt-3 flex flex-col gap-0.5 text-caption font-semibold">
           ¿Cuánto te devolvieron?
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
-            <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
+            <span aria-hidden="true" className="text-amount-input-symbol font-semibold text-muted-foreground">{symbolOf(currency)}</span>
             <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
-              className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[48px] leading-[56px] font-semibold tracking-[-0.02em] tabular-nums" />
+              className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-input" />
           </span>
         </label>
         <div className="mt-2 flex flex-col">
           <SheetSelect label="Entra a" sheetTitle="¿A qué cuenta entró?" value={account ? String(account.id) : ""} onChange={setAccountId}
             options={accounts.map((a) => ({ value: String(a.id), label: a.name, hint: a.subtitle ?? undefined }))} />
           {foreign && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} /></div>}
-          <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex min-h-[60px] items-center gap-3 border-b border-border text-left">
+          <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex min-h-row items-center gap-3 border-b border-border text-left">
             {category ? <CategoryChip category={category} /> : (
-              <span className="grid size-9 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="category" /></span>
+              <span className="grid size-avatar flex-none place-items-center rounded-full border-2 border-dashed border-input-line"><Icon name="category" /></span>
             )}
             <span className="flex flex-1 flex-col">
               <span className="text-caption text-muted-foreground">De qué gasto</span>
               <span className="font-semibold">{category?.name ?? "Elige una categoría"}</span>
             </span>
-            <Icon name="expand_more" className="text-[22px] text-muted-foreground" />
+            <Icon name="expand_more" size="md" className="text-muted-foreground" />
           </button>
-          <div className="grid min-h-[52px] grid-cols-[auto_1fr] items-center gap-3 border-b border-border">
+          <div className="flex min-h-row-sm items-center gap-3 border-b border-border">
             <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
-              className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-              <Icon name="event" className="text-[18px]" />{dateLabel(date)}
+              className="hit-area flex h-9 flex-none items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted">
+              <Icon name="event" />{dateLabel(date)}
             </button>
-            <span className="flex min-w-0 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
-              className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
+            <span className="flex min-w-0 flex-1 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
+              className="h-control min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} max={todayISO()} booked />
         </div>
         {category && (
-          <div className="mt-3 flex flex-col gap-1 rounded-[12px] border border-border bg-card px-3.5 py-3">
+          <div className="mt-3 flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3">
             <span className="font-semibold">Resta de {category.name}</span>
             <span className="text-caption text-muted-foreground">
               Tu gasto en esa categoría baja{amount ? ` ${formatAmount(parseAmount(amount, lang) ?? "0", symbolOf(currency), lang)}` : ""}. No cuenta como ingreso.
