@@ -11,6 +11,8 @@ import { formatAmount, subtract, symbolOf } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 import { maturityText } from "./MaturitySheet";
+import { chipVariants } from "./Chip";
+import { ProgressBar } from "./ProgressBar";
 import { Icon } from "./ui";
 
 /** Desde cuántos días una deuda se ve vieja (ámbar). */
@@ -31,10 +33,10 @@ export function debtAge(days: number): string {
 export function DayTile({ date, old }: { date: string; old: boolean }) {
   const [, m, d] = date.split("-");
   return (
-    <span aria-hidden="true" className={cn("flex w-[52px] flex-none flex-col items-center rounded-[12px] py-1.5 leading-none",
+    <span aria-hidden="true" className={cn("flex w-13 flex-none flex-col items-center rounded-md py-1.5",
       old ? "bg-attention-soft text-attention" : "bg-muted")}>
-      <span className="font-display text-[24px] leading-[26px] font-extrabold tabular-nums">{Number(d)}</span>
-      <span className={cn("text-[11px] font-bold tracking-[0.06em] uppercase", !old && "text-muted-foreground")}>{MONTHS[Number(m) - 1]}</span>
+      <span className="font-display text-amount-xl font-extrabold tabular-nums">{Number(d)}</span>
+      <span className={cn("text-label uppercase", !old && "text-muted-foreground")}>{MONTHS[Number(m) - 1]}</span>
     </span>
   );
 }
@@ -43,10 +45,11 @@ export function DayTile({ date, old }: { date: string; old: boolean }) {
 export function DueChip({ item, onClick }: { item: OpenItem; onClick?: () => void }) {
   const m = maturityText(item);
   if (!m) return null;
-  const cls = cn("relative z-[1] inline-flex h-7 items-center gap-1.5 self-start rounded-full px-2.5 text-caption font-semibold",
-    m.late ? "bg-attention-soft text-attention" : "bg-muted text-foreground");
-  const body = <><Icon name={m.late ? "schedule" : "event"} className="text-[16px]" />{m.text}</>;
-  return onClick ? <button type="button" onClick={onClick} className={cls}>{body}</button> : <span className={cls}>{body}</span>;
+  const cls = cn(chipVariants({ tone: m.late ? "attention" : "muted", size: "md" }), "relative z-raised gap-1.5 self-start px-2.5");
+  const body = <><Icon name={m.late ? "schedule" : "event"} size="sm" />{m.text}</>;
+  return onClick
+    ? <button type="button" onClick={onClick} className={cn(cls, "hit-area")}>{body}</button>
+    : <span className={cls}>{body}</span>;
 }
 
 /** La tarjeta. «paid» dice «Te pagó» o «Le pagaste»; el título y el monto pueden venir armados (una compra
@@ -58,29 +61,27 @@ export function DebtCard({ item, lang, paid, selected, title, amount, detail, du
   const old = item.days >= OLD_DEBT_DAYS;
   const money = (v: string) => formatAmount(v, symbolOf(item.currency), lang);
   const partial = !item.parts && item.open !== item.amount;
-  const done = partial ? Number(subtract(item.amount, item.open)) : 0;
+  const done = partial ? subtract(item.amount, item.open) : "0.00";
   return (
-    <span className={cn("relative flex w-full gap-3.5 rounded-[16px] border bg-card p-3.5 text-left",
-      selected ? "border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,var(--card))] ring-2 ring-primary" : "border-border")}>
+    <span className={cn("relative flex w-full gap-3.5 rounded-xl border p-3.5 text-left",
+      selected ? "border-transparent bg-primary/15 ring-2 ring-primary" : "border-border bg-card")}>
       {selected && (
-        <span aria-hidden="true" className="absolute -top-2.5 -right-2.5 grid size-[26px] place-items-center rounded-full bg-primary text-primary-foreground ring-[3px] ring-card">
-          <Icon name="check" className="text-[16px]" />
+        <span aria-hidden="true" className="absolute -top-2.5 -right-2.5 grid size-7 place-items-center rounded-full bg-primary text-primary-foreground ring-3 ring-card">
+          <Icon name="check" size="sm" />
         </span>
       )}
       <DayTile date={item.date} old={old} />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-start justify-between gap-3">
           <span className="min-w-0 font-semibold">{title ?? item.ref}</span>
-          <span className="font-display text-[20px] leading-6 font-extrabold tracking-[-0.02em] whitespace-nowrap tabular-nums">{amount ?? money(item.open)}</span>
+          <span className="font-display text-amount-xl font-extrabold whitespace-nowrap tabular-nums">{amount ?? money(item.open)}</span>
         </span>
         <span className={cn("text-caption", old ? "font-semibold text-attention" : "text-muted-foreground")}>{detail ?? debtAge(item.days)}</span>
         {partial && (
           <span className="mt-0.5 flex flex-col gap-1">
-            <span aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-muted">
-              <span className="block h-2 rounded-full bg-income" style={{ width: `${Math.min(100, Math.round(done / Number(item.amount) * 100))}%` }} />
-            </span>
+            <ProgressBar value={Number(done)} max={Number(item.amount)} tone="income" />
             <span className="flex justify-between text-caption tabular-nums">
-              <span className="font-semibold text-income">{paid} {money(done.toFixed(2))}</span>
+              <span className="font-semibold text-income">{paid} {money(done)}</span>
               <span className="text-muted-foreground">de {money(item.amount)}</span>
             </span>
           </span>
