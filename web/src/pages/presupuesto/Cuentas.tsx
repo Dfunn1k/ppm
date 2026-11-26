@@ -13,8 +13,8 @@ import { longDate, shortDate, todayISO } from "@/lib/dates";
 export function Switch({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onClick}
-      className={`relative h-[26px] w-11 flex-none rounded-full transition-colors ${on ? "bg-primary" : "bg-input-line/50"}`}>
-      <span className={`absolute top-[3px] size-5 rounded-full bg-card shadow-sm transition-[left] ${on ? "left-[21px]" : "left-[3px]"}`} />
+      className={`hit-area h-6.5 w-11 flex-none rounded-full transition-colors ${on ? "bg-primary" : "bg-input-line/50"}`}>
+      <span className={`absolute top-0.75 size-5 rounded-full bg-card shadow-sm transition-[left] ${on ? "left-5.25" : "left-0.75"}`} />
     </button>
   );
 }

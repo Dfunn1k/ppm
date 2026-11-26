@@ -15,7 +15,7 @@ export const buttonVariants = cva(
       variant: {
         primary: "w-full justify-between rounded-lg bg-primary px-5 text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
         secondary: "justify-center rounded-lg border border-border bg-card px-4 text-body-sm font-semibold hover:bg-muted active:bg-muted",
-        ghost: "justify-center rounded-md px-3 text-body-sm font-semibold underline hover:bg-muted active:bg-muted",
+        ghost: "justify-center rounded-md px-3 text-body-sm font-semibold text-primary-strong underline hover:bg-muted active:bg-muted",
         destructive: "w-full justify-between rounded-lg bg-destructive px-5 text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80",
       },
       size: { md: "min-h-button", sm: "min-h-button-sm" },
