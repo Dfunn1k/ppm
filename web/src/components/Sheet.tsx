@@ -1,6 +1,7 @@
 // La hoja que sube desde abajo (y baja al cerrarse, con el fondo que se aclara), y el campo que la
 // abre para elegir de una lista.
 // Regla del sistema de diseño: nunca el selector del navegador, sin logos ni iniciales de marcas.
+import { cn } from "@/lib/utils";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -188,6 +189,11 @@ export function SheetSelect({ label, sheetTitle, options, value, onChange, error
 }
 
 /** Dos o tres opciones a la vista: Ahorros / Corriente, Soles / Dólares. */
+/** La forma del selector segmentado (Segmented y la barra Gasto / Ingreso / Transferir / Más). */
+export const SEGMENTS = "grid gap-1 rounded-md bg-muted p-0.5";
+export const segment = (on: boolean) =>
+  `grid min-h-control place-items-center rounded-sm text-body-sm font-semibold ${on ? "bg-selected text-selected-foreground shadow-sm" : "hover:bg-accent"}`;
+
 export function Segmented({ label, options, value, onChange, size = "md" }: {
   label: string;
   options: Option[];
@@ -201,7 +207,7 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
       <div
         role="radiogroup"
         aria-label={label}
-        className="grid gap-1 rounded-md bg-muted p-0.5"
+        className={SEGMENTS}
         style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
       >
         {options.map((o) => (
@@ -211,7 +217,7 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
             role="radio"
             aria-checked={o.value === value}
             onClick={() => onChange(o.value)}
-            className={`min-h-control rounded-sm font-semibold ${size === "sm" ? "text-caption" : ""} ${o.value === value ? "bg-selected text-selected-foreground shadow-sm" : ""}`}
+            className={cn(segment(o.value === value), size === "sm" ? "text-caption" : "text-body")}
           >
             {o.label}
           </button>

@@ -87,8 +87,8 @@ export function PendingFiles({ files, onChange }: { files: File[]; onChange: (fi
       ))}
       {problem && <ErrorAlert>{problem}</ErrorAlert>}
       <button type="button" aria-haspopup="dialog" onClick={() => setOpen(true)}
-        className="flex min-h-10 items-center gap-1.5 self-start font-semibold text-primary-strong">
-        <Icon name="attach_file" className="text-[22px]" />{files.length ? "Adjuntar otro" : "Adjuntar boleta o foto"}
+        className="flex min-h-control items-center gap-1.5 self-start font-semibold text-primary-strong">
+        <Icon name="attach_file" />{files.length ? "Adjuntar otro" : "Adjuntar boleta o foto"}
       </button>
       <AttachSheet open={open} onClose={() => setOpen(false)} onFiles={add} />
     </section>

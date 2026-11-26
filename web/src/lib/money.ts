@@ -109,6 +109,11 @@ export function multiply(amount: string, rate: string): string {
   return unscaled(roundDiv(scaled(amount, 2) * scaled(rate, 6), 1_000_000n), 2);
 }
 
+/** Céntimos (un entero, como los que suma Dividir) como monto de la API: 1234 → «12.34». */
+export function fromCents(cents: number): string {
+  return unscaled(BigInt(Math.round(cents)), 2);
+}
+
 /** a ÷ b con `places` decimales: el costo promedio «740.00» ÷ «200.00» = «3.700». */
 export function divide(a: string, b: string, places = 3): string {
   return unscaled(roundDiv(scaled(a, 2) * 10n ** BigInt(places), scaled(b, 2)), places);

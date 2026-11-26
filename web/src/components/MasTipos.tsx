@@ -5,7 +5,7 @@ import { Link, useLocation, useSearchParams } from "react-router";
 
 import { withAccount } from "@/lib/startAccount";
 
-import { Sheet } from "./Sheet";
+import { SEGMENTS, Sheet, segment } from "./Sheet";
 import { Icon } from "./ui";
 
 export type MasKind = "lend" | "borrow" | "collect" | "repay" | "custody_in" | "custody_out" | "refund" | "manual" | "opening";
@@ -47,7 +47,7 @@ export function MasTipos({ open, onClose, account }: { open: boolean; onClose: (
                 <span className="text-caption text-muted-foreground">{MAS[k].hint}</span>
               </span>
               {k === "manual" && (
-                <span className="grid h-[22px] place-items-center rounded-full border border-border px-2 text-[12px] leading-4 text-muted-foreground">avanzado</span>
+                <span className="grid h-5.5 place-items-center rounded-full border border-border px-2 text-caption-sm text-muted-foreground">avanzado</span>
               )}
             </Link>
           ))}
@@ -63,26 +63,26 @@ export function MasHeader({ kind, locked, account }: { kind: MasKind; locked?: b
   const [search] = useSearchParams();
   const cuenta = account ?? search.get("cuenta");
   const [open, setOpen] = useState(false);
-  const tab = "grid h-[38px] place-items-center rounded-[8px] text-[14px] font-semibold";
+  const tab = segment(false);
   return (
     <>
       {!locked && (
-        <div role="radiogroup" aria-label="Tipo de movimiento" className="mt-2 grid grid-cols-4 gap-1 rounded-md bg-muted p-[3px]">
+        <div role="radiogroup" aria-label="Tipo de movimiento" className={`mt-2 grid-cols-4 ${SEGMENTS}`}>
           <Link to={withAccount("/registrar", cuenta)} replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Gasto</Link>
           <Link to={withAccount("/registrar?tipo=income", cuenta)} replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Ingreso</Link>
           <Link to={withAccount("/registrar?tipo=transfer", cuenta)} replace state={state} data-replace="true" role="radio" aria-checked="false" className={tab}>Transferir</Link>
-          <button type="button" role="radio" aria-checked="true" onClick={() => setOpen(true)} className={`${tab} bg-selected text-selected-foreground shadow-sm`}>Más</button>
+          <button type="button" role="radio" aria-checked="true" onClick={() => setOpen(true)} className={segment(true)}>Más</button>
         </div>
       )}
       <div className="mt-3 flex items-center gap-2">
         <button type="button" disabled={locked} onClick={() => setOpen(true)} aria-label={locked ? MAS[kind].name : `${MAS[kind].name}: cambiar el tipo`}
-          className="flex h-9 items-center gap-1.5 rounded-full border border-border pr-2 pl-3 text-caption font-semibold">
-          <Icon name={MAS[kind].icon} className="text-[18px]" />
+          className="hit-area flex h-9 items-center gap-1.5 rounded-full border border-border pr-2 pl-3 text-caption font-semibold enabled:hover:bg-muted">
+          <Icon name={MAS[kind].icon} />
           {MAS[kind].name}
-          {!locked && <Icon name="expand_more" className="text-[20px] text-muted-foreground" />}
+          {!locked && <Icon name="expand_more" className="text-muted-foreground" />}
         </button>
         {kind === "manual" && (
-          <span className="grid h-[22px] place-items-center rounded-full border border-border px-2 text-[12px] leading-4 text-muted-foreground">avanzado</span>
+          <span className="grid h-5.5 place-items-center rounded-full border border-border px-2 text-caption-sm text-muted-foreground">avanzado</span>
         )}
       </div>
       <MasTipos open={open} onClose={() => setOpen(false)} account={cuenta} />
