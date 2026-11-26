@@ -201,7 +201,7 @@ export function DateField({ label, value, onChange, min, max, shortcuts, placeho
     <div className="flex flex-col gap-1.5">
       <span className="flex justify-between gap-2"><span id={`${id}-label`} className="text-caption font-semibold">{label}</span>{optional && <Optional />}</span>
       <button type="button" aria-labelledby={`${id}-label ${id}-value`} aria-haspopup="dialog" onClick={() => setOpen(true)}
-        className="flex h-11 items-center gap-2 border-b-2 border-input-line text-left text-[17px] leading-6">
+        className="flex h-11 items-center gap-2 border-b-2 border-input-line text-left text-body-lg">
         <span id={`${id}-value`} className={`min-w-0 flex-1 truncate ${value ? "" : "text-muted-foreground"}`}>
           {value ? dateLabel(value) : placeholder}
         </span>

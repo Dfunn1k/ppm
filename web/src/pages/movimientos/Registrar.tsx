@@ -17,7 +17,8 @@ import { afterRegister, pickAccount } from "@/lib/startAccount";
 import { Avatar } from "@/components/MoveBits";
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
-import { CurrencyChoice, Segmented, SheetSelect } from "@/components/Sheet";
+import { IconButton } from "@/components/Button";
+import { CurrencyChoice, SEGMENTS, Segmented, SheetSelect, segment } from "@/components/Sheet";
 import { ErrorAlert, Facts, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
@@ -29,7 +30,7 @@ import { NO_SHARED, SharedBlock, type SharedState, shares } from "@/components/S
 import { shortDate, todayISO } from "@/lib/dates";
 import { MODE_NAME, ruleText } from "@/lib/recurrence";
 import { isPersonKind } from "@/lib/kinds";
-import { currencyOption, divide, formatAmount, formatNumber, isZero, multiply, parseAmount, proportion, subtract, symbolOf } from "@/lib/money";
+import { currencyOption, divide, formatAmount, formatNumber, fromCents, isZero, multiply, parseAmount, proportion, rateText, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 
 import { AsientoManual } from "./AsientoManual";
@@ -179,7 +180,7 @@ export function Registrar({ editing, recurring, reminder }: {
   const currency = other ? base : card ? (cardCurrency ?? base) : account?.currency ?? base;
   const side = account?.kind === "other" || card ? "sell" : "buy";   // compra para lo que tienes, venta para lo que debes
   const toCurrency = toAccount?.kind === "card" ? currency : toAccount?.currency ?? base;   // a una tarjeta se paga en la moneda que sale
-  const rate = useRateInput(currency, base, date, side, editing?.rate ? Number(editing.rate).toFixed(3) : null);
+  const rate = useRateInput(currency, base, date, side, editing?.rate ? rateText(editing.rate) : null);
   const foreignSide = toAccount && toCurrency !== base ? toCurrency : currency;
   const sunat = useSuggestedRate(foreignSide, base, date, "buy");
   const sunatSell = useSuggestedRate(foreignSide, base, date, "sell");
@@ -210,7 +211,7 @@ export function Registrar({ editing, recurring, reminder }: {
   const total = parseAmount(amount || "0", lang);
   // Compartido: «tu parte» es lo que va a tus categorías; lo demás es de las otras personas
   const split$ = shares(shared, total, (v) => parseAmount(v, lang));
-  const own = sharing ? (split$.mine / 100).toFixed(2) : total;
+  const own = sharing ? fromCents(split$.mine) : total;
   const partsTotal = parts.reduce((s, p) => s + Math.round(Number(parseAmount(p.amount || "0", lang) ?? "NaN") * 100), 0);
   const remaining = own !== null ? Math.round(Number(own) * 100) - partsTotal : NaN;
 
@@ -282,7 +283,7 @@ export function Registrar({ editing, recurring, reminder }: {
       body.splits = chosen.map((p) => ({ category_id: p.category!.id, amount: parseAmount(p.amount, lang) ?? p.amount }));
       // Pagaste tú: la parte de cada persona queda como lo que te debe
       if (sharing && !other) {
-        body.splits.push(...shared.people.map((p, i) => ({ partner_id: p.id, amount: (split$.theirs[i]! / 100).toFixed(2) })));
+        body.splits.push(...shared.people.map((p, i) => ({ partner_id: p.id, amount: fromCents(split$.theirs[i]!) })));
       }
     }
     if (repeating) {
@@ -344,22 +345,20 @@ export function Registrar({ editing, recurring, reminder }: {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin guardar" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="close" className="text-[24px]" />
-        </button>
+        <IconButton icon="close" label="Cerrar sin guardar" onClick={back} />
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : recurring ? "Editar recurrente" : "Nuevo movimiento"}</span>
       </div>
 
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
-        <div role="radiogroup" aria-label="Tipo de movimiento" className="mt-2 grid grid-cols-4 gap-1 rounded-md bg-muted p-[3px]">
+        <div role="radiogroup" aria-label="Tipo de movimiento" className={`mt-2 grid-cols-4 ${SEGMENTS}`}>
           {(Object.keys(KIND_LABEL) as Kind[]).map((k) => (
             <button key={k} type="button" role="radio" aria-checked={k === kind} onClick={() => changeKind(k)}
-              className={`h-[38px] rounded-[8px] text-[14px] font-semibold ${k === kind ? "bg-selected text-selected-foreground shadow-sm" : ""}`}>
+              className={segment(k === kind)}>
               {KIND_LABEL[k]}
             </button>
           ))}
           {!editing && (
-            <button type="button" role="radio" aria-checked="false" onClick={() => setMas(true)} className="h-[38px] rounded-[8px] text-[14px] font-semibold">Más</button>
+            <button type="button" role="radio" aria-checked="false" onClick={() => setMas(true)} className={segment(false)}>Más</button>
           )}
         </div>
 
@@ -367,10 +366,10 @@ export function Registrar({ editing, recurring, reminder }: {
           {repeating ? (mode === "draft" ? "¿Cuánto es, más o menos?" : "¿Cuánto es?")
             : kind === "expense" ? (sharing ? "¿Cuánto costó en total?" : "¿Cuánto gastaste?") : kind === "income" ? (sharing ? "¿Cuánto entró en total?" : "¿Cuánto entró?") : "¿Cuánto pasas?"}
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
-            <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
+            <span aria-hidden="true" className="text-amount-input-symbol font-semibold text-muted-foreground">{symbolOf(currency)}</span>
             <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
               aria-description={`En ${symbolOf(currency)}`}
-              className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[48px] leading-[56px] font-semibold tracking-[-0.02em] tabular-nums" />
+              className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-input" />
           </span>
         </label>
 
@@ -410,7 +409,7 @@ export function Registrar({ editing, recurring, reminder }: {
                     <span className="flex items-baseline gap-1.5 border-b-2 border-input-line">
                       <span aria-hidden="true" className="font-semibold text-muted-foreground">{symbolOf(toCurrency)}</span>
                       <input inputMode="decimal" placeholder="0.00" value={toAmount} onChange={(e) => setToAmount(e.target.value)}
-                        className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-[20px] leading-7 font-semibold tabular-nums" />
+                        className="h-control min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-xl" />
                     </span>
                   </label>
                   <span className="flex flex-col pb-1.5 text-caption text-muted-foreground tabular-nums">
@@ -434,17 +433,17 @@ export function Registrar({ editing, recurring, reminder }: {
 
           {kind !== "transfer" && !split && (
             <button type="button" aria-haspopup="dialog" onClick={() => setSheetFor(0)}
-              className="flex min-h-[60px] items-center gap-3 border-b border-border text-left">
+              className="flex min-h-row items-center gap-3 border-b border-border text-left">
               {isLater ? (
-                <span className="grid size-9 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="inbox" /></span>
+                <span className="grid size-avatar flex-none place-items-center rounded-full border-2 border-dashed border-input-line"><Icon name="inbox" /></span>
               ) : parts[0]?.category ? <CategoryChip category={parts[0].category} /> : (
-                <span className="grid size-9 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="category" /></span>
+                <span className="grid size-avatar flex-none place-items-center rounded-full border-2 border-dashed border-input-line"><Icon name="category" /></span>
               )}
               <span className="flex flex-1 flex-col">
                 <span className="text-caption text-muted-foreground">{kind === "income" ? "De qué" : "En qué"}</span>
                 <span className="font-semibold">{isLater ? "Lo clasifico después" : parts[0]?.category?.name ?? "Elige una categoría"}</span>
               </span>
-              <Icon name="expand_more" className="text-[22px] text-muted-foreground" />
+              <Icon name="expand_more" size="md" className="text-muted-foreground" />
             </button>
           )}
           {kind !== "transfer" && !split && (isLater || parts[0]?.category?.name === "Ajuste") && (
@@ -473,7 +472,7 @@ export function Registrar({ editing, recurring, reminder }: {
                   ) : (
                     <button type="button" onClick={() => setSheetFor(i)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                       {p.category ? <CategoryChip category={p.category} size={32} /> : (
-                        <span className="grid size-8 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="category" className="text-[18px]" /></span>
+                        <span className="grid size-8 place-items-center rounded-full border-2 border-dashed border-input-line"><Icon name="category" /></span>
                       )}
                       <span className="truncate font-semibold">{p.category?.name ?? "Elige una categoría"}</span>
                     </button>
@@ -485,8 +484,8 @@ export function Registrar({ editing, recurring, reminder }: {
                       className="h-8 min-w-0 flex-1 border-0 bg-transparent p-0 text-right font-medium tabular-nums" />
                   </label>
                   {parts.length > 1 && (
-                    <button type="button" aria-label={`Quitar ${p.category?.name ?? "esta parte"}`} onClick={() => setParts((ps) => ps.filter((_, j) => j !== i))}
-                      className="grid size-8 place-items-center text-muted-foreground"><Icon name="close" className="text-[18px]" /></button>
+                    <IconButton icon="close" label={`Quitar ${p.category?.name ?? "esta parte"}`} onClick={() => setParts((ps) => ps.filter((_, j) => j !== i))}
+                      className="-mr-2.5 text-muted-foreground" />
                   )}
                 </div>
               ))}
@@ -499,11 +498,11 @@ export function Registrar({ editing, recurring, reminder }: {
 
                 </span>
                 <span className={`flex items-center gap-1 text-caption font-semibold ${remaining === 0 ? "text-income" : "text-attention"}`}>
-                  <Icon name={remaining === 0 ? "check_circle" : "info"} fill={remaining === 0} className="text-[18px]" />
+                  <Icon name={remaining === 0 ? "check_circle" : "info"} fill={remaining === 0} />
                   {Number.isNaN(remaining) ? "Revisa los montos" : remaining === 0
                     ? `Suma ${formatAmount(total ?? "0", symbolOf(currency), lang)}`
-                    : remaining > 0 ? `Falta ${formatAmount((remaining / 100).toFixed(2), symbolOf(currency), lang)}`
-                      : `Sobra ${formatAmount((-remaining / 100).toFixed(2), symbolOf(currency), lang)}`}
+                    : remaining > 0 ? `Falta ${formatAmount(fromCents(remaining), symbolOf(currency), lang)}`
+                      : `Sobra ${formatAmount(fromCents(-remaining), symbolOf(currency), lang)}`}
                 </span>
               </div>
             </div>
@@ -514,26 +513,26 @@ export function Registrar({ editing, recurring, reminder }: {
               account={other ? null : account?.name ?? null} format={(v) => formatAmount(v, symbolOf(currency), lang)}
               parse={(v) => parseAmount(v, lang)} income={kind === "income"} repeating={repeating} />
           )}
-          <div className={`grid min-h-[52px] ${repeating ? "grid-cols-1" : "grid-cols-[auto_1fr]"} items-center gap-3 border-b border-border`}>
+          <div className="flex min-h-row-sm items-center gap-3 border-b border-border">
             {!repeating && (
               <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
-                className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-                <Icon name="event" className="text-[18px]" />
+                className="hit-area flex h-9 flex-none items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted">
+                <Icon name="event" />
                 {dateLabel(date)}
               </button>
             )}
-            <span className="flex min-w-0 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
-              className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
+            <span className="flex min-w-0 flex-1 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
+              className="h-control min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title={repeating ? "¿Desde cuándo?" : "¿Cuándo fue?"} value={date}
             onChange={setDate} booked />
           {!editing && !repeating && <PendingFiles files={files} onChange={setFiles} />}
 
           {kind !== "transfer" && (
-            <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
+            <label className="flex min-h-row-sm cursor-pointer items-center gap-3 border-b border-border">
               <Icon name="call_split" className="w-9 text-center text-muted-foreground" />
               <span className="flex-1">Dividir en varias categorías</span>
-              <input type="checkbox" role="switch" checked={split} className="size-[22px] accent-primary"
+              <input type="checkbox" role="switch" checked={split} className="size-5.5 accent-primary"
                 onChange={() => {
                   setSplit(!split);
                   setParts((ps) => (split ? [ps[0]!] : [{ ...ps[0]!, amount: amount }, { category: null, amount: "" }]));
@@ -542,28 +541,28 @@ export function Registrar({ editing, recurring, reminder }: {
           )}
           {card && kind === "expense" && !editing && !repeating && !sharing && (
             <>
-              <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
+              <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
                 <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
                 <span className="flex flex-1 flex-col">
                   <span>En cuotas</span>
                   <span className="text-caption text-muted-foreground">El banco te lo cobra en varios cortes</span>
                 </span>
                 <input type="checkbox" role="switch" checked={inInstallments} onChange={() => setInInstallments(!inInstallments)}
-                  className="size-[22px] accent-primary" />
+                  className="size-5.5 accent-primary" />
               </label>
               {inInstallments && (
                 <>
                   <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={total} currency={currency} date={date}
                     closingDay={account!.card?.closing_day ?? null} category={ofOther ? null : parts[0]?.category?.name ?? null} lang={lang}
                     who={ofOther ? partners.find((p) => p.id === owner)?.name.split(" ")[0] ?? "La persona" : undefined} />
-                  <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${ofOther ? "" : "border-b border-border"}`}>
+                  <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${ofOther ? "" : "border-b border-border"}`}>
                     <Icon name="person" className="w-9 text-center text-muted-foreground" />
                     <span className="flex flex-1 flex-col">
                       <span>Es de otra persona</span>
                       <span className="text-caption text-muted-foreground">Le prestaste la tarjeta: no es tu gasto, te lo debe</span>
                     </span>
                     <input type="checkbox" role="switch" checked={ofOther} onChange={() => setOfOther(!ofOther)}
-                      className="size-[22px] accent-primary" />
+                      className="size-5.5 accent-primary" />
                   </label>
                   {ofOther && (
                     <div className="border-b border-border pb-3">
@@ -583,14 +582,14 @@ export function Registrar({ editing, recurring, reminder }: {
             <WithPartnerField value={withPartner} onChange={setWithPartner} />
           )}
           {!editing && !recurring && (
-            <label className="flex min-h-[52px] cursor-pointer items-center gap-3 border-b border-border">
+            <label className="flex min-h-row-sm cursor-pointer items-center gap-3 border-b border-border">
               <Icon name="repeat" className="w-9 text-center text-muted-foreground" />
               <span className="flex flex-1 flex-col">
                 <span>Se repite</span>
                 <span className="text-caption text-muted-foreground">El sueldo, el alquiler, Netflix: PPM lo registra cada vez</span>
               </span>
               <input type="checkbox" role="switch" checked={repeat} onChange={() => { setRepeat(!repeat); setInInstallments(false); }}
-                className="size-[22px] accent-primary" />
+                className="size-5.5 accent-primary" />
             </label>
           )}
           {repeating && (
@@ -598,28 +597,30 @@ export function Registrar({ editing, recurring, reminder }: {
               <div role="radiogroup" aria-label="¿Cada cuánto?" className="flex flex-wrap gap-2">
                 {FREQS.map(([f, label]) => (
                   <button key={f} type="button" role="radio" aria-checked={f === freq} onClick={() => setFreq(f)}
-                    className={`h-9 rounded-full border px-3.5 text-caption font-semibold ${f === freq ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+                    className={`hit-area h-9 rounded-full border px-3.5 text-caption font-semibold ${f === freq ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
                     {label}
                   </button>
                 ))}
               </div>
               {freq === "other" && (
-                <div className="grid grid-cols-[96px_1fr] items-end gap-3">
-                  <label className="flex flex-col gap-0.5 text-caption font-semibold">
+                <div className="flex items-end gap-3">
+                  <label className="flex w-24 flex-none flex-col gap-0.5 text-caption font-semibold">
                     Cada
                     <input inputMode="numeric" value={every} onChange={(e) => setEvery(e.target.value.replace(/\D/g, ""))}
-                      className="h-10 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] tabular-nums" />
+                      className="h-control border-0 border-b-2 border-input-line bg-transparent p-0 text-body-lg tabular-nums" />
                   </label>
-                  <Segmented label="Unidad" size="sm" value={unit} onChange={(v) => setUnit(v as RuleIn["interval"])}
-                    options={[{ value: "day", label: "Días" }, { value: "week", label: "Semanas" }, { value: "month", label: "Meses" }]} />
+                  <div className="min-w-0 flex-1">
+                    <Segmented label="Unidad" size="sm" value={unit} onChange={(v) => setUnit(v as RuleIn["interval"])}
+                      options={[{ value: "day", label: "Días" }, { value: "week", label: "Semanas" }, { value: "month", label: "Meses" }]} />
+                  </div>
                 </div>
               )}
               <button type="button" aria-haspopup="dialog" onClick={() => setDateOpen(true)}
                 className="flex flex-col items-start border-b-2 border-input-line pb-1.5 text-left">
                 <span className="text-caption font-semibold">¿Qué día?</span>
-                <span className="flex w-full items-center gap-2 text-[17px] leading-[26px]">
+                <span className="flex w-full items-center gap-2 text-body-lg">
                   <Facts className="flex-1" items={[["Se repite", ruleText(ruleNow)], ["Desde", shortDate(date)]]} />
-                  <Icon name="calendar_month" className="text-[22px] text-muted-foreground" />
+                  <Icon name="calendar_month" size="md" className="text-muted-foreground" />
                 </span>
               </button>
               <Segmented label="¿Hasta cuándo?" size="sm" value={endType} onChange={(v) => setEndType(v as RuleIn["end_type"])}
@@ -629,15 +630,15 @@ export function Registrar({ editing, recurring, reminder }: {
                 <label className="flex flex-col gap-0.5 text-caption font-semibold">
                   ¿Cuántas veces?
                   <input inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value.replace(/\D/g, ""))}
-                    className="h-10 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] tabular-nums" />
+                    className="h-control border-0 border-b-2 border-input-line bg-transparent p-0 text-body-lg tabular-nums" />
                 </label>
               )}
               <div role="radiogroup" aria-label="¿Cómo se registra?" className="flex flex-col gap-1">
                 <span className="text-caption font-semibold">¿Cómo se registra?</span>
                 {MODES.map(([m, hint]) => (
                   <button key={m} type="button" role="radio" aria-checked={m === mode} onClick={() => setMode(m)}
-                    className={`flex min-h-12 items-center gap-3 rounded-md px-3 text-left ${m === mode ? "bg-muted" : ""}`}>
-                    <Icon name={m === mode ? "radio_button_checked" : "radio_button_unchecked"} fill={m === mode} className="text-[22px]" />
+                    className={`flex min-h-12 items-center gap-3 rounded-md px-3 text-left ${m === mode ? "bg-muted" : "hover:bg-muted"}`}>
+                    <Icon name={m === mode ? "radio_button_checked" : "radio_button_unchecked"} fill={m === mode} size="md" />
                     <span className="flex flex-col">
                       <span className="font-semibold">{m === "reminder" ? "Solo avisarme" : MODE_NAME[m]}</span>
                       <span className="text-caption text-muted-foreground">{hint}</span>
@@ -649,7 +650,7 @@ export function Registrar({ editing, recurring, reminder }: {
             </div>
           )}
           {!repeating && (
-          <label className="flex min-h-[52px] cursor-pointer items-center gap-3">
+          <label className="flex min-h-row-sm cursor-pointer items-center gap-3">
             <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
             <span className="flex flex-1 flex-col">
               <span>Por confirmar</span>
@@ -658,7 +659,7 @@ export function Registrar({ editing, recurring, reminder }: {
               </span>
             </span>
             <input type="checkbox" role="switch" checked={pending || future} disabled={future} onChange={() => setPending(!pending)}
-              className="size-[22px] accent-primary" />
+              className="size-5.5 accent-primary" />
           </label>
           )}
           <TagField value={tagIds} onChange={setTagIds} />
@@ -702,8 +703,8 @@ function FxPreview({ account, out, into, base, lang }: {
   const money = (v: string) => formatAmount(v, symbolOf(base), lang);
   return (
     <section aria-label={gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}
-      className="mt-3 flex flex-col gap-1.5 rounded-[12px] border border-border bg-card px-3.5 py-3">
-      <span className="flex items-center gap-2.5">
+      className="mt-3 flex flex-col gap-1.5 rounded-lg border border-border bg-card px-4 py-3">
+      <span className="flex items-center gap-3">
         <CategoryChip category={{ icon: "currency_exchange", color: gain ? 10 : 1 }} size={32} />
         <span className="flex-1 font-semibold">{gain ? "Ganancia por tipo de cambio" : "Costo del cambio"}</span>
         <span className={`font-semibold tabular-nums ${gain ? "text-income" : "text-expense"}`}>
@@ -719,9 +720,9 @@ function FxPreview({ account, out, into, base, lang }: {
 
 /** «Tipo de cambio 3.750, sale solo de los dos montos». */
 function impliedRate(out: string, into: string, from: string, to: string, base: string, lang: string) {
-  const a = Number(parseAmount(out || "0", lang));
-  const b = Number(parseAmount(into || "0", lang));
-  if (!a || !b) return "El tipo de cambio sale solo de los dos montos.";
-  const rate = from === base ? a / b : to === base ? b / a : null;
-  return rate ? `Tipo de cambio ${rate.toFixed(3)}, sale solo de los dos montos.` : "Cambio entre dos monedas extranjeras.";
+  const a = parseAmount(out || "0", lang) ?? "0";
+  const b = parseAmount(into || "0", lang) ?? "0";
+  if (isZero(a) || isZero(b)) return "El tipo de cambio sale solo de los dos montos.";
+  const rate = from === base ? divide(a, b, 3) : to === base ? divide(b, a, 3) : null;
+  return rate ? `Tipo de cambio ${rate}, sale solo de los dos montos.` : "Cambio entre dos monedas extranjeras.";
 }

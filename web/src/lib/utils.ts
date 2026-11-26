@@ -5,7 +5,7 @@ import { extendTailwindMerge } from "tailwind-merge";
 // parece un color y se borra al lado de «text-foreground».
 // En una sola cadena: scripts/ui-icons.mjs busca nombres de ícono entre comillas, y «code» o «toast»
 // sueltos se colarían en la fuente de íconos.
-const FONT_SIZES = "title-display title-hero title-1 title-2 amount-display amount-display-2 amount-input amount-input-symbol amount-xl amount-lg amount-hero amount body body-strong body-sm caption caption-sm label code".split(" ");
+const FONT_SIZES = "title-display title-hero title-1 title-2 amount-display amount-display-2 amount-input amount-input-symbol amount-xl amount-lg amount-hero amount body body-strong body-lg body-sm caption caption-sm label code".split(" ");
 const LAYERS = "raised dropdown nav panel sheet toast".split(" ");
 
 const twMerge = extendTailwindMerge({

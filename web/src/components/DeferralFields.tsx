@@ -68,7 +68,7 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
               <label className="flex flex-col gap-1.5 text-caption font-semibold">
                 ¿En cuántos meses?
                 <input inputMode="numeric" value={v.months} onChange={(e) => set({ months: e.target.value.replace(/\D/g, "").slice(0, 2) })}
-                  className="h-11 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] font-normal tabular-nums" />
+                  className="h-11 border-0 border-b-2 border-input-line bg-transparent p-0 text-body-lg tabular-nums" />
               </label>
             )}
           </div>

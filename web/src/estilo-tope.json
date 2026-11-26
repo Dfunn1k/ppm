@@ -16,12 +16,12 @@
   "aMano": 1
  },
  "components/Attachments.tsx": {
-  "arbitrario": 18,
+  "arbitrario": 17,
   "hex": 1,
   "colorTailwind": 1
  },
  "components/CancelPlanSheet.tsx": {
-  "arbitrario": 2
+  "arbitrario": 1
  },
  "components/CategorySheet.tsx": {
   "arbitrario": 9
@@ -30,7 +30,7 @@
   "arbitrario": 6
  },
  "components/DateSheet.tsx": {
-  "arbitrario": 11
+  "arbitrario": 10
  },
  "components/DebtCard.tsx": {
   "arbitrario": 15,
@@ -38,10 +38,10 @@
   "aMano": 1
  },
  "components/Deferral.tsx": {
-  "arbitrario": 6
+  "arbitrario": 5
  },
  "components/DeferralFields.tsx": {
-  "arbitrario": 7
+  "arbitrario": 6
  },
  "components/EmptyState.tsx": {
   "arbitrario": 2
@@ -57,9 +57,6 @@
   "arbitrario": 2,
   "aMano": 2
  },
- "components/MasTipos.tsx": {
-  "arbitrario": 10
- },
  "components/MaturitySheet.tsx": {
   "arbitrario": 2
  },
@@ -72,7 +69,7 @@
   "arbitrario": 8
  },
  "components/PersonPicker.tsx": {
-  "arbitrario": 5,
+  "arbitrario": 4,
   "capa": 1
  },
  "components/Rail.tsx": {
@@ -91,7 +88,7 @@
   "aMano": 1
  },
  "components/Sheet.tsx": {
-  "arbitrario": 9,
+  "arbitrario": 7,
   "capa": 1
  },
  "components/ShortcutsHelp.tsx": {
@@ -109,7 +106,7 @@
   "arbitrario": 3
  },
  "components/ui.tsx": {
-  "arbitrario": 7
+  "arbitrario": 5
  },
  "pages/CrearCuenta.tsx": {
   "arbitrario": 2
@@ -212,7 +209,6 @@
   "aMano": 2
  },
  "pages/movimientos/Movimientos.tsx": {
-  "arbitrario": 14,
   "enLinea": 1
  },
  "pages/movimientos/PorClasificar.tsx": {
@@ -221,10 +217,6 @@
  "pages/movimientos/Reembolso.tsx": {
   "arbitrario": 12,
   "aMano": 1
- },
- "pages/movimientos/Registrar.tsx": {
-  "arbitrario": 42,
-  "aMano": 6
  },
  "pages/movimientos/RegistrarPersona.tsx": {
   "arbitrario": 22,

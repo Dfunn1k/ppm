@@ -5,6 +5,9 @@ import { NavLink, useLocation, useSearchParams } from "react-router";
 import { type MonthFilters, type MoveSummary, useAccounts, useMe, useMonth, useTags } from "@/api/hooks";
 import { CategorySheet } from "@/components/CategorySheet";
 import { MoveAmount, MoveIcon, MoveLine, MoveName, moveBits } from "@/components/MoveBits";
+import { IconButton } from "@/components/Button";
+import { SearchField } from "@/components/SearchField";
+import { SectionHeading } from "@/components/SectionHeading";
 import { OptionList, Sheet } from "@/components/Sheet";
 import { BoneRows } from "@/components/Skeleton";
 import { Kbd } from "@/components/ShortcutsHelp";
@@ -87,55 +90,52 @@ export function Movimientos() {
   const sym = symbolOf(m?.currency ?? me?.currency);
   const accountName = accounts && filters.account_id
     ? [...accounts.have, ...accounts.owe].find((a) => a.id === filters.account_id)?.name : null;
+  // Un filtro: elegido, con el acento y una × para quitarlo; se toca en 44 px aunque mida 36
   const chip = (on: boolean) =>
-    `flex h-9 flex-none items-center gap-0.5 rounded-full px-3 text-caption font-semibold ${on ? "bg-primary text-primary-foreground" : "border border-border"}`;
+    `hit-area flex h-9 flex-none items-center gap-0.5 rounded-full px-3 text-caption font-semibold ${on ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28 md:max-w-160 md:pb-10">
       <span className="text-label text-muted-foreground">Movimientos</span>
       <button type="button" aria-haspopup="dialog" onClick={() => setSheet("month")}
-        className="mt-2 flex items-center gap-1 self-start font-display text-[34px] leading-[38px] font-extrabold tracking-[-0.02em]">
+        className="mt-2 flex min-h-control items-center gap-1 self-start text-title-1">
         <h1>{monthName(filters.month)}</h1>
-        <Icon name="expand_more" className="text-[28px] text-muted-foreground" />
+        <Icon name="expand_more" size="md" className="text-muted-foreground" />
       </button>
       {m && (
         <div className="mt-2 flex gap-4 text-caption font-semibold tabular-nums">
-          <span className="flex items-center gap-0.5 text-income"><Icon name="south_west" className="text-[16px]" />Entró + {formatAmount(m.income_total, sym, lang)}</span>
-          <span className="flex items-center gap-0.5 text-expense"><Icon name="north_east" className="text-[16px]" />Salió − {formatAmount(m.expense_total, sym, lang)}</span>
+          <span className="flex items-center gap-0.5 text-income"><Icon name="south_west" size="sm" />Entró + {formatAmount(m.income_total, sym, lang)}</span>
+          <span className="flex items-center gap-0.5 text-expense"><Icon name="north_east" size="sm" />Salió − {formatAmount(m.expense_total, sym, lang)}</span>
         </div>
       )}
 
-      <label className="mt-4 flex h-11 items-center gap-2 rounded-md bg-muted px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
-        <Icon name="search" className="text-muted-foreground" />
-        <input aria-label="Buscar movimientos" placeholder="Buscar por nota, categoría o monto" value={search}
-          onChange={(e) => setSearch(e.target.value)} className="peer min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
+      <SearchField label="Buscar movimientos" type="text" placeholder="Buscar por nota, categoría o monto" value={search}
+        onChange={(e) => setSearch(e.target.value)} className="mt-4">
         {hints && !search && <span className="peer-focus:hidden"><Kbd>{keyLabel(keys.search)}</Kbd></span>}
-        {search && (
-          <button type="button" aria-label="Borrar búsqueda" onClick={() => setSearch("")}><Icon name="close" className="text-muted-foreground" /></button>
-        )}
-      </label>
-      <div className="-mr-6 mt-2.5 flex gap-2 overflow-x-auto pr-6 pb-1">
+        {search && <IconButton icon="close" label="Borrar búsqueda" onClick={() => setSearch("")} className="-mr-3 text-muted-foreground" />}
+      </SearchField>
+      <div className="-mr-6 mt-2 flex gap-2 overflow-x-auto py-1 pr-6">
         <button type="button" className={chip(!!filters.account_id)} onClick={() => (filters.account_id ? set("cuenta", null) : setSheet("account"))}>
-          {accountName ?? "Cuenta"}<Icon name={filters.account_id ? "close" : "expand_more"} className="text-[18px]" />
+          {accountName ?? "Cuenta"}<Icon name={filters.account_id ? "close" : "expand_more"} />
         </button>
         <button type="button" className={chip(!!filters.category_id)} onClick={() => (filters.category_id ? set("categoria", null) : setSheet("category"))}>
           {filters.category_id ? params.get("categoria_nombre") ?? "Categoría" : "Categoría"}
-          <Icon name={filters.category_id ? "close" : "expand_more"} className="text-[18px]" />
+          <Icon name={filters.category_id ? "close" : "expand_more"} />
         </button>
         <button type="button" className={chip(!!filters.kind)} onClick={() => (filters.kind ? set("tipo", null) : setSheet("kind"))}>
           {KIND_OPTIONS.find((k) => k.value === filters.kind)?.label ?? "Tipo"}
-          <Icon name={filters.kind ? "close" : "expand_more"} className="text-[18px]" />
+          <Icon name={filters.kind ? "close" : "expand_more"} />
         </button>
         {(tags.length > 0 || filters.tag_id) && (
           <button type="button" className={chip(!!filters.tag_id)} onClick={() => (filters.tag_id ? set("etiqueta", null) : setSheet("tag"))}>
             {filters.tag_id ? tags.find((t) => t.id === filters.tag_id)?.name ?? "Etiqueta" : "Etiqueta"}
-            <Icon name={filters.tag_id ? "close" : "expand_more"} className="text-[18px]" />
+            <Icon name={filters.tag_id ? "close" : "expand_more"} />
           </button>
         )}
         {(m?.pending_count ?? 0) > 0 || filters.pending ? (
           <button type="button" aria-pressed={!!filters.pending} onClick={() => set("pendientes", filters.pending ? null : "1")}
-            className={`flex h-9 flex-none items-center gap-1 rounded-full px-3 text-caption font-semibold ${filters.pending ? "bg-attention text-background" : "bg-attention-soft text-attention"}`}>
-            <Icon name="schedule" className="text-[18px]" />
+            className={`hit-area flex h-9 flex-none items-center gap-1 rounded-full px-3 text-caption font-semibold ${filters.pending ? "bg-attention text-background" : "bg-attention-soft text-attention"}`}>
+            <Icon name="schedule" />
             {m?.pending_count ?? 0} por confirmar
           </button>
         ) : null}
@@ -154,10 +154,10 @@ export function Movimientos() {
       )}
       {m?.days.map((d) => (
         <section key={d.date} aria-label={dayLabel(d.date)} className="flex flex-col">
-          <div className="mt-4 flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-            <span className="flex items-center gap-2.5">{dayLabel(d.date)}{d.moves.every((x) => !x.posted) && <Status icon="schedule" attention>Por confirmar</Status>}</span>
-            {!isZero(d.total) && <span>{d.total.startsWith("-") ? "− " : "+ "}{formatAmount(d.total.replace("-", ""), sym, lang)}</span>}
-          </div>
+          <SectionHeading className="mt-4"
+            action={!isZero(d.total) && <span className="text-label text-muted-foreground tabular-nums">{d.total.startsWith("-") ? "− " : "+ "}{formatAmount(d.total.replace("-", ""), sym, lang)}</span>}>
+            <span className="flex items-center gap-2">{dayLabel(d.date)}{d.moves.every((x) => !x.posted) && <Status icon="schedule" attention>Por confirmar</Status>}</span>
+          </SectionHeading>
           {d.moves.map((x) => <MoveRow key={x.id} move={x} lang={lang} base={m.currency} />)}
         </section>
       ))}
@@ -179,7 +179,7 @@ export function Movimientos() {
           {tags.filter((t) => t.active || t.id === filters.tag_id).map((t) => (
             <button key={t.id} type="button" role="radio" aria-checked={t.id === filters.tag_id}
               onClick={() => { set("etiqueta", String(t.id)); setSheet(null); }}
-              className={`flex min-h-14 items-center gap-3 rounded-md px-3 text-left text-[17px] ${t.id === filters.tag_id ? "bg-muted" : ""}`}>
+              className={`flex min-h-row-option items-center gap-3 rounded-md px-3 text-left text-body-lg ${t.id === filters.tag_id ? "bg-muted" : "hover:bg-muted"}`}>
               <span aria-hidden="true" className="size-3 rounded-full" style={{ background: tagColor(t.color) }} />
               <span className="flex-1">{t.name}</span>
             </button>
@@ -190,7 +190,7 @@ export function Movimientos() {
         <div className="fixed inset-x-0 top-3 z-toast md:left-rail mx-auto flex max-w-md justify-center gap-1">
           {(["expense", "income"] as const).map((k) => (
             <button key={k} type="button" aria-pressed={categoryKind === k} onClick={() => setCategoryKind(k)}
-              className={`h-9 rounded-full px-4 text-caption font-semibold ${categoryKind === k ? "bg-primary text-primary-foreground" : "bg-card"}`}>
+              className={`hit-area h-9 rounded-full px-4 text-caption font-semibold ${categoryKind === k ? "bg-primary text-primary-foreground" : "bg-card"}`}>
               {k === "expense" ? "De gasto" : "De ingreso"}
             </button>
           ))}
@@ -211,7 +211,7 @@ function MoveRow({ move: x, lang, base }: { move: MoveSummary; lang: string; bas
   const desktop = useDesktop();
   return (
     <NavLink to={{ pathname: `/movimientos/${x.id}`, search: desktop ? search : "" }}
-      className="flex min-h-[60px] items-center gap-3 border-b border-border py-2 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
+      className="flex min-h-row items-center gap-3 border-b border-border py-2 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:mark-selected">
       <MoveIcon move={x} />
       <span className="flex min-w-0 flex-1 flex-col">
         <MoveName move={x} />
