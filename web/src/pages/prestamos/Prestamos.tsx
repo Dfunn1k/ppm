@@ -1,5 +1,8 @@
 // C4 · Préstamo de banco: crearlo (ya lo venía pagando o recién me lo dieron), su detalle (lo que
 // debes, la próxima cuota y las pagadas) y pagar la cuota con los montos de la boleta.
+import { SectionHeading } from "@/components/SectionHeading";
+import { ProgressBar } from "@/components/ProgressBar";
+import { PageHeader } from "@/components/PageHeader";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -21,15 +24,15 @@ function PartField({ label, hint, value, onChange, symbol }: {
   label: string; hint?: string; value: string; onChange: (v: string) => void; symbol: string;
 }) {
   return (
-    <label className="grid grid-cols-[minmax(0,1fr)_140px] items-end gap-3">
-      <span className="flex flex-col">
+    <label className="flex items-end gap-3">
+      <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{label}</span>
-        {hint && <span className="text-[12px] leading-4 text-muted-foreground">{hint}</span>}
+        {hint && <span className="text-caption-sm text-muted-foreground">{hint}</span>}
       </span>
-      <span className="flex items-baseline gap-1.5 border-b-2 border-input-line">
+      <span className="flex w-35 flex-none items-baseline gap-1.5 border-b-2 border-input-line">
         <span aria-hidden="true" className="font-semibold text-muted-foreground">{symbol}</span>
         <input inputMode="decimal" placeholder="0.00" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}
-          className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-right text-[20px] font-semibold tabular-nums" />
+          className="h-control min-w-0 flex-1 border-0 bg-transparent p-0 text-right text-amount-xl" />
       </span>
     </label>
   );
@@ -97,9 +100,9 @@ export function NuevoPrestamo() {
           <label className="flex flex-col gap-0.5 text-caption font-semibold">
             {fresh ? "¿Cuánto te dieron?" : "¿Cuánto debes hoy?"}
             <span className="flex items-baseline gap-2 border-b-2 border-input-line">
-              <span aria-hidden="true" className="text-[20px] font-semibold text-muted-foreground">{sym}</span>
+              <span aria-hidden="true" className="text-amount-xl text-muted-foreground">{sym}</span>
               <input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
-                className="h-12 min-w-0 flex-1 border-0 bg-transparent p-0 text-[30px] font-semibold tabular-nums" />
+                className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-input" />
             </span>
             <span className="font-normal text-muted-foreground">
               {fresh ? "Entra a tu cuenta y nace la deuda: no es un ingreso." : "Solo el capital. Míralo en tu cronograma o en la app del banco. Tus cuentas no se mueven."}
@@ -114,12 +117,12 @@ export function NuevoPrestamo() {
             <label className="flex flex-col gap-0.5 text-caption font-semibold">
               Se paga el día
               <input inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value.replace(/\D/g, ""))}
-                className="h-10 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] tabular-nums" />
+                className="h-control border-0 border-b-2 border-input-line bg-transparent p-0 text-body-lg tabular-nums" />
             </label>
             <label className="flex flex-col gap-0.5 text-caption font-semibold">
               Cuotas que faltan
               <input inputMode="numeric" value={left} onChange={(e) => setLeft(e.target.value.replace(/\D/g, ""))}
-                className="h-10 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] tabular-nums" />
+                className="h-control border-0 border-b-2 border-input-line bg-transparent p-0 text-body-lg tabular-nums" />
             </label>
           </div>
           <PartField label="Capital" hint="Baja lo que debes" value={capital} onChange={setCapital} symbol={sym} />
@@ -157,57 +160,52 @@ export function Prestamo() {
   // Un punto por cuota, lleno si ya la pagaste (caso 7); con muchas cuotas, la barra del capital
   const dots = !paidOff && total > 0 && total <= 36;
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center">
-        <Link to="/cuentas" aria-label="Volver a cuentas" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-      </div>
-      <span className="mt-1 text-label text-muted-foreground">Préstamo en {l.currency === "PEN" ? "soles" : l.currency === "USD" ? "dólares" : l.currency}{l.bank ? ` del ${l.bank}` : ""}</span>
-      <h1 className="mt-1 text-title-hero">{l.name}</h1>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28 md:max-w-160 md:pb-10">
+      <PageHeader back={{ to: "/cuentas", label: "Volver a cuentas" }} title={l.name}
+        eyebrow={`Préstamo en ${l.currency === "PEN" ? "soles" : l.currency === "USD" ? "dólares" : l.currency}${l.bank ? ` del ${l.bank}` : ""}`} />
       <span className="mt-3 text-caption text-muted-foreground">Debes hoy</span>
-      <span className="text-[40px] leading-[44px] font-semibold tracking-[-0.02em] tabular-nums">{money(l.debt)}</span>
+      <span className="text-amount-display">{money(l.debt)}</span>
       <span className="text-caption text-muted-foreground">Solo el capital, sin los intereses que faltan</span>
       <div className="mt-2 flex flex-col gap-1.5">
         {dots ? (
           <div role="img" aria-label={`Pagaste ${progressText}`} className="flex flex-wrap gap-1">
             {Array.from({ length: total }, (_, i) => (
-              <span key={i} className={`size-2.5 rounded-full ${i < l.paid_count ? "bg-primary" : "border-[1.5px] border-input-line"}`} />
+              <span key={i} className={`size-2.5 rounded-full ${i < l.paid_count ? "bg-primary" : "border-2 border-input-line"}`} />
             ))}
           </div>
         ) : (
-          <div role="img" aria-label={progressText} className="h-2.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-2.5 rounded-full bg-primary" style={{ width: `${paidOff ? 100 : progress}%` }} />
-          </div>
+          <ProgressBar value={paidOff ? 100 : progress} max={100} tone="primary" size="md" label={progressText} />
         )}
         <span className="text-caption text-muted-foreground">{progressText}</span>
       </div>
 
       {l.next && !paidOff && (
-        <section aria-label="Próxima cuota" className="mt-4 flex flex-col gap-1.5 rounded-md border border-border bg-card px-3.5 py-3 tabular-nums">
+        <section aria-label="Próxima cuota" className="mt-4 flex flex-col gap-1.5 rounded-md border border-border bg-card px-4 py-3 tabular-nums">
           <span className="flex items-baseline justify-between"><b>Próxima cuota el {shortDate(l.next.occurrence)}</b><b>{money(l.next.total)}</b></span>
-          <span className="grid grid-cols-[minmax(0,1fr)_auto] gap-y-0.5 text-caption text-muted-foreground">
+          <span className="grid grid-cols-pairs gap-y-0.5 text-caption text-muted-foreground">
             {l.next.parts.map((p) => (
               <span key={p.name} className="contents">
-                <span className="flex flex-col"><span className="text-foreground">{p.name}</span><span className="text-[12px] leading-4">{p.name === "Capital" ? "Baja lo que debes" : "Es gasto"}</span></span><span>{formatNumber(p.amount, lang)}</span>
+                <span className="flex flex-col"><span className="text-foreground">{p.name}</span><span className="text-caption-sm">{p.name === "Capital" ? "Baja lo que debes" : "Es gasto"}</span></span><span>{formatNumber(p.amount, lang)}</span>
               </span>
             ))}
           </span>
-          <span className="flex items-center gap-1 text-[12px] font-semibold text-attention">
-            <Icon name="schedule" className="text-[16px]" />
+          <span className="flex items-center gap-1 text-caption-sm font-semibold text-attention">
+            <Icon name="schedule" size="sm" />
             {l.next.move_id ? "Ya está por confirmar: corrígela con la boleta" : `Se crea por confirmar el ${Number(l.next.occurrence.slice(8))}; corrígela con la boleta`}
           </span>
-          <Link to={`/prestamos/${id}/pagar`} className="mt-1 flex h-12 items-center justify-between rounded-md bg-primary px-4 font-semibold text-primary-foreground">
-            <span>Pagar cuota</span><Icon name="arrow_forward" className="text-[22px]" />
+          <Link to={`/prestamos/${id}/pagar`} className="mt-1 flex min-h-12 items-center justify-between rounded-md bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90">
+            <span>Pagar cuota</span><Icon name="arrow_forward" size="md" />
           </Link>
         </section>
       )}
       {paidOff && (
-        <div className="mt-4 flex gap-2 rounded-md bg-muted p-3.5">
-          <Icon name="celebration" className="text-[22px]" />
+        <div className="mt-4 flex gap-2 rounded-md bg-muted p-4">
+          <Icon name="celebration" size="md" />
           <span><b>Lo terminaste de pagar.</b> Ya no le debes nada al banco; la cuota dejó de repetirse.</span>
         </div>
       )}
       {l.recurring_id && !paidOff && (
-        <Link to={`/mas/recurrentes/${l.recurring_id}`} className="mt-2 flex min-h-[52px] items-center gap-3 border-b border-border">
+        <Link to={`/mas/recurrentes/${l.recurring_id}`} className="mt-2 flex min-h-row-sm items-center gap-3 border-b border-border">
           <Icon name="repeat" className="text-muted-foreground" />
           <span className="flex flex-1 flex-col">
             <span className="font-semibold">Se repite cada mes</span>
@@ -217,13 +215,13 @@ export function Prestamo() {
         </Link>
       )}
 
-      <span className="mt-4 border-b border-border pb-1 text-label text-muted-foreground">Cuotas pagadas</span>
+      <SectionHeading className="mt-4">Cuotas pagadas</SectionHeading>
       {l.paid.length === 0 && <span className="py-3 text-caption text-muted-foreground">Todavía no pagas una cuota en PPM.</span>}
       {l.paid.map((p) => (
-        <Link key={p.move_id} to={`/movimientos/${p.move_id}`} className="flex min-h-[54px] items-center gap-3 border-b border-border">
+        <Link key={p.move_id} to={`/movimientos/${p.move_id}`} className="flex min-h-row-sm items-center gap-3 border-b border-border">
           <span className="flex flex-1 flex-col">
             <span className="font-semibold">{dayDate(p.date)}</span>
-            <span className="text-[12px] leading-4 text-muted-foreground tabular-nums">
+            <span className="text-caption-sm text-muted-foreground tabular-nums">
               {p.parts.map((x, k) => `${k ? x.name.toLowerCase() : x.name} ${formatNumber(x.amount, lang)}`).join(" + ")}
             </span>
           </span>
@@ -280,8 +278,8 @@ export function PagarCuota() {
           <PartField label="Interés" hint="Es gasto, en Gastos financieros" value={v["Interés"] ?? ""} onChange={set("Interés")} symbol={sym} />
           <PartField label="Seguro" hint="Es gasto, el desgravamen" value={v.Seguro ?? ""} onChange={set("Seguro")} symbol={sym} />
         </div>
-        <div role="status" className="mt-4 flex items-baseline justify-between rounded-md bg-muted px-3.5 py-3 tabular-nums">
-          <span className="font-semibold">Pagas</span><span className="text-[22px] font-semibold">{formatAmount(total, sym, lang)}</span>
+        <div role="status" className="mt-4 flex items-baseline justify-between rounded-md bg-muted px-4 py-3 tabular-nums">
+          <span className="font-semibold">Pagas</span><span className="text-amount-xl">{formatAmount(total, sym, lang)}</span>
         </div>
         <span className="mt-1.5 text-caption text-muted-foreground">
           {total === n(l.next.total) ? "Son los montos estimados de la cuota; cámbialos si tu boleta dice otra cosa." : `Lo estimado era ${formatAmount(l.next.total, sym, lang)}.`}
@@ -290,8 +288,8 @@ export function PagarCuota() {
           <SheetSelect label="Sale de" sheetTitle="¿De qué cuenta sale?" value={from ? String(from.id) : ""} onChange={setFromId}
             options={pays.map((a) => ({ value: String(a.id), label: a.name, hint: formatAmount(a.balances[0]?.amount ?? "0.00", sym, lang) }))} />
           <button type="button" onClick={() => setDateOpen(true)}
-            className="flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold">
-            <Icon name="event" className="text-[18px]" />{dateLabel(date)}
+            className="hit-area flex h-9 items-center gap-1 self-start rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted">
+            <Icon name="event" />{dateLabel(date)}
           </button>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo pagaste?" value={date} onChange={setDate} max={todayISO()} booked />
           <span className="text-caption text-muted-foreground">Es la cuota del {shortDate(l.next.occurrence)}: si pagas antes, ese día no se crea otra.</span>

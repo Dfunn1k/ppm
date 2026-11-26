@@ -1,11 +1,12 @@
 // C3 · Pagar tarjeta: un bolsillo a la vez (soles o dólares) y solo desde cuentas de esa moneda. La
 // deuda en dólares se paga con dólares: sin dólares, lleva a comprarlos primero. Es una transferencia
 // de tu cuenta a la tarjeta; no es un gasto (el gasto se registró al comprar).
+import { IconButton } from "@/components/Button";
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { useAccounts, useCard, useMe, useSaveMove } from "@/api/hooks";
-import { SheetSelect } from "@/components/Sheet";
+import { SheetSelect, SEGMENTS, segment } from "@/components/Sheet";
 import { ErrorAlert, Facts, Icon, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
@@ -76,9 +77,7 @@ export function PagarTarjeta() {
   return (
     <Screen className="pt-4">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin pagar" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="close" className="text-[24px]" />
-        </button>
+        <IconButton icon="close" label="Cerrar sin pagar" onClick={back} />
         <span className="pr-2.5 text-label text-muted-foreground">Pagar tarjeta</span>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
@@ -86,13 +85,13 @@ export function PagarTarjeta() {
         <Facts className="mt-1" items={[["Ciclo", `Cerró el ${shortDate(d.last_closing)}`], d.date_due && ["Pagar antes del", shortDate(d.date_due)]]} />
 
         {sides.length > 1 && (
-          <div role="radiogroup" aria-label="Qué parte pagas" className="mt-5 grid gap-1 rounded-md bg-muted p-[3px]"
+          <div role="radiogroup" aria-label="Qué parte pagas" className={`mt-5 ${SEGMENTS}`}
             style={{ gridTemplateColumns: `repeat(${sides.length}, minmax(0, 1fr))` }}>
             {sides.map((s) => (
               <button key={s.currency} type="button" role="radio" aria-checked={s.currency === cur}
                 onClick={() => { setSide(s.currency); setMode(null); setAmount(""); setAccountId(""); }}
-                className={`flex h-[52px] flex-col items-center justify-center rounded-[8px] ${s.currency === cur ? "bg-selected text-selected-foreground shadow-sm" : ""}`}>
-                <span className="text-[14px] font-semibold">{(CURRENCY_NAME[s.currency] ?? s.currency).replace(/^./, (c) => c.toUpperCase())}</span>
+                className={`${segment(s.currency === cur)} min-h-row-sm content-center gap-0`}>
+                <span className="text-body-sm font-semibold">{(CURRENCY_NAME[s.currency] ?? s.currency).replace(/^./, (c) => c.toUpperCase())}</span>
                 <span className="text-caption text-muted-foreground tabular-nums">Toca {money(Number(s.to_pay) > 0 ? s.to_pay : "0.00", s.currency)}</span>
               </button>
             ))}
@@ -100,25 +99,25 @@ export function PagarTarjeta() {
         )}
 
         {noMoney ? (
-          <div role="alert" className="mt-5 flex flex-col gap-3 rounded-[12px] bg-attention-soft p-3.5 text-attention">
+          <div role="alert" className="mt-5 flex flex-col gap-3 rounded-lg bg-attention-soft p-4 text-attention">
             <span className="flex gap-2 text-caption">
               <Icon name="currency_exchange" />
               <span><b>No tienes una cuenta en {name} con plata.</b> La deuda en {name} se paga con {name}: cómpralos primero y vuelve a pagar.</span>
             </span>
-            <Link to="/registrar?tipo=transfer" className="flex h-11 items-center justify-center rounded-lg border border-current font-semibold">
+            <Link to="/registrar?tipo=transfer" className="flex min-h-control items-center justify-center rounded-lg border border-current font-semibold">
               Comprar {name}
             </Link>
           </div>
         ) : (
           <>
             <span id="cuanto" className="mt-5 text-caption font-semibold">¿Cuánto pagas?</span>
-            <div role="radiogroup" aria-labelledby="cuanto" className="mt-2 flex flex-col overflow-hidden rounded-[14px] border border-border bg-card">
+            <div role="radiogroup" aria-labelledby="cuanto" className="mt-2 flex flex-col overflow-hidden rounded-lg border border-border bg-card">
               {options.map((o, i) => {
                 const on = chosen === o.key;
                 return (
                   <button key={o.key} type="button" role="radio" aria-checked={on} disabled={o.disabled} onClick={() => setMode(o.key)}
-                    className={`flex min-h-14 items-center gap-3 px-3.5 py-2 text-left disabled:opacity-50 ${i > 0 ? "border-t border-border" : ""} ${on ? "bg-muted" : ""}`}>
-                    <Icon name={on ? "radio_button_checked" : "radio_button_unchecked"} fill={on} className={`text-[24px] ${on ? "" : "text-muted-foreground"}`} />
+                    className={`flex min-h-row-option items-center gap-3 px-4 py-2 text-left disabled:opacity-50 ${i > 0 ? "border-t border-border" : ""} ${on ? "bg-muted" : "enabled:hover:bg-muted"}`}>
+                    <Icon name={on ? "radio_button_checked" : "radio_button_unchecked"} fill={on} size="md" className={on ? "" : "text-muted-foreground"} />
                     <span className="flex flex-1 flex-col">
                       <span className="font-semibold">{o.label}</span>
                       {o.help && <span className="text-caption text-muted-foreground">{o.help}</span>}
@@ -128,20 +127,20 @@ export function PagarTarjeta() {
               })}
             </div>
             {chosen === "month" ? (
-              <span className="mt-3.5 text-[44px] leading-[52px] font-semibold tracking-[-0.02em] tabular-nums">{money(dueNow!, cur)}</span>
+              <span className="mt-3 text-amount-input">{money(dueNow!, cur)}</span>
             ) : (
-              <label className="mt-3.5 flex items-baseline gap-2 border-b-2 border-input-line">
-                <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(cur)}</span>
+              <label className="mt-3 flex items-baseline gap-2 border-b-2 border-input-line">
+                <span aria-hidden="true" className="text-amount-input-symbol font-semibold text-muted-foreground">{symbolOf(cur)}</span>
                 <input inputMode="decimal" placeholder="0.00" aria-label="Otro monto" value={amount} onChange={(e) => setAmount(e.target.value)}
                   autoFocus={mode === "other"}
-                  className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[44px] leading-[52px] font-semibold tracking-[-0.02em] tabular-nums" />
+                  className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-input" />
               </label>
             )}
             <span className="mt-2 text-caption text-muted-foreground">{hint}</span>
             {chosen === "other" && Number(current.total_debt) > 0 && (
               <button type="button" onClick={() => setAmount(formatNumber(current.total_debt, lang))}
-                className="mt-1.5 flex min-h-9 items-center gap-1 self-start text-[14px] font-semibold">
-                <Icon name="done_all" className="text-[18px]" />Pagar toda la deuda
+                className="mt-1.5 flex min-h-control items-center gap-1 self-start text-body-sm font-semibold">
+                <Icon name="done_all" />Pagar toda la deuda
               </button>
             )}
 
@@ -153,8 +152,8 @@ export function PagarTarjeta() {
             </div>
             <div className="mt-3 flex">
               <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
-                className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-                <Icon name="event" className="text-[18px]" />{dateLabel(date)}
+                className="hit-area flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted">
+                <Icon name="event" />{dateLabel(date)}
               </button>
             </div>
             <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo pagaste?" value={date} onChange={setDate} max={todayISO()} booked />

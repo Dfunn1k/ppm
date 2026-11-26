@@ -206,9 +206,6 @@
  "pages/personas/YaDebia.tsx": {
   "arbitrario": 1
  },
- "pages/prestamos/Prestamos.tsx": {
-  "arbitrario": 23
- },
  "pages/presupuesto/Borrar.tsx": {
   "arbitrario": 3,
   "aMano": 2
@@ -285,13 +282,5 @@
  },
  "pages/tarjetas/NuevaTarjeta.tsx": {
   "arbitrario": 4
- },
- "pages/tarjetas/PagarTarjeta.tsx": {
-  "arbitrario": 18
- },
- "pages/tarjetas/Tarjeta.tsx": {
-  "arbitrario": 20,
-  "enLinea": 2,
-  "aMano": 3
  }
 }

@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 5 terminado; esperando el visto bueno de Dany).
-- **Rama:** `frontend/fase-4-lote-5`
-- **Último commit:** ver `git log -1 frontend/fase-4-lote-5`
+- **Fase actual:** 4, migración por lotes (lote 6 terminado; esperando el visto bueno de Dany).
+- **Rama:** `frontend/fase-4-lote-6`
+- **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
 
 ## Checklist
 
@@ -69,17 +69,20 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 4: Registrar con persona, Asiento manual y Reembolso (con PersonPicker). PR #136, aprobado por Dany (25-nov).
   - 58 valores escritos a mano → 0; lo que se toca < 44 px en esas 8 rutas: 0 (antes «¿A quién?», «Elige la cuenta», «Otra línea», Hoy y las celdas de monto); axe sin violaciones; foco sin anillo 15 → 0 (AUDITORIA d12).
   - Los totales del asiento manual ya usan money.ts (AUDITORIA e3).
-- [x] Lote 5: Detalle de movimiento y Por clasificar (con ClassifySheet). PR #137.
+- [x] Lote 5: Detalle de movimiento y Por clasificar (con ClassifySheet). PR #137, aprobado por Dany (26-nov).
   - 46 valores escritos a mano → 0; nada que se toque < 44 px; axe sin violaciones; foco tapado 1 → 0; el buscador de Clasificar con anillo de foco (AUDITORIA d11).
   - Dany eligió (26-nov) migrar sin cambiar el diseño y hacer la versión de escritorio de Por clasificar aparte, con boceto en el lienzo antes (AUDITORIA e2).
+- [x] Lote 6: Tarjeta, Pagar tarjeta y Préstamo (con Nuevo préstamo). PR #138.
+  - 61 valores escritos a mano → 0; lo que se toca < 44 px: 0 (antes Ciclo anterior y siguiente, Hoy y Pagar toda la deuda); axe sin violaciones; foco tapado 1 → 0.
+  - El monto que escribes en Nuevo préstamo pasa de 30 a 48 px (amount-input). Si Dany lo prefiere más chico, falta un token «monto de formulario».
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
-- [ ] Después, de a 2 o 3: Tarjeta y Préstamo; Personas y Persona; Presupuesto, Sobre y Por asignar; Reportes (Gastos, Ingresos, Flujo, Patrimonio, Etiquetas, Tu plata); Recurrentes y Pendientes; Más y sus ajustes; acceso y bienvenida; importar
+- [ ] Después, de a 2 o 3: Personas y Persona; Presupuesto, Sobre y Por asignar; Reportes (Gastos, Ingresos, Flujo, Patrimonio, Etiquetas, Tu plata); Recurrentes y Pendientes; Más y sus ajustes; acceso y bienvenida; importar
 
 ### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-Dany revisa el lote 5 (PR #137) y da su visto bueno. Con su OK: lote 6, Tarjeta y Préstamo, en la rama `frontend/fase-4-lote-6`. El boceto de Por clasificar en escritorio se prepara cuando Dany diga.
+Dany revisa el lote 6 (PR #138) y da su visto bueno. Con su OK: lote 7, Personas y Persona (con DebtCard), en la rama `frontend/fase-4-lote-7`.
 
 ## Decisiones de Dany
 
