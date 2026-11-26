@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (terminada; Por clasificar en escritorio esperando el visto bueno de Dany).
-- **Rama:** `frontend/fase-4-lote-6`
-- **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
+- **Fase actual:** 5, QA final (en curso).
+- **Rama:** `frontend/fase-5-limpieza`
+- **Último commit:** ver `git log -1 frontend/fase-5-limpieza`
 
 ## Checklist
 
@@ -100,7 +100,7 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 14: lo que quedaba de cuentas y tarjetas (Nueva cuenta, el formulario de banco y efectivo, Guardo de otros, Editar banco, Nueva tarjeta, Cuotas de antes y Conciliar). PR #146, aprobado por Dany (26-nov).
   - 49 valores escritos a mano → 0; lo que se toca < 44 px: 4 a 14 por pantalla → 0; axe sin violaciones; foco sin tapar.
   - El campo de monto que comparten los formularios (AmountField: cuenta nueva, Guardo, Nueva tarjeta, De antes de PPM, saldo inicial) pasa de 34 a 40 px (amount-hero, el token más cercano). El nombre de una cuenta o tarjeta nueva pasa de 30 a 28 px (title-1). La diferencia de la cuota en Conciliar se calcula con money.ts. Utilidad nueva `grid-cols-currency-table`.
-  - Conciliar no sale en las capturas (necesita un estado de cuenta importado) ni lo abre ninguna prueba e2e: revisarlo a mano en la Fase 5.
+  - Conciliar no salía en las capturas (necesita un estado de cuenta importado). Corrección del 26-nov: sí lo abre una prueba e2e (`cuota-banco.spec.ts`, «Usar la del banco»). En la Fase 5 entra a las capturas y a axe.
 - [x] Lote 15: adjuntos (el visor de fotos y PDF y la lista de adjuntos del movimiento). PR #147, aprobado por Dany (26-nov).
   - 113 valores escritos a mano → 0, entre ellos 28 colores hex y 11 colores de Tailwind fuera del tema; lo que se toca < 44 px: 0; axe sin violaciones.
   - Dany eligió (26-nov) que el visor use la paleta siempre oscura del panel (`panel-*`), con `panel-border` (#707070, 3:1) y `panel-danger` (#ff7b6e) nuevos. El fondo pasa de #0a0a0a a #171717. Utilidad nueva `aspect-a4`.
@@ -111,11 +111,19 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
   - Los colores de etiqueta pasan a clases (catBg); las alturas de la hoja a utilidades con nombre (`max-h-sheet`, `max-h-sheet-dialog`, `top-sheet`); el globo del riel se corre 2 px; los números de las insignias suben de 10 a 12 px.
 - [x] Por clasificar en escritorio: boceto Caso17 en el lienzo, Dany eligió A, lista y panel (26-nov). PR #149. Prueba nueva en `e2e/escritorio.spec.ts`.
 
-### Fase 5 (pendiente)
+### Fase 5 — QA final (en curso)
+- [x] Código muerto: `ButtonLink`, `tagColor` y `useRecurringPending` sin uso, quitados. El CSS no tiene clases ni variables sin uso. Los tipos de la API sin uso en `api/hooks.ts` se quedan: nombran las respuestas.
+- [x] La persona de muestra trae un estado de cuenta de tarjeta y un extracto de banco importados (`capturas/archivos.ts`): Conciliar («tarjeta-estado»), Extracto y Por clasificar con movimientos entran a las capturas, a axe y al teclado (72 pantallas).
+- [x] Toda la matriz, claro y oscuro (26-nov): scroll horizontal 0; lo que se toca < 44 px 0; cortes 0; axe 0; foco tapado o sin verse 0.
+  - Con los datos nuevos aparecieron 4 y se arreglaron sin cambiar cómo se ve: el nombre en las filas de Por clasificar (22 px de alto, ahora con `hit-area`), los dos botones de «La cuota del banco es distinta» a 280 px (ahora bajan de línea), «Por clasificar» cortado sin «…» en Inicio a 1024 px, y en Por clasificar de escritorio el botón fijo tapaba la categoría con el foco (`scroll-pb-32`).
+- [ ] Piezas hechas a mano en vez del molde (recuento del 26-nov): 10 botones principales, 18 de contorno, 6 de borrar y 8 «Cancelar»; 13 pastillas para elegir; ~33 títulos de sección; 15 cabeceras con «Volver»; 7 buscadores; ~45 filas. Dany decide el alcance.
+- [ ] Lighthouse (necesita permiso de Dany).
+- [ ] La prueba en un iPhone (Dany).
+- [ ] `docs/frontend/INFORME-FINAL.md` y la skill `ppm-interfaz` con lo aprendido.
 
 ## Siguiente paso
 
-Dany revisa Por clasificar en escritorio (PR #149) y da su visto bueno. Con eso termina la Fase 4. Después, la Fase 5: QA final de toda la app (con Conciliar a mano), Lighthouse con su permiso y la prueba en un iPhone.
+Dany elige el alcance de las piezas hechas a mano (1: botones y pastillas, con boceto; 2: todo; 3: solo anotarlo) y si da permiso para Lighthouse. Luego el informe final.
 
 ## Decisiones de Dany
 
