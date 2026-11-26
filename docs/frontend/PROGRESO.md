@@ -83,7 +83,7 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
   - Textos de las decisiones D y H: «Debo a personas» y «Me deben» en Cuentas del presupuesto; «Siempre cuadra: cada sol está en un solo lugar.» en Por asignar.
   - Sobre y Por asignar pasan a title-hero (decisión C) y su monto principal a amount-display (S2). Los botones redondos de la sección se mantienen, ahora con tokens (`PILL_PRIMARY`, `PILL_SECONDARY` en common.tsx); Dany eligió (26-nov) pasarlos al botón de la app, en el lote 9.
 - [x] Lote 9: Reportes (el índice, Gastos, Ingresos, Flujo con Tu plata, Patrimonio, Personas y Etiquetas), más los botones del presupuesto pasados al botón de la app. PR #141.
-  - 127 valores escritos a mano → 0; lo que se toca < 44 px: 0; axe 25 → 0 (los gráficos chicos del índice recibían foco dentro de algo escondido, el % blanco dentro de la barra verde no llegaba a 4.5:1 y los tramos de Personas eran una imagen con botones adentro); foco tapado 2 → 0.
+  - 127 valores escritos a mano → 0; lo que se toca < 44 px: 0; axe 22 → 0 (los gráficos chicos del índice recibían foco dentro de algo escondido, el % blanco dentro de la barra verde no llegaba a 4.5:1 y los tramos de Personas eran una imagen con botones adentro); foco tapado 2 → 0.
   - Los colores de las series pasan a clases (catBg, bg-trigo…) en vez de estilos en línea; utilidad nueva `grid-cols-cash-line`; los ejes de los gráficos suben de 11 a 12 px (nada por debajo de 12).
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
 - [ ] Después, de a 2 o 3: Recurrentes y Pendientes; Más y sus ajustes; acceso y bienvenida; importar
