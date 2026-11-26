@@ -13,11 +13,13 @@ import { Installments } from "@/components/Installments";
 import { RateField, useRateInput } from "@/components/RateField";
 import { CurrencyChoice, Sheet, SheetSelect } from "@/components/Sheet";
 import { DebtCard } from "@/components/DebtCard";
+import { IconButton } from "@/components/Button";
+import { ProgressBar } from "@/components/ProgressBar";
 import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
-import { CURRENCY_NAME, add, currencyOption, divide, formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
+import { add, CURRENCY_NAME, currencyOption, divide, formatAmount, formatNumber, multiply, parseAmount, rateText, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 import { useDesktopFocus } from "@/lib/desktop";
 import { accountOption } from "@/components/AccountSub";
@@ -78,7 +80,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     : pickAccount(accounts, accountId, search.get("cuenta"), me?.home_account_id);
   const isCard = account?.kind === "card";
   const currency = isCard ? cardCurrency || base : account?.currency ?? base;
-  const rate = useRateInput(currency, base, date, account?.kind === "other" || isCard ? "sell" : "buy", editing?.rate ? Number(editing.rate).toFixed(3) : null);
+  const rate = useRateInput(currency, base, date, account?.kind === "other" || isCard ? "sell" : "buy", editing?.rate ? rateText(editing.rate) : null);
   if (!me?.currency || !overview || !people) return <Spinner />;
 
   const person: PartnerRow | undefined = people.people.find((p) => p.id === who);
@@ -174,9 +176,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Cerrar sin guardar" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="close" className="text-[24px]" />
-        </button>
+        <IconButton icon="close" label="Cerrar sin guardar" onClick={back} />
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
@@ -185,9 +185,9 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
         <label className="mt-3 flex flex-col gap-0.5 text-caption font-semibold">
           {t.ask}
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
-            <span aria-hidden="true" className="text-[26px] leading-8 font-semibold text-muted-foreground">{symbolOf(currency)}</span>
+            <span aria-hidden="true" className="text-amount-input-symbol font-semibold text-muted-foreground">{symbolOf(currency)}</span>
             <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
-              className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-[48px] leading-[56px] font-semibold tracking-[-0.02em] tabular-nums" />
+              className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-input" />
           </span>
         </label>
 
@@ -217,28 +217,28 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
               <label className="flex flex-col gap-0.5 text-caption font-semibold">
                 ¿Cuánto de la deuda en {nameOf(debtCur)} cancela?
                 <span className="flex items-baseline gap-2 border-b-2 border-input-line">
-                  <span aria-hidden="true" className="text-[20px] font-semibold text-muted-foreground">{symbolOf(debtCur)}</span>
+                  <span aria-hidden="true" className="text-amount-xl text-muted-foreground">{symbolOf(debtCur)}</span>
                   <input inputMode="decimal" placeholder={formatNumber(have, lang)} value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)}
-                    className="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 text-[24px] font-semibold tabular-nums" />
+                    className="h-control min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-xl" />
                 </span>
               </label>
               <span className="text-caption text-muted-foreground tabular-nums">
                 La deuda es en {nameOf(debtCur)} y la plata {t.into ? "entra" : "sale"} en {nameOf(currency)}
-                {crossRate ? `: a ${Number(crossRate).toFixed(3)} por ${symbolOf(currency === base ? debtCur : currency)}` : ""}.
+                {crossRate ? `: a ${crossRate} por ${symbolOf(currency === base ? debtCur : currency)}` : ""}.
               </span>
             </div>
           )}
           {foreign && !cross && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} side={isCard ? "sell" : undefined} /></div>}
           {isCard && !editing && (
             <>
-              <label className={`flex min-h-[52px] cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
+              <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
                 <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
                 <span className="flex flex-1 flex-col">
                   <span>En cuotas</span>
                   <span className="text-caption text-muted-foreground">El banco te lo cobra en varios cortes</span>
                 </span>
                 <input type="checkbox" role="switch" checked={inInstallments} onChange={() => setInInstallments(!inInstallments)}
-                  className="size-[22px] accent-primary" />
+                  className="size-5.5 accent-primary" />
               </label>
               {inInstallments && (
                 <>
@@ -249,16 +249,16 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
               )}
             </>
           )}
-          <div className="grid min-h-[52px] grid-cols-[auto_1fr] items-center gap-3 border-b border-border">
+          <div className="flex min-h-row-sm items-center gap-3 border-b border-border">
             <button type="button" aria-expanded={dateOpen} onClick={() => setDateOpen(!dateOpen)}
-              className="flex h-9 items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold">
-              <Icon name="event" className="text-[18px]" />{dateLabel(date)}
+              className="hit-area flex h-9 flex-none items-center gap-1 rounded-full border border-border px-3 text-caption font-semibold hover:bg-muted">
+              <Icon name="event" />{dateLabel(date)}
             </button>
-            <span className="flex min-w-0 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
-              className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
+            <span className="flex min-w-0 flex-1 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
+              className="h-control min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} booked />
-          <label className="flex min-h-[52px] cursor-pointer items-center gap-3">
+          <label className="flex min-h-row-sm cursor-pointer items-center gap-3">
             <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
             <span className="flex flex-1 flex-col">
               <span>Por confirmar</span>
@@ -266,7 +266,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
                 {future ? "Con fecha futura queda por confirmar hasta su día" : "No cuenta en tus saldos hasta que lo confirmes"}
               </span>
             </span>
-            <input type="checkbox" role="switch" checked={pending || future} disabled={future} onChange={() => setPending(!pending)} className="size-[22px] accent-primary" />
+            <input type="checkbox" role="switch" checked={pending || future} disabled={future} onChange={() => setPending(!pending)} className="size-5.5 accent-primary" />
           </label>
         </div>
 
@@ -277,16 +277,14 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
         ) : down ? (
           // Cobrar, pagar o devolver: lo de antes tachado, lo que queda y la deuda que se descuenta,
           // con la misma tarjeta de la persona (decisión «La persona que te debe», C2)
-          <section aria-label={down.label} className="mt-3 flex flex-col gap-2.5 rounded-[12px] border border-border bg-card px-3.5 py-3 tabular-nums">
+          <section aria-label={down.label} className="mt-3 flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 tabular-nums">
             <span className="text-caption text-muted-foreground">{down.label}</span>
-            <span className="flex flex-wrap items-center gap-x-2.5">
-              <span className="font-display text-[22px] leading-7 font-extrabold text-muted-foreground line-through decoration-2">{down.before}</span>
-              <Icon name="arrow_forward" className="text-[20px] text-muted-foreground" />
-              <span className="font-display text-[28px] leading-8 font-extrabold tracking-[-0.02em]">{down.after}</span>
+            <span className="flex flex-wrap items-center gap-x-2">
+              <span className="font-display text-amount-xl font-extrabold text-muted-foreground line-through decoration-2">{down.before}</span>
+              <Icon name="arrow_forward" className="text-muted-foreground" />
+              <span className="text-amount-display-2">{down.after}</span>
             </span>
-            <span aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-muted">
-              <span className="block h-2 rounded-full bg-foreground" style={{ width: `${down.share}%` }} />
-            </span>
+            <ProgressBar value={down.share} max={100} size="md" />
             <span className="text-caption text-muted-foreground">{down.text}</span>
             {chosen && (
               <>
@@ -294,15 +292,15 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
                 <DebtCard item={chosen} lang={lang} paid={kind === "collect" ? "Te pagó" : "Le pagaste"} selected />
                 {openDebts.length > 1 && (
                   <button type="button" onClick={() => setChoosing(true)}
-                    className="flex h-10 items-center gap-1.5 self-start rounded-full bg-secondary px-4 text-caption font-semibold text-secondary-foreground">
-                    <Icon name="swap_horiz" className="text-[18px]" />Elegir otra deuda
+                    className="flex min-h-control items-center gap-1.5 self-start rounded-full bg-secondary px-4 text-caption font-semibold text-secondary-foreground">
+                    <Icon name="swap_horiz" />Elegir otra deuda
                   </button>
                 )}
               </>
             )}
           </section>
         ) : card && (
-          <div className="mt-3 flex flex-col gap-1 rounded-[12px] border border-border bg-card px-3.5 py-3 tabular-nums">
+          <div className="mt-3 flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 tabular-nums">
             <span className="font-semibold">{card[0]}</span>
             {card[1] && <span className="text-caption text-muted-foreground">{card[1]}</span>}
           </div>
@@ -325,7 +323,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
             return (
               <button key={i.line_id} type="button" role="radio" aria-checked={on} aria-label={`${i.ref}, ${formatAmount(i.open, symbolOf(i.currency), lang)}`}
                 onClick={() => { setDebt(i !== openDebts[0] ? { id: i.line_id, ref: i.ref } : null); setChoosing(false); }}
-                className="rounded-[16px] text-left">
+                className="rounded-xl text-left">
                 <DebtCard item={i} lang={lang} paid={kind === "collect" ? "Te pagó" : "Le pagaste"} selected={on} />
               </button>
             );
