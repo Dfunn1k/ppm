@@ -250,3 +250,119 @@ La matriz de la misión (16 tamaños, más zoom, texto grande y teclado) se foto
 - montos sin partir;
 - cero paradas de teclado tapadas (`teclado.spec.ts`);
 - y, desde la Fase 3, que **texto grande** (raíz a 20 px) ya no sea idéntica a 390×844.
+
+## 3. Componentes compartidos
+
+**La analogía.** Hoy muchas pantallas recortan su galleta a mano (AUDITORIA b). Aquí van los moldes: cada uno se hace una vez en `web/src/components/`, con sus variantes y sus estados, y la Fase 4 reemplaza las galletas a mano por el molde.
+
+### 3.1 Estados que todo molde tiene
+
+| Estado | Cómo se ve | Detalle |
+|---|---|---|
+| Normal | Como en las tablas de abajo | — |
+| Hover (solo con mouse) | Fondo `muted` | Las filas, los botones de contorno y los de solo ícono. El botón principal se oscurece apenas. Con dedo no existe (2.4) |
+| Presionado | Fondo `muted` más oscuro, sin moverse | La misma regla en todos lados; hoy hay 3 maneras |
+| Foco | Anillo de 2 px en `ring`, separado 2 px (README) | **En el elemento que recibe el foco o en la caja que lo envuelve, nunca solo un cambio de color** (AUDITORIA d11 y d12: los buscadores sin anillo y PersonPicker) |
+| Elegido | `selected` en filas y opciones; `mark-selected` en la lista del escritorio; `aria-pressed`, `aria-selected` o `aria-current` según el caso | Nunca solo el color del acento (1.10) |
+| Deshabilitado | Opacidad 50 %, sin hover y sin cursor de mano | Una sola opacidad (hoy 50, 60 y 70). Un botón principal deshabilitado lleva una ayuda que dice por qué, si no es obvio |
+| Cargando | En un botón: el círculo que gira en lugar de la flecha, mismo ancho, `aria-busy`. En una pantalla: la silueta con su forma (decisión «Mientras carga», 13-nov) | Una pantalla nunca muestra solo el círculo. Las 20 que lo hacen pasan a silueta |
+| Vacío | `EmptyState`: ícono, qué es, cómo empezar y un botón si hay algo que hacer (13-nov) | Nunca ceros que parecen datos |
+| Error | `ErrorAlert` arriba de lo que falló, en `destructive-soft` con ícono y frase. En un campo: la línea en `destructive`, el mensaje debajo, `aria-invalid` y `aria-describedby` | Hoy solo uno de los campos de monto marca `aria-invalid` |
+
+### 3.2 Los moldes
+
+Las variantes se arman con `cva`, que ya está instalado. **Nuevo** = hoy no existe; **Mover** = existe dentro de una página y pasa a `components/`; **Ajustar** = existe y cambia.
+
+| Molde | Qué es | Variantes | Reemplaza |
+|---|---|---|---|
+| **`Row`** (nuevo) | La fila de lista: algo a la izquierda, título y subtítulo, algo a la derecha | `size`: `sm` (52, una línea), `md` (60, dos líneas), `option` (56). `leading`: `avatar`, `category`, `icon`, ninguno. `trailing`: monto, chevron, interruptor, check, texto. `as`: enlace, botón o fila quieta. `selected` | 91 filas a mano en 41 archivos. `PostRow`, `MoveLine`, `NoticeItem` y `DebtCard` se arman encima de `Row` |
+| **`SectionHeading`** (Mover `Heading`) | «LO QUE TENGO ───», con una acción opcional a la derecha («Ver todo») | Con o sin línea; con o sin acción | 61 copias. Es un `<h2>` de verdad (AUDITORIA d4). La acción mide 44 px de alto aunque se vea chica (d9) |
+| **`Screen`** (Ajustar) | El contenedor de la pantalla | `width`: `phone` (448), `wide` (640, la tablet), `full` (escritorio propio: Inicio, Pendientes). Arma solo el espacio de la barra y de la barra de gestos | 41 páginas a mano en 17 combinaciones |
+| **`PageHeader`** (Mover `FormHeader`, `ReportHeader` y `StepHeader`) | Flecha, título y acciones (⋮) | `back`: a dónde vuelve, que da el nombre «Volver a Cuentas». `title` en `title-hero`. `eyebrow`: la etiqueta de arriba («AHORROS EN SOLES»). `actions` | 36 flechas con 12 nombres accesibles distintos. Siempre un enlace, nunca un botón, salvo que cierre algo |
+| **`Avatar`** (Ajustar `Avatar`, `CategoryChip` y `MoveIcon`) | El círculo de una fila | `kind`: `category` (`cat-N` con `on-category`), `account` (`secondary`), `person` (iniciales), `status` (`muted`, `attention`). `size`: `md` 40, `sm` 24 | 46 círculos a mano en 7 tamaños, y el tamaño en `style` |
+| **`Amount`** (nuevo; lo que el README de Amount ya describe) | Un monto con su signo, ícono y símbolo | `size`: `display`, `display-2`, `xl`, `lg`, el de fila. `direction`: entra, sale, transferencia, ninguna. `symbol`: el de la regla E (sin símbolo en filas de tu moneda). Nunca se parte (`nowrap`) | `MoveAmount`, `Amounts`, las ~22 funciones `money` repetidas y los dos `useMoney` |
+| **`AmountField`** (Mover) | El campo grande del monto que escribes | Con o sin selector de moneda; error | 3 copias exactas y versiones de 44, 34 y 30 px |
+| **`Button`** (Ajustar `PrimaryButton`, reemplaza el README de Button: decisión F) | Un botón | `variant`: `primary` (56, `radius-lg`, texto a la izquierda y `arrow_forward`), `secondary` (contorno), `ghost` (solo texto, como «Cancelar»), `destructive` (borrar, archivar). `size`: `md` (56), `sm` (44). `pending` | 9 principales hechos a mano, 3 centrados, 4 de borrar, 6 de contorno y los 6 «Cancelar» subrayados |
+| **`IconButton`** (nuevo) | Un botón de solo ícono (⋮, ×, el ojo de ocultar) | `size` 44 siempre. `label` obligatorio, porque sin él no compila | Hoy cada uno pone su tamaño |
+| **`Chip`** (Ajustar `Pill`) | Un filtro que se elige o una pastilla que informa | `kind`: `filter` (se toca, `aria-pressed`, 44 de área), `info` (no se toca). `tone`: neutro, `attention`, `income`, `selected` | 38 chips y 9 pastillas; solo 13 dicen si están elegidos |
+| **`ProgressBar`** (Ajustar `Segments` y `ShareBar`) | Una barra de avance o de proporción | `tone`: categoría, trigo (solo «para mayo», regla del trigo), `expense` (pasado del límite). `size`: `sm` 6, `md` 10. Un solo trato para el lector de pantalla: `role="meter"` con su valor en palabras | 11 barras a mano, 5 altos y 4 tratos |
+| **`SearchField`** (nuevo, sale de `OptionList`) | El buscador | Con o sin «limpiar» | 8 copias, 2 sin anillo de foco |
+| **`Segmented`** (Ajustar) | Elegir una entre 2 a 4 opciones | 44 de alto. `Registrar` y `MasTipos` usan el mismo | La barra duplicada de Gasto / Ingreso / Transferir / Más |
+| **`LineField`, `SheetSelect`, `DateField`, `PersonPicker`, `RateField`** (Ajustar) | Los campos de línea (decisión A) | 44 de alto mínimo; foco con anillo en la caja que los envuelve | PersonPicker con su foco distinto |
+| **`ArchiveSheet`** (Mover) | Confirmar archivar o borrar | — | 2 copias (cuenta y tarjeta) |
+
+**Se documentan como están**, porque ya se usan bien:
+- `Sheet` y `OptionList`;
+- `Split`;
+- `Rail` y `AppNav`;
+- `EmptyState`;
+- los esqueletos;
+- `ErrorAlert`, `Note`, `Status`, `Facts`, `Optional` y `Kbd`.
+
+### 3.3 Dónde quedan escritos
+
+- **El código:** `web/src/components/`, una pieza por archivo, sin moldes dentro de `pages/`.
+- **La guía para personas:** `design-system/components/<Molde>/README.md`, con qué es, cuándo se usa, variantes, estados, accesibilidad y qué no hacer. Al aprobarse este documento se escriben los de Row, SectionHeading, PageHeader, Avatar, Amount, Button y Chip, y se corrigen los de Amount y Button. Los demás, cuando la Fase 3 los construya.
+
+> **Te toca (S8). shadcn/ui.** `CLAUDE.md` dice «componentes de shadcn/ui», pero no hay ninguno instalado. Las piezas de PPM son propias y a la medida (AUDITORIA b).
+> - **Opción 1 (recomendada):** se ajusta la regla: «componentes propios en `web/src/components/`, con variantes `cva`, al estilo de shadcn (nombres de tokens y API)». No suma dependencias, y lo que ya funciona (Sheet, Segmented) no se rehace.
+> - **Opción 2: adoptar las piezas de shadcn** (Dialog, Switch, Tabs…). Traen accesibilidad probada, pero suman Radix como dependencia nueva y hay que rehacer piezas que ya andan.
+
+## 4. Reglas de código
+
+**La analogía.** Es el reglamento de la obra: no basta con dejar la casa ordenada, hay que impedir que el próximo arreglo vuelva a traer el martillo y los clavos de cualquier tamaño. Y como nadie lee el reglamento en la obra, un inspector automático revisa cada PR.
+
+### 4.1 Las reglas
+
+1. **Solo tokens.** Nada de valores arbitrarios de Tailwind (`text-[22px]`, `min-h-[60px]`, `rounded-[12px]`, `z-[45]`), colores hex, `rgb()`, colores de Tailwind fuera del tema (`bg-black/40`, `text-white`) ni `color-mix` en componentes. Si falta un valor, se propone un token: `tokens.json`, `styles.css` y README en el mismo PR.
+2. **Estilos en línea** (`style={{…}}`) solo para lo de verdad dinámico: un ancho en %, `var(--cat-N)` o un número de columnas. Nada de `!important`, salvo en «reducir movimiento».
+3. **Letra en `rem`**, con los estilos de 1.2. El tamaño lo da el token, no la pantalla: nada de `lg:text-[40px]`.
+4. **Moldes antes que copias.** Antes de escribir una fila, un encabezado o un botón, se usa el molde de 3.2. Si no alcanza, se le suma una variante con `cva`; no se copia. Un molde que usan dos pantallas vive en `components/`, nunca dentro de una página.
+5. **Cortes de pantalla:** solo `md:`, `lg:`, `xl:` y `2xl:` para dónde va cada panel, y `narrow:` para lo muy angosto. Lo de adentro de un panel se adapta con `@container`. Nada de `max-[…]` ni `min-[…]` sueltos.
+6. **Montos:** siempre con `Amount` o `money.ts`. Nada de `toFixed` ni `toLocaleString` (AUDITORIA e3 y e5).
+7. **Accesibilidad:**
+   - un `<h1>` por pantalla y `<h2>` en las secciones (con `SectionHeading`);
+   - `IconButton` exige su nombre;
+   - todo lo que se toca mide 44 px;
+   - el foco se ve en el elemento o en su caja;
+   - nada que se pueda enfocar dentro de algo con `aria-hidden` (los gráficos de Reportes);
+   - nada que se toque dentro de un `role="img"` (Personas);
+   - el nombre accesible empieza con lo que se lee en pantalla (Inicio).
+8. **Íconos:** con `Icon` y su tamaño (`sm`, `md`…), relleno solo en la pestaña activa y en el check de lo elegido (README).
+9. **Cada PR que toca algo visible** deja fotos de antes y después (de `pnpm capturas`) y no sube la cuenta del inspector.
+
+### 4.2 El inspector automático (Fase 3)
+
+**Una prueba de Vitest**, sin dependencias nuevas: `web/src/estilo.test.ts`. Lee todos los `.tsx` y `.css` de `web/src` y falla si encuentra:
+- valores arbitrarios de Tailwind (`algo-[…]`), salvo los selectores como `aria-[current=page]`;
+- colores hex, `rgb(`, `color-mix(` o colores de Tailwind fuera del tema;
+- `style={{` con algo que no sea un %, una `var(--…)` o una cuenta;
+- `text-[`, `leading-[`, `tracking-[`, `z-[` o `rounded-[`.
+
+**Las excepciones** van en una lista, `web/src/estilo-excepciones.ts`, cada una con su archivo y su motivo (el logo de Google, el `clamp()` del refrán). La lista solo puede achicarse. Hoy no se puede (hay ~1,000), así que la prueba empieza con **un tope por archivo** igual a lo que hay. Cada lote de la Fase 4 baja el tope de sus pantallas a cero, y al final de la Fase 4 el tope desaparece.
+
+No hay ESLint en el proyecto. Agregarlo sería una dependencia nueva, y una prueba de Vitest alcanza para esto.
+
+### 4.3 Qué se actualiza con esto
+
+- **La skill `ppm-interfaz`:** apunta a este documento y a los moldes de 3.2, y suma la regla 5 (container queries) y el inspector.
+- **`CLAUDE.md`:** la línea de shadcn, según S8.
+
+## Resumen de lo que te toca (⏸ punto de control 2)
+
+| # | Qué | Recomendación |
+|---|---|---|
+| S1 | La regla de 15 px: ¿la base vuelve a 16 y la letra pasa a `rem`? | Sí (fotos en 1.1) |
+| S2 | El monto principal del detalle de cuenta, tarjeta, persona y movimiento: ¿también en Bricolage? | Sí, una sola regla |
+| S3 | Medios pasos de espacio (2, 6, 10 y 14 px) | 2 y 6 solo dentro de piezas chicas; 10 y 14 se redondean |
+| S4 | Alturas de fila | 52, 60 y 56 (lo que se ve hoy) |
+| S5 | Radios | Los mismos valores con nombres en orden |
+| S6 | «Reducir movimiento» y el círculo que gira | El círculo se queda; las siluetas dejan de latir |
+| S7 | Margen lateral del celular | 24 px, como se ve; se corrige el README |
+| S8 | shadcn/ui en `CLAUDE.md` | Moldes propios con `cva`, al estilo shadcn |
+
+Y además, todo el documento: la escala de letra (1.2), íconos (1.3), capas (1.8), movimiento (1.9), colores (1.10), los cortes (2), los moldes (3) y las reglas (4).
+
+Con tu OK:
+1. Se escribe en `design-system/` (README, `tokens.json` y los README de los moldes) y en `docs/modelo-contable.md`, en este mismo PR.
+2. Después empieza la Fase 3, los cimientos.

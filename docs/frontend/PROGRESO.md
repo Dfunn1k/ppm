@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 2, sistema (en curso, `docs/frontend/SISTEMA.md`).
+- **Fase actual:** 2, sistema (escrito; ⏸ punto de control 2, esperando a Dany).
 - **Rama:** `frontend/fase-2`
 - **Último commit:** ver `git log -1 frontend/fase-2`
 
@@ -33,15 +33,15 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] Decisiones A a H de Dany (25-nov, abajo)
 - [x] 1. Tokens (base, letra, íconos, espacio, alturas, radios, bordes, sombras, capas, movimiento, colores)
 - [x] 2. Estrategia responsive
-- [ ] 3. Componentes compartidos, con variantes y estados
-- [ ] 4. Reglas de código
+- [x] 3. Componentes compartidos, con variantes y estados
+- [x] 4. Reglas de código
 - [ ] ⏸ Punto de control 2; con el OK, registrar en `design-system/` y en `docs/modelo-contable.md`
 
 ### Fases 3 a 5 (pendientes)
 
 ## Siguiente paso
 
-Escribir `SISTEMA.md` sección 3 (componentes), luego 4, con un commit por sección. Después, ⏸ punto de control 2.
+⏸ Punto de control 2: Dany decide S1 a S8 (resumen al final de `SISTEMA.md`) y aprueba el documento. Con su OK, en esta misma rama: escribir lo aprobado en `design-system/` (README y los README de los moldes; `tokens.json` y `styles.css` cambian juntos en la Fase 3) y en `docs/modelo-contable.md`, subir la versión y pedir el merge. Después, Fase 3.
 
 ## Decisiones de Dany
 
