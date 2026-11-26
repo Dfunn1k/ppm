@@ -63,7 +63,7 @@ export function CuotasAntes() {
             <CurrencyChoice label="Moneda" size="sm" value={currency} onChange={setCurrency}
               options={me.currencies.map(currencyOption)} />
           )}
-          <div className="grid grid-cols-[1fr_140px] items-end gap-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_140px] items-end gap-4">
             <LineField label="¿Cuánto es el capital de cada cuota?" inputMode="decimal" placeholder="0.00" value={each} onChange={(e) => setEach(e.target.value)}
               className="text-[22px] font-semibold tabular-nums" />
             <div className="flex flex-col gap-1.5">

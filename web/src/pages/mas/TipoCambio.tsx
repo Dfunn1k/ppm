@@ -78,7 +78,7 @@ export function TipoCambio() {
         <section key={code} aria-label={`Últimos días del ${(NAME[code] ?? code).toLowerCase()}`} className="mt-5 flex flex-col">
           <span className="border-b border-border pb-1 text-label text-muted-foreground">Últimos días del {(NAME[code] ?? code).toLowerCase()}</span>
           {history.filter((h) => h.currency === code).map((h) => (
-            <div key={h.date} className="grid min-h-11 grid-cols-[1fr_64px_64px_76px] items-center gap-2 border-b border-border tabular-nums">
+            <div key={h.date} className="grid min-h-11 grid-cols-[minmax(0,1fr)_64px_64px_76px] items-center gap-2 border-b border-border tabular-nums">
               <span>{dayLabel(h.date)}</span>
               <span className="text-right">{rateText(h.buy)}</span>
               <span className="text-right">{rateText(h.sell)}</span>

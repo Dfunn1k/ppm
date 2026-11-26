@@ -237,11 +237,11 @@ export function DetalleMovimiento() {
         )}
         {s.kind === "other" && d.lines.length > 0 && (
           <div className="flex flex-col border-b border-border py-2">
-            <div className="grid grid-cols-[1fr_84px_84px] gap-2 text-label text-muted-foreground">
+            <div className="grid grid-cols-[minmax(0,1fr)_84px_84px] gap-2 text-label text-muted-foreground">
               <span>Cuenta</span><span className="text-right">Entra a</span><span className="text-right">Sale de</span>
             </div>
             {d.lines.map((l, i) => (
-              <div key={i} className="grid min-h-11 grid-cols-[1fr_84px_84px] items-center gap-2 tabular-nums">
+              <div key={i} className="grid min-h-11 grid-cols-[minmax(0,1fr)_84px_84px] items-center gap-2 tabular-nums">
                 {/* La persona en pastilla al lado de la cuenta (caso 9, opción C) */}
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="truncate font-semibold">{l.account}</span>
@@ -389,7 +389,7 @@ export function DetalleMovimiento() {
               {gain ? "+ " : "− "}{formatAmount(s.fx.replace("-", ""), symbolOf(me.currency), lang)}
             </span>
           </span>
-          <dl className="grid grid-cols-[1fr_auto] gap-y-0.5 border-t border-border pt-2 text-caption text-muted-foreground tabular-nums">
+          <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-y-0.5 border-t border-border pt-2 text-caption text-muted-foreground tabular-nums">
             {debtBook != null ? (
               <>
                 <dt>La deuda valía</dt>
