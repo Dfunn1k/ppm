@@ -57,9 +57,6 @@
   "enLinea": 2,
   "aMano": 1
  },
- "components/Pending.tsx": {
-  "arbitrario": 8
- },
  "components/Rail.tsx": {
   "arbitrario": 16,
   "sombra": 1,
@@ -101,9 +98,6 @@
  },
  "pages/Entrar.tsx": {
   "arbitrario": 1
- },
- "pages/Pendientes.tsx": {
-  "arbitrario": 12
  },
  "pages/Privacidad.tsx": {
   "arbitrario": 4
@@ -190,10 +184,6 @@
  },
  "pages/movimientos/Movimientos.tsx": {
   "enLinea": 1
- },
- "pages/recurrentes/Recurrentes.tsx": {
-  "arbitrario": 25,
-  "aMano": 1
  },
  "pages/tarjetas/Conciliar.tsx": {
   "arbitrario": 16,
