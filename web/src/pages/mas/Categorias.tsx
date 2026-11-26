@@ -180,7 +180,7 @@ export function NuevaCategoria() {
               <input aria-label="Buscar ícono" placeholder="Buscar: perro, gym, bebé…" value={q} onChange={(e) => setQ(e.target.value)}
                 className="min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
             </label>
-            <div role="radiogroup" aria-label="Ícono" className="grid grid-cols-7 gap-1.5">
+            <div role="radiogroup" aria-label="Ícono" className="grid grid-cols-6 gap-1.5 narrow:grid-cols-5">
               {icons.map((n) => (
                 <button key={n} type="button" role="radio" aria-label={n} aria-checked={n === icon} onClick={() => setIcon(n)}
                   className={`grid h-control place-items-center rounded-md ${n === icon ? "" : "border border-border"}`}
