@@ -6,6 +6,8 @@ import { Link } from "react-router";
 
 import { useClosing, useSetLock } from "@/api/hooks";
 import { addDays, DateSheet } from "@/components/DateSheet";
+import { SectionHeading } from "@/components/SectionHeading";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 
@@ -25,8 +27,8 @@ export function Cierre() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <h1 className="mt-2 text-title-hero">Cierre de periodo</h1>
       <p className="mt-2 text-muted-foreground">
@@ -34,7 +36,7 @@ export function Cierre() {
       </p>
 
       <div className="mt-4 flex min-h-14 items-center gap-3 rounded-lg bg-muted px-3.5">
-        <Icon name={c.lock_date ? "lock" : "lock_open"} className="text-[22px]" />
+        <Icon name={c.lock_date ? "lock" : "lock_open"} size="md" />
         <span className="flex flex-1 flex-col">
           <span className="text-caption text-muted-foreground">Ahora</span>
           <span className="font-semibold">{c.lock_date ? `Cerrado hasta el ${shortDate(c.lock_date)} ${c.lock_date.slice(0, 4)}` : "Nada cerrado"}</span>
@@ -42,7 +44,7 @@ export function Cierre() {
       </div>
 
       {showClose && <>
-      <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Cerrar hasta</span>
+      <SectionHeading className="mt-5">Cerrar hasta</SectionHeading>
       <div role="radiogroup" aria-label="Cerrar hasta" className="mt-2.5 flex flex-wrap gap-2">
         <button type="button" role="radio" aria-checked={!custom} onClick={() => setDate(null)}
           className={`flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${!custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
@@ -55,7 +57,7 @@ export function Cierre() {
       </div>
 
       <section aria-label="Antes de cerrar" className="mt-5 flex flex-col">
-        <span className="border-b border-border pb-1 text-label text-muted-foreground">Antes de cerrar</span>
+        <SectionHeading>Antes de cerrar</SectionHeading>
         <Check ok={c.drafts === 0} text={c.drafts === 0 ? `Nada por confirmar hasta el ${shortDate(when)}`
           : `${c.drafts === 1 ? "1 movimiento" : `${c.drafts} movimientos`} por confirmar hasta el ${shortDate(when)}`}
           link={{ to: "/pendientes", label: "Revisar" }} />
@@ -70,8 +72,8 @@ export function Cierre() {
 
       {c.lock_date && (
         <section aria-label="Reabrir" className="mt-6 flex flex-col gap-2">
-          <span className="border-b border-border pb-1 text-label text-muted-foreground">Reabrir</span>
-          <p className="text-[14px] leading-5 text-muted-foreground">Si necesitas corregir algo de esos meses, reabre, corrígelo y vuelve a cerrar.</p>
+          <SectionHeading>Reabrir</SectionHeading>
+          <p className="text-body-sm text-muted-foreground">Si necesitas corregir algo de esos meses, reabre, corrígelo y vuelve a cerrar.</p>
           <button type="button" onClick={() => setPicking("move")} disabled={setLock.isPending}
             className="h-12 rounded-lg border border-input-line font-semibold">Mover el cierre a otra fecha</button>
           <button type="button" onClick={() => setLock.mutate(null)} disabled={setLock.isPending}
@@ -103,10 +105,10 @@ export function Cierre() {
 
 function Check({ ok, text, link }: { ok: boolean; text: string; link: { to: string; label: string } }) {
   return (
-    <div className="flex min-h-[52px] items-center gap-3 border-b border-border">
-      <Icon name={ok ? "check_circle" : "error"} className={`text-[22px] ${ok ? "text-income" : "text-attention"}`} />
+    <div className="flex min-h-row-sm items-center gap-3 border-b border-border">
+      <Icon name={ok ? "check_circle" : "error"} size="md" className={ok ? "text-income" : "text-attention"} />
       <span className="flex-1">{text}</span>
-      {!ok && <Link to={link.to} className="flex min-h-11 items-center text-[14px] font-semibold underline">{link.label}</Link>}
+      {!ok && <Link to={link.to} className="flex min-h-control items-center text-body-sm font-semibold underline">{link.label}</Link>}
     </div>
   );
 }

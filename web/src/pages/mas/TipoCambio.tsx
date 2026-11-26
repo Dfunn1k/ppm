@@ -1,10 +1,12 @@
 // Z1 · Tipo de cambio (solo el administrador): el estado de cada moneda, los últimos días con su
 // origen, cargar a mano y traer de SUNAT ahora. Manda el último que se cargó, sea de SUNAT o a mano.
 import { useState } from "react";
-import { Link, Navigate } from "react-router";
+import { Navigate } from "react-router";
 
 import { type AdminRates, useAdminRates, useImportSunat, useMe, useSetRate } from "@/api/hooks";
 import { Segmented, Sheet } from "@/components/Sheet";
+import { SectionHeading } from "@/components/SectionHeading";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
@@ -46,8 +48,8 @@ export function TipoCambio() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to="/mas" label="Volver a Más" />
         <span className="pr-2.5 text-label text-muted-foreground">Solo administrador</span>
       </div>
       <h1 className="mt-4 text-title-hero">Tipo de cambio</h1>
@@ -58,15 +60,15 @@ export function TipoCambio() {
           <section key={c.currency} aria-label={NAME[c.currency] ?? c.currency} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3.5">
             <span className="flex items-center justify-between">
               <span className="flex items-baseline gap-1.5"><span className="font-semibold">{NAME[c.currency] ?? c.currency}</span><span className="text-caption text-muted-foreground">{symbolOf(c.currency)}</span></span>
-              <span className={`flex h-6 items-center gap-1 rounded-full px-2 text-[12px] leading-4 font-semibold ${c.stale ? "bg-attention-soft text-attention" : "bg-muted text-income"}`}>
-                <Icon name={c.stale ? "schedule" : "check_circle"} className="text-[16px]" />
+              <span className={`flex h-6 items-center gap-1 rounded-full px-2 text-caption-sm leading-4 font-semibold ${c.stale ? "bg-attention-soft text-attention" : "bg-muted text-income"}`}>
+                <Icon name={c.stale ? "schedule" : "check_circle"} size="sm" />
                 {c.stale ? (c.days == null ? "Sin tipo" : `Hace ${c.days} días`) : "Al día"}
               </span>
             </span>
             {c.last && (
               <span className="grid grid-cols-2 tabular-nums">
-                <span className="flex flex-col"><span className="text-caption text-muted-foreground">Compra</span><span className="text-[22px] leading-7 font-semibold">{rateText(c.last.buy)}</span></span>
-                <span className="flex flex-col"><span className="text-caption text-muted-foreground">Venta</span><span className="text-[22px] leading-7 font-semibold">{rateText(c.last.sell)}</span></span>
+                <span className="flex flex-col"><span className="text-caption text-muted-foreground">Compra</span><span className="text-amount-xl">{rateText(c.last.buy)}</span></span>
+                <span className="flex flex-col"><span className="text-caption text-muted-foreground">Venta</span><span className="text-amount-xl">{rateText(c.last.sell)}</span></span>
               </span>
             )}
             <span className="text-caption text-muted-foreground">{caption(c)}</span>
@@ -76,13 +78,13 @@ export function TipoCambio() {
 
       {codes.filter((code) => history.some((h) => h.currency === code)).map((code) => (
         <section key={code} aria-label={`Últimos días del ${(NAME[code] ?? code).toLowerCase()}`} className="mt-5 flex flex-col">
-          <span className="border-b border-border pb-1 text-label text-muted-foreground">Últimos días del {(NAME[code] ?? code).toLowerCase()}</span>
+          <SectionHeading>Últimos días del {(NAME[code] ?? code).toLowerCase()}</SectionHeading>
           {history.filter((h) => h.currency === code).map((h) => (
-            <div key={h.date} className="grid min-h-11 grid-cols-[minmax(0,1fr)_64px_64px_76px] items-center gap-2 border-b border-border tabular-nums">
+            <div key={h.date} className="grid min-h-control grid-cols-rates items-center gap-2 border-b border-border tabular-nums">
               <span>{dayLabel(h.date)}</span>
               <span className="text-right">{rateText(h.buy)}</span>
               <span className="text-right">{rateText(h.sell)}</span>
-              <span className="justify-self-end text-[12px] leading-4 font-semibold text-muted-foreground">{h.source === "SUNAT" ? "SUNAT" : "A mano"}</span>
+              <span className="justify-self-end text-caption-sm leading-4 font-semibold text-muted-foreground">{h.source === "SUNAT" ? "SUNAT" : "A mano"}</span>
             </div>
           ))}
         </section>
@@ -98,8 +100,8 @@ export function TipoCambio() {
             <span className="grid grid-cols-2 gap-2">
               {([["Compra", sunat.data.buy], ["Venta", sunat.data.sell]] as const).map(([k, v]) => (
                 <span key={k} className="flex flex-col rounded-md border border-border bg-card px-3 py-1.5">
-                  <span className="text-[10px] leading-[14px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{k}</span>
-                  <span className="font-display text-[24px] leading-[30px] font-bold tabular-nums">{rateText(v)}</span>
+                  <span className="text-label text-muted-foreground uppercase">{k}</span>
+                  <span className="font-display text-amount-xl font-bold tabular-nums">{rateText(v)}</span>
                 </span>
               ))}
             </span>
