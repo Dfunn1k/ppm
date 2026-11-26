@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 3, cimientos (en curso).
+- **Fase actual:** 3, cimientos (terminada; ⏸ punto de control 3, esperando a Dany).
 - **Rama:** `frontend/fase-3`
 - **Último commit:** ver `git log -1 frontend/fase-3`
 
@@ -45,13 +45,20 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] El inspector (`web/src/estilo.test.ts`, `estilo-tope.json`, `estilo-excepciones.ts`)
 - [x] Moldes con `cva`: Button, IconButton, SectionHeading, PageHeader, Avatar, Row, Amount, Chip, ProgressBar, SearchField; ajustar PrimaryButton, Pill, Segmented, Icon
 - [x] Cortes de pantalla: el riel desde 768 px, la lista de 320/400/440 px, safe-area y el foco tapado por la barra
-- [ ] Fotos después, comparadas con las base; typecheck, Vitest, Playwright y build
+- [x] Fotos después, comparadas con las base; typecheck, Vitest (32), Playwright (94) y build pasan en Docker
+  - Scroll horizontal: 0 antes y 0 después, en toda la matriz.
+  - Lo que se toca y mide menos de 44 px (390×844, 70 pantallas): 401 → 225. Menos de 24 px: 17 → 12. En escritorio: 618 → 388.
+  - Foco tapado por la barra de abajo (390×844): 19 → 0. Foco sin anillo: 15 → 5.
+  - axe: las mismas 4 reglas (aria-hidden-focus, label-content-name-mismatch, color-contrast, nested-interactive), que se arreglan pantalla por pantalla en la Fase 4.
+  - «Texto grande» ya no es idéntica a 390×844: la letra crece, y aparecen 18 posibles cortes que la Fase 4 debe resolver.
+  - `teclado.spec.ts` ahora reconoce la vuelta por el elemento y no por su posición. La de antes contaba paradas repetidas cuando la página se movía: las 1,180 paradas de la Fase 1 eran 783 sin repetir.
+- [ ] PR de la Fase 3 (Dany)
 
 ### Fases 4 y 5 (pendientes)
 
 ## Siguiente paso
 
-Seguir la lista de la Fase 3 en orden, con un commit por casilla. Los moldes se escriben primero en el scratchpad y se copian a `web/src/components/` cuando terminan las fotos base (la app se sirve desde `web/` y una foto tomada a mitad de un cambio no sirve de base).
+⏸ Punto de control 3: Dany revisa el PR de la Fase 3. Con su OK: Fase 4, migración por lotes de 1 a 3 pantallas (un commit por pantalla, un PR por lote). Propuesta de orden: 1) Inicio, 2) Cuentas y Detalle de cuenta, 3) Movimientos y Registrar, y después el resto, empezando por los moldes que más se repiten (Row, SectionHeading, PageHeader, Screen con su ancho de tablet). En cada lote: bajar el tope del inspector, arreglar lo de axe de esas pantallas y los cortes de «texto grande», y fotos de antes y después.
 
 ## Decisiones de Dany
 

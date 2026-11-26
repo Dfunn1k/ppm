@@ -32,12 +32,14 @@ for (const size of pick(SIZES, process.env.PPM_TAMANOS_TECLADO ?? "390x844,1440x
       try {
         await page.goto(sc.path);
         await settle(page);
-        let first: string | null = null;
         for (let i = 0; i < 120; i++) {
           await page.keyboard.press("Tab");
           const s = await page.evaluate(() => {
             const el = document.activeElement as HTMLElement | null;
             if (!el || el === document.body) return null;
+            // Dio la vuelta si vuelve a un elemento ya visitado (no por su posición: al bajar, cambia)
+            const seen = el.dataset.tecladoVisto === "1";
+            el.dataset.tecladoVisto = "1";
             const name = (el.getAttribute("aria-label") ?? el.innerText ?? (el as HTMLInputElement).placeholder ?? "")
               .replace(/\s+/g, " ").trim().slice(0, 50);
             const what = `${el.tagName.toLowerCase()}${el.getAttribute("role") ? `[${el.getAttribute("role")}]` : ""} «${name}»`;
@@ -61,11 +63,10 @@ for (const size of pick(SIZES, process.env.PPM_TAMANOS_TECLADO ?? "390x844,1440x
                 if (f && !f.contains(el)) covered = (f.getAttribute("aria-label") ?? f.className.toString()).slice(0, 60);
               }
             }
-            return { what, visible, covered, hidden, key: what + Math.round(r.top) + Math.round(r.left) };
+            return { what, visible, covered, hidden, seen };
           });
           if (!s) continue;
-          if (first === s.key) break;
-          first ??= s.key;
+          if (s.seen) break;
           stops.push({ what: s.what, visible: s.visible, covered: s.covered, hidden: s.hidden });
         }
         out.push({ screen: sc.id, stops });
