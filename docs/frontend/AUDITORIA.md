@@ -24,6 +24,8 @@ Medido sobre `main` en 0.40.4 (25-nov-2026). Nada de esto cambia código: es la 
 
 El sistema define 9 estilos de texto (`tokens.json` › `type`). El código usa **21 tamaños distintos** escritos a mano, casi siempre junto con su `leading-[…]` (46) y su `tracking-[…]` (41).
 
+> **Corrección de la Fase 4:** esos 11 tamaños no se aplicaban. La regla `.icon` de `styles.css` está fuera de las capas de Tailwind y le gana a cualquier `text-[…]`, así que todos los íconos medían 20 px.
+
 **Íconos (293).** El README dice «20 px en filas y 24 px en la navegación», pero el código usa 11 tamaños: 14, 15, 16, 18 (64 veces), 20 (46), 22 (96), 24 (56), 26, 28, 32 y 40. No hay token de tamaño de ícono. → **Token nuevo**: una escala corta de íconos (Fase 2).
 
 **Texto (289), agrupado por el token que debería ser:**
