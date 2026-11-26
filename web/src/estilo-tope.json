@@ -147,14 +147,6 @@
  "pages/cuentas/CuentaForm.tsx": {
   "arbitrario": 13
  },
- "pages/cuentas/Cuentas.tsx": {
-  "arbitrario": 7
- },
- "pages/cuentas/Detalle.tsx": {
-  "arbitrario": 19,
-  "enLinea": 2,
-  "aMano": 1
- },
  "pages/cuentas/EditarBanco.tsx": {
   "arbitrario": 2
  },
@@ -256,7 +248,7 @@
   "aMano": 2
  },
  "pages/presupuesto/Cuentas.tsx": {
-  "arbitrario": 9
+  "arbitrario": 5
  },
  "pages/presupuesto/PorAsignar.tsx": {
   "arbitrario": 8,

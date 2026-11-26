@@ -12,7 +12,11 @@ import {
   useSetOpening,
   useUpdateAccount,
 } from "@/api/hooks";
+import { Avatar } from "@/components/Avatar";
+import { Button, IconButton } from "@/components/Button";
 import { type Bit, MoveLine, clipBit, pendingBit } from "@/components/MoveBits";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionHeading } from "@/components/SectionHeading";
 import { Activities, ActivitySheet } from "@/components/Pending";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Sheet } from "@/components/Sheet";
@@ -20,7 +24,7 @@ import { ErrorAlert, Icon, LineField, PrimaryButton } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { copyText } from "@/lib/clipboard";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
-import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
+import { formatAmount, formatNumber, isNegative, isZero, parseAmount, rateText, symbolOf } from "@/lib/money";
 
 import { AmountField } from "./CuentaForm";
 import { DetailSkeleton } from "@/components/Skeleton";
@@ -28,8 +32,8 @@ import { useDesktop } from "@/lib/desktop";
 import { AccountSub } from "@/components/AccountSub";
 import { ScopeRow } from "@/pages/presupuesto/Cuentas";
 
-/** En escritorio los movimientos van en tabla: fecha, movimiento, categoría, monto y saldo. */
-const TABLE = "grid grid-cols-[64px_minmax(0,1fr)_120px_112px] items-center gap-3";
+/** En escritorio los movimientos van en tabla: fecha, movimiento, monto y saldo. */
+const TABLE = "grid grid-cols-ledger items-center gap-3";
 
 function CopyRow({ label, value, display, last }: { label: string; value: string; display: string; last?: boolean }) {
   const [copied, setCopied] = useState(false);
@@ -37,15 +41,15 @@ function CopyRow({ label, value, display, last }: { label: string; value: string
     <div className={`flex items-center gap-2 py-2 pr-2 pl-3 ${last ? "" : "border-b border-border"}`}>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-label text-muted-foreground">{label}</span>
-        <span className="font-mono text-[14px] leading-5">{display}</span>
+        <span className="text-code">{display}</span>
       </span>
       <button
         type="button"
         aria-label={copied ? `${label} copiado` : `Copiar ${label.toLowerCase()}`}
         onClick={() => copyText(value).then(setCopied)}
-        className="flex h-9 items-center gap-1 rounded-full bg-card px-3 text-caption font-semibold"
+        className="flex min-h-control items-center gap-1 rounded-full bg-card px-3 text-caption font-semibold"
       >
-        <Icon name={copied ? "check" : "content_copy"} className="text-[18px]" />
+        <Icon name={copied ? "check" : "content_copy"} />
         {copied ? "Copiado" : "Copiar"}
       </button>
     </div>
@@ -65,7 +69,7 @@ export function Detalle() {
   if (!me?.currency || account.isPending) return <DetailSkeleton back="/cuentas" />;
   if (account.isError) {
     return (
-      <main className="mx-auto max-w-md px-6 pt-8">
+      <main className="mx-auto max-w-md px-6 pt-8 md:max-w-160">
         <ErrorAlert>{account.error.message}</ErrorAlert>
         <Link to="/cuentas" className="mt-4 block text-primary-strong underline">Volver a cuentas</Link>
       </main>
@@ -77,29 +81,21 @@ export function Detalle() {
   const close = () => setMenu(null);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/cuentas" aria-label="Volver a cuentas" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
-        <button type="button" aria-label="Más opciones de la cuenta" aria-haspopup="dialog" onClick={() => setMenu("open")}
-          className="grid size-11 place-items-center rounded-full">
-          <Icon name="more_vert" className="text-[24px]" />
-        </button>
-      </div>
-      {d.account.subtitle && <span className="mt-2 text-label text-muted-foreground"><AccountSub a={d.account} /></span>}
-      <h1 className="mt-1.5 text-title-hero">{d.account.name}</h1>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28 md:max-w-160 md:pb-10">
+      <PageHeader back={{ to: "/cuentas", label: "Volver a cuentas" }}
+        actions={<IconButton icon="more_vert" label="Más opciones de la cuenta" aria-haspopup="dialog" onClick={() => setMenu("open")} />}
+        eyebrow={d.account.subtitle && <AccountSub a={d.account} />} title={d.account.name} />
       <span className="mt-4 text-caption text-muted-foreground">Tienes hoy</span>
       {d.account.balances.length === 0 ? (
-        <span className="text-amount-hero">{formatAmount("0.00", symbolOf(d.account.currency ?? me.currency), lang)}</span>
+        <span className="text-amount-display">{formatAmount("0.00", symbolOf(d.account.currency ?? me.currency), lang)}</span>
       ) : (
         d.account.balances.map((m) => (
-          <span key={m.currency} className="text-amount-hero">{formatAmount(m.amount, symbolOf(m.currency), lang)}</span>
+          <span key={m.currency} className="text-amount-display">{formatAmount(m.amount, symbolOf(m.currency), lang)}</span>
         ))
       )}
 
       {d.bank && (d.bank.acc_number || d.bank.cci) && (
-        <div className="mt-4 flex flex-col rounded-[12px] bg-muted">
+        <div className="mt-4 flex flex-col rounded-lg bg-muted">
           {d.bank.acc_number && <CopyRow label="Número de cuenta" value={d.bank.acc_number} display={d.bank.acc_number} last={!d.bank.cci} />}
           {d.bank.cci && <CopyRow label="CCI" value={d.bank.cci} display={cciDisplay(d.bank.cci)} last />}
         </div>
@@ -113,13 +109,10 @@ export function Detalle() {
       <section aria-label="Movimientos" className="mt-5 flex flex-col">
         {table ? (
           <div className={`${TABLE} border-b border-border pb-1 text-label text-muted-foreground`}>
-            <span>Fecha</span><span>Movimiento</span><span className="text-right">Monto</span><span className="text-right">Saldo</span>
+            <span>Fecha</span><h2>Movimiento</h2><span className="text-right">Monto</span><span className="text-right">Saldo</span>
           </div>
         ) : (
-          <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-            <span>Movimientos</span>
-            <span>Saldo</span>
-          </div>
+          <SectionHeading action={<span className="text-label text-muted-foreground">Saldo</span>}>Movimientos</SectionHeading>
         )}
         {d.lines.map((l) => <LineRow key={l.id} line={l} lang={lang} table={table} />)}
         {onlyOpening && (
@@ -160,28 +153,28 @@ function StatementCard({ detail: d, lang }: { detail: AccountDetail; lang: strin
     <>
       {!last ? (
         <Link to={`/cuentas/${d.account.id}/importar`}
-          className="mt-4 flex min-h-12 items-center gap-2.5 rounded-[12px] bg-muted px-3.5 font-semibold">
+          className="mt-4 flex min-h-12 items-center gap-3 rounded-lg bg-muted px-4 font-semibold hover:bg-accent">
           <Icon name="upload_file" /><span className="flex-1">Importar extracto del banco</span>
-          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+          <Icon name="chevron_right" size="md" className="text-muted-foreground" />
         </Link>
       ) : (
-      <div className="mt-4 flex items-center gap-3 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
+      <div className="mt-4 flex items-center gap-3 rounded-lg bg-muted py-2 pr-2 pl-4">
         <Link to={`/extractos/${last.id}`} className="flex min-w-0 flex-1 flex-col">
           <span className="text-caption text-muted-foreground">Último extracto{last.date_to ? ` hasta el ${shortDate(last.date_to)}` : ""}</span>
-          <span className={`flex items-center gap-1 truncate font-semibold ${status!.cls}`}><Icon name={status!.icon} className="text-[18px]" />{status!.text}</span>
+          <span className={`flex items-center gap-1 truncate font-semibold ${status!.cls}`}><Icon name={status!.icon} />{status!.text}</span>
         </Link>
         <Link to={`/cuentas/${d.account.id}/importar`}
-          className="flex h-10 flex-none items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[14px] font-semibold">
+          className="flex min-h-control flex-none items-center gap-1.5 rounded-full border border-border bg-card px-4 text-body-sm font-semibold hover:bg-muted">
           <Icon name="upload_file" />Importar extracto
         </Link>
       </div>
       )}
       {d.unclassified > 0 && (
         <Link to={`/por-clasificar?cuenta=${d.account.id}`}
-          className="mt-2 flex min-h-12 items-center gap-2.5 rounded-[12px] bg-attention-soft px-3 text-attention">
+          className="mt-2 flex min-h-12 items-center gap-3 rounded-lg bg-attention-soft px-3 text-attention">
           <Icon name="inbox" />
-          <span className="flex-1 text-[14px]"><b>{d.unclassified} por clasificar</b> de esta cuenta</span>
-          <span className="text-[14px] font-semibold">Clasificar</span>
+          <span className="flex-1 text-body-sm"><b>{d.unclassified} por clasificar</b> de esta cuenta</span>
+          <span className="text-body-sm font-semibold">Clasificar</span>
           <Icon name="chevron_right" />
         </Link>
       )}
@@ -194,18 +187,18 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
   const suspense = l.counterpart_role === "suspense";
   const out = isNegative(l.amount);
   const chip = opening
-    ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "flag" }
+    ? <Avatar kind="account" icon="flag" />
     : suspense
-      ? { bg: "var(--attention-soft)", fg: "var(--attention)", icon: "inbox" }
+      ? <Avatar kind="attention" icon="inbox" />
       : l.counterpart_money
-        ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "sync_alt" }
-        : { bg: `var(--cat-${l.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: l.counterpart_icon ?? "category" };
+        ? <Avatar kind="account" icon="sync_alt" />
+        : <Avatar kind="category" color={l.counterpart_color} icon={l.counterpart_icon ?? "category"} />;
   // La línea chica, la misma de Movimientos: dentro de la cuenta no se repite la cuenta; en una
   // transferencia va la otra. La categoría ya es el ícono.
   const bits: Bit[] = [];
   if (!l.posted) bits.push(pendingBit);
   if (!table) bits.push({ text: shortDate(l.date) });
-  if (opening) bits.push({ text: "Lo que tenía al empezar" });
+  if (opening) bits.push({ text: "Lo que tenía al empezar", shrink: true });
   else if (suspense) bits.push({ text: "Por clasificar", attention: true });
   else if (l.counterpart_money) bits.push({ icon: l.counterpart_icon ?? "payments", text: `${out ? "A" : "De"} ${l.counterpart}`, shrink: true });
   if (l.attachments > 0) bits.push(clipBit);
@@ -214,20 +207,18 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
     <span className="text-amount">{formatNumber(l.amount, lang)}</span>
   ) : (
     <span className={`flex items-center justify-end gap-0.5 text-amount ${out ? "text-expense" : "text-income"}`}>
-      <Icon name={out ? "north_east" : "south_west"} className="text-[16px]" />
+      <Icon name={out ? "north_east" : "south_west"} size="sm" />
       {out ? "− " : "+ "}{formatNumber(l.amount.replace("-", ""), lang)}
     </span>
   );
   const name = opening ? "Saldo inicial" : l.ref;
   if (table) {
     return (
-      <Row to={`/movimientos/${l.move_id}`} className={`${TABLE} min-h-[52px] border-b border-border hover:bg-muted/60`}>
+      <Row to={`/movimientos/${l.move_id}`} className={`${TABLE} min-h-row-sm border-b border-border hover:bg-muted`}>
         <span className="text-caption text-muted-foreground tabular-nums">{shortDate(l.date)}</span>
-        <span className="flex min-w-0 items-center gap-2.5">
-          <span className="grid size-8 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
-            <Icon name={chip.icon} className="text-[18px]" />
-          </span>
-          <span className="max-w-[45%] flex-none truncate font-semibold">{name}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          {chip}
+          <span className="max-w-1/2 flex-none truncate font-semibold">{name}</span>
           <MoveLine bits={bits} tags={l.tags} wide />
         </span>
         <span className="text-right tabular-nums">{amount}</span>
@@ -236,10 +227,8 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
     );
   }
   return (
-    <Row to={`/movimientos/${l.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border py-2">
-      <span className="grid size-9 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
-        <Icon name={chip.icon} />
-      </span>
+    <Row to={`/movimientos/${l.move_id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2">
+      {chip}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{name}</span>
         <MoveLine bits={bits} tags={l.tags} />
@@ -255,7 +244,7 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
 function MenuItem({ icon, children, onClick, to, danger }: {
   icon: string; children: React.ReactNode; onClick?: () => void; to?: string; danger?: boolean;
 }) {
-  const cls = `flex min-h-12 items-center gap-2.5 rounded-md px-3 text-left ${danger ? "text-destructive" : ""}`;
+  const cls = `flex min-h-12 items-center gap-3 rounded-md px-3 text-left hover:bg-muted ${danger ? "text-destructive" : ""}`;
   const body = <><Icon name={icon} />{children}</>;
   return to ? <Link to={to} className={cls}>{body}</Link> : <button type="button" onClick={onClick} className={cls}>{body}</button>;
 }
@@ -285,7 +274,7 @@ function OpeningSheet({ open, onClose, detail, base, lang }: {
   const [problem, setProblem] = useState<string | null>(null);
   const foreign = currency !== base;
   const side = detail.account.kind === "other" ? "sell" : "buy";
-  const rate = useRateInput(currency, base, date, side, detail.opening?.rate ? Number(detail.opening.rate).toFixed(3) : null);
+  const rate = useRateInput(currency, base, date, side, detail.opening?.rate ? rateText(detail.opening.rate) : null);
   return (
     <Sheet title="Corregir el saldo inicial" open={open} onClose={onClose}>
       <form className="flex flex-col gap-4 px-3"
@@ -325,15 +314,11 @@ function ArchiveSheet({ open, onClose, detail }: { open: boolean; onClose: () =>
             : "Deja de aparecer en tus cuentas. Sus movimientos se quedan en tu historial."}
         </p>
         {archive.error && <ErrorAlert>{archive.error instanceof ApiError ? archive.error.message : "No se pudo archivar"}</ErrorAlert>}
-        <button type="button" disabled={hasMoney || archive.isPending}
-          onClick={() => archive.mutate(undefined, { onSuccess: () => navigate("/cuentas", { replace: true }) })}
-          className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-50">
-          <Icon name="archive" />
+        <Button variant="destructive" icon="archive" disabled={hasMoney} pending={archive.isPending}
+          onClick={() => archive.mutate(undefined, { onSuccess: () => navigate("/cuentas", { replace: true }) })}>
           Archivar cuenta
-        </button>
-        <button type="button" onClick={onClose} className="h-11 text-caption font-semibold text-primary-strong underline">
-          Cancelar
-        </button>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>Cancelar</Button>
       </div>
     </Sheet>
   );

@@ -2,6 +2,8 @@
 import { Link, NavLink, useLocation } from "react-router";
 
 import { type AccountRow, useAccounts, useMe } from "@/api/hooks";
+import { Avatar } from "@/components/Avatar";
+import { SectionHeading } from "@/components/SectionHeading";
 import { Amounts, ErrorAlert, Facts, Icon } from "@/components/ui";
 import { cardHint } from "@/lib/cards";
 import { formatAmount, symbolOf } from "@/lib/money";
@@ -11,10 +13,7 @@ import { AccountSub } from "@/components/AccountSub";
 function Group({ label, total, children }: { label: string; total: string; children: React.ReactNode }) {
   return (
     <section aria-label={label} className="mt-6 flex flex-col">
-      <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-        <span>{label}</span>
-        <span>{total}</span>
-      </div>
+      <SectionHeading action={<span className="text-label text-muted-foreground tabular-nums">{total}</span>}>{label}</SectionHeading>
       {children}
     </section>
   );
@@ -33,9 +32,7 @@ function Row({ to, icon, letter, name, subtitle, amount, amountNote, negative, a
 }) {
   const body = (
     <>
-      <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground">
-        {letter ?? <Icon name={icon ?? "payments"} />}
-      </span>
+      {letter ? <Avatar kind="person" initials={letter} /> : <Avatar kind="account" icon={icon ?? "payments"} />}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-semibold">{name}</span>
         {subtitle && (
@@ -48,8 +45,8 @@ function Row({ to, icon, letter, name, subtitle, amount, amountNote, negative, a
       </span>
     </>
   );
-  const cls = "flex min-h-[60px] items-center gap-3 border-b border-border";
-  return to ? <NavLink to={to} className={`${cls} lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]`}>{body}</NavLink> : <div className={cls}>{body}</div>;
+  const cls = "flex min-h-row items-center gap-3 border-b border-border";
+  return to ? <NavLink to={to} className={`${cls} lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:mark-selected`}>{body}</NavLink> : <div className={cls}>{body}</div>;
 }
 
 /** Por cobrar y Por pagar se leen como «Me deben» y «Debo a personas», y llevan a Personas ya filtrada. */
@@ -110,25 +107,23 @@ export function Cuentas() {
   const money = (v: string) => formatAmount(v, symbolOf(o.currency), lang);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-8 pb-28 md:max-w-160 md:pb-10">
       <div className="-mr-2.5 flex items-center justify-between">
         <span className="text-label text-muted-foreground">Cuentas</span>
         <div className="flex items-center gap-2">
           {/* Personas siempre a mano, aunque todavía no haya deudas */}
-          <Link to="/personas" aria-label="Personas" className="grid size-11 place-items-center rounded-full">
-            <Icon name="group" className="text-[24px]" />
+          <Link to="/personas" aria-label="Personas" className="grid size-control place-items-center rounded-full hover:bg-muted">
+            <Icon name="group" size="md" />
           </Link>
           <Link to="/cuentas/nueva" aria-label="Nueva cuenta"
-            className="grid size-11 place-items-center rounded-full bg-secondary text-secondary-foreground">
-            <Icon name="add" className="text-[24px]" />
+            className="grid size-control place-items-center rounded-full bg-secondary text-secondary-foreground">
+            <Icon name="add" size="md" />
           </Link>
         </div>
       </div>
       {notice && <div className="mt-4"><ErrorAlert>{notice}</ErrorAlert></div>}
       <span className="mt-5 text-caption text-muted-foreground">Lo que realmente tengo</span>
-      <h1 className="font-display text-[48px] leading-[50px] font-extrabold tracking-[-0.03em] tabular-nums">
-        {money(o.real_total)}
-      </h1>
+      <h1 className="text-amount-display">{money(o.real_total)}</h1>
       <span className="mt-1 text-caption text-muted-foreground">Lo que tienes, menos lo que guardas de otros y lo que debes.</span>
 
       <Group label="Lo que tengo" total={money(o.have_total)}>

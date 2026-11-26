@@ -32,8 +32,8 @@ export function PageHeader({ back, eyebrow, title, actions, children, className 
           {actions && <div className="flex items-center gap-1">{actions}</div>}
         </div>
       )}
-      {eyebrow && <p className="mt-4 text-label text-muted-foreground">{eyebrow}</p>}
-      <h1 className={cn("text-title-hero break-words", eyebrow ? "mt-1" : "mt-4")}>{title}</h1>
+      {eyebrow && <p className="mt-2 text-label text-muted-foreground">{eyebrow}</p>}
+      <h1 className={cn("text-title-hero break-words", eyebrow ? "mt-1.5" : "mt-2")}>{title}</h1>
       {children}
     </header>
   );

@@ -487,6 +487,9 @@
   }
 }
 
+/* La tabla de movimientos de una cuenta en escritorio: fecha, movimiento, monto y saldo */
+@utility grid-cols-ledger { grid-template-columns: 4rem minmax(0, 1fr) 7.5rem 7rem; }
+
 /* Lo muy angosto (plegable cerrado, 320 px): narrow:… */
 @custom-variant narrow (@media (max-width: 359.98px));
 
