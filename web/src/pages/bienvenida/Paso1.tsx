@@ -31,12 +31,12 @@ export function Paso1() {
       <section aria-label="Vista previa" className="mt-6 flex flex-col gap-1 rounded-xl border border-border bg-card p-4 shadow-sm">
         <span className="text-label text-muted-foreground">Así verás tu inicio</span>
         <span className="mt-1 text-caption text-muted-foreground">Lo que realmente tengo</span>
-        <span className="text-[36px] leading-10 font-semibold tracking-[-0.02em] tabular-nums">
+        <span className="text-amount-display">
           {formatAmount(1284.9, base.symbol, choices.lang)}
         </span>
         <span className="flex flex-wrap items-center gap-x-3 text-caption text-muted-foreground tabular-nums">
-          <span className="inline-flex items-center gap-1"><Icon name="today" className="text-[15px]" />Hoy es {today}</span>
-          <span className="inline-flex items-center gap-1"><Icon name="lock" className="text-[15px]" />Todo en {base.name}, la moneda de tu país</span>
+          <span className="inline-flex items-center gap-1"><Icon name="today" size="sm" />Hoy es {today}</span>
+          <span className="inline-flex items-center gap-1"><Icon name="lock" size="sm" />Todo en {base.name}, la moneda de tu país</span>
         </span>
       </section>
 
@@ -81,7 +81,7 @@ export function Paso1() {
             }))}
           />
           <span className="flex items-center gap-1 text-caption text-muted-foreground">
-            <Icon name="schedule" className="text-[18px]" />
+            <Icon name="schedule" size="sm" />
             Define qué es «hoy» para tus movimientos y recordatorios.
           </span>
         </div>

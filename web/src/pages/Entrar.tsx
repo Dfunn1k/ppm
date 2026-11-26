@@ -33,7 +33,7 @@ export function Entrar() {
 
   return (
     <AccessLayout>
-    <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
+    <Screen className="lg:min-h-0 lg:max-w-120 lg:py-16">
       <div className="flex flex-col lg:hidden">
         <Refran />
         <p className="mt-5 text-muted-foreground">
@@ -71,7 +71,7 @@ export function Entrar() {
           error={errors.password?.message}
           {...form.register("password")}
         />
-        <Link to="/recuperar" className="self-end py-1 text-caption text-primary-strong underline">
+        <Link to="/recuperar" className="hit-area self-end py-1 text-caption text-primary-strong underline">
           ¿Olvidaste tu contraseña?
         </Link>
         <PrimaryButton pending={login.isPending}>Iniciar sesión</PrimaryButton>
@@ -79,7 +79,7 @@ export function Entrar() {
           ¿Primera vez? <TextLink to="/crear-cuenta">Crea tu cuenta</TextLink>
         </p>
         <p className="mt-2 text-center text-caption text-muted-foreground">
-          <Link to="/privacidad" className="underline">Privacidad</Link>
+          <Link to="/privacidad" className="hit-area underline">Privacidad</Link>
         </p>
       </form>
     </Screen>

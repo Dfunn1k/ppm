@@ -44,7 +44,7 @@ export function CrearCuenta() {
 
   return (
     <AccessLayout>
-    <Screen className="lg:min-h-0 lg:max-w-[480px] lg:py-16">
+    <Screen className="lg:min-h-0 lg:max-w-120 lg:py-16">
       <div className="flex flex-col lg:hidden">
         <Refran label="Crear cuenta en PPM" />
       </div>
@@ -73,7 +73,7 @@ export function CrearCuenta() {
           error={errors.password?.message}
           hint={
             <span className={cn("flex items-center gap-1", hint.ok && "text-income")}>
-              <Icon name={hint.ok ? "check_circle" : "info"} className="text-[18px]" />
+              <Icon name={hint.ok ? "check_circle" : "info"} size="sm" />
               {hint.text}
             </span>
           }
@@ -84,7 +84,7 @@ export function CrearCuenta() {
           ¿Ya tienes cuenta? <TextLink to="/entrar">Inicia sesión</TextLink>
         </p>
         <p className="mt-2 text-center text-caption text-muted-foreground">
-          <Link to="/privacidad" className="underline">Privacidad</Link>
+          <Link to="/privacidad" className="hit-area underline">Privacidad</Link>
         </p>
       </form>
     </Screen>

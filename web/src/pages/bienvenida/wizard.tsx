@@ -68,7 +68,7 @@ export function StepHeader({ step, summary, back }: { step: 1 | 2 | 3; summary: 
       <div className={back ? "-my-3 -ml-3 flex items-center gap-1" : "flex items-center"}>
         {back && (
           <Link to={back} aria-label={`Volver al paso ${step - 1}`} className="grid size-11 flex-none place-items-center rounded-full">
-            <Icon name="arrow_back" className="text-[24px]" />
+            <Icon name="arrow_back" size="md" />
           </Link>
         )}
         <span className="flex flex-1 items-center gap-1 text-label text-muted-foreground">{summary}</span>
@@ -93,7 +93,7 @@ export function StepHeader({ step, summary, back }: { step: 1 | 2 | 3; summary: 
 export function Done({ children }: { children: ReactNode }) {
   return (
     <>
-      <Icon name="check_circle" fill className="text-[16px] text-income" />
+      <Icon name="check_circle" fill size="sm" className="text-income" />
       {children}
     </>
   );

@@ -62,7 +62,7 @@ export function Paso3() {
                 aria-label="Lo que hay hoy en Efectivo"
                 value={choices.cash}
                 onChange={(e) => update({ cash: e.target.value })}
-                className="h-9 min-w-0 flex-1 border-0 bg-transparent p-0 text-right text-[17px] leading-6 font-medium tabular-nums"
+                className="h-control min-w-0 flex-1 border-0 bg-transparent p-0 text-right text-body-lg font-medium tabular-nums"
               />
             </label>
           </li>
@@ -84,7 +84,7 @@ export function Paso3() {
           ))}
           <li>
             <Link to="/bienvenida/3/banco" className="flex min-h-14 items-center gap-3 font-semibold text-primary-strong">
-              <span className="grid size-9 flex-none place-items-center rounded-full border-[1.5px] border-dashed border-input-line">
+              <span className="grid size-9 flex-none place-items-center rounded-full border-2 border-dashed border-input-line">
                 <Icon name="add" />
               </span>
               Agregar cuenta de banco
