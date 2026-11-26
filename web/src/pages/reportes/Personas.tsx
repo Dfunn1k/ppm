@@ -6,6 +6,7 @@ import { Link } from "react-router";
 
 import { usePeopleReport } from "@/api/hooks";
 import { Avatar } from "@/components/MoveBits";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 
@@ -41,30 +42,30 @@ export function ReportePersonas() {
         {[["Me deben", r.owes_me, "me-deben"], ["Debo", r.i_owe, "debo"], ["Guardo", r.keep, "guardo"]].map(([label, amount, ver]) => (
           <Link key={label} to={`/personas?ver=${ver}`} className="flex flex-col gap-0.5 rounded-xl border border-border bg-card p-3">
             <span className="text-caption text-muted-foreground">{label}</span>
-            <span className="text-[17px] leading-6 font-semibold tabular-nums">{money(amount!)}</span>
+            <span className="text-amount-lg tabular-nums">{money(amount!)}</span>
           </Link>
         ))}
       </div>
 
       <section aria-label="Desde cuándo te deben" className="mt-6 flex flex-col gap-2">
-        <span className="border-b border-border pb-1 text-label text-muted-foreground">Desde cuándo te deben</span>
+        <SectionHeading>Desde cuándo te deben</SectionHeading>
         {total > 0 ? (
           <div className="flex h-7 gap-0.5" role="img"
             aria-label={`Lo que te deben por antigüedad: ${TRAMOS.map((x, i) => `${x.label} ${money(r.ages[i]!)}`).join(", ")}`}>
             {r.ages.map((v, i) => Number(v) > 0 && (
               <button key={i} type="button" aria-label={`${TRAMOS[i]!.label}: ${money(v)}`} onClick={() => pick(i)}
-                className="h-full rounded-[4px]" style={{ flex: Number(v), background: `var(--age-${i})`, opacity: tramo === null || tramo === i ? 1 : 0.35 }} />
+                className="hit-area h-full rounded-xs" style={{ flex: Number(v), background: `var(--age-${i})`, opacity: tramo === null || tramo === i ? 1 : 0.35 }} />
             ))}
           </div>
         ) : <span className="text-caption text-muted-foreground">Nadie te debe.</span>}
         <div role="group" aria-label="Tramos" className="grid grid-cols-4 gap-1.5">
           {TRAMOS.map((x, i) => (
             <button key={x.label} type="button" aria-pressed={tramo === i} onClick={() => pick(i)}
-              className={`flex flex-col items-start gap-0.5 rounded-[10px] border p-2 text-left ${tramo === i ? "border-foreground" : "border-border"}`}>
-              <span className="flex items-center gap-1.5 text-[12px] leading-4 text-muted-foreground">
-                <span aria-hidden="true" className="size-2.5 rounded-[3px]" style={{ background: `var(--age-${i})` }} />{x.label}
+              className={`flex flex-col items-start gap-0.5 rounded-md border p-2 text-left ${tramo === i ? "border-foreground" : "border-border"}`}>
+              <span className="flex items-center gap-1.5 text-caption-sm text-muted-foreground">
+                <span aria-hidden="true" className="size-2.5 rounded-xs" style={{ background: `var(--age-${i})` }} />{x.label}
               </span>
-              <span className="text-[14px] leading-5 font-semibold tabular-nums">{money(r.ages[i]!)}</span>
+              <span className="text-body-sm font-semibold tabular-nums">{money(r.ages[i]!)}</span>
             </button>
           ))}
         </div>
@@ -72,16 +73,16 @@ export function ReportePersonas() {
       </section>
 
       <section aria-label="Quién te debe" className="mt-6 flex flex-col">
-        <div className="flex justify-between border-b border-border pb-1 text-label text-muted-foreground">
-          <span className="flex items-center gap-1.5">{t ? <>Te deben<Pill>{t.label.endsWith("días") ? t.label : `${t.label} días`}</Pill></> : "Quién te debe"}</span><span>Lo más antiguo</span>
-        </div>
+        <SectionHeading action={<span className="text-label text-muted-foreground">Lo más antiguo</span>}>
+          <span className="flex items-center gap-1.5">{t ? <>Te deben<Pill>{t.label.endsWith("días") ? t.label : `${t.label} días`}</Pill></> : "Quién te debe"}</span>
+        </SectionHeading>
         {debtors.map((d) => (
-          <Link key={d.partner_id} to={`/personas/${d.partner_id}`} className="flex min-h-[68px] items-center gap-3 border-b border-border">
-            <Avatar name={d.name} size={40} />
+          <Link key={d.partner_id} to={`/personas/${d.partner_id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2.5">
+            <Avatar name={d.name} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-semibold">{d.name}</span>
               <span className={`flex items-center gap-1 text-caption ${d.overdue ? "font-semibold text-attention" : "text-muted-foreground"}`}>
-                <Icon name={d.overdue ? "event_busy" : "event"} className="text-[16px]" />
+                <Icon name={d.overdue ? "event_busy" : "event"} size="sm" />
                 {d.overdue ? "Tiene algo vencido" : d.next_due ? `Lo próximo vence el ${shortDate(d.next_due)}` : "Sin fecha de vencimiento"}
               </span>
             </span>
@@ -96,10 +97,10 @@ export function ReportePersonas() {
 
       {r.creditors.length > 0 && (
         <section aria-label="A quién le debes" className="mt-6 flex flex-col">
-          <span className="border-b border-border pb-1 text-label text-muted-foreground">A quién le debes</span>
+          <SectionHeading>A quién le debes</SectionHeading>
           {r.creditors.map((c) => (
-            <Link key={c.partner_id} to={`/personas/${c.partner_id}`} className="flex min-h-16 items-center gap-3 border-b border-border">
-              <Avatar name={c.name} size={40} />
+            <Link key={c.partner_id} to={`/personas/${c.partner_id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2">
+              <Avatar name={c.name} />
               <span className="min-w-0 flex-1 truncate font-semibold">{c.name}</span>
               <span className="flex flex-col items-end tabular-nums">
                 <span className="font-medium">{money(c.amount)}</span>
