@@ -35,7 +35,7 @@ PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va l
 - Nada de hex, `rgb()`, `color-mix()` ni colores de Tailwind fuera del tema en el código. La única excepción son los 4 colores del logo de Google.
 - `cat-0` a `cat-11` son los 12 colores de categoría, el índice de `account_account.color`. Se usan solo como fondo del chip de categoría, con el ícono en `on-category`.
 - `age-0` a `age-3` son los tramos de antigüedad de lo que te deben (0–30, 31–60, 61–90 y más de 90 días): un solo tono que se intensifica con los días. Van siempre con la etiqueta del tramo; el tramo vencido se marca además con `attention` e ícono.
-- `panel`, `panel-foreground`, `panel-muted`, `panel-line` y `panel-chip` son el panel de la portada de acceso en la computadora (desde 1024px): siempre oscuro, a la izquierda, con el refrán, el año y lo que hace PPM. En el tema oscuro el panel es un negro tibio para separarse del fondo. No se usan en ningún otro lugar.
+- `panel`, `panel-foreground`, `panel-muted`, `panel-line`, `panel-chip`, `panel-border` y `panel-danger` son la paleta siempre oscura: el panel de la portada de acceso en la computadora (desde 1024px, a la izquierda, con el refrán, el año y lo que hace PPM) y el visor de adjuntos. En el tema oscuro el panel es un negro tibio para separarse del fondo. No se usan en ningún otro lugar.
 - Los grises son neutros, sin tinte: el color lo ponen el acento, los montos, las categorías y el trigo, nunca el fondo.
 - Hay un tema claro y uno oscuro con los mismos tokens; el oscuro no es el claro invertido. Comprueba cada combinación en los dos.
 

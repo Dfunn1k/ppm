@@ -17,7 +17,7 @@ const ZOOMS = [1, 1.5, 2, 3, 4];
 const KEY_HELP: [keys: string[], what: string][] = [[["←", "→"], "Pasar"], [["+", "−"], "Zoom"], [[], "acerca"], [["Esc"], "Cerrar"]];
 
 export function fileSize(bytes: number) {
-  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${Math.round((bytes / 1024 / 1024) * 10) / 10} MB`;
 }
 
 export function kindOf(a: Attachment) {
@@ -68,45 +68,45 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
     ["Subido", shortDate(a.create_date.slice(0, 10))], ["Pesa", fileSize(a.file_size)], ["Tipo", pdf ? "PDF" : "Foto"],
     ...(pdf && a.page_count ? [["Páginas", String(a.page_count)]] as [string, string][] : []),
   ];
-  const tool = "grid size-10 place-items-center rounded-[10px] hover:bg-white/10";
+  const tool = "grid size-control place-items-center rounded-md hover:bg-panel-chip";
 
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={a.name} className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] text-[#fafafa]">
+    <div role="dialog" aria-modal="true" aria-label={a.name} className="fixed inset-0 z-sheet flex flex-col bg-panel text-panel-foreground">
       {/* Arriba: qué es, en qué posición y (en la computadora) las acciones */}
-      <div className="flex min-h-16 items-center gap-2 border-b border-[#2e2e2e] px-2 lg:px-5">
+      <div className="flex min-h-16 items-center gap-2 border-b border-panel-line px-2 lg:px-5">
         <button type="button" aria-label="Cerrar" onClick={onClose} className="grid size-11 place-items-center rounded-full lg:order-last">
-          <Icon name="close" className="text-[24px]" />
+          <Icon name="close" size="md" />
         </button>
         <span className="flex min-w-0 flex-1 flex-col lg:flex-row lg:items-baseline lg:gap-3">
           <span className="truncate font-semibold">{a.name}</span>
           <button type="button" aria-expanded={info} onClick={() => setInfo(!info)}
-            className="flex h-7 items-center gap-1 self-start text-caption text-[#d4d4d4] lg:self-auto">
-            <Icon name="info" className="text-[18px]" />Detalles
+            className="hit-area flex h-7 items-center gap-1 self-start text-caption text-panel-foreground lg:self-auto">
+            <Icon name="info" size="sm" />Detalles
           </button>
         </span>
-        {list.length > 1 && <span className="pr-2 text-caption text-[#a3a3a3] lg:order-first lg:pr-3">{index + 1} de {list.length}</span>}
+        {list.length > 1 && <span className="pr-2 text-caption text-panel-muted lg:order-first lg:pr-3">{index + 1} de {list.length}</span>}
         <div className="hidden items-center gap-1 lg:flex">
           <button type="button" aria-label="Alejar" onClick={() => setZoom((z) => Math.max(z - 1, 0))} className={tool}><Icon name="zoom_out" /></button>
-          <span className="w-12 text-center text-caption text-[#a3a3a3]">{Math.round(scale * 100)} %</span>
+          <span className="w-12 text-center text-caption text-panel-muted">{Math.round(scale * 100)} %</span>
           <button type="button" aria-label="Acercar" onClick={() => setZoom((z) => Math.min(z + 1, ZOOMS.length - 1))} className={tool}><Icon name="zoom_in" /></button>
           {!pdf && <button type="button" aria-label="Girar" onClick={() => setTurn((t) => t + 90)} className={tool}><Icon name="rotate_right" /></button>}
           <a href={attachmentUrl(a.id, true)} download={a.name}
-            className="ml-2 flex h-10 items-center gap-1.5 rounded-[10px] border border-[#525252] px-3.5 text-[14px] font-semibold">
-            <Icon name="download" className="text-[20px]" />Descargar
+            className="ml-2 flex min-h-control items-center gap-1.5 rounded-md border border-panel-border px-3.5 text-body-sm font-semibold">
+            <Icon name="download" />Descargar
           </a>
           <button type="button" disabled={deleting} onClick={() => (confirm ? onDelete(a) : setConfirm(true))}
-            className={`flex h-10 items-center gap-1.5 rounded-[10px] px-3.5 text-[14px] font-semibold ${confirm ? "bg-[#b42318] text-white" : "border border-[#525252] text-[#ff7b6e]"}`}>
-            <Icon name="delete" className="text-[20px]" />{confirm ? "Sí, borrar" : "Borrar"}
+            className={`flex min-h-control items-center gap-1.5 rounded-md px-3.5 text-body-sm font-semibold ${confirm ? "bg-destructive text-destructive-foreground" : "border border-panel-border text-panel-danger"}`}>
+            <Icon name="delete" />{confirm ? "Sí, borrar" : "Borrar"}
           </button>
         </div>
       </div>
 
       {info && (
-        <dl className="flex flex-wrap gap-x-6 gap-y-2 border-b border-[#2e2e2e] px-4 py-3 lg:px-5">
+        <dl className="flex flex-wrap gap-x-6 gap-y-2 border-b border-panel-line px-4 py-3 lg:px-5">
           {details.map(([k, v]) => (
             <div key={k} className="flex flex-col">
-              <dt className="text-[10px] leading-[14px] font-semibold tracking-[0.05em] text-[#8a8a8a] uppercase">{k}</dt>
-              <dd className="text-caption font-semibold text-[#fafafa] tabular-nums">{v}</dd>
+              <dt className="text-label text-panel-muted uppercase">{k}</dt>
+              <dd className="text-caption font-semibold text-panel-foreground tabular-nums">{v}</dd>
             </div>
           ))}
         </dl>
@@ -114,22 +114,22 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
 
       <div className="flex min-h-0 flex-1">
         {/* La lista, en la computadora */}
-        <aside aria-label="Adjuntos del movimiento" className="hidden w-72 flex-none flex-col gap-1.5 overflow-y-auto border-r border-[#2e2e2e] p-4 lg:flex">
-          <span className="px-1 pb-1.5 text-label text-[#a3a3a3]">{list.length === 1 ? "1 adjunto" : `${list.length} adjuntos`}</span>
+        <aside aria-label="Adjuntos del movimiento" className="hidden w-72 flex-none flex-col gap-1.5 overflow-y-auto border-r border-panel-line p-4 lg:flex">
+          <span className="px-1 pb-1.5 text-label text-panel-muted">{list.length === 1 ? "1 adjunto" : `${list.length} adjuntos`}</span>
           {list.map((x, i) => (
             <button key={x.id} type="button" onClick={() => onIndex(i)} aria-current={i === index}
-              className={`flex items-center gap-3 rounded-[10px] p-2.5 text-left ${i === index ? "bg-[#262626]" : "hover:bg-white/5"}`}>
-              <Thumb a={x} className="h-[58px] w-11 rounded-md" />
+              className={`flex min-h-control items-center gap-3 rounded-md p-2.5 text-left ${i === index ? "bg-panel-chip" : "hover:bg-panel-chip/60"}`}>
+              <Thumb a={x} className="h-14 w-11 rounded-md" />
               <span className="flex min-w-0 flex-col">
-                <span className="truncate text-[14px] font-semibold">{x.name}</span>
-                <span className="text-caption text-[#a3a3a3]">{fileSize(x.file_size)}</span>
+                <span className="truncate text-body-sm font-semibold">{x.name}</span>
+                <span className="text-caption text-panel-muted">{fileSize(x.file_size)}</span>
               </span>
             </button>
           ))}
           {onAdd && (
             <button type="button" onClick={onAdd}
-              className="mt-2 flex h-11 items-center justify-center gap-1.5 rounded-[10px] border-[1.5px] border-dashed border-[#525252] text-[14px] font-semibold">
-              <Icon name="add" className="text-[20px]" />Adjuntar
+              className="mt-2 flex h-11 items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-panel-border text-body-sm font-semibold">
+              <Icon name="add" />Adjuntar
             </button>
           )}
         </aside>
@@ -158,19 +158,19 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
           {list.length > 1 && (
             <>
               <button type="button" aria-label="Anterior" onClick={() => go(-1)}
-                className="absolute top-1/2 left-2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white ring-1 ring-white/20 backdrop-blur lg:left-6 lg:size-12">
-                <Icon name="chevron_left" className="text-[26px]" />
+                className="absolute top-1/2 left-2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-panel/70 text-panel-foreground ring-1 ring-panel-border backdrop-blur lg:left-6 lg:size-12">
+                <Icon name="chevron_left" size="md" />
               </button>
               <button type="button" aria-label="Siguiente" onClick={() => go(1)}
-                className="absolute top-1/2 right-2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white ring-1 ring-white/20 backdrop-blur lg:right-6 lg:size-12">
-                <Icon name="chevron_right" className="text-[26px]" />
+                className="absolute top-1/2 right-2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-panel/70 text-panel-foreground ring-1 ring-panel-border backdrop-blur lg:right-6 lg:size-12">
+                <Icon name="chevron_right" size="md" />
               </button>
             </>
           )}
-          <span className="hidden flex-wrap justify-center gap-x-5 gap-y-1.5 pb-3 text-caption text-[#a3a3a3] lg:flex">
+          <span className="hidden flex-wrap justify-center gap-x-5 gap-y-1.5 pb-3 text-caption text-panel-muted lg:flex">
             {KEY_HELP.map(([keys, what]) => (
               <span key={what} className="flex items-center gap-1.5">
-                {keys.length ? keys.map((k) => <Kbd key={k} dark>{k}</Kbd>) : <b className="font-semibold text-[#ddd]">Doble clic</b>}
+                {keys.length ? keys.map((k) => <Kbd key={k} dark>{k}</Kbd>) : <b className="font-semibold text-panel-foreground">Doble clic</b>}
                 {what}
               </span>
             ))}
@@ -184,19 +184,19 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
           <div className="flex justify-center gap-2 overflow-x-auto px-4 py-2">
             {list.map((x, i) => (
               <button key={x.id} type="button" aria-label={`Ver ${x.name}`} onClick={() => onIndex(i)}
-                className={`flex-none overflow-hidden rounded-md border-2 ${i === index ? "border-[#e8b04b]" : "border-transparent opacity-70"}`}>
+                className={`flex-none overflow-hidden rounded-md border-2 ${i === index ? "border-trigo" : "border-transparent opacity-70"}`}>
                 <Thumb a={x} className="h-14 w-11" />
               </button>
             ))}
           </div>
         )}
-        {confirm && <p className="px-4 pb-1 text-center text-[#d4d4d4]">¿Borrar este adjunto? El movimiento queda igual.</p>}
+        {confirm && <p className="px-4 pb-1 text-center text-panel-foreground">¿Borrar este adjunto? El movimiento queda igual.</p>}
         {error && <div className="px-4 pb-2"><ErrorAlert>{error}</ErrorAlert></div>}
-        <div className="grid grid-cols-4 border-t border-[#2e2e2e] px-2 pt-1.5 pb-6">
+        <div className="grid grid-cols-4 border-t border-panel-line px-2 pt-1.5 pb-6">
           <Action icon={scale === 1 ? "zoom_in" : "zoom_out"} label={scale === 1 ? "Zoom" : "Ajustar"} onClick={() => setZoom((z) => (z === 0 ? 2 : 0))} />
           <Action icon="rotate_right" label="Girar" onClick={() => setTurn((t) => t + 90)} disabled={pdf} />
-          <a href={attachmentUrl(a.id, true)} download={a.name} className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[12px] font-medium">
-            <Icon name="download" className="text-[22px]" />Descargar
+          <a href={attachmentUrl(a.id, true)} download={a.name} className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-caption-sm font-medium">
+            <Icon name="download" size="md" />Descargar
           </a>
           <Action icon="delete" label={confirm ? "Sí, borrar" : "Borrar"} danger onClick={() => (confirm ? onDelete(a) : setConfirm(true))} disabled={deleting} />
         </div>
@@ -210,8 +210,8 @@ export function AttachmentViewer({ list, index, onIndex, onClose, onDelete, dele
 function Action({ icon, label, onClick, disabled, danger }: { icon: string; label: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[12px] font-medium disabled:opacity-40 ${danger ? "text-[#ff7b6e]" : ""}`}>
-      <Icon name={icon} className="text-[22px]" />{label}
+      className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-caption-sm font-medium disabled:opacity-40 ${danger ? "text-panel-danger" : ""}`}>
+      <Icon name={icon} size="md" />{label}
     </button>
   );
 }
@@ -220,9 +220,9 @@ function Action({ icon, label, onClick, disabled, danger }: { icon: string; labe
 export function Thumb({ a, className }: { a: Attachment; className?: string }) {
   const [broken, setBroken] = useState(false);
   return (
-    <span className={`grid flex-none place-items-center overflow-hidden bg-[#262626] ${className ?? ""}`}>
+    <span className={`grid flex-none place-items-center overflow-hidden bg-panel-chip ${className ?? ""}`}>
       {broken
-        ? <Icon name={a.mimetype === "application/pdf" ? "picture_as_pdf" : "image"} className="text-[22px] text-[#a3a3a3]" />
+        ? <Icon name={a.mimetype === "application/pdf" ? "picture_as_pdf" : "image"} size="md" className="text-panel-muted" />
         : <img src={attachmentThumb(a.id)} alt="" loading="lazy" decoding="async" onError={() => setBroken(true)} className="size-full object-cover" />}
     </span>
   );
@@ -233,12 +233,12 @@ export function Thumb({ a, className }: { a: Attachment; className?: string }) {
 function PdfPage({ a, page }: { a: Attachment; page: number }) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <div className="relative w-full bg-white shadow-lg" style={loaded ? undefined : { aspectRatio: "1 / 1.414" }}>
+    <div className={`relative w-full bg-panel-foreground shadow-lg ${loaded ? "" : "aspect-a4"}`}>
       {!loaded && (
         <span className="absolute inset-0 grid place-items-center">
           {page === 1
-            ? <img src={attachmentThumb(a.id)} alt="" className="size-full object-contain opacity-60 blur-[2px]" />
-            : <Icon name="progress_activity" className="animate-spin text-[28px] text-[#737373]" />}
+            ? <img src={attachmentThumb(a.id)} alt="" className="size-full object-contain opacity-60 blur-xs" />
+            : <Icon name="progress_activity" size="lg" className="animate-spin text-panel-muted" />}
         </span>
       )}
       <img src={attachmentView(a.id, page)} alt={`${a.name}, página ${page}`} loading={page === 1 ? "eager" : "lazy"}
