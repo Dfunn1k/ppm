@@ -15,7 +15,7 @@ export function WithPartnerField({ value, onChange }: { value: number | null; on
   const [open, setOpen] = useState(value !== null);
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="flex min-h-[52px] items-center gap-3 border-b border-border text-left">
+      <button type="button" onClick={() => setOpen(true)} className="flex min-h-row-sm items-center gap-3 border-b border-border text-left">
         <Icon name="person" className="w-9 text-center text-muted-foreground" />
         <span className="flex flex-1 flex-col">
           <span className="flex justify-between gap-2 text-caption text-muted-foreground">Con quién<Optional /></span>
@@ -61,7 +61,7 @@ export function WithPartnerRow({ moveId, partnerId, partner, locked }: {
       <button type="button" aria-haspopup="dialog" onClick={() => { setChosen(partnerId); save.reset(); setOpen(true); }}
         className="flex min-h-14 items-center gap-3 border-b border-border text-left">
         {row}
-        <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+        <Icon name="chevron_right" size="md" className="text-muted-foreground" />
       </button>
       <Sheet title="Con quién" open={open} onClose={() => setOpen(false)}>
         <div className="flex flex-col gap-3 px-3 pb-2">
@@ -69,7 +69,7 @@ export function WithPartnerRow({ moveId, partnerId, partner, locked }: {
           <PersonPicker label="¿Con quién fue?" value={chosen} onChange={setChosen} />
           {partnerId && people.some((p) => p.id === partnerId) && (
             <Link to={`/personas/${partnerId}`} className="flex min-h-11 items-center gap-1 text-caption font-semibold">
-              Ver a {partner}<Icon name="chevron_right" className="text-[18px]" />
+              Ver a {partner}<Icon name="chevron_right" size="sm" />
             </Link>
           )}
           {save.error && <ErrorAlert>{save.error.message}</ErrorAlert>}

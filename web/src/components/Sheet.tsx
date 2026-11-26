@@ -56,7 +56,7 @@ export function Sheet({ title, open, onClose, children }: {
         aria-modal={leaving ? undefined : true}   // mientras se va ya no cuenta como abierta: Esc llega a quien queda
         tabIndex={-1}
         aria-labelledby={titleId}
-        className="sheet-panel absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-xl bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none md:top-[12dvh] md:bottom-auto md:max-h-[76dvh] md:rounded-xl"
+        className="sheet-panel absolute inset-x-0 bottom-0 mx-auto flex max-h-sheet max-w-md flex-col overflow-y-auto rounded-t-xl bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none md:top-sheet md:bottom-auto md:max-h-sheet-dialog md:rounded-xl"
       >
         <span aria-hidden="true" className="h-1 w-9 self-center rounded-full bg-border md:hidden" />
         <h2 id={titleId} className="mx-3 mt-4 mb-2 text-title-2">
@@ -100,7 +100,7 @@ export function OptionList({ options, value, onPick, search, searchLabel = "Busc
   return (
     <div className="flex flex-col">
       {searchable && (
-        <div className="sticky top-0 z-10 -mx-1 bg-card px-1 pb-2">
+        <div className="sticky top-0 z-raised -mx-1 bg-card px-1 pb-2">
           <label className="mx-2 flex h-11 items-center gap-2 rounded-md bg-muted px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
             <Icon name="search" className="text-muted-foreground" />
             <input type="search" aria-label={searchLabel} placeholder={searchLabel} value={query} autoComplete="off"
@@ -125,8 +125,8 @@ export function OptionList({ options, value, onPick, search, searchLabel = "Busc
                 <span className="font-semibold">{o.label}</span>
                 {o.detail ?? (o.hint && <span className="text-caption text-muted-foreground">{o.hint}</span>)}
               </span>
-              {o.right && <span className="flex-none text-[15px] font-medium tabular-nums">{o.right}</span>}
-              {selected && <Icon name="check_circle" fill className="text-[22px]" />}
+              {o.right && <span className="flex-none text-body font-medium tabular-nums">{o.right}</span>}
+              {selected && <Icon name="check_circle" fill size="md" />}
             </button>
           );
         })}
@@ -165,12 +165,12 @@ export function SheetSelect({ label, sheetTitle, options, value, onChange, error
         <span id={`${id}-value`} className="min-w-0 flex-1 truncate">
           {current?.label ?? "Elige una opción"}
         </span>
-        <Icon name="expand_more" className="text-[22px] text-muted-foreground" />
+        <Icon name="expand_more" size="md" className="text-muted-foreground" />
       </button>
       {hint && !error && <span className="text-caption text-muted-foreground">{hint}</span>}
       {error && (
         <span className="flex items-center gap-1 text-caption text-destructive">
-          <Icon name="error" className="text-[18px]" />
+          <Icon name="error" size="sm" />
           {error}
         </span>
       )}

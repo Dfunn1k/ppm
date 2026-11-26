@@ -35,9 +35,9 @@ function Tab({ item, to }: { item: Item; to?: string }) {
     : (ALSO[item.to]?.some((p) => path.startsWith(p)) ?? false));
   if (!item.to) {
     return (
-      <span aria-disabled="true" title="Muy pronto" className="flex flex-col items-center gap-0.5 text-[12px] leading-4 text-muted-foreground opacity-60">
-        <span className="grid h-[30px] place-items-center">
-          <Icon name={item.icon} className="text-[22px]" />
+      <span aria-disabled="true" title="Muy pronto" className="flex flex-col items-center gap-0.5 text-caption-sm text-muted-foreground opacity-60">
+        <span className="grid h-8 place-items-center">
+          <Icon name={item.icon} size="md" />
         </span>
         {item.label}
       </span>
@@ -45,11 +45,11 @@ function Tab({ item, to }: { item: Item; to?: string }) {
   }
   return (
     <NavLink to={to ?? item.to} aria-current={also ? "page" : undefined}
-      className="flex flex-col items-center gap-0.5 text-[12px] leading-4 text-muted-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground">
+      className="flex flex-col items-center gap-0.5 text-caption-sm text-muted-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground">
       {({ isActive: exact }) => { const isActive = exact || also; return (
         <>
-          <span className={`grid h-[30px] place-items-center ${isActive ? "w-14 rounded-full bg-secondary text-secondary-foreground" : ""}`}>
-            <Icon name={item.icon} fill={isActive} className="text-[22px]" />
+          <span className={`grid h-8 place-items-center ${isActive ? "w-14 rounded-full bg-secondary text-secondary-foreground" : ""}`}>
+            <Icon name={item.icon} fill={isActive} size="md" />
           </span>
           {item.label}
         </>
@@ -74,12 +74,12 @@ export function AppNav() {
   rememberMoves(me?.id, path, search);
   return (
     <nav aria-label="Navegación principal" className="app-nav fixed inset-x-0 bottom-0 z-nav border-t border-border bg-card md:hidden">
-      <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
+      <div className="mx-auto grid h-19 max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
         <Tab item={ITEMS[1]!} to={movesLink(me?.id)} />
         <Link to={registerLink(path, homeAccount)} state={{ from: path }} data-from={path} aria-label="Registrar un movimiento"
           className="-mt-7 grid size-14 place-items-center justify-self-center rounded-full bg-primary text-primary-foreground shadow-lg">
-          <Icon name="add" className="text-[28px]" />
+          <Icon name="add" size="lg" />
         </Link>
         <Tab item={ITEMS[2]!} />
         <Tab item={ITEMS[3]!} />

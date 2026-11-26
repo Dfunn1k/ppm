@@ -2,12 +2,13 @@
 // su ícono, su monto con signo y la línea chica de abajo, que también usan una cuenta y una tarjeta.
 import type { MoveSummary, TagRef } from "@/api/hooks";
 import { flow, isPersonKind, tone } from "@/lib/kinds";
-import { formatAmount, formatNumber, symbolOf } from "@/lib/money";
+import { cn } from "@/lib/utils";
+import { divide, formatAmount, formatNumber, symbolOf } from "@/lib/money";
 
-import { Avatar as Circle } from "./Avatar";
+import { Avatar as Circle, catBg } from "./Avatar";
 import { CategoryChip } from "./CategorySheet";
 import { Pill } from "./Pill";
-import { TagChips, tagColor } from "./Tags";
+import { TagChips } from "./Tags";
 import { Icon } from "./ui";
 
 /** Las iniciales de una persona en su círculo (`Avatar` de persona, 40 px). `size` con un número queda solo
@@ -16,8 +17,8 @@ export function Avatar({ name, size }: { name: string | null | undefined; size?:
   const initial = (name ?? "?").trim()[0]?.toUpperCase() ?? "?";
   if (size === undefined) return <Circle kind="person" initials={initial} />;
   return (
-    <span className="grid flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground"
-      style={{ width: size, height: size, fontSize: size < 36 ? 13 : 15 }}>
+    <span className={cn("grid flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground",
+      size <= 28 ? "size-7 text-caption" : size <= 32 ? "size-8 text-caption" : "size-10 text-body")}>
       {initial}
     </span>
   );
@@ -62,7 +63,7 @@ export function MoveLine({ bits, tags, wide }: { bits: Bit[]; tags: TagRef[]; wi
           ))}
           {wide && tags.map((t) => (
             <span key={t.id} className="inline-flex flex-none items-center gap-1">
-              <span aria-hidden="true" className="size-2 rounded-full" style={{ background: tagColor(t.color) }} />{t.name}
+              <span aria-hidden="true" className={cn("size-2 rounded-full", catBg(t.color))} />{t.name}
             </span>
           ))}
         </span>
@@ -75,10 +76,9 @@ export function MoveLine({ bits, tags, wide }: { bits: Bit[]; tags: TagRef[]; wi
 /** El tipo de cambio de una compra o venta de moneda: cuántos de la base por uno de la otra. */
 function rate(x: MoveSummary, base: string, lang: string): string | null {
   if (!x.to_amount || !x.to_currency || x.to_currency === x.currency) return null;
-  const a = Number(x.amount), b = Number(x.to_amount);
-  if (!a || !b) return null;
-  const r = x.currency === base ? a / b : b / a;
-  return `${formatAmount(x.to_amount, symbolOf(x.to_currency), lang)} a ${r.toLocaleString(lang, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
+  const a = x.amount.replace("-", ""), b = x.to_amount.replace("-", "");
+  if (!Number(a) || !Number(b)) return null;
+  return `${formatAmount(x.to_amount, symbolOf(x.to_currency), lang)} a ${x.currency === base ? divide(a, b, 3) : divide(b, a, 3)}`;
 }
 
 /** La línea chica de un movimiento en Movimientos e Inicio: por confirmar, la fecha (si no hay rótulo
@@ -108,7 +108,7 @@ export function MoveAmount({ move: x, base, lang }: { move: MoveSummary; base: s
   const value = x.currency === base && f !== "none" ? formatNumber(x.amount, lang) : formatAmount(x.amount, symbolOf(x.currency), lang);
   return (
     <span className={`flex items-center gap-0.5 text-amount whitespace-nowrap ${tone(x.kind)}`}>
-      {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} className="text-[16px]" />}
+      {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} size="sm" />}
       {f === "in" ? "+ " : f === "out" ? "− " : ""}{value}
     </span>
   );

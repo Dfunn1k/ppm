@@ -18,7 +18,7 @@ export function CategoryChip({ category, size }: { category: Pick<Category, "ico
       className="grid flex-none place-items-center rounded-full"
       style={{ width: size, height: size, background: `var(--cat-${category.color ?? 0})`, color: "var(--on-category)" }}
     >
-      <Icon name={category.icon ?? "category"} className={size < 36 ? "text-[18px]" : "text-[20px]"} />
+      <Icon name={category.icon ?? "category"} size={size < 36 ? "sm" : undefined} />
     </span>
   );
 }
@@ -59,15 +59,15 @@ export function CategorySheet({ kind, open, onClose, onPick, selected, allowGrou
 
       {onLater && !needle && (
         <button type="button" role="radio" aria-checked={!!later} onClick={() => { setQ(""); onLater(); }}
-          className={`mx-1 mt-3 flex min-h-[60px] items-center gap-3 rounded-xl border-[1.5px] border-dashed border-input-line px-3 text-left ${later ? "bg-muted" : ""}`}>
-          <span className="grid size-9 flex-none place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="inbox" /></span>
+          className={`mx-1 mt-3 flex min-h-row items-center gap-3 rounded-xl border-2 border-dashed border-input-line px-3 text-left ${later ? "bg-muted" : ""}`}>
+          <span className="grid size-9 flex-none place-items-center rounded-full border-2 border-dashed border-input-line"><Icon name="inbox" /></span>
           <span className="flex flex-1 flex-col">
             <span className="font-semibold">Lo clasifico después</span>
             <span className="text-caption text-muted-foreground">
               Queda en Por clasificar: no cuenta como {kind === "income" ? "ingreso" : "gasto"} hasta que elijas
             </span>
           </span>
-          {later && <Icon name="check_circle" fill className="text-[22px]" />}
+          {later && <Icon name="check_circle" fill size="md" />}
         </button>
       )}
 
@@ -77,7 +77,7 @@ export function CategorySheet({ kind, open, onClose, onPick, selected, allowGrou
           <div className="mx-1 flex gap-2">
             {data.frequent.map((c) => (
               <button key={c.id} type="button" onClick={() => pick(c)}
-                className="flex w-[76px] flex-col items-center gap-1.5 py-2 text-center text-[12px] leading-4">
+                className="flex w-19 flex-col items-center gap-1.5 py-2 text-center text-caption-sm">
                 <CategoryChip category={c} size={44} />
                 {c.name}
               </button>
@@ -106,7 +106,7 @@ export function CategorySheet({ kind, open, onClose, onPick, selected, allowGrou
                 className={`flex min-h-12 items-center gap-3 rounded-md px-3 text-left font-semibold ${k.id === selected ? "bg-muted" : ""}`}>
                 <CategoryChip category={k} size={34} />
                 <span className="flex-1">{k.name}</span>
-                {k.id === selected && <Icon name="check_circle" fill className="text-[22px]" />}
+                {k.id === selected && <Icon name="check_circle" fill size="md" />}
               </button>
             ))}
           </div>

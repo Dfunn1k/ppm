@@ -77,7 +77,7 @@ export function DateSheet({ open, onClose, title, value, onChange, min: asked, m
     if (next.getFullYear() >= fromYear && next.getFullYear() <= toYear) setMonth(next);
   };
   const cell = (on: boolean) =>
-    `h-12 rounded-full text-[15px] font-semibold disabled:opacity-35 ${on ? "bg-primary text-primary-foreground" : ""}`;
+    `h-12 rounded-full text-body font-semibold disabled:opacity-35 ${on ? "bg-primary text-primary-foreground" : ""}`;
   return (
     <Sheet title={title} open={open} onClose={onClose}>
       {shortcuts.length > 0 && view === "days" && (
@@ -97,23 +97,23 @@ export function DateSheet({ open, onClose, title, value, onChange, min: asked, m
       <div className="mx-1 mt-3 flex h-10 items-center justify-between">
         {view !== "years" ? (
           <button type="button" aria-label={view === "days" ? "Mes anterior" : "Año anterior"} onClick={() => step(-1)}
-            className="grid size-10 place-items-center rounded-full"><Icon name="chevron_left" className="text-[22px]" /></button>
+            className="grid size-10 place-items-center rounded-full"><Icon name="chevron_left" size="md" /></button>
         ) : <span className="size-10" />}
         <span className="flex items-center gap-1">
           {view === "days" && (
             <button type="button" aria-label={`Elegir el mes: ${MONTHS[month.getMonth()]}`} onClick={() => setView("months")}
               className="flex h-10 items-center gap-0.5 rounded-full px-2 font-semibold">
-              {MONTHS[month.getMonth()]}<Icon name="expand_more" className="text-[20px] text-muted-foreground" />
+              {MONTHS[month.getMonth()]}<Icon name="expand_more" className="text-muted-foreground" />
             </button>
           )}
           <button type="button" aria-label={`Elegir el año: ${year}`} onClick={() => setView(view === "years" ? "days" : "years")}
             className="flex h-10 items-center gap-0.5 rounded-full px-2 font-semibold tabular-nums">
-            {year}<Icon name={view === "years" ? "expand_less" : "expand_more"} className="text-[20px] text-muted-foreground" />
+            {year}<Icon name={view === "years" ? "expand_less" : "expand_more"} className="text-muted-foreground" />
           </button>
         </span>
         {view !== "years" ? (
           <button type="button" aria-label={view === "days" ? "Mes siguiente" : "Año siguiente"} onClick={() => step(1)}
-            className="grid size-10 place-items-center rounded-full"><Icon name="chevron_right" className="text-[22px]" /></button>
+            className="grid size-10 place-items-center rounded-full"><Icon name="chevron_right" size="md" /></button>
         ) : <span className="size-10" />}
       </div>
       {view === "months" && (
@@ -154,11 +154,11 @@ export function DateSheet({ open, onClose, title, value, onChange, min: asked, m
             month_caption: "sr-only",
             month_grid: "mt-1 w-full border-collapse",
             weekdays: "h-7",
-            weekday: "text-[12px] font-semibold text-muted-foreground uppercase",
+            weekday: "text-caption-sm font-semibold text-muted-foreground uppercase",
             day: "p-0.5 text-center",
-            day_button: "mx-auto grid size-11 place-items-center rounded-full text-[15px] tabular-nums disabled:opacity-35",
+            day_button: "mx-auto grid size-11 place-items-center rounded-full text-body tabular-nums disabled:opacity-35",
             selected: "[&>button]:bg-primary [&>button]:font-semibold [&>button]:text-primary-foreground",
-            today: "[&>button]:font-semibold [&>button]:ring-[1.5px] [&>button]:ring-foreground [&>button]:ring-inset",
+            today: "[&>button]:font-semibold [&>button]:ring-2 [&>button]:ring-foreground [&>button]:ring-inset",
             outside: "invisible",
             hidden: "invisible",
           }}
@@ -167,7 +167,7 @@ export function DateSheet({ open, onClose, title, value, onChange, min: asked, m
       )}
       {booked && closed.lock && (
         <p className="mx-3 mt-3 flex items-start gap-2 text-caption text-muted-foreground">
-          <Icon name="lock_clock" className="text-[18px]" />
+          <Icon name="lock_clock" size="sm" />
           <span>Cerrado hasta el {shortDate(closed.lock)}. Para usar esos días, reábrelo en Más › Cierre de periodo.</span>
         </p>
       )}
@@ -205,7 +205,7 @@ export function DateField({ label, value, onChange, min, max, shortcuts, placeho
         <span id={`${id}-value`} className={`min-w-0 flex-1 truncate ${value ? "" : "text-muted-foreground"}`}>
           {value ? dateLabel(value) : placeholder}
         </span>
-        <Icon name="calendar_month" className="text-[22px] text-muted-foreground" />
+        <Icon name="calendar_month" size="md" className="text-muted-foreground" />
       </button>
       {hint && <span className="text-caption text-muted-foreground">{hint}</span>}
       <DateSheet open={open} onClose={() => setOpen(false)} title={sheetTitle ?? label} value={value} onChange={onChange}

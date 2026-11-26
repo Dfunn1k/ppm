@@ -80,7 +80,7 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
             : p.canceled ? "Cancelada" : p.date.slice(0, 7) === thisMonth ? "Próxima" : "";
           const body = (
             <>
-              <span className={`grid size-[26px] flex-none place-items-center rounded-full text-[12px] font-semibold ${p.move_id ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+              <span className={`grid size-7 flex-none place-items-center rounded-full text-caption-sm font-semibold ${p.move_id ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                 {p.sequence}
               </span>
               {p.days ? <Facts className={`flex-1 ${p.canceled ? "opacity-60" : ""}`} items={[["Mes", monthOf(p.date)], ["Días", String(p.days)]]} />
@@ -109,7 +109,7 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
                 : `Los ${money(c.rest)} que faltaban contaron como ${expense ? "gasto" : "ingreso"} de «${f.category.name}» ese día.`}
             </span>
             {undo.error && <ErrorAlert>{undo.error.message}</ErrorAlert>}
-            <button type="button" disabled={undo.isPending} onClick={() => undo.mutate()} className="mt-1 min-h-11 self-start text-[14px] font-semibold underline">
+            <button type="button" disabled={undo.isPending} onClick={() => undo.mutate()} className="mt-1 min-h-11 self-start text-body-sm font-semibold underline">
               Deshacer
             </button>
           </div>
@@ -197,7 +197,7 @@ function CancelDeferralSheet({ moveId, deferral: f, open, onClose }: {
     const on = (parseAmount(typed || "0", lang) ?? "") === value || (!typed && value === "0.00");
     return (
       <button key={label} type="button" aria-pressed={on} onClick={() => setTyped(value === "0.00" ? "" : formatNumber(value, lang))}
-        className={`h-8 rounded-full border px-3 text-[13px] font-semibold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+        className={`h-8 rounded-full border px-3 text-caption font-semibold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
         {label}
       </button>
     );
@@ -230,7 +230,7 @@ function CancelDeferralSheet({ moveId, deferral: f, open, onClose }: {
           sheetTitle={expense ? "¿Cuándo lo cancelaste?" : "¿Cuándo devolviste el adelanto?"} />
 
         <section aria-label="Qué pasa al cancelar" className="flex flex-col gap-1.5 rounded-lg bg-muted p-3.5">
-          {result.map((line) => <span key={line} className="text-[14px] leading-5">{line}</span>)}
+          {result.map((line) => <span key={line} className="text-body-sm">{line}</span>)}
         </section>
 
         {(problem || cancel.error) && <ErrorAlert>{problem ?? cancel.error?.message}</ErrorAlert>}

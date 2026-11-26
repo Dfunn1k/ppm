@@ -23,7 +23,7 @@ export function Refran({ label = "PPM" }: { label?: string }) {
             />
           ))}
         </div>
-        <div className="grid grid-cols-12 gap-1 text-center text-[11px] leading-[14px] text-muted-foreground">
+        <div className="grid grid-cols-12 gap-1 text-center text-caption-sm text-muted-foreground">
           {MONTHS.map((m, i) => (
             <span key={i} className={i === MAYO || i === today ? "font-bold text-foreground" : undefined}>
               {m}

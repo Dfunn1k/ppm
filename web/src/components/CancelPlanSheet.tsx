@@ -113,7 +113,7 @@ export function CancelPlanSheet({ plan, open, onClose }: { plan: Plan; title: st
         <section aria-label="Así queda" className="flex flex-col gap-1.5 rounded-lg bg-muted p-3.5">
           <span className="text-label text-muted-foreground">Así queda</span>
           {result.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-3 text-[14px] leading-5 tabular-nums">
+            <div key={label} className="flex justify-between gap-3 text-body-sm tabular-nums">
               <span>{label}</span><span className="font-semibold whitespace-nowrap">{value}</span>
             </div>
           ))}

@@ -3,7 +3,7 @@
 // y el estado de cuenta la divide en capital e interés. De otra persona: te debe todas las cuotas.
 import { installmentClosings } from "@/lib/cards";
 import { shortDate } from "@/lib/dates";
-import { formatAmount, parseAmount, symbolOf } from "@/lib/money";
+import { formatAmount, parseAmount, symbolOf, fromCents } from "@/lib/money";
 
 import { Facts, Icon } from "./ui";
 
@@ -21,7 +21,7 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
   const each = typed && typed > 0 ? typed : plain;
   const interest = (typed && typed > 0 ? typed * n : cents) - cents;
   const last = typed ? each : cents - plain * (n - 1);
-  const money = (c: number) => formatAmount((c / 100).toFixed(2), symbolOf(currency), lang);
+  const money = (c: number) => formatAmount(fromCents(c), symbolOf(currency), lang);
   const closings = closingDay ? installmentClosings(date, n, closingDay) : null;
   const when = closings ? `La primera llega en el corte del ${shortDate(closings[0]!)}; la última, el ${shortDate(closings.at(-1)!)}.` : "";
   return (
@@ -31,7 +31,7 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
           <span id="cuantas" className="text-caption font-semibold">¿Cuántas cuotas?</span>
           <div role="group" aria-labelledby="cuantas" className="flex h-11 items-center justify-between border-b-2 border-input-line">
             <button type="button" aria-label="Una cuota menos" onClick={() => setN(Math.max(2, n - 1))} className={step}><Icon name="remove" /></button>
-            <span className="text-[20px] leading-7 font-semibold tabular-nums">{n}</span>
+            <span className="text-amount-xl tabular-nums">{n}</span>
             <button type="button" aria-label="Una cuota más" onClick={() => setN(Math.min(60, n + 1))} className={step}><Icon name="add" /></button>
           </div>
         </div>
@@ -39,8 +39,8 @@ export function Installments({ n, setN, cuota, setCuota, total, currency, date, 
           ¿De cuánto cada una?
           <span className="flex h-11 items-baseline gap-1.5 border-b-2 border-input-line pt-2">
             <span className="text-muted-foreground">{symbolOf(currency)}</span>
-            <input inputMode="decimal" placeholder={cents ? (plain / 100).toFixed(2) : "0.00"} value={cuota} onChange={(e) => setCuota(e.target.value)}
-              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[20px] leading-7 font-semibold tabular-nums" />
+            <input inputMode="decimal" placeholder={cents ? fromCents(plain) : "0.00"} value={cuota} onChange={(e) => setCuota(e.target.value)}
+              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-xl tabular-nums" />
           </span>
         </label>
       </div>

@@ -36,7 +36,7 @@ export function MaturitySheet({ open, onClose, item, title }: { open: boolean; o
       <div className="mx-3 mt-2 flex flex-col gap-2">
         {part && !item.maturity_manual && (
           <span className="flex gap-2 text-caption text-muted-foreground">
-            <Icon name="credit_card" className="text-[18px]" />
+            <Icon name="credit_card" size="sm" />
             {item.date_maturity
               ? `Es la fecha de pago del corte del ${shortDate(item.maturity_closing!)}, la de tu tarjeta.`
               : `Toma la fecha de pago del corte del ${shortDate(item.maturity_closing!)} cuando la escribas en tu tarjeta.`}
@@ -45,7 +45,7 @@ export function MaturitySheet({ open, onClose, item, title }: { open: boolean; o
         {set.error && <ErrorAlert>{set.error.message}</ErrorAlert>}
         {item.maturity_manual && (
           <button type="button" disabled={set.isPending} onClick={() => save(null)}
-            className="h-11 text-[14px] font-semibold underline">
+            className="h-11 text-body-sm font-semibold underline">
             {part ? "Volver a la fecha de la tarjeta" : "Quitar la fecha"}
           </button>
         )}
