@@ -6,7 +6,9 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import { statementFileUrl, useMe, useStatement, useUndoStatement } from "@/api/hooks";
 import { Sheet } from "@/components/Sheet";
+import { Button, buttonVariants } from "@/components/Button";
 import { ErrorAlert, Facts, Icon, Spinner } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { shortDate } from "@/lib/dates";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
@@ -37,7 +39,7 @@ export function Extracto() {
   const check = s.difference === null
     ? null
     : isZero(s.difference)
-      ? { icon: "check_circle", title: "El saldo cuadra", cls: "bg-[color-mix(in_srgb,var(--income)_12%,transparent)] text-income" }
+      ? { icon: "check_circle", title: "El saldo cuadra", cls: "bg-income-soft text-income" }
       : { icon: "error", title: `${isNegative(s.difference) ? "Sobran" : "Faltan"} ${formatAmount(s.difference.replace("-", ""), sym, lang)}`, cls: "bg-attention-soft text-attention" };
   const groups = [
     { icon: "inbox", name: "Siguen por clasificar", help: "Entraron nuevos con este extracto", n: d.pending, to: `/por-clasificar?cuenta=${d.account_id}`, attention: true },
@@ -49,7 +51,7 @@ export function Extracto() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
         <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
+          <Icon name="arrow_back" size="md" />
         </button>
         <span className="truncate pr-2.5 text-label text-muted-foreground uppercase">{d.account}</span>
       </div>
@@ -62,7 +64,7 @@ export function Extracto() {
 
       {check && (
         <div className={`mt-4 flex gap-2.5 rounded-xl p-3.5 ${check.cls}`}>
-          <Icon name={check.icon} className="text-[22px]" />
+          <Icon name={check.icon} size="md" />
           <span className="flex flex-col gap-0.5">
             <b>{check.title}</b>
             <span className="text-caption tabular-nums">
@@ -80,7 +82,7 @@ export function Extracto() {
                 <Icon name={g.icon} />
               </span>
               <span className="flex min-w-0 flex-1 flex-col"><span className="font-semibold">{g.name}</span><span className="text-caption text-muted-foreground">{g.help}</span></span>
-              <span className="text-[18px] leading-6 font-semibold tabular-nums">{g.n}</span>
+              <span className="text-amount-lg tabular-nums">{g.n}</span>
             </>
           );
           return g.to && g.n > 0
@@ -90,14 +92,14 @@ export function Extracto() {
       </div>
 
       {d.has_file && (
-        <a href={statementFileUrl(id)} download className="mt-3 flex h-11 items-center gap-2 text-[14px] font-semibold">
+        <a href={statementFileUrl(id)} download className="mt-3 flex min-h-control items-center gap-2 text-body-sm font-semibold">
           <Icon name="download" />Descargar el archivo original
         </a>
       )}
 
       <div className="min-h-6 flex-1" />
       <button type="button" onClick={() => setAsking(true)}
-        className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-border bg-card font-semibold text-destructive">
+        className={cn(buttonVariants({ variant: "secondary" }), "gap-2 text-body text-destructive")}>
         <Icon name="undo" />Deshacer esta importación
       </button>
 
@@ -115,12 +117,11 @@ export function Extracto() {
             </p>
           )}
           {undo.error && <ErrorAlert>{undo.error.message}</ErrorAlert>}
-          <button type="button" disabled={undo.isPending}
-            onClick={() => undo.mutate(undefined, { onSuccess: () => navigate(`/cuentas/${d.account_id}`, { replace: true }) })}
-            className="mt-2 flex h-[52px] items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground">
+          <Button variant="destructive" pending={undo.isPending} icon="undo" className="mt-2"
+            onClick={() => undo.mutate(undefined, { onSuccess: () => navigate(`/cuentas/${d.account_id}`, { replace: true }) })}>
             {d.pending === 0 ? "Deshacer" : `Borrar ${d.pending} y deshacer`}
-          </button>
-          <button type="button" onClick={() => setAsking(false)} className="h-11 text-caption font-semibold text-primary-strong underline">Cancelar</button>
+          </Button>
+          <button type="button" onClick={() => setAsking(false)} className="min-h-control text-caption font-semibold text-primary-strong underline">Cancelar</button>
         </div>
       </Sheet>
     </main>

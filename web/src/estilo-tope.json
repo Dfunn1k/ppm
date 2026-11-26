@@ -102,14 +102,6 @@
  "pages/cuentas/Nueva.tsx": {
   "arbitrario": 5
  },
- "pages/importar/Extracto.tsx": {
-  "arbitrario": 7,
-  "rgb": 1
- },
- "pages/importar/Importar.tsx": {
-  "arbitrario": 20,
-  "rgb": 1
- },
  "pages/movimientos/Movimientos.tsx": {
   "enLinea": 1
  },
