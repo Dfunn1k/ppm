@@ -10,7 +10,8 @@ import { type MoveDetail, useEditOpening, useMe, usePartner, usePartnerOpening }
 import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput } from "@/components/RateField";
 import { CurrencyChoice, Segmented } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
+import { IconButton } from "@/components/Button";
+import { ErrorAlert, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { currencyOption, divide, formatNumber, parseAmount, symbolOf } from "@/lib/money";
@@ -71,10 +72,8 @@ export function YaDebia({ editing }: { editing?: MoveDetail }) {
 
   return (
     <Screen className="pt-4">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </button>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <IconButton icon="arrow_back" label="Volver" onClick={back} />
         <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Saldo inicial"}</span>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">

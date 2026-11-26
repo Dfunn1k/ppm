@@ -469,6 +469,8 @@
 
 /* La fila elegida de una lista de escritorio: una raya de 3 px a la izquierda */
 @utility mark-selected { box-shadow: inset 3px 0 0 var(--foreground); }
+/* La parte elegida de una barra de totales (Personas): la misma raya, abajo */
+@utility mark-selected-below { box-shadow: inset 0 -3px 0 var(--foreground); }
 
 /* Una fila que se toca: el fondo del hover sale 8 px a cada lado sin mover el texto */
 @utility row-bleed {

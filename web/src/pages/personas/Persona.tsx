@@ -8,11 +8,14 @@ import { DebtCard, DueChip } from "@/components/DebtCard";
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
 import { Sheet } from "@/components/Sheet";
+import { Button, buttonVariants, IconButton } from "@/components/Button";
+import { Chip } from "@/components/Chip";
+import { SectionHeading } from "@/components/SectionHeading";
 import { Amounts, ErrorAlert, Icon, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
-import { formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
+import { add, formatAmount, isNegative, isZero, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
-import { capitalize, listText } from "@/lib/utils";
+import { capitalize, cn, listText } from "@/lib/utils";
 
 import { PersonaSheet } from "./PersonaForm";
 import { joinMoney, moneyList } from "./Personas";
@@ -20,7 +23,14 @@ import { DetailSkeleton } from "@/components/Skeleton";
 
 type Hoja = null | "pago" | "compensar" | "perdido" | "editar";
 
-const CONTACT = "flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-caption font-semibold";
+const CONTACT = "hit-area flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-caption font-semibold hover:bg-muted";
+const SECONDARY = cn(buttonVariants({ variant: "secondary" }), "gap-1.5 border-input-line text-body");
+
+/** Lo abierto de varias deudas, sumado por moneda y escrito: «S/ 120.00 + US$ 10.00». */
+function openTotals(items: OpenItem[], lang: string): string[] {
+  const t = items.reduce<Record<string, string>>((t, i) => ({ ...t, [i.currency]: add(t[i.currency] ?? "0", i.open) }), {});
+  return Object.entries(t).map(([c, v]) => formatAmount(v, symbolOf(c), lang));
+}
 
 /** Lo que se puede compensar: lo menor de cada lado, en la moneda que tienen en común. */
 function offsetOf(p: PartnerRow) {
@@ -76,19 +86,15 @@ export function Persona() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </button>
-        <button type="button" aria-label="Editar persona" onClick={() => setHoja("editar")} className="grid size-11 place-items-center rounded-full">
-          <Icon name="edit" className="text-[22px]" />
-        </button>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <IconButton icon="arrow_back" label="Volver" onClick={back} />
+        <IconButton icon="edit" label="Editar persona" onClick={() => setHoja("editar")} />
       </div>
-      <h1 className="mt-2 font-display text-[40px] leading-[42px] font-extrabold tracking-[-0.03em]">{p.name}</h1>
+      <h1 className="mt-2 text-title-hero break-words">{p.name}</h1>
       {(owes || owe) ? (
         <>
           <span className="mt-3 text-caption text-muted-foreground">{isZero(p.net) ? "Están a mano" : isNegative(p.net) ? "Le debes" : "Te debe"}</span>
-          <span className="text-amount-hero">{base(p.net.replace("-", ""))}</span>
+          <span className="text-amount-display tabular-nums">{base(p.net.replace("-", ""))}</span>
           {/* El desglose solo cuando hay deuda de los dos lados: con uno, repetiría el monto grande */}
           {(twoSides || keep) && (
             <span className="mt-0.5 text-caption text-muted-foreground tabular-nums">
@@ -102,17 +108,15 @@ export function Persona() {
         </span>
       )}
       {late.length > 0 && (
-        <span className="mt-2 flex h-8 items-center gap-1.5 self-start rounded-full bg-attention-soft px-3 text-caption font-semibold text-attention tabular-nums">
-          <Icon name="schedule" className="text-[18px]" />
-          {Object.entries(late.reduce<Record<string, number>>((t, i) => ({ ...t, [i.currency]: (t[i.currency] ?? 0) + Number(i.open) }), {}))
-            .map(([c, v]) => formatAmount(v.toFixed(2), symbolOf(c), lang)).join(" + ")} vencidos
-        </span>
+        <Chip tone="attention" size="md" icon="schedule" className="mt-2 gap-1.5 self-start">
+          {openTotals(late, lang).join(" + ")} vencidos
+        </Chip>
       )}
       {(p.phone || p.email) && (
         // Cada dato en su pastilla con ícono: tocarla llama o abre el correo (caso 9, opción C)
         <span className="mt-2 flex flex-wrap gap-2">
-          {p.phone && <a href={`tel:${p.phone.replace(/[^\d+]/g, "")}`} className={CONTACT}><Icon name="call" className="text-[18px]" />{p.phone}</a>}
-          {p.email && <a href={`mailto:${p.email}`} className={CONTACT}><Icon name="mail" className="text-[18px]" />{p.email}</a>}
+          {p.phone && <a href={`tel:${p.phone.replace(/[^\d+]/g, "")}`} className={CONTACT}><Icon name="call" size="sm" />{p.phone}</a>}
+          {p.email && <a href={`mailto:${p.email}`} className={CONTACT}><Icon name="mail" size="sm" />{p.email}</a>}
         </span>
       )}
 
@@ -121,10 +125,8 @@ export function Persona() {
         <Items label="Le debes" header={twoSides || keep} items={d.i_owe} paid="le pagaste" lang={lang} ask={`¿Hasta cuándo le pagas a ${first}?`} />
         {keep && (
           <section aria-label="Guardas suyo" className="flex flex-col">
-            <div className="flex items-end justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-              <span>Guardas suyo</span><Amounts values={moneyList(p.keep, lang)} />
-            </div>
-            <div className="flex min-h-14 items-center gap-3 border-b border-border">
+            <SectionHeading action={<Amounts values={moneyList(p.keep, lang)} className="text-label text-muted-foreground tabular-nums" />}>Guardas suyo</SectionHeading>
+            <div className="flex min-h-row-option items-center gap-3 border-b border-border py-2">
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">Te la dio para guardar</span>
                 {d.keep_since && <span className="text-caption text-muted-foreground">Desde el {shortDate(d.keep_since)}</span>}
@@ -139,22 +141,19 @@ export function Persona() {
       <div className="flex flex-col gap-2">
         {failure && <ErrorAlert>{failure}</ErrorAlert>}
         {options.length > 0 && (
-          <button type="button" onClick={() => setHoja("pago")}
-            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground">
-            <span>{options.length === 1 && owes ? "Registrar que me pagó" : "Registrar un pago"}</span>
-            <Icon name="arrow_forward" className="text-[22px]" />
-          </button>
+          <Button onClick={() => setHoja("pago")}>
+            {options.length === 1 && owes ? "Registrar que me pagó" : "Registrar un pago"}
+          </Button>
         )}
         {(both || keep) && (
           <div className="grid grid-cols-2 gap-2">
             {both && (
-              <button type="button" onClick={() => setHoja("compensar")}
-                className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
+              <button type="button" onClick={() => setHoja("compensar")} className={SECONDARY}>
                 <Icon name="compare_arrows" />Compensar
               </button>
             )}
             {keep && (
-              <Link to={to("custody_out")} className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
+              <Link to={to("custody_out")} className={SECONDARY}>
                 <Icon name="undo" />Devolver
               </Link>
             )}
@@ -162,16 +161,16 @@ export function Persona() {
         )}
         {owes && (
           <button type="button" onClick={() => setHoja("perdido")}
-            className="flex h-11 items-center justify-center gap-1.5 text-[14px] font-semibold text-destructive">
+            className="flex min-h-control items-center justify-center gap-1.5 text-body-sm font-semibold text-destructive">
             <Icon name="money_off" />Dar por perdido lo que te debe
           </button>
         )}
         <div className="flex items-center justify-center gap-6">
-          <Link to={to("lend")} className="flex h-11 items-center gap-1.5 text-caption font-semibold text-primary-strong">
-            <Icon name="volunteer_activism" className="text-[20px]" />Prestarle
+          <Link to={to("lend")} className="flex min-h-control items-center gap-1.5 text-caption font-semibold text-primary-strong">
+            <Icon name="volunteer_activism" />Prestarle
           </Link>
-          <Link to={`/personas/${p.id}/ya-debia`} className="flex h-11 items-center gap-1.5 text-caption font-semibold text-primary-strong">
-            <Icon name="history" className="text-[20px]" />De antes de PPM
+          <Link to={`/personas/${p.id}/ya-debia`} className="flex min-h-control items-center gap-1.5 text-caption font-semibold text-primary-strong">
+            <Icon name="history" />De antes de PPM
           </Link>
         </div>
       </div>
@@ -182,13 +181,13 @@ export function Persona() {
       <Sheet title="¿Qué pasó?" open={hoja === "pago"} onClose={() => setHoja(null)}>
         <div className="flex flex-col gap-2 px-1">
           {options.map((o) => (
-            <Link key={o.kind} to={to(o.kind)} className="flex min-h-14 items-center gap-3 rounded-md bg-muted px-3">
-              <Icon name={o.icon} className="text-[22px]" />
+            <Link key={o.kind} to={to(o.kind)} className="flex min-h-row-option items-center gap-3 rounded-md bg-muted px-3 py-2 hover:bg-border">
+              <Icon name={o.icon} size="md" />
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">{o.name}</span>
                 <span className="text-caption text-muted-foreground">{o.hint}</span>
               </span>
-              <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+              <Icon name="chevron_right" size="md" className="text-muted-foreground" />
             </Link>
           ))}
         </div>
@@ -230,7 +229,6 @@ function Items({ label, header, items, paid, lang, ask }: {
 }) {
   const [editing, setEditing] = useState<OpenItem | null>(null);
   if (items.length === 0) return null;
-  const total = items.reduce<Record<string, number>>((t, i) => ({ ...t, [i.currency]: (t[i.currency] ?? 0) + Number(i.open) }), {});
   // Una compra en cuotas, una sola vez, donde aparece su primera parte
   const groups: OpenItem[][] = [];
   for (const i of items) {
@@ -241,27 +239,24 @@ function Items({ label, header, items, paid, lang, ask }: {
   return (
     <section aria-label={label} className="flex flex-col">
       {header && (
-        <div className="flex items-end justify-between gap-3 border-b border-border pb-1 text-label text-muted-foreground tabular-nums">
-          <span>{label}</span>
-          <Amounts values={Object.entries(total).map(([c, v]) => formatAmount(v.toFixed(2), symbolOf(c), lang))} />
-        </div>
+        <SectionHeading action={<Amounts values={openTotals(items, lang)} className="text-label text-muted-foreground tabular-nums" />}>{label}</SectionHeading>
       )}
       <ul className="mt-2 flex flex-col gap-3">
         {groups.map((g) => {
           const i = g[0]!;
           // Toda la tarjeta abre el movimiento; las fechas son botones encima, para cambiarlas
-          const link = <Link to={`/movimientos/${i.move_id}`} className="after:absolute after:inset-0 after:rounded-[16px]">{i.ref}</Link>;
+          const link = <Link to={`/movimientos/${i.move_id}`} className="after:absolute after:inset-0 after:rounded-xl">{i.ref}</Link>;
           return <li key={i.parts ? `m${i.move_id}` : i.line_id}>{i.parts ? (
             <DebtCard item={i} lang={lang} paid={capitalize(paid)} title={link} due={false}
-              amount={formatAmount(g.reduce((t, x) => t + Number(x.open), 0).toFixed(2), symbolOf(i.currency), lang)}
+              amount={openTotals(g, lang)[0]}
               detail={<span className="text-muted-foreground">{cuotaCounts(g)}</span>}>
-              <span className="relative z-[1] mt-1 flex flex-col">
+              <span className="relative z-raised mt-1 flex flex-col">
                 {g.map((x) => {
                   const m = maturityText(x);
                   return (
                     <button key={x.line_id} type="button" onClick={() => setEditing(x)} aria-label={`Parte ${x.part} de ${x.parts}: ${m?.text ?? "sin fecha"}. Cambiar la fecha`}
-                      className="flex min-h-10 items-center gap-2.5 text-left">
-                      <span className="grid size-6 flex-none place-items-center rounded-full bg-muted text-[12px] font-semibold">{x.part}</span>
+                      className="flex min-h-control items-center gap-2.5 text-left">
+                      <span className="grid size-6 flex-none place-items-center rounded-full bg-muted text-caption-sm font-semibold">{x.part}</span>
                       <span className={`flex flex-1 flex-col text-caption ${m?.late ? "font-semibold text-attention" : "text-muted-foreground"}`}>
                         <span className="flex flex-wrap items-center gap-x-2.5">
                           {x.billed === false ? <Status icon="receipt_long">Por facturar</Status> : !m?.late && <Status icon="schedule">Por cobrar</Status>}
@@ -269,7 +264,7 @@ function Items({ label, header, items, paid, lang, ask }: {
                         </span>
                         {x.interest && <span className="tabular-nums">Incluye {formatAmount(x.interest, symbolOf(x.currency), lang)} de interés</span>}
                       </span>
-                      <span className="text-[14px] tabular-nums">{formatAmount(x.open, symbolOf(x.currency), lang)}</span>
+                      <span className="text-body-sm tabular-nums">{formatAmount(x.open, symbolOf(x.currency), lang)}</span>
                     </button>
                   );
                 })}
@@ -296,11 +291,8 @@ function Confirm({ open, onClose, title, text, action, icon, destructive, pendin
     <Sheet title={title} open={open} onClose={onClose}>
       <div className="flex flex-col gap-4 px-3">
         <p className="text-muted-foreground tabular-nums">{text}</p>
-        <button type="button" disabled={pending} onClick={onConfirm}
-          className={`flex h-14 items-center justify-between rounded-lg px-5 font-semibold disabled:opacity-60 ${destructive ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`}>
-          <span>{action}</span><Icon name={pending ? "progress_activity" : icon} className={pending ? "animate-spin" : ""} />
-        </button>
-        <button type="button" onClick={onClose} className="h-11 font-semibold">Cancelar</button>
+        <Button variant={destructive ? "destructive" : "primary"} pending={pending} icon={icon} onClick={onConfirm}>{action}</Button>
+        <button type="button" onClick={onClose} className="min-h-control rounded-md font-semibold hover:bg-muted">Cancelar</button>
       </div>
     </Sheet>
   );
@@ -313,13 +305,13 @@ function Repeats({ partnerId, first, lang }: { partnerId: number; first: string;
   if (rows.length === 0) return null;
   return (
     <section aria-label={`Se repite con ${first}`} className="mt-6 flex flex-col">
-      <span className="border-b border-border pb-1 text-label text-muted-foreground">Se repite con {first}</span>
+      <SectionHeading>Se repite con {first}</SectionHeading>
       {rows.map((r) => {
         const x = r.shares.find((s) => s.partner_id === partnerId)!;
         const who = r.paid_by_partner_id === partnerId ? `${r.kind === "income" ? "cobra" : "paga"} ${first}, ` : "";
         return (
-          <Link key={r.id} to={`/mas/recurrentes/${r.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
-            <Icon name="event_repeat" className="text-[22px] text-muted-foreground" />
+          <Link key={r.id} to={`/mas/recurrentes/${r.id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2">
+            <Icon name="event_repeat" size="md" className="text-muted-foreground" />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-semibold">{r.name}</span>
               <span className={`text-caption ${x.owes_me ? "text-income" : "text-expense"}`}>
@@ -327,7 +319,7 @@ function Repeats({ partnerId, first, lang }: { partnerId: number; first: string;
               </span>
             </span>
             <span className="font-semibold tabular-nums">{formatAmount(x.amount, symbolOf(r.currency), lang)}</span>
-            <Icon name="chevron_right" className="text-[20px] text-muted-foreground" />
+            <Icon name="chevron_right" className="text-muted-foreground" />
           </Link>
         );
       })}

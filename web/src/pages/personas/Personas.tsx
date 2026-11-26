@@ -3,12 +3,16 @@
 // Los tres totales de arriba filtran (?ver=me-deben|debo|guardo): «Me deben» y «Debo a personas» de
 // Cuentas abren ya filtrado.
 import { useState } from "react";
-import { Link, NavLink, useNavigate, useSearchParams } from "react-router";
+import { NavLink, useNavigate, useSearchParams } from "react-router";
 
 import { type PartnerRow, useMe, usePartnersOverview } from "@/api/hooks";
 import { Avatar } from "@/components/MoveBits";
+import { buttonVariants, IconButton } from "@/components/Button";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionHeading } from "@/components/SectionHeading";
 import { Amounts, ErrorAlert, type Fact, Facts, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import { formatAmount, isNegative, isZero, symbolOf } from "@/lib/money";
 
 import { PersonaSheet } from "./PersonaForm";
@@ -66,16 +70,9 @@ export function Personas() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/cuentas" aria-label="Volver a cuentas" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
-        <button type="button" aria-label="Agregar persona" onClick={() => setAdding(true)}
-          className="grid size-11 place-items-center rounded-full bg-secondary text-secondary-foreground">
-          <Icon name="person_add" className="text-[24px]" />
-        </button>
-      </div>
-      <h1 className="mt-3 text-title-hero">Personas</h1>
+      <PageHeader back={{ to: "/cuentas", label: "Volver a cuentas" }} title="Personas"
+        actions={<IconButton icon="person_add" label="Agregar persona" onClick={() => setAdding(true)}
+          className="bg-secondary text-secondary-foreground hover:bg-secondary/80" />} />
 
       {o.people.length === 0 ? (
         <div className="mt-6 flex flex-col gap-4">
@@ -83,7 +80,7 @@ export function Personas() {
             Aquí verás a quién le prestaste, quién te prestó, con quién dividiste una cuenta y de quién guardas plata.
           </p>
           <button type="button" onClick={() => setAdding(true)}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
+            className={cn(buttonVariants({ variant: "secondary" }), "gap-1.5 border-input-line text-body")}>
             <Icon name="person_add" />Agregar persona
           </button>
         </div>
@@ -96,9 +93,9 @@ export function Personas() {
               const small = totals.some(([, t]) => money(t).length > 11);
               return (
                 <button key={v} type="button" aria-pressed={on} onClick={() => setParams(on ? {} : { ver: v }, { replace: true })}
-                  className={`flex min-w-0 flex-col gap-0.5 px-2.5 py-3 text-left ${i > 0 ? "border-l border-border" : ""} ${on ? "bg-secondary shadow-[inset_0_-3px_0_var(--foreground)]" : ""}`}>
+                  className={`flex min-w-0 flex-col gap-0.5 px-2.5 py-3 text-left ${i > 0 ? "border-l border-border" : ""} ${on ? "bg-secondary mark-selected-below" : ""}`}>
                   <span className="text-caption text-muted-foreground">{SIDE[v].label}</span>
-                  <span className={`${small ? "text-[14px]" : "text-[16px]"} leading-6 font-semibold whitespace-nowrap tabular-nums`}>{money(total)}</span>
+                  <span className={`${small ? "text-body-sm" : "text-body"} leading-6 font-semibold whitespace-nowrap tabular-nums`}>{money(total)}</span>
                 </button>
               );
             })}
@@ -106,16 +103,16 @@ export function Personas() {
 
           {side && (
             <section aria-label={side.title} className="mt-6 flex flex-col">
-              <span className="border-b border-border pb-1 text-label text-muted-foreground">{side.title}</span>
+              <SectionHeading>{side.title}</SectionHeading>
               {shown.length === 0 && <span className="py-3 text-caption text-muted-foreground">Nadie por ahora.</span>}
               {shown.map((p) => (
-                <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
-                  <Avatar name={p.name} size={40} />
+                <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:mark-selected">
+                  <Avatar name={p.name} />
                   <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
                   <Amounts values={moneyList(side.of(p), lang)} className="text-amount" />
                 </NavLink>
               ))}
-              <button type="button" onClick={() => setParams({}, { replace: true })} className="flex min-h-12 items-center font-semibold">
+              <button type="button" onClick={() => setParams({}, { replace: true })} className="flex min-h-control items-center font-semibold">
                 Ver a todas las personas
               </button>
             </section>
@@ -123,12 +120,12 @@ export function Personas() {
 
           {!side && pending.length > 0 && (
             <section aria-label="Con pendientes" className="mt-6 flex flex-col">
-              <span className="border-b border-border pb-1 text-label text-muted-foreground">Con pendientes</span>
+              <SectionHeading>Con pendientes</SectionHeading>
               {pending.map((p) => {
                 const net = isZero(p.net) ? null : isNegative(p.net) ? "Le debes" : "Te debe";
                 return (
-                  <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-[68px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
-                    <Avatar name={p.name} size={40} />
+                  <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2.5 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:mark-selected">
+                    <Avatar name={p.name} />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="font-semibold">{p.name}</span>
                       {personDetail(p, lang, true).length > 0 && <Facts items={personDetail(p, lang, true)} className="mt-0.5" />}
@@ -147,10 +144,10 @@ export function Personas() {
 
           {!side && settled.length > 0 && (
             <section aria-label="Al día" className="mt-5 flex flex-col">
-              <span className="border-b border-border pb-1 text-label text-muted-foreground">Al día</span>
+              <SectionHeading>Al día</SectionHeading>
               {settled.map((p) => (
-                <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:shadow-[inset_3px_0_0_var(--foreground)]">
-                  <Avatar name={p.name} size={40} />
+                <NavLink key={p.id} to={`/personas/${p.id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2 lg:-mx-3 lg:px-3 lg:aria-[current=page]:bg-muted lg:aria-[current=page]:mark-selected">
+                  <Avatar name={p.name} />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="font-semibold">{p.name}</span>
                     <span className="text-caption text-muted-foreground">
