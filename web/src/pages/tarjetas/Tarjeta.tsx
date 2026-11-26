@@ -3,6 +3,11 @@
 // estado de cuenta importado más lo de después), las cuotas por venir y los movimientos agrupados
 // por ciclo, como en el estado de cuenta. El menú ⋮ renombra, edita corte y línea, cambia
 // la fecha de pago o archiva.
+import { ProgressBar } from "@/components/ProgressBar";
+import { PageHeader } from "@/components/PageHeader";
+import { Chip } from "@/components/Chip";
+import { buttonVariants, IconButton } from "@/components/Button";
+import { Avatar } from "@/components/Avatar";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -16,7 +21,7 @@ import { DateField } from "@/components/DateSheet";
 import { daysUntil } from "@/lib/cards";
 import { monthName } from "@/lib/months";
 import { shortDate, todayISO } from "@/lib/dates";
-import { formatAmount, formatNumber, isNegative, isZero, parseAmount, symbolOf } from "@/lib/money";
+import { formatAmount, formatNumber, fromCents, isNegative, isZero, parseAmount, rateText, symbolOf } from "@/lib/money";
 import { DetailSkeleton } from "@/components/Skeleton";
 import { useDesktop } from "@/lib/desktop";
 
@@ -71,23 +76,14 @@ export function Tarjeta() {
   const label = d.account.subtitle ? `${d.account.subtitle} con corte el ${d.closing_day}` : `Corte el ${d.closing_day}`;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/cuentas" aria-label="Volver a cuentas" className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </Link>
-        <button type="button" aria-label="Más opciones de la tarjeta" aria-haspopup="dialog" onClick={() => setMenu("open")}
-          className="grid size-11 place-items-center rounded-full">
-          <Icon name="more_vert" className="text-[24px]" />
-        </button>
-      </div>
-      <span className="mt-2 text-label text-muted-foreground">{label}</span>
-      <h1 className="mt-1.5 text-title-hero">{d.account.name}</h1>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28 md:max-w-160 md:pb-10">
+      <PageHeader back={{ to: "/cuentas", label: "Volver a cuentas" }} eyebrow={label} title={d.account.name}
+        actions={<IconButton icon="more_vert" label="Más opciones de la tarjeta" aria-haspopup="dialog" onClick={() => setMenu("open")} />} />
 
       <span className="mt-4 text-caption text-muted-foreground">{when}</span>
-      <span className="text-amount-hero">{money(hero, heroCur)}</span>
+      <span className="text-amount-display">{money(hero, heroCur)}</span>
       {others.map((s) => (
-        <span key={s.currency} className="text-[17px] leading-6 font-semibold tabular-nums">y {money(s.to_pay, s.currency)}</span>
+        <span key={s.currency} className="text-amount-lg">y {money(s.to_pay, s.currency)}</span>
       ))}
 
       {noDue && (
@@ -99,14 +95,14 @@ export function Tarjeta() {
       <div className="mt-4 flex flex-col gap-2">
         {noDue && (
           <button type="button" onClick={() => setMenu("due")}
-            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground">
-            <span>Escribir fecha de pago</span><Icon name="event" className="text-[22px]" />
+            className={buttonVariants({ variant: "primary" })}>
+            <span>Escribir fecha de pago</span><Icon name="event" size="md" />
           </button>
         )}
         {anyDebt && (
           <Link to={`/tarjetas/${id}/pagar`}
-            className={`flex h-14 items-center justify-between rounded-lg px-5 font-semibold ${noDue ? "border border-input-line" : "bg-primary text-primary-foreground"}`}>
-            <span>Pagar tarjeta</span><Icon name="arrow_forward" className="text-[22px]" />
+            className={noDue ? "flex min-h-button items-center justify-between rounded-lg border border-input-line px-5 font-semibold hover:bg-muted" : buttonVariants({ variant: "primary" })}>
+            <span>Pagar tarjeta</span><Icon name="arrow_forward" size="md" />
           </Link>
         )}
       </div>
@@ -114,7 +110,7 @@ export function Tarjeta() {
       <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-card p-3">
           <span className="text-caption text-muted-foreground">Por facturar</span>
-          <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(main.next_bill, main.currency)}</span>
+          <span className="text-amount-lg">{money(main.next_bill, main.currency)}</span>
           <span className="text-caption text-muted-foreground">Cierra el {shortDate(d.next_closing)}</span>
           {nextOthers.map((s) => (
             <span key={s.currency} className="text-caption text-muted-foreground tabular-nums">y {money(s.next_bill, s.currency)}</span>
@@ -122,17 +118,14 @@ export function Tarjeta() {
         </div>
         <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-card p-3">
           <span className="text-caption text-muted-foreground">Línea disponible</span>
-          <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(d.available, d.limit_currency)}</span>
+          <span className="text-amount-lg">{money(d.available, d.limit_currency)}</span>
           <span className="text-caption text-muted-foreground tabular-nums">de {money(d.credit_limit, d.limit_currency)}</span>
-          <span className={`mt-1 self-start rounded-full px-2 py-0.5 text-[12px] font-semibold ${d.line_matched ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}>
+          <Chip tone={d.line_matched ? "neutral" : "muted"} className={`mt-1 self-start ${d.line_matched ? "" : "text-muted-foreground"}`}>
             {d.line_matched ? "Cuadrada con banco" : "Estimada"}
-          </span>
+          </Chip>
         </div>
       </div>
-      <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted" role="meter" aria-label="Línea usada"
-        aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
-        <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
-      </div>
+      <ProgressBar value={pct} max={100} tone="primary" size="md" label={`Línea usada: ${pct} %`} className="mt-3" />
       <span className="mt-1.5 text-caption text-muted-foreground">
         {pct === 0 ? "Todavía no usas tu línea. " : `Usas el ${pct}% de tu línea. `}
         {d.line_from
@@ -146,8 +139,8 @@ export function Tarjeta() {
       {foreignRates.map((r) => (
         <button key={r.currency} type="button" onClick={() => setMenu("rate")}
           className="mt-1 flex min-h-10 items-center gap-1.5 self-start text-caption text-muted-foreground tabular-nums">
-          <Icon name="currency_exchange" className="text-[16px]" />
-          <Facts items={[[`${symbolOf(r.currency)} a la venta`, Number(r.rate).toFixed(3)], [r.edited ? "Escrito el" : "Del", shortDate(r.rate_date)]]} />
+          <Icon name="currency_exchange" size="sm" />
+          <Facts items={[[`${symbolOf(r.currency)} a la venta`, rateText(r.rate)], [r.edited ? "Escrito el" : "Del", shortDate(r.rate_date)]]} />
           <span className="font-semibold text-primary-strong">Cambiar</span>
         </button>
       ))}
@@ -158,7 +151,7 @@ export function Tarjeta() {
           <Amounts values={plansTotal(d, lang)} />
         </div>
         {d.plans.map((p) => (
-          <Link key={p.id} to={`/movimientos/${p.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+          <Link key={p.id} to={`/movimientos/${p.move_id}`} className="flex min-h-row items-center gap-3 border-b border-border">
             <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
               <Icon name="calendar_month" />
             </span>
@@ -184,7 +177,7 @@ export function Tarjeta() {
       <section aria-label="Cargos del banco" className="mt-6 flex flex-col">
         <span className="border-b border-border pb-1 text-label text-muted-foreground">Cargos del banco</span>
         {d.charges.map((c) => (
-          <Link key={c.id} to={`/mas/recurrentes/${c.id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border">
+          <Link key={c.id} to={`/mas/recurrentes/${c.id}`} className="flex min-h-row items-center gap-3 border-b border-border">
             <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
               <Icon name={c.yearly ? "workspace_premium" : "shield"} />
             </span>
@@ -192,7 +185,7 @@ export function Tarjeta() {
               <span className="font-semibold">{c.name}</span>
               <Facts items={[["Cada", c.yearly ? "Año" : "Corte"], c.next_date ? ["El próximo", shortDate(c.next_date)] : ["Estado", "Terminado"]]} />
               {c.drafts > 0 && (
-                <span className="mt-1 self-start rounded-full bg-attention-soft px-2 py-0.5 text-[12px] font-semibold text-attention">
+                <span className="mt-1 inline-flex h-5 items-center self-start rounded-full bg-attention-soft px-2 text-caption-sm font-semibold text-attention">
                   {c.drafts === 1 ? "1 por confirmar" : `${c.drafts} por confirmar`}
                 </span>
               )}
@@ -218,7 +211,7 @@ export function Tarjeta() {
             <div className="flex items-center justify-between gap-2">
               <button type="button" aria-label="Ciclo anterior" disabled={at >= d.cycles.length - 1}
                 onClick={() => setPicked(d.cycles[at + 1]!.closing_date)}
-                className="grid size-10 flex-none place-items-center rounded-full border border-border bg-card disabled:opacity-40">
+                className="grid size-control flex-none place-items-center rounded-full border border-border bg-card enabled:hover:bg-muted disabled:opacity-50">
                 <Icon name="chevron_left" />
               </button>
               <span className="flex min-w-0 flex-col items-center text-center">
@@ -227,7 +220,7 @@ export function Tarjeta() {
               </span>
               <button type="button" aria-label="Ciclo siguiente" disabled={at <= 0}
                 onClick={() => setPicked(d.cycles[at - 1]!.closing_date)}
-                className="grid size-10 flex-none place-items-center rounded-full border border-border bg-card disabled:opacity-40">
+                className="grid size-control flex-none place-items-center rounded-full border border-border bg-card enabled:hover:bg-muted disabled:opacity-50">
                 <Icon name="chevron_right" />
               </button>
             </div>
@@ -238,7 +231,7 @@ export function Tarjeta() {
             {cycle.statement && (
               <Link to={`/tarjetas/${id}/estado/${cycle.closing_date}`}
                 className="flex min-h-11 items-center gap-1.5 border-b border-border text-caption font-semibold text-primary-strong">
-                <Icon name="fact_check" className="text-[18px]" />Ver su estado de cuenta
+                <Icon name="fact_check" />Ver su estado de cuenta
               </Link>
             )}
             {table && cycle.items.length > 0 && (
@@ -285,7 +278,7 @@ function RateSheet({ open, onClose, card, rate }: {
   open: boolean; onClose: () => void; card: CardDetail; rate: CardDetail["rates"][number];
 }) {
   const save = useCardRate(card.account.id);
-  const [value, setValue] = useState(Number(rate.rate).toFixed(3));
+  const [value, setValue] = useState(rateText(rate.rate));
   const parsed = value.trim().replace(",", ".");
   const ok = /^\d+(\.\d{1,6})?$/.test(parsed) && Number(parsed) > 0;
   return (
@@ -372,25 +365,25 @@ function cycleLabel(c: CardDetail["cycles"][number]) {
 function plansTotal(d: CardDetail, lang: string): string[] {
   const by = new Map<string, number>();
   for (const p of d.plans) by.set(p.currency, (by.get(p.currency) ?? 0) + Math.round(Number(p.remaining) * 100));
-  return [...by].map(([cur, cents]) => formatAmount((cents / 100).toFixed(2), symbolOf(cur), lang));
+  return [...by].map(([cur, cents]) => formatAmount(fromCents(cents), symbolOf(cur), lang));
 }
 
 /** En escritorio el ciclo va en tabla, como una cuenta: fecha, movimiento y monto. */
-const TABLE = "grid grid-cols-[64px_minmax(0,1fr)_120px] items-center gap-3";
+const TABLE = "grid grid-cols-card-ledger items-center gap-3";
 
 function ItemRow({ item: i, base, lang, table }: { item: Item; base: string; lang: string; table: boolean }) {
   const up = Number(i.amount) > 0;   // sube la deuda: una compra, una cuota, un cargo
   const chip = i.kind === "payment"
-    ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "sync_alt" }
+    ? <Avatar kind="account" icon="sync_alt" />
     : i.kind === "opening"
-      ? { bg: "var(--secondary)", fg: "var(--secondary-foreground)", icon: "flag" }
-      : { bg: `var(--cat-${i.counterpart_color ?? 0})`, fg: "var(--on-category)", icon: i.counterpart_icon ?? "category" };
+      ? <Avatar kind="account" icon="flag" />
+      : <Avatar kind="category" color={i.counterpart_color} icon={i.counterpart_icon ?? "category"} />;
   // La línea chica, la misma de Movimientos: dentro de la tarjeta no se repite la tarjeta; en un pago
   // va de qué cuenta salió. La categoría ya es el ícono.
   const bits: Bit[] = [];
   if (!i.posted) bits.push(pendingBit);
   if (!table) bits.push({ text: shortDate(i.date) });
-  if (i.sequence) bits.push({ icon: "event_repeat", text: `Cuota ${i.sequence} de ${i.n_installments}` });
+  if (i.sequence) bits.push({ icon: "event_repeat", text: `Cuota ${i.sequence} de ${i.n_installments}`, shrink: true });
   if (i.kind === "installment" && Number(i.interest ?? 0) > 0) bits.push({ icon: "percent", text: `${formatNumber(i.interest!, lang)} de interés` });
   if (i.kind === "opening") bits.push({ text: i.sequence ? "De antes de PPM" : "Lo que tocaba pagar al empezar" });
   if (i.kind === "payment") bits.push({ icon: i.counterpart ? (i.counterpart_icon ?? "account_balance") : "account_balance", text: i.counterpart ?? "Varias cuentas", shrink: true });
@@ -399,19 +392,17 @@ function ItemRow({ item: i, base, lang, table }: { item: Item; base: string; lan
   const value = (i.currency === base ? "" : `${symbolOf(i.currency)} `) + formatNumber(i.amount.replace("-", ""), lang);
   const amount = (
     <span className={`flex items-center justify-end gap-0.5 text-amount ${up ? "text-expense" : "text-income"}`}>
-      <Icon name={up ? "north_east" : "south_west"} className="text-[16px]" />
+      <Icon name={up ? "north_east" : "south_west"} size="sm" />
       {value}
     </span>
   );
   if (table) {
     return (
-      <Link to={`/movimientos/${i.move_id}`} className={`${TABLE} min-h-[52px] border-b border-border hover:bg-muted/60`}>
+      <Link to={`/movimientos/${i.move_id}`} className={`${TABLE} min-h-row-sm border-b border-border hover:bg-muted`}>
         <span className="text-caption text-muted-foreground tabular-nums">{shortDate(i.date)}</span>
-        <span className="flex min-w-0 items-center gap-2.5">
-          <span className="grid size-8 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
-            <Icon name={chip.icon} className="text-[18px]" />
-          </span>
-          <span className="max-w-[45%] flex-none truncate font-semibold">{name}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          {chip}
+          <span className="max-w-1/2 flex-none truncate font-semibold">{name}</span>
           <MoveLine bits={bits} tags={i.tags} wide />
         </span>
         {amount}
@@ -419,10 +410,8 @@ function ItemRow({ item: i, base, lang, table }: { item: Item; base: string; lan
     );
   }
   return (
-    <Link to={`/movimientos/${i.move_id}`} className="flex min-h-[60px] items-center gap-3 border-b border-border py-2">
-      <span className="grid size-9 flex-none place-items-center rounded-full" style={{ background: chip.bg, color: chip.fg }}>
-        <Icon name={chip.icon} />
-      </span>
+    <Link to={`/movimientos/${i.move_id}`} className="flex min-h-row items-center gap-3 border-b border-border py-2">
+      {chip}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{name}</span>
         <MoveLine bits={bits} tags={i.tags} />
@@ -476,9 +465,9 @@ function EditSheet({ open, onClose, card, lang }: { open: boolean; onClose: () =
           update.mutate({ closing_day: n, credit_limit: credit, brand: brand as CardDetail["brand"], last4: last4 || null,
             clear: last4 ? [] : ["last4"] }, { onSuccess: onClose });
         }}>
-        <div className="grid grid-cols-[112px_1fr] gap-4">
-          <LineField label="Día de corte" inputMode="numeric" maxLength={2} value={day} onChange={(e) => setDay(e.target.value.replace(/\D/g, ""))} />
-          <LineField label={`Línea (${symbolOf(card.limit_currency)})`} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} />
+        <div className="flex gap-4">
+          <div className="w-28 flex-none"><LineField label="Día de corte" inputMode="numeric" maxLength={2} value={day} onChange={(e) => setDay(e.target.value.replace(/\D/g, ""))} /></div>
+          <div className="min-w-0 flex-1"><LineField label={`Línea (${symbolOf(card.limit_currency)})`} inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} /></div>
         </div>
         <Segmented label="Marca" size="sm" value={brand} onChange={setBrand}
           options={["Visa", "Mastercard", "Amex", "Diners"].map((b) => ({ value: b, label: b }))} />
