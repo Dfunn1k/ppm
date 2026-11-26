@@ -146,7 +146,7 @@ Hoy: 4 (de Tailwind, sin token), 6, 10, 12 (a mano, 21 veces), 14 (`xl`, que es 
 
 - **Bordes:** `border` de 1 px (separadores, tarjetas) y `border-2` de 2 px (la línea del campo, lo elegido). Los 13 `border-[1.5px]` pasan a 1 o 2.
 - **Sombras:** solo `shadow-sm` (una tarjeta sobre el fondo) y `shadow-lg` (lo que flota: hojas, menús y el botón de registrar). Los `shadow` y `shadow-md` de Tailwind (12) pasan a `shadow-sm`.
-- **La fila elegida en escritorio:** una utilidad con nombre, `mark-selected` (la raya de 3 px a la izquierda), en lugar de 9 copias de `shadow-[inset_3px_…]`.
+- **La fila elegida en escritorio:** una utilidad con nombre, `mark-selected` (la raya de 3 px a la izquierda), en lugar de 9 copias de `shadow-[inset_3px_…]`. Su pariente `mark-selected-below` pone la misma raya abajo, para la parte elegida de una barra de totales (Personas).
 
 ### 1.8 Capas
 
