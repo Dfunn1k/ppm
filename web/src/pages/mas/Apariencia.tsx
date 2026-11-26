@@ -1,8 +1,8 @@
 // X5 · Apariencia: tema y acento. Cambian al instante y se guardan en la cuenta.
-import { Link } from "react-router";
 
 import { useMe, useUpdateMe } from "@/api/hooks";
 import { Segmented } from "@/components/Sheet";
+import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon } from "@/components/ui";
 
 const ACCENTS = [
@@ -19,8 +19,8 @@ export function Apariencia() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-8">
-      <div className="-mx-2.5 flex items-center justify-between">
-        <Link to="/mas" aria-label="Volver a Más" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
+      <div className="-mx-2.5 flex min-h-control items-center justify-between">
+        <BackLink to="/mas" label="Volver a Más" />
       </div>
       <h1 className="mt-6 text-title-hero">Cómo se ve PPM</h1>
       <p className="mt-3 text-muted-foreground">Se guarda en tu cuenta: se ve igual en todos tus dispositivos.</p>
@@ -37,9 +37,9 @@ export function Apariencia() {
             const on = me.ui_accent === a.value;
             return (
               <button key={a.value} type="button" role="radio" aria-checked={on} onClick={() => update.mutate({ ui_accent: a.value })}
-                className={`flex flex-col items-center gap-1.5 rounded-[12px] border-2 bg-card py-2.5 text-caption font-semibold ${on ? "border-primary" : "border-border"}`}>
+                className={`flex flex-col items-center gap-1.5 rounded-lg border-2 bg-card py-2.5 text-caption font-semibold ${on ? "border-primary" : "border-border"}`}>
                 <span data-accent={a.value} className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground">
-                  {on && <Icon name="check" fill className="text-[20px]" />}
+                  {on && <Icon name="check" fill />}
                 </span>
                 {a.label}
               </button>
@@ -55,10 +55,10 @@ export function Apariencia() {
           <span className="font-semibold text-primary-strong underline">Un enlace</span>
         </div>
         <span className="flex h-12 items-center justify-between rounded-lg bg-primary px-4 font-semibold text-primary-foreground">
-          Registrar gasto<Icon name="arrow_forward" className="text-[22px]" />
+          Registrar gasto<Icon name="arrow_forward" size="md" />
         </span>
         <div className="flex flex-col gap-1.5">
-          <div className="h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-2.5 w-[52%] rounded-full bg-trigo" /></div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-2.5 w-1/2 rounded-full bg-trigo" /></div>
           <span className="text-caption text-muted-foreground">La barra «para mayo» queda siempre en trigo: es el sello de PPM.</span>
         </div>
       </section>
