@@ -53,7 +53,7 @@ export function PersonPicker({ label, value, onChange, only, canAdd = true, opti
   return (
     <div className="relative flex flex-col gap-1.5">
       <label htmlFor={`${id}-input`} className="flex justify-between gap-2 text-caption font-semibold">{label}{optional && <Optional />}</label>
-      <div className="flex h-11 items-center gap-2 border-b-2 border-input-line focus-within:border-foreground">
+      <div className="flex min-h-control items-center gap-2 border-b-2 border-input-line focus-within:border-foreground focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
         {chosen && query === null && <Avatar name={chosen.name} size={28} />}
         <input id={`${id}-input`} role="combobox" aria-expanded={open} aria-controls={`${id}-list`} aria-autocomplete="list"
           aria-activedescendant={open && options[active] ? `${id}-o${active}` : undefined} autoComplete="off"
@@ -62,25 +62,25 @@ export function PersonPicker({ label, value, onChange, only, canAdd = true, opti
           onClick={() => { setOpen(true); setActive(0); }}   // no al recibir el foco: al volver de «Nueva persona» no se reabre
           onChange={(e) => { setQuery(e.target.value); setOpen(true); setActive(0); }}
           onKeyDown={onKey} onBlur={close}
-          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-body-lg outline-none" />
-        <Icon name={open ? "expand_less" : "search"} className="text-[22px] text-muted-foreground" />
+          className="h-control min-w-0 flex-1 border-0 bg-transparent p-0 text-body-lg outline-none" />
+        <Icon name={open ? "expand_less" : "search"} size="md" className="text-muted-foreground" />
       </div>
       {open && (
         <ul id={`${id}-list`} role="listbox" aria-label={label}
-          className="absolute inset-x-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-card py-1 shadow-lg">
+          className="absolute inset-x-0 top-full z-dropdown mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-card py-1 shadow-lg">
           {options.map((o, i) => (
             <li key={o.id} id={`${id}-o${i}`} role="option" aria-selected={o.id !== 0 && o.id === value}
               onMouseDown={(e) => e.preventDefault()} onClick={() => choose(o)} onMouseEnter={() => setActive(i)}
-              className={`flex min-h-12 cursor-pointer items-center gap-2.5 px-3 ${i === active ? "bg-muted" : ""}`}>
+              className={`flex min-h-row-option cursor-pointer items-center gap-3 px-3 ${i === active ? "bg-muted" : ""}`}>
               {o.id ? (
                 <>
-                  <Avatar name={o.name} size={32} />
+                  <Avatar name={o.name} />
                   <span className="flex-1 font-semibold">{o.name}</span>
-                  {o.id === value && <Icon name="check" className="text-[20px]" />}
+                  {o.id === value && <Icon name="check" />}
                 </>
               ) : (
                 <>
-                  <span className="grid size-8 place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="person_add" className="text-[18px]" /></span>
+                  <span className="grid size-avatar flex-none place-items-center rounded-full border-2 border-dashed border-input-line"><Icon name="person_add" /></span>
                   <span className="font-semibold">Nueva persona{query?.trim() ? ` «${query.trim()}»` : ""}</span>
                 </>
               )}

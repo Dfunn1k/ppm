@@ -494,6 +494,9 @@
 /* La tabla de movimientos de una cuenta en escritorio: fecha, movimiento, monto y saldo */
 @utility grid-cols-ledger { grid-template-columns: 4rem minmax(0, 1fr) 7.5rem 7rem; }
 
+/* Las líneas del asiento manual: la cuenta, lo que entra y lo que sale */
+@utility grid-cols-entry { grid-template-columns: minmax(0, 1fr) 5.25rem 5.25rem; }
+
 /* Lo muy angosto (plegable cerrado, 320 px): narrow:… */
 @custom-variant narrow (@media (max-width: 359.98px));
 

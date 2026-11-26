@@ -68,10 +68,6 @@
  "components/Pending.tsx": {
   "arbitrario": 8
  },
- "components/PersonPicker.tsx": {
-  "arbitrario": 4,
-  "capa": 1
- },
  "components/Rail.tsx": {
   "arbitrario": 16,
   "sombra": 1,
@@ -200,10 +196,6 @@
  "pages/mas/TipoCambio.tsx": {
   "arbitrario": 12
  },
- "pages/movimientos/AsientoManual.tsx": {
-  "arbitrario": 14,
-  "aMano": 3
- },
  "pages/movimientos/Detalle.tsx": {
   "arbitrario": 32,
   "aMano": 2
@@ -213,14 +205,6 @@
  },
  "pages/movimientos/PorClasificar.tsx": {
   "arbitrario": 8
- },
- "pages/movimientos/Reembolso.tsx": {
-  "arbitrario": 12,
-  "aMano": 1
- },
- "pages/movimientos/RegistrarPersona.tsx": {
-  "arbitrario": 22,
-  "aMano": 2
  },
  "pages/personas/Persona.tsx": {
   "arbitrario": 21,
