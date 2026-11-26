@@ -3,6 +3,7 @@
 import { Sheet } from "@/components/Sheet";
 import { Icon, PrimaryButton } from "@/components/ui";
 import { type InstallState, useInstall } from "@/lib/install";
+import { Button } from "@/components/Button";
 
 export function Logo({ size }: { size: number }) {
   return <img src="/logo.svg" alt="" width={size} height={size} className="flex-none" style={{ borderRadius: "22%" }} />;
@@ -56,7 +57,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
           </p>
         )}
         {state !== "prompt" && (
-          <button type="button" onClick={onClose} className="h-12 rounded-lg border border-input-line font-semibold">Entendido</button>
+          <Button variant="secondary" onClick={onClose}>Entendido</Button>
         )}
       </div>
     </Sheet>

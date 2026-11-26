@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router";
 import { ApiError, useDeleteAccount, useDeletion, useMe } from "@/api/hooks";
 import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, LineField, PasswordField } from "@/components/ui";
+import { Button, buttonVariants } from "@/components/Button";
 
 const n = (v: number) => formatCount(v);
 
@@ -77,11 +78,8 @@ export function EliminarCuenta() {
               onChange={(e) => { setValue(e.target.value); setEmpty(false); del.reset(); }}
               error={empty ? "Escribe tu correo" : wrong ? "No es tu correo" : undefined} />}
         {del.error && !wrong && <ErrorAlert>{del.error.message}</ErrorAlert>}
-        <button type="submit" disabled={del.isPending}
-          className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-60">
-          <Icon name="delete_forever" size="md" />Eliminar mi cuenta
-        </button>
-        <Link to="/mas/cuenta" className="flex min-h-control items-center justify-center text-caption font-semibold underline">No, volver</Link>
+        <Button type="submit" variant="destructive" icon="delete_forever" pending={del.isPending}>Eliminar mi cuenta</Button>
+        <Link to="/mas/cuenta" className={buttonVariants({ variant: "ghost", size: "sm" })}>No, volver</Link>
       </form>
     </main>
   );

@@ -39,6 +39,7 @@ import { RegistrarPersona } from "./RegistrarPersona";
 import { YaDebia } from "@/pages/personas/YaDebia";
 import { useDesktopFocus } from "@/lib/desktop";
 import { accountOption } from "@/components/AccountSub";
+import { FilterChip } from "@/components/Chip";
 
 type Kind = Extract<MoveIn["kind"], "expense" | "income" | "transfer">;
 type Part = { category: Category | null; partner?: { id: number; name: string } | null; amount: string };
@@ -596,10 +597,7 @@ export function Registrar({ editing, recurring, reminder }: {
             <div className="flex flex-col gap-4 pt-3">
               <div role="radiogroup" aria-label="¿Cada cuánto?" className="flex flex-wrap gap-2">
                 {FREQS.map(([f, label]) => (
-                  <button key={f} type="button" role="radio" aria-checked={f === freq} onClick={() => setFreq(f)}
-                    className={`hit-area h-9 rounded-full border px-3.5 text-caption font-semibold ${f === freq ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
-                    {label}
-                  </button>
+                  <FilterChip key={f} radio pressed={f === freq} onClick={() => setFreq(f)}>{label}</FilterChip>
                 ))}
               </div>
               {freq === "other" && (

@@ -6,6 +6,7 @@ import { Facts, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { addMonths, dayBefore, type DeferralMethod, deferralSchedule } from "@/lib/deferral";
 import { formatAmount } from "@/lib/money";
+import { FilterChip } from "./Chip";
 
 export type DeferralState = { on: boolean; method: DeferralMethod; start: string | null; end: string | null; months: string };
 export const NO_DEFERRAL: DeferralState = { on: false, method: "days", start: null, end: null, months: "12" };
@@ -53,10 +54,7 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
         <div className="flex flex-col gap-3 border-b border-border pb-3">
           <div role="radiogroup" aria-label="Repartir por" className="flex gap-2">
             {([["days", "Por días"], ["months", "Por meses"]] as const).map(([m, text]) => (
-              <button key={m} type="button" role="radio" aria-checked={v.method === m} onClick={() => set({ method: m })}
-                className={`h-9 rounded-full border px-3.5 text-caption font-semibold ${v.method === m ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-                {text}
-              </button>
+              <FilterChip key={m} radio pressed={v.method === m} onClick={() => set({ method: m })}>{text}</FilterChip>
             ))}
           </div>
           <div className="grid grid-cols-2 gap-3">

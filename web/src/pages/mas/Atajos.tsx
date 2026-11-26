@@ -10,6 +10,7 @@ import { Kbd } from "@/components/ShortcutsHelp";
 import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon } from "@/components/ui";
 import { type Action, DEFAULT_KEYS, keyLabel, SHORTCUT_GROUPS, useShortcuts } from "@/lib/shortcuts";
+import { Button } from "@/components/Button";
 
 const NAMES: Record<Action, string> = { register: "Registrar", search: "Buscar", edit: "Editar", help: "Ver los atajos" };
 
@@ -114,10 +115,10 @@ export function Atajos() {
       {save.error && <div className="mt-3"><ErrorAlert>{save.error.message}</ErrorAlert></div>}
 
       {changed && (
-        <button type="button" disabled={save.isPending} onClick={() => save.mutate({ shortcuts: {} })}
-          className="mt-5 flex h-11 items-center justify-center gap-1.5 self-start rounded-lg border border-border px-4 font-semibold">
-          <Icon name="restart_alt" />Volver a los de fábrica ({(Object.keys(DEFAULT_KEYS) as Action[]).map((a) => keyLabel(DEFAULT_KEYS[a])).join(" ")})
-        </button>
+        <Button variant="secondary" size="sm" start="restart_alt" pending={save.isPending} onClick={() => save.mutate({ shortcuts: {} })}
+          className="mt-5 self-start">
+          Volver a los de fábrica ({(Object.keys(DEFAULT_KEYS) as Action[]).map((a) => keyLabel(DEFAULT_KEYS[a])).join(" ")})
+        </Button>
       )}
     </main>
   );

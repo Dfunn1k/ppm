@@ -158,8 +158,8 @@ function StatementCard({ detail: d, lang }: { detail: AccountDetail; lang: strin
           <Icon name="chevron_right" size="md" className="text-muted-foreground" />
         </Link>
       ) : (
-      <div className="mt-4 flex items-center gap-3 rounded-lg bg-muted py-2 pr-2 pl-4">
-        <Link to={`/extractos/${last.id}`} className="flex min-w-0 flex-1 flex-col">
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-muted py-2 pr-2 pl-4">
+        <Link to={`/extractos/${last.id}`} className="flex min-h-control min-w-0 flex-1 basis-40 flex-col justify-center">
           <span className="text-caption text-muted-foreground">Último extracto{last.date_to ? ` hasta el ${shortDate(last.date_to)}` : ""}</span>
           <span className={`flex items-center gap-1 truncate font-semibold ${status!.cls}`}><Icon name={status!.icon} />{status!.text}</span>
         </Link>
@@ -199,7 +199,7 @@ function LineRow({ line: l, lang, table }: { line: AccountDetail["lines"][number
   if (!l.posted) bits.push(pendingBit);
   if (!table) bits.push({ text: shortDate(l.date) });
   if (opening) bits.push({ text: "Lo que tenía al empezar", shrink: true });
-  else if (suspense) bits.push({ text: "Por clasificar", attention: true });
+  else if (suspense) bits.push({ text: "Por clasificar", attention: true, shrink: true });
   else if (l.counterpart_money) bits.push({ icon: l.counterpart_icon ?? "payments", text: `${out ? "A" : "De"} ${l.counterpart}`, shrink: true });
   if (l.attachments > 0) bits.push(clipBit);
   const Row = opening ? "div" : Link;

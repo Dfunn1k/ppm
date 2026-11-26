@@ -13,7 +13,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary: "w-full justify-between rounded-lg bg-primary px-5 text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
-        secondary: "justify-center rounded-lg border border-border bg-card px-4 text-body-sm font-semibold hover:bg-muted active:bg-muted",
+        secondary: "justify-center rounded-lg border border-input-line bg-card px-4 hover:bg-muted active:bg-muted",
         ghost: "justify-center rounded-md px-3 text-body-sm font-semibold text-primary-strong underline hover:bg-muted active:bg-muted",
         destructive: "w-full justify-between rounded-lg bg-destructive px-5 text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80",
       },
@@ -32,14 +32,17 @@ function Trailing({ variant, pending, icon }: Variants & { pending?: boolean; ic
   return <Icon name={name} size="md" className={cn(pending && "animate-spin")} />;
 }
 
-export type ButtonProps = ComponentProps<"button"> & Variants & { pending?: boolean; icon?: string | false };
+/** `start`: el ícono a la izquierda del texto, en el de contorno («Cerrar sesión»); mientras guarda,
+ *  ese ícono pasa a ser el círculo que gira y no se agrega nada a la derecha. */
+export type ButtonProps = ComponentProps<"button"> & Variants & { pending?: boolean; icon?: string | false; start?: string };
 
-export function Button({ variant, size, pending, icon, className, children, type = "button", disabled, ...props }: ButtonProps) {
+export function Button({ variant, size, pending, icon, start, className, children, type = "button", disabled, ...props }: ButtonProps) {
   return (
     <button type={type} aria-busy={pending || undefined} disabled={pending || disabled}
       className={cn(buttonVariants({ variant, size }), className)} {...props}>
+      {start && <Icon name={pending ? "progress_activity" : start} className={cn(pending && "animate-spin")} />}
       <span>{children}</span>
-      <Trailing variant={variant} pending={pending} icon={icon} />
+      {!start && <Trailing variant={variant} pending={pending} icon={icon} />}
     </button>
   );
 }

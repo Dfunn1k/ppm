@@ -14,6 +14,8 @@ import { shortDate, todayISO } from "@/lib/dates";
 import { daysBetween } from "@/lib/deferral";
 import { formatAmount, formatNumber, multiply, parseAmount, subtract, symbolOf } from "@/lib/money";
 import { listText } from "@/lib/utils";
+import { FilterChip } from "./Chip";
+import { Button } from "@/components/Button";
 
 type Deferral = NonNullable<MoveDetail["deferral"]>;
 
@@ -118,10 +120,7 @@ export function DeferralSection({ moveId, deferral: f, title, posted, locked }: 
 
       {!c && posted && left.length > 0 && !locked && (
         <div className="mt-4 flex flex-col gap-2">
-          <button type="button" onClick={() => setCanceling(true)}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
-            <Icon name="event_busy" />Cancelar lo que falta
-          </button>
+          <Button variant="secondary" start="event_busy" onClick={() => setCanceling(true)}>Cancelar lo que falta</Button>
           <p className="text-caption text-muted-foreground">
             {expense
               ? "Si cancelaste el seguro o la suscripción. Lo que ya contó como gasto se queda donde está."
@@ -196,10 +195,7 @@ function CancelDeferralSheet({ moveId, deferral: f, open, onClose }: {
   const chip = (label: string, value: string) => {
     const on = (parseAmount(typed || "0", lang) ?? "") === value || (!typed && value === "0.00");
     return (
-      <button key={label} type="button" aria-pressed={on} onClick={() => setTyped(value === "0.00" ? "" : formatNumber(value, lang))}
-        className={`h-8 rounded-full border px-3 text-caption font-semibold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-        {label}
-      </button>
+      <FilterChip key={label} pressed={on} onClick={() => setTyped(value === "0.00" ? "" : formatNumber(value, lang))}>{label}</FilterChip>
     );
   };
 

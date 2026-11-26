@@ -10,6 +10,7 @@ import { ErrorAlert, Facts, Icon, Screen, Segments, Spinner, Status } from "@/co
 import { shortDate } from "@/lib/dates";
 import { add, formatAmount, isNegative, multiply, subtract, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
+import { Button } from "@/components/Button";
 
 /** Subir el PDF del estado de cuenta: al leerlo, abre su conciliación. */
 export function ImportStatement({ cardId, label = "Importar estado de cuenta (PDF)" }: { cardId: number; label?: string }) {
@@ -133,10 +134,10 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
             </dl>
             {bankInstallment.error && <ErrorAlert>{bankInstallment.error.message}</ErrorAlert>}
             <div className="mt-1 flex flex-wrap gap-2">
-              <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id })}
-                className="h-11 flex-1 basis-40 rounded-lg bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
-              <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id, rejectPlan: g.plan_id })}
-                className="h-11 rounded-lg border border-input-line px-3.5 whitespace-nowrap font-semibold text-foreground">No es esta compra</button>
+              <Button size="sm" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id })}
+                className="flex-1 basis-48">Usar la del banco</Button>
+              <Button variant="secondary" size="sm" disabled={bankInstallment.isPending} className="whitespace-nowrap text-foreground"
+                onClick={() => bankInstallment.mutate({ rowId: x.id, rejectPlan: g.plan_id })}>No es esta compra</Button>
             </div>
           </section>
         );

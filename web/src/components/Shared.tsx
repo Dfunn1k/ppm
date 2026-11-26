@@ -13,6 +13,7 @@ import { Avatar } from "./MoveBits";
 import { PersonPicker } from "./PersonPicker";
 import { Segmented, Sheet } from "./Sheet";
 import { Icon } from "./ui";
+import { FilterChip } from "./Chip";
 
 export type SharedPerson = { id: number; amount: string };
 export type SharedState = { on: boolean; payer: number | "me"; people: SharedPerson[]; mode: "equal" | "amounts"; mine: string };
@@ -88,10 +89,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
             <span className="text-caption font-semibold">{income ? "¿Quién cobró?" : "¿Quién pagó?"}</span>
             <div className="flex flex-wrap gap-1.5">
               {[{ id: "me" as const, label: "Yo" }, ...s.people.map((p) => ({ id: p.id, label: first(p.id) }))].map((o) => (
-                <button key={String(o.id)} type="button" role="radio" aria-checked={s.payer === o.id} onClick={() => set({ payer: o.id })}
-                  className={`h-8 rounded-full border px-3 text-caption font-semibold ${s.payer === o.id ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-                  {o.label}
-                </button>
+                <FilterChip key={String(o.id)} radio pressed={s.payer === o.id} onClick={() => set({ payer: o.id })}>{o.label}</FilterChip>
               ))}
               <button type="button" onClick={() => setPicking("payer")} className="h-8 rounded-full border border-dashed border-input-line px-3 text-caption font-semibold">
                 Otra persona…

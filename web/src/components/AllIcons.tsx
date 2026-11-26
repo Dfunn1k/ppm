@@ -6,6 +6,8 @@ import catalog from "@/data/material-icons.json";
 import { loadFullIconFont } from "@/lib/iconFont";
 
 import { Icon } from "./ui";
+import { FilterChip } from "./Chip";
+import { Button } from "@/components/Button";
 
 const GROUPS: Record<string, string> = {
   "Actions": "Acciones", "Activities": "Actividades", "Android": "Android", "Audio&Video": "Audio y video",
@@ -33,12 +35,12 @@ export default function AllIcons({ value, onPick, tint }: { value: string | null
           onChange={(e) => { setQ(e.target.value); setShown(PAGE); }}
           className="min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
       </label>
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+      {/* py-1: el área de 44 px de cada pastilla cabe en la tira sin que aparezca scroll vertical */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 py-1">
         {[null, ...catalog.groups.map((_, i) => i)].map((g) => (
-          <button key={g ?? "all"} type="button" aria-pressed={group === g} onClick={() => { setGroup(g); setShown(PAGE); }}
-            className={`h-8 flex-none rounded-full border px-3 text-caption font-semibold ${group === g ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+          <FilterChip key={g ?? "all"} pressed={group === g} onClick={() => { setGroup(g); setShown(PAGE); }}>
             {g === null ? "Todos" : GROUPS[catalog.groups[g]!] ?? catalog.groups[g]}
-          </button>
+          </FilterChip>
         ))}
       </div>
       <div role="radiogroup" aria-label="Todos los íconos" className="grid grid-cols-7 gap-1.5">
@@ -52,9 +54,7 @@ export default function AllIcons({ value, onPick, tint }: { value: string | null
         {list.length === 0 && <span className="col-span-7 py-2 text-caption text-muted-foreground">No hay íconos con «{q}». Prueba en inglés.</span>}
       </div>
       {list.length > shown && (
-        <button type="button" onClick={() => setShown((s) => s + PAGE)} className="h-10 rounded-md border border-border text-caption font-semibold">
-          Ver más ({list.length - shown})
-        </button>
+        <Button variant="secondary" size="sm" onClick={() => setShown((s) => s + PAGE)}>Ver más ({list.length - shown})</Button>
       )}
     </div>
   );

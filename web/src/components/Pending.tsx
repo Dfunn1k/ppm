@@ -232,7 +232,9 @@ function ActivityForm({ activity, target, onDone }: { activity?: Activity; targe
       <Button type="submit" pending={save.isPending}>{activity ? "Guardar" : "Agregar recordatorio"}</Button>
       {activity && (
         <button type="button" disabled={remove.isPending} onClick={() => remove.mutate(activity.id, { onSuccess: onDone })}
-          className="min-h-control text-body-sm font-semibold text-destructive underline">Borrar el recordatorio</button>
+          className="flex min-h-control items-center justify-center gap-1.5 rounded-md text-body-sm font-semibold text-destructive hover:bg-destructive-soft">
+          <Icon name="delete" />Borrar el recordatorio
+        </button>
       )}
     </form>
   );
