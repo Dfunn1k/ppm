@@ -58,6 +58,7 @@ Toda la letra va en `rem`, para que crezca si la persona sube el tamaño de letr
 | `amount-lg` | 17 / 24 | Plex 600, tabulares | El monto destacado de una fila |
 | `amount` | 15 / 22 | Plex 500, tabulares | Montos en listas y tablas |
 | `body` / `body-strong` | 15 / 22 | Plex 400 / 600 | Texto corriente / el nombre de una fila |
+| `body-lg` | 17 / 24 | Plex 400 | Lo que escribes en un campo y las opciones de una hoja |
 | `body-sm` | 14 / 20 | Plex 400 o 600 | Botones secundarios y ayudas largas |
 | `caption` | 13 / 18 | Plex 400 | Fecha, cuenta y glosa debajo del nombre |
 | `caption-sm` | 12 / 16 | Plex 500 | Texto de pastillas y chips, sin mayúsculas |
