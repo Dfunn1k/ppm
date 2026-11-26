@@ -46,7 +46,7 @@ export default function AllIcons({ value, onPick, tint }: { value: string | null
           <button key={n} type="button" role="radio" aria-label={n} aria-checked={n === value} onClick={() => onPick(n)} title={n}
             className={`grid h-10 place-items-center rounded-md ${n === value ? "" : "border border-border"}`}
             style={n === value ? { background: `var(--cat-${tint})`, color: "var(--on-category)" } : undefined}>
-            <Icon name={n} className="text-[22px]" />
+            <Icon name={n} size="md" />
           </button>
         ))}
         {list.length === 0 && <span className="col-span-7 py-2 text-caption text-muted-foreground">No hay íconos con «{q}». Prueba en inglés.</span>}

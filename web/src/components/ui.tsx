@@ -107,8 +107,8 @@ export function Segments({ done, total, className }: { done: number; total: numb
     );
   }
   return (
-    <span className={cn("flex gap-[3px]", className)} aria-hidden="true">
-      {Array.from({ length: total }, (_, i) => <span key={i} className={cn("h-1.5 flex-1 rounded-[3px]", i < done ? "bg-foreground" : "bg-border")} />)}
+    <span className={cn("flex gap-0.5", className)} aria-hidden="true">
+      {Array.from({ length: total }, (_, i) => <span key={i} className={cn("h-1.5 flex-1 rounded-xs", i < done ? "bg-foreground" : "bg-border")} />)}
     </span>
   );
 }
@@ -120,7 +120,7 @@ export function FormatSample({ amount, date }: { amount: string; date: string })
     <span className="mt-1 flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5">
       <span className="flex flex-1 flex-col">
         <span className="text-caption font-semibold text-foreground">Almuerzo</span>
-        <span className="text-[12px] leading-4 text-muted-foreground">{date}</span>
+        <span className="text-caption-sm text-muted-foreground">{date}</span>
       </span>
       <span className="text-caption font-semibold text-foreground tabular-nums">{amount}</span>
     </span>
@@ -152,7 +152,7 @@ export function LineField({ label, error, hint, action, optional, className, ...
       </div>
       {error ? (
         <span id={`${id}-error`} className="flex items-center gap-1 text-caption text-destructive">
-          <Icon name="error" className="text-[18px]" />
+          <Icon name="error" size="sm" />
           {error}
         </span>
       ) : (
@@ -210,7 +210,7 @@ export function Note({ icon, children }: { icon: string; children: ReactNode }) 
 export function Spinner() {
   return (
     <Screen className="items-center justify-center">
-      <Icon name="progress_activity" className="animate-spin text-[32px] text-muted-foreground" />
+      <Icon name="progress_activity" size="lg" className="animate-spin text-muted-foreground" />
       <span className="sr-only">Cargando</span>
     </Screen>
   );

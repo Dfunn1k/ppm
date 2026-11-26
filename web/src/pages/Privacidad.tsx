@@ -12,7 +12,7 @@ const UPDATED = "14 de noviembre de 2026";
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-7 flex flex-col gap-2">
-      <h2 className="font-display text-[22px] leading-[26px] font-bold">{title}</h2>
+      <h2 className="text-title-2 font-bold">{title}</h2>
       {children}
     </section>
   );
@@ -31,8 +31,8 @@ export function Privacidad() {
     <Screen className="pt-4">
       <div className="-mx-2.5 flex items-center">
         {first
-          ? <Link to="/" aria-label="Ir a PPM" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-          : <button type="button" onClick={() => navigate(-1)} aria-label="Volver" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></button>}
+          ? <Link to="/" aria-label="Ir a PPM" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" size="md" /></Link>
+          : <button type="button" onClick={() => navigate(-1)} aria-label="Volver" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" size="md" /></button>}
       </div>
       <span className="mt-3 flex items-center gap-2 text-label text-muted-foreground"><Logo size={20} />PAN PARA MAYO</span>
       <h1 className="mt-2 text-title-hero">Privacidad</h1>

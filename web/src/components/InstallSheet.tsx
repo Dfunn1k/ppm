@@ -5,7 +5,7 @@ import { Icon, PrimaryButton } from "@/components/ui";
 import { type InstallState, useInstall } from "@/lib/install";
 
 export function Logo({ size }: { size: number }) {
-  return <img src="/logo.svg" alt="" width={size} height={size} className="flex-none" style={{ borderRadius: size * 0.22 }} />;
+  return <img src="/logo.svg" alt="" width={size} height={size} className="flex-none" style={{ borderRadius: "22%" }} />;
 }
 
 export const INSTALL_HINT: Record<InstallState, string> = {
@@ -33,7 +33,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
         {state === "installed" && <p className="text-muted-foreground">PPM ya está instalada aquí. Ábrela desde tu pantalla de inicio o tus aplicaciones.</p>}
         {state === "prompt" && (
           <>
-            <p className="text-[14px] leading-5 text-muted-foreground">
+            <p className="text-body-sm text-muted-foreground">
               Queda en tu pantalla de inicio con el ícono de la hogaza. Tus datos siguen en tu servidor: solo cambia cómo la abres.
             </p>
             <PrimaryButton type="button" onClick={async () => { if (await install()) onClose(); }}>Instalar</PrimaryButton>
@@ -43,15 +43,15 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
           <ol className="flex flex-col gap-3">
             {IOS_STEPS.map(([text, icon], i) => (
               <li key={icon} className="flex items-center gap-3">
-                <span className="grid size-7 flex-none place-items-center rounded-full bg-secondary text-[13px] font-semibold">{i + 1}</span>
+                <span className="grid size-7 flex-none place-items-center rounded-full bg-secondary text-caption font-semibold">{i + 1}</span>
                 <span className="flex-1">{text}</span>
-                <Icon name={icon} className="text-[22px]" />
+                <Icon name={icon} size="md" />
               </li>
             ))}
           </ol>
         )}
         {state === "manual" && (
-          <p className="text-[14px] leading-5 text-muted-foreground">
+          <p className="text-body-sm text-muted-foreground">
             Abre el menú del navegador (⋮ en Chrome o Edge) y elige «Instalar PPM» o «Agregar a pantalla de inicio».
           </p>
         )}

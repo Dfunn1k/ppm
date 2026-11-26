@@ -9,8 +9,8 @@ export function EmptyState({ icon, title, children, action }: {
 }) {
   return (
     <div className="mt-8 flex flex-col items-center gap-3 text-center">
-      <span className="grid size-16 place-items-center rounded-full bg-muted"><Icon name={icon} className="text-[30px]" /></span>
-      <span className="font-display text-[22px] font-bold">{title}</span>
+      <span className="grid size-16 place-items-center rounded-full bg-muted"><Icon name={icon} size="lg" /></span>
+      <span className="text-title-2 font-bold">{title}</span>
       <p className="text-muted-foreground">{children}</p>
       {action && (
         <Link to={action.to} className="mt-1 flex h-12 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">

@@ -13,7 +13,7 @@ export function Bone({ className }: { className?: string }) {
 /** Una fila de lista: el círculo del ícono, dos líneas de texto y el monto. */
 export function BoneRow() {
   return (
-    <div aria-hidden="true" className="flex min-h-[60px] items-center gap-3 border-b border-border">
+    <div aria-hidden="true" className="flex min-h-row items-center gap-3 border-b border-border">
       <Bone className="size-9 flex-none rounded-full" />
       <span className="flex flex-1 flex-col gap-1.5">
         <Bone className="h-3.5 w-1/2" />
@@ -46,8 +46,8 @@ function Back({ to }: { to?: string }) {
   return (
     <div className="-mx-2.5 flex h-11 items-center">
       {to ? (
-        <Link to={to} aria-label="Volver" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" className="text-[24px]" /></Link>
-      ) : <span className="grid size-11 place-items-center text-muted-foreground"><Icon name="arrow_back" className="text-[24px]" /></span>}
+        <Link to={to} aria-label="Volver" className="grid size-11 place-items-center rounded-full"><Icon name="arrow_back" size="md" /></Link>
+      ) : <span className="grid size-11 place-items-center text-muted-foreground"><Icon name="arrow_back" size="md" /></span>}
     </div>
   );
 }
@@ -105,7 +105,7 @@ export function ReportBones({ chart = "donut" }: { chart?: "donut" | "bars" }) {
       <span role="status" className="sr-only">Cargando</span>
       {chart === "donut" ? (
         <div aria-hidden="true" className="flex items-center gap-5">
-          <span className="size-[148px] flex-none animate-pulse rounded-full border-[26px] border-foreground/8" />
+          <span className="size-37 flex-none animate-pulse rounded-full border-26 border-foreground/8" />
           <span className="flex flex-1 flex-col gap-2"><Bone className="h-3 w-1/2" /><Bone className="h-8 w-11/12 rounded-xl" /><Bone className="h-3 w-3/4" /></span>
         </div>
       ) : (
