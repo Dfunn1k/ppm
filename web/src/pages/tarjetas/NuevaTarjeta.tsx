@@ -7,6 +7,7 @@ import { useNavigate } from "react-router";
 import { type CardIn, useCatalog, useCreateCard, useMe } from "@/api/hooks";
 import { RateField, useRateInput } from "@/components/RateField";
 import { Segmented, SheetSelect } from "@/components/Sheet";
+import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateField } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
@@ -81,27 +82,31 @@ export function NuevaTarjeta() {
       <FormHeader back="/cuentas/nueva" label="Tarjeta de crédito" />
       <form noValidate onSubmit={submit} className="mt-1 flex flex-1 flex-col">
         <LineField label="Nombre" placeholder="Visa BBVA" value={name} maxLength={80} onChange={(e) => setTypedName(e.target.value)}
-          className="h-12 font-display text-[30px] leading-9 font-extrabold tracking-[-0.02em]" />
+          className="h-12 text-title-1 font-extrabold" />
 
         <div className="mt-4 grid grid-cols-2 gap-4">
           <SheetSelect label="Banco" sheetTitle="Elige el banco" value={bankId} onChange={setBankId}
             options={banks.map((b) => ({ value: String(b.id), label: b.name }))} />
           <LineField label="Últimos 4" optional inputMode="numeric" maxLength={4} value={last4}
-            onChange={(e) => setLast4(e.target.value.replace(/\D/g, ""))} className="tracking-[0.08em] tabular-nums" />
+            onChange={(e) => setLast4(e.target.value.replace(/\D/g, ""))} className="tracking-widest tabular-nums" />
         </div>
         <div className="mt-4">
           <Segmented label="Marca" size="sm" value={brand} onChange={(v) => setBrand(v as Brand)}
             options={BRANDS.map((b) => ({ value: b, label: b }))} />
         </div>
-        <div className="mt-4 grid grid-cols-[112px_1fr] gap-4">
-          <LineField label="Día de corte" inputMode="numeric" maxLength={2} placeholder="20" value={closingDay}
-            onChange={(e) => setClosingDay(e.target.value.replace(/\D/g, ""))} className="tabular-nums" />
-          <LineField label={`Línea de crédito (${symbolOf(base)})`} inputMode="decimal" placeholder="5,000.00" value={limit}
-            onChange={(e) => setLimit(e.target.value)} className="tabular-nums" />
+        <div className="mt-4 flex gap-4">
+          <div className="w-28 flex-none">
+            <LineField label="Día de corte" inputMode="numeric" maxLength={2} placeholder="20" value={closingDay}
+              onChange={(e) => setClosingDay(e.target.value.replace(/\D/g, ""))} className="tabular-nums" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <LineField label={`Línea de crédito (${symbolOf(base)})`} inputMode="decimal" placeholder="5,000.00" value={limit}
+              onChange={(e) => setLimit(e.target.value)} className="tabular-nums" />
+          </div>
         </div>
         <span className="mt-1.5 text-caption text-muted-foreground">Los dos están en tu estado de cuenta. El corte cierra cada ciclo.</span>
 
-        <span className="mt-5 border-b border-border pb-1 text-label text-muted-foreground">Tu último estado de cuenta</span>
+        <SectionHeading className="mt-5">Tu último estado de cuenta</SectionHeading>
         <div className="mt-3">
           <AmountField label="¿Cuánto toca pagar?" symbol={symbolOf(base)} value={pen} onChange={(e) => setPen(e.target.value)} />
         </div>
