@@ -497,6 +497,9 @@
 /* Las líneas del asiento manual: la cuenta, lo que entra y lo que sale */
 @utility grid-cols-entry { grid-template-columns: minmax(0, 1fr) 5.25rem 5.25rem; }
 
+/* Pares de dato y valor en una ficha: el nombre se corta antes que el monto */
+@utility grid-cols-pairs { grid-template-columns: minmax(0, 1fr) auto; }
+
 /* Lo muy angosto (plegable cerrado, 320 px): narrow:… */
 @custom-variant narrow (@media (max-width: 359.98px));
 

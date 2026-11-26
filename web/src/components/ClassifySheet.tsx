@@ -2,6 +2,7 @@
 // categoría (con quién, opcional), otra cuenta tuya (una transferencia) o una persona (le presté,
 // le pagué, le devolví; me pagó, me prestó, me dio para guardar). Un cobro o un pago no pasa de lo
 // que se debe: si pasa, la API lo dice con sus palabras.
+import { SearchField } from "@/components/SearchField";
 import { useState } from "react";
 
 import { type Category, type ClassifyIn, useAccounts, useCategories, useClassify, useMe } from "@/api/hooks";
@@ -120,7 +121,7 @@ export function ClassifySheet({ open, onClose, items, onDone }: {
                   {PERSON_OPTIONS[incoming ? "in" : "out"].map((o) => (
                     <button key={o.role} type="button" role="radio" aria-checked={role === o.role} onClick={() => setRole(o.role)}
                       className={`flex min-h-14 items-center gap-3 rounded-md px-3 text-left ${role === o.role ? "bg-muted" : ""}`}>
-                      <Icon name={role === o.role ? "radio_button_checked" : "radio_button_unchecked"} fill={role === o.role} className="text-[22px]" />
+                      <Icon name={role === o.role ? "radio_button_checked" : "radio_button_unchecked"} fill={role === o.role} size="md" />
                       <span className="flex flex-col">
                         <span className="font-semibold">{o.label}</span>
                         <span className="text-caption text-muted-foreground">{o.hint}</span>
@@ -161,11 +162,7 @@ function CategoryList({ kind, selected, onPick }: { kind: "expense" | "income"; 
     .filter((g) => g.children.length > 0);
   return (
     <div className="flex flex-col">
-      <label className="mx-1 flex h-11 items-center gap-2 rounded-md bg-muted px-3">
-        <Icon name="search" className="text-muted-foreground" />
-        <input aria-label="Buscar categoría" placeholder="Buscar: súper, taxi, luz…" value={q} onChange={(e) => setQ(e.target.value)}
-          className="min-w-0 flex-1 border-0 bg-transparent focus:outline-none" />
-      </label>
+      <SearchField label="Buscar categoría" type="text" placeholder="Buscar: súper, taxi, luz…" value={q} onChange={(e) => setQ(e.target.value)} className="mx-1" />
       <div role="radiogroup" aria-label="Categorías" className="mt-1 flex flex-col">
         {groups.map((g) => (
           <div key={g.id ?? g.name} className="flex flex-col">
@@ -175,10 +172,10 @@ function CategoryList({ kind, selected, onPick }: { kind: "expense" | "income"; 
             </span>
             {g.children.map((k) => (
               <button key={k.id} type="button" role="radio" aria-checked={k.id === selected} onClick={() => onPick(k)}
-                className={`flex min-h-[52px] items-center gap-3 rounded-md px-3 text-left ${k.id === selected ? "bg-muted" : ""}`}>
+                className={`flex min-h-row-sm items-center gap-3 rounded-md px-3 text-left ${k.id === selected ? "bg-muted" : ""}`}>
                 <CategoryChip category={k} />
                 <span className="flex-1 font-semibold">{k.name}</span>
-                {k.id === selected && <Icon name="check_circle" fill className="text-[22px]" />}
+                {k.id === selected && <Icon name="check_circle" fill size="md" />}
               </button>
             ))}
           </div>
@@ -206,7 +203,7 @@ function AccountList({ items, base, selected, onPick }: {
           const on = a.id === selected;
           return (
             <button key={a.id} type="button" role="radio" aria-checked={on} disabled={!usable} onClick={() => onPick(a.id)}
-              className={`flex min-h-[60px] items-center gap-3 rounded-md px-3 text-left disabled:opacity-50 ${on ? "bg-muted" : ""}`}>
+              className={`flex min-h-row items-center gap-3 rounded-md px-3 text-left disabled:opacity-50 ${on ? "bg-muted" : ""}`}>
               <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground">
                 <Icon name={a.icon ?? (a.kind === "card" ? "credit_card" : a.kind === "cash" ? "payments" : "account_balance")} />
               </span>
@@ -216,13 +213,13 @@ function AccountList({ items, base, selected, onPick }: {
                   {usable ? <AccountSub a={a} /> : "En otra moneda: un cambio se registra en Registrar › Transferir"}
                 </span>
               </span>
-              {on && <Icon name="check_circle" fill className="text-[22px]" />}
+              {on && <Icon name="check_circle" fill size="md" />}
             </button>
           );
         })}
       </div>
       <p className="mx-2 mt-2 flex gap-2 text-caption text-muted-foreground">
-        <Icon name="link" className="text-[18px]" />
+        <Icon name="link" />
         Cuando importes el extracto de esa cuenta, la otra mitad se enlaza sola: la transferencia queda una sola vez.
       </p>
     </div>
