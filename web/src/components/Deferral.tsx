@@ -215,7 +215,7 @@ function CancelDeferralSheet({ moveId, deferral: f, open, onClose }: {
           <span className="flex h-11 items-center gap-1.5 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-muted-foreground">{symbolOf(currency)}</span>
             <input inputMode="decimal" placeholder="0.00" value={typed} onChange={(e) => setTyped(e.target.value)}
-              className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-[17px] font-normal tabular-nums" />
+              className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-body-lg tabular-nums" />
           </span>
         </label>
         <div className="-mt-1 flex flex-wrap gap-1.5">

@@ -118,7 +118,7 @@ export function OptionList({ options, value, onPick, search, searchLabel = "Busc
               role="radio"
               aria-checked={selected}
               onClick={() => onPick(o.value)}
-              className={`flex min-h-14 items-center gap-3 rounded-md px-3 text-left text-[17px] leading-6 ${selected ? "bg-muted" : ""}`}
+              className={`flex min-h-14 items-center gap-3 rounded-md px-3 text-left text-body-lg ${selected ? "bg-muted" : ""}`}
             >
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-semibold">{o.label}</span>
@@ -159,7 +159,7 @@ export function SheetSelect({ label, sheetTitle, options, value, onChange, error
         aria-haspopup="dialog"
         aria-invalid={error ? true : undefined}
         onClick={() => setOpen(true)}
-        className="flex h-11 items-center gap-2 border-b-2 border-input-line text-left text-[17px] leading-6 aria-invalid:border-destructive"
+        className="flex h-11 items-center gap-2 border-b-2 border-input-line text-left text-body-lg aria-invalid:border-destructive"
       >
         <span id={`${id}-value`} className="min-w-0 flex-1 truncate">
           {current?.label ?? "Elige una opción"}

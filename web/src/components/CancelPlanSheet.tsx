@@ -96,7 +96,7 @@ export function CancelPlanSheet({ plan, open, onClose }: { plan: Plan; title: st
               <span className="flex h-11 items-center gap-1.5 border-b-2 border-input-line">
                 <span aria-hidden="true" className="text-muted-foreground">{symbolOf(cur)}</span>
                 <input inputMode="decimal" value={typed ?? formatNumber(plan.remaining, lang)} onChange={(e) => setTyped(e.target.value)}
-                  className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-[17px] font-normal tabular-nums" />
+                  className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-body-lg tabular-nums" />
               </span>
             </label>
           )}

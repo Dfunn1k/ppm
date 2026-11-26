@@ -62,7 +62,7 @@ export function PersonPicker({ label, value, onChange, only, canAdd = true, opti
           onClick={() => { setOpen(true); setActive(0); }}   // no al recibir el foco: al volver de «Nueva persona» no se reabre
           onChange={(e) => { setQuery(e.target.value); setOpen(true); setActive(0); }}
           onKeyDown={onKey} onBlur={close}
-          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[17px] leading-6 outline-none" />
+          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-body-lg outline-none" />
         <Icon name={open ? "expand_less" : "search"} className="text-[22px] text-muted-foreground" />
       </div>
       {open && (

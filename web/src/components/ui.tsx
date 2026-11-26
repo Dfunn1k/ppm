@@ -68,7 +68,7 @@ export function Amounts({ values, className }: { values: string[]; className?: s
 export function Status({ icon, children, attention, className }: { icon: string; children: ReactNode; attention?: boolean; className?: string }) {
   return (
     <span className={cn("inline-flex flex-none items-center gap-1 font-semibold normal-case tracking-normal", attention && "text-attention", className)}>
-      <Icon name={icon} className="text-[15px]" />{children}
+      <Icon name={icon} size="sm" />{children}
     </span>
   );
 }
@@ -142,7 +142,7 @@ export function LineField({ label, error, hint, action, optional, className, ...
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={cn(
-            "h-11 min-w-0 flex-1 border-0 border-b-2 border-input-line bg-transparent p-0 text-[17px] leading-6 text-foreground aria-invalid:border-destructive",
+            "h-11 min-w-0 flex-1 border-0 border-b-2 border-input-line bg-transparent p-0 text-body-lg text-foreground aria-invalid:border-destructive",
             action && "pr-20",
             className,
           )}
