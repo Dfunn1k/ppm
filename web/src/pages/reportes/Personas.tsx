@@ -50,7 +50,7 @@ export function ReportePersonas() {
       <section aria-label="Desde cuándo te deben" className="mt-6 flex flex-col gap-2">
         <SectionHeading>Desde cuándo te deben</SectionHeading>
         {total > 0 ? (
-          <div className="flex h-7 gap-0.5" role="img"
+          <div className="flex h-7 gap-0.5" role="group"
             aria-label={`Lo que te deben por antigüedad: ${TRAMOS.map((x, i) => `${x.label} ${money(r.ages[i]!)}`).join(", ")}`}>
             {r.ages.map((v, i) => Number(v) > 0 && (
               <button key={i} type="button" aria-label={`${TRAMOS[i]!.label}: ${money(v)}`} onClick={() => pick(i)}

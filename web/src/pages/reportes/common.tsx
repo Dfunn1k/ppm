@@ -140,7 +140,7 @@ export function ShareBar({ pct, color }: { pct: number; color: number | null | u
   return (
     <span className="relative block h-4 overflow-hidden rounded-md bg-muted">
       <span aria-hidden="true" className={cn("block h-4 rounded-md", catBg(color))} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
-      <span className={cn("absolute top-0 text-caption-sm leading-4 font-semibold tabular-nums", inside ? "right-1.5 text-on-category" : "ml-1.5")}
+      <span className={cn("absolute top-0 text-caption-sm leading-4 font-semibold tabular-nums", inside ? "right-0.5 rounded-xs bg-card px-1 text-foreground" : "ml-1.5")}
         style={inside ? undefined : { left: `${Math.max(0, pct)}%` }}>
         {pct} %<span className="sr-only"> del total</span>
       </span>
