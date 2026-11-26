@@ -47,12 +47,12 @@ export function AttachSheet({ open, onClose, onFiles }: { open: boolean; onClose
         tabIndex={-1} onChange={(e) => take(e.currentTarget)} />
       <Sheet title="Adjuntar" open={open} onClose={onClose}>
         <button type="button" onClick={() => camera.current?.click()} className={option}>
-          <Icon name="photo_camera" className="text-[24px]" />
+          <Icon name="photo_camera" size="md" />
           <span className="flex flex-col"><span className="font-semibold">Tomar una foto</span>
             <span className="text-caption text-muted-foreground">La boleta, el voucher o el recibo</span></span>
         </button>
         <button type="button" onClick={() => picker.current?.click()} className={option}>
-          <Icon name="folder_open" className="text-[24px]" />
+          <Icon name="folder_open" size="md" />
           <span className="flex flex-col"><span className="font-semibold">Elegir un archivo</span>
             <span className="text-caption text-muted-foreground">Foto de hasta 20 MB o PDF de hasta 5 MB</span></span>
         </button>
@@ -73,16 +73,16 @@ export function PendingFiles({ files, onChange }: { files: File[]; onChange: (fi
   return (
     <section aria-label="Adjuntos" className="flex flex-col gap-2 border-b border-border py-2.5">
       {files.map((f, i) => (
-        <div key={`${f.name}-${i}`} className="flex min-h-[52px] items-center gap-3 rounded-[12px] bg-muted py-1 pr-1 pl-1.5">
-          <span className="grid size-10 flex-none place-items-center rounded-[8px] border border-border bg-card text-muted-foreground">
-            <Icon name={f.type === "application/pdf" ? "picture_as_pdf" : "image"} className="text-[22px]" />
+        <div key={`${f.name}-${i}`} className="flex min-h-row-sm items-center gap-3 rounded-lg bg-muted py-1 pr-1 pl-1.5">
+          <span className="grid size-10 flex-none place-items-center rounded-sm border border-border bg-card text-muted-foreground">
+            <Icon name={f.type === "application/pdf" ? "picture_as_pdf" : "image"} size="md" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate font-semibold">{f.name}</span>
             <span className="flex items-center gap-1.5 text-caption text-muted-foreground tabular-nums"><Pill>{f.type === "application/pdf" ? "PDF" : "Foto"}</Pill>{fileSize(f.size)}</span>
           </span>
           <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => onChange(files.filter((_, j) => j !== i))}
-            className="grid size-10 place-items-center rounded-full"><Icon name="close" className="text-[20px]" /></button>
+            className="grid size-10 place-items-center rounded-full"><Icon name="close" /></button>
         </div>
       ))}
       {problem && <ErrorAlert>{problem}</ErrorAlert>}
@@ -121,21 +121,21 @@ export function MoveAttachments({ moveId, caption }: { moveId: number; caption?:
       </div>
       <div className="-mx-6 mt-3 flex gap-3 overflow-x-auto px-6 pb-1">
         <button type="button" aria-haspopup="dialog" onClick={() => setOpen(true)} disabled={upload.isPending}
-          className="flex h-[148px] w-28 flex-none flex-col items-center justify-center gap-1.5 rounded-[12px] border-[1.5px] border-dashed border-input-line text-[13px] font-semibold disabled:opacity-60">
-          <Icon name={upload.isPending ? "progress_activity" : "add_a_photo"} className={`text-[26px] ${upload.isPending ? "animate-spin" : ""}`} />
+          className="flex h-37 w-28 flex-none flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-input-line text-caption font-semibold disabled:opacity-60">
+          <Icon name={upload.isPending ? "progress_activity" : "add_a_photo"} size="md" className={upload.isPending ? "animate-spin" : ""} />
           {upload.isPending ? "Subiendo…" : "Adjuntar"}
         </button>
         {list.map((a, i) => (
           <button key={a.id} type="button" aria-label={`Ver ${a.name}`} onClick={() => setViewing(i)}
             className="flex w-28 flex-none flex-col gap-1.5 text-left">
-            <span className="relative h-[148px] w-28 overflow-hidden rounded-[12px] border border-border">
+            <span className="relative h-37 w-28 overflow-hidden rounded-lg border border-border">
               <Thumb a={a} className="size-full" />
-              <span className="absolute bottom-1.5 left-1.5 rounded-md bg-[#171717]/80 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+              <span className="absolute bottom-1.5 left-1.5 rounded-md bg-panel/80 px-1.5 py-0.5 text-caption-sm font-semibold text-panel-foreground">
                 {kindOf(a) === "PDF" ? "PDF" : "FOTO"}
               </span>
             </span>
-            <span className="truncate text-[13px] leading-[18px] font-semibold">{a.name}</span>
-            <span className="-mt-1.5 text-[12px] leading-4 text-muted-foreground">{shortDate(a.create_date.slice(0, 10))}</span>
+            <span className="truncate text-caption font-semibold">{a.name}</span>
+            <span className="-mt-1.5 text-caption-sm text-muted-foreground">{shortDate(a.create_date.slice(0, 10))}</span>
           </button>
         ))}
       </div>

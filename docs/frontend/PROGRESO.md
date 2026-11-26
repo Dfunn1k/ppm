@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 4, migración por lotes (lote 14 terminado; esperando el visto bueno de Dany).
+- **Fase actual:** 4, migración por lotes (lote 15 terminado; esperando el visto bueno de Dany).
 - **Rama:** `frontend/fase-4-lote-6`
 - **Último commit:** ver `git log -1 frontend/fase-4-lote-6`
 
@@ -97,18 +97,22 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Lote 13: Importar extracto (los 3 pasos) y el detalle de un extracto importado. PR #145, aprobado por Dany (26-nov).
   - 29 valores escritos a mano → 0; lo que se toca < 44 px: 4 → 0 (la pastilla de cada columna del archivo); axe sin violaciones; foco sin tapar.
   - «El saldo cuadra» usa income-soft en vez de un color-mix; Deshacer la importación usa el botón de la app (secundario y de borrar). Los íconos recuperan el tamaño que pedían (el de subir archivo, 32 px), que antes no se aplicaba.
-- [x] Lote 14: lo que quedaba de cuentas y tarjetas (Nueva cuenta, el formulario de banco y efectivo, Guardo de otros, Editar banco, Nueva tarjeta, Cuotas de antes y Conciliar). PR #146.
+- [x] Lote 14: lo que quedaba de cuentas y tarjetas (Nueva cuenta, el formulario de banco y efectivo, Guardo de otros, Editar banco, Nueva tarjeta, Cuotas de antes y Conciliar). PR #146, aprobado por Dany (26-nov).
   - 49 valores escritos a mano → 0; lo que se toca < 44 px: 4 a 14 por pantalla → 0; axe sin violaciones; foco sin tapar.
   - El campo de monto que comparten los formularios (AmountField: cuenta nueva, Guardo, Nueva tarjeta, De antes de PPM, saldo inicial) pasa de 34 a 40 px (amount-hero, el token más cercano). El nombre de una cuenta o tarjeta nueva pasa de 30 a 28 px (title-1). La diferencia de la cuota en Conciliar se calcula con money.ts. Utilidad nueva `grid-cols-currency-table`.
   - Conciliar no sale en las capturas (necesita un estado de cuenta importado) ni lo abre ninguna prueba e2e: revisarlo a mano en la Fase 5.
+- [x] Lote 15: adjuntos (el visor de fotos y PDF y la lista de adjuntos del movimiento). PR #147.
+  - 113 valores escritos a mano → 0, entre ellos 28 colores hex y 11 colores de Tailwind fuera del tema; lo que se toca < 44 px: 0; axe sin violaciones.
+  - Dany eligió (26-nov) que el visor use la paleta siempre oscura del panel (`panel-*`), con `panel-border` (#707070, 3:1) y `panel-danger` (#ff7b6e) nuevos. El fondo pasa de #0a0a0a a #171717. Utilidad nueva `aspect-a4`.
+  - El visor no sale en las capturas: se fotografió con una prueba temporal (celular), antes y después.
 - [ ] Por clasificar en escritorio: boceto con 2 o 3 opciones en el lienzo «Pantallas de PPM», Dany elige, PR propio
-- [ ] Después: adjuntos (lote 15); las piezas compartidas (lote 16: riel, barra, hojas, calendario, categorías, etiquetas y las demás)
+- [ ] Después: las piezas compartidas (lote 16: riel, barra, hojas, calendario, categorías, etiquetas y las demás)
 
 ### Fase 5 (pendiente)
 
 ## Siguiente paso
 
-Dany revisa el lote 14 (PR #146) y da su visto bueno. Con su OK: lote 15, adjuntos (el visor de fotos y PDF y la lista de adjuntos), en la rama `frontend/fase-4-lote-15`.
+Dany revisa el lote 15 (PR #147) y da su visto bueno. Con su OK: lote 16, las piezas compartidas (riel, barra de abajo, hojas, calendario, categorías, etiquetas y las demás), en la rama `frontend/fase-4-lote-16`.
 
 ## Decisiones de Dany
 

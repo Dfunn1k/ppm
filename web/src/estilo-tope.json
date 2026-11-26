@@ -5,18 +5,6 @@
  "components/AppNav.tsx": {
   "arbitrario": 8
  },
- "components/AttachmentViewer.tsx": {
-  "arbitrario": 55,
-  "hex": 27,
-  "colorTailwind": 10,
-  "capa": 1,
-  "aMano": 1
- },
- "components/Attachments.tsx": {
-  "arbitrario": 17,
-  "hex": 1,
-  "colorTailwind": 1
- },
  "components/CancelPlanSheet.tsx": {
   "arbitrario": 1
  },
