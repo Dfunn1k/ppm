@@ -29,11 +29,6 @@
  "components/DateSheet.tsx": {
   "arbitrario": 10
  },
- "components/DebtCard.tsx": {
-  "arbitrario": 15,
-  "rgb": 1,
-  "aMano": 1
- },
  "components/Deferral.tsx": {
   "arbitrario": 5
  },
@@ -195,16 +190,6 @@
  },
  "pages/movimientos/Movimientos.tsx": {
   "enLinea": 1
- },
- "pages/personas/Persona.tsx": {
-  "arbitrario": 21,
-  "aMano": 3
- },
- "pages/personas/Personas.tsx": {
-  "arbitrario": 11
- },
- "pages/personas/YaDebia.tsx": {
-  "arbitrario": 1
  },
  "pages/presupuesto/Borrar.tsx": {
   "arbitrario": 3,
