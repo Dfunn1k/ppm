@@ -158,7 +158,7 @@ export function PorClasificar() {
         </div>
         {/* scroll-pb: que el botón fijo de abajo no tape lo que tiene el foco */}
         <div className="min-w-0 flex-1 overflow-y-auto scroll-pb-32">
-          <div className="mx-auto flex max-w-180 flex-col px-10 pt-8 pb-10">
+          <div className="mx-auto flex w-full max-w-180 flex-col px-10 pt-8 pb-10">
             {forms.length === 0 ? (
               items.length > 0 && (
                 <p className="mt-16 text-center text-muted-foreground">Marca en la lista los que van al mismo lugar.</p>

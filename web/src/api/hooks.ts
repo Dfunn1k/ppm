@@ -1709,8 +1709,9 @@ type ScopeIn = components["schemas"]["ScopeIn"];
  *  vuelve a pedir los sobres, sin repetir la lista de qué invalida a qué. */
 const BUDGET = ["home", "budget"] as const;
 
-export function useBudget(month?: string) {
+export function useBudget(month?: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: [...BUDGET, "month", month ?? "hoy"],
     queryFn: async () => {
       const { data, error, response } = await api.GET("/budget", { params: { query: month ? { month } : {} } });

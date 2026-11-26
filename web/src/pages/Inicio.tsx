@@ -34,11 +34,14 @@ export function Inicio() {
   const [params, setParams] = useSearchParams();
   const month = params.get("mes") ?? todayISO().slice(0, 7);
   const home = useHome(month);
+  // Pendientes y el presupuesto se esperan junto con el resto: si llegan después, empujan lo de abajo
+  const pending = usePending();
+  const budget = useBudget(month, !!me?.home_budget);
   const update = useUpdateMe();
   const [picking, setPicking] = useState(false);
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
-  if (!me?.currency || home.isPending) return <HomeSkeleton />;
+  if (!me?.currency || home.isPending || pending.isPending || (me.home_budget && budget.isPending)) return <HomeSkeleton />;
   if (home.isError) return <main className="mx-auto max-w-md px-6 pt-8 md:max-w-160"><ErrorAlert>{home.error.message}</ErrorAlert></main>;
   const h = home.data;
   const lang = me.lang ?? "es-PE";

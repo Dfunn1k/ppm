@@ -586,6 +586,11 @@
   -webkit-font-smoothing: antialiased;
   font-variation-settings: "FILL" 0, "wght" 400, "opsz" 20;
 }
+/* Mientras llega la fuente, el ícono es su nombre escrito («account_balance_wallet»): con su cuadrado
+   reservado no empuja lo de al lado (Lighthouse, CLS). En la capa base, para que w-9 y compañía le ganen. */
+@layer base {
+  .icon { display: inline-block; width: 1em; flex-shrink: 0; overflow: hidden; }
+}
 .icon-fill {
   font-variation-settings: "FILL" 1, "wght" 400, "opsz" 24;
 }
