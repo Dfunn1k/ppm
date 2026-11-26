@@ -4,12 +4,12 @@ import { useState } from "react";
 import { type BudgetScope, useBudget, useBudgetScopes, useSetScope } from "@/api/hooks";
 import { Sheet, SheetSelect } from "@/components/Sheet";
 import { ListSkeleton } from "@/components/Skeleton";
+import { Button } from "@/components/Button";
 import { BackLink } from "@/components/PageHeader";
 import { SectionHeading } from "@/components/SectionHeading";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert } from "@/components/ui";
 import { longDate, shortDate, todayISO } from "@/lib/dates";
 
-import { PILL_PRIMARY } from "./common";
 
 /** El interruptor, igual que en Más › Inicio. */
 export function Switch({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
@@ -86,10 +86,7 @@ function ScopeForm({ scope: s, onDone }: { scope: BudgetScope; onDone: () => voi
         </div>
       )}
       {set.isError && <div className="mt-3"><ErrorAlert>{set.error.message}</ErrorAlert></div>}
-      <button type="button" onClick={save} disabled={set.isPending}
-        className={`mt-5 ${PILL_PRIMARY}`}>
-        {set.isPending && <Icon name="progress_activity" className="animate-spin" />}{leaving ? "Sacar del presupuesto" : "Meter al presupuesto"}
-      </button>
+      <Button onClick={save} pending={set.isPending} className="mt-5">{leaving ? "Sacar del presupuesto" : "Meter al presupuesto"}</Button>
     </div>
   );
 }

@@ -7,10 +7,12 @@ import { useNavigate } from "react-router";
 import { useAssign, useBudget } from "@/api/hooks";
 import { ListSkeleton } from "@/components/Skeleton";
 import { ErrorAlert, Icon } from "@/components/ui";
+import { Button, buttonVariants } from "@/components/Button";
+import { cn } from "@/lib/utils";
 import { add, formatNumber, isNegative, parseAmount, subtract } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
 
-import { addMonth, Heading, PILL_PRIMARY, PILL_SECONDARY, PostChip, useBudgetMonth, useMoney, withMonth } from "./common";
+import { addMonth, Heading, PostChip, useBudgetMonth, useMoney, withMonth } from "./common";
 
 export function Repartir() {
   const [month] = useBudgetMonth();
@@ -67,8 +69,7 @@ export function Repartir() {
           {isNegative(left) ? "Estás repartiendo más de lo que tienes." : `De ${money(b.to_assign)}. Baja mientras llenas los sobres.`}
         </span>
       </div>
-      <button type="button" onClick={averages}
-        className={`mt-4 ${PILL_SECONDARY}`}>
+      <button type="button" onClick={averages} className={cn(buttonVariants({ variant: "secondary" }), "mt-4 gap-1.5 text-body")}>
         <Icon name="auto_fix_high" />Llenar con mis promedios
       </button>
       <span className="mt-1.5 text-center text-caption text-muted-foreground">
@@ -79,10 +80,7 @@ export function Repartir() {
       <Heading label="Ahorro" />
       {posts.filter((p) => p.kind === "saving").map(row)}
       {assign.isError && <div className="mt-4"><ErrorAlert>{assign.error.message}</ErrorAlert></div>}
-      <button type="button" onClick={save} disabled={assign.isPending || bad}
-        className={`mt-8 ${PILL_PRIMARY}`}>
-        {assign.isPending && <Icon name="progress_activity" className="animate-spin" />}Empezar
-      </button>
+      <Button onClick={save} pending={assign.isPending} disabled={bad} className="mt-8">Empezar</Button>
       <span className="mt-2 text-center text-caption text-muted-foreground">Lo que no repartas queda en Por asignar; lo cambias cuando quieras.</span>
     </main>
   );

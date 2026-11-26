@@ -7,7 +7,7 @@ import { Link, useParams } from "react-router";
 import { type BudgetMove, useBudget, useBudgetLines, useBudgetMoves, useBudgetScopes, useUndoAssign } from "@/api/hooks";
 import { CategoryChip } from "@/components/CategorySheet";
 import { DetailSkeleton } from "@/components/Skeleton";
-import { IconButton } from "@/components/Button";
+import { Button, IconButton } from "@/components/Button";
 import { BackLink } from "@/components/PageHeader";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -17,7 +17,7 @@ import { useDesktop } from "@/lib/desktop";
 import { isNegative, isZero } from "@/lib/money";
 import { monthOnly } from "@/lib/months";
 
-import { abs, PILL_PRIMARY, PILL_SECONDARY, PostChip, postFigures, previousMonthName, useBudgetMonth, useMoney, withMonth } from "./common";
+import { abs, PostChip, postFigures, previousMonthName, useBudgetMonth, useMoney, withMonth } from "./common";
 import { SavingMenu } from "./Borrar";
 import { type AssignTarget, AssignSheet, CoverSheet } from "./Sheets";
 
@@ -96,14 +96,14 @@ export function Sobre() {
           {open && (
             <div className="mt-4 flex gap-2">
               {red ? (
-                <button type="button" onClick={() => setCovering(true)} className={`flex-1 ${PILL_PRIMARY}`}>Cubrir</button>
+                <Button size="sm" onClick={() => setCovering(true)} className="flex-1">Cubrir</Button>
               ) : (
-                <button type="button" onClick={() => setAssigning({ from: null, to: p.id, fixed: "to" })} className={`flex-1 ${PILL_PRIMARY}`}>Asignar</button>
+                <Button size="sm" onClick={() => setAssigning({ from: null, to: p.id, fixed: "to" })} className="flex-1">Asignar</Button>
               )}
-              <button type="button" disabled={Number(p.available) <= 0} onClick={() => setAssigning({ from: p.id, to: null, fixed: "from" })}
-                className={`flex-1 ${PILL_SECONDARY}`}>
+              <Button variant="secondary" size="sm" disabled={Number(p.available) <= 0} onClick={() => setAssigning({ from: p.id, to: null, fixed: "from" })}
+                className="flex-1 text-body">
                 {saving ? "Usar" : "Mover a otro"}
-              </button>
+              </Button>
             </div>
           )}
         </div>

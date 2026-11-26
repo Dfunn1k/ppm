@@ -7,7 +7,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { type BudgetMonth, useBudget, useStartBudget } from "@/api/hooks";
 import { OptionList, Segmented, Sheet } from "@/components/Sheet";
 import { ListSkeleton } from "@/components/Skeleton";
-import { IconButton } from "@/components/Button";
+import { Button, IconButton } from "@/components/Button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { ErrorAlert, Icon, LineField } from "@/components/ui";
 import { todayISO } from "@/lib/dates";
@@ -15,7 +15,7 @@ import { useDesktop } from "@/lib/desktop";
 import { isNegative, isZero } from "@/lib/money";
 import { monthName, monthOnly, monthOptions } from "@/lib/months";
 
-import { AgeOfMoney, abs, addMonth, Heading, PILL_PRIMARY, PostRow, useBudgetMonth, useMoney, withMonth } from "./common";
+import { AgeOfMoney, abs, addMonth, Heading, PostRow, useBudgetMonth, useMoney, withMonth } from "./common";
 import { ResetSheet, UndoMonthSheet } from "./Borrar";
 import { type AssignTarget, AssignSheet } from "./Sheets";
 
@@ -71,10 +71,9 @@ export function Presupuesto() {
                 {!isZero(b.future) && ` Ya asignaste ${money(b.future)} a los meses que vienen.`}
               </span>
             </Link>
-            <button type="button" onClick={() => setAssigning({ from: null, to: null, fixed: "from" })}
-              className={`mt-2 ${PILL_PRIMARY}`}>
-              <Icon name="call_split" />Asignar
-            </button>
+            <Button size="sm" icon="call_split" onClick={() => setAssigning({ from: null, to: null, fixed: "from" })} className="mt-2">
+              Asignar
+            </Button>
           </section>
 
           {(!isZero(b.unclassified.available) || !isZero(b.unclassified.activity)) && (
@@ -185,10 +184,7 @@ function Empezar({ budget: b }: { budget: BudgetMonth }) {
         <Icon name="add" />Otro sobre de ahorro
       </button>
       {start.isError && <div className="mt-4"><ErrorAlert>{start.error.message}</ErrorAlert></div>}
-      <button type="button" onClick={go} disabled={start.isPending}
-        className={`mt-8 ${PILL_PRIMARY}`}>
-        {start.isPending && <Icon name="progress_activity" className="animate-spin" />}Siguiente
-      </button>
+      <Button onClick={go} pending={start.isPending} className="mt-8">Siguiente</Button>
 
       <Sheet title="Otro sobre de ahorro" open={adding} onClose={() => setAdding(false)}>
         <form className="mt-3 flex flex-col gap-4" onSubmit={(e) => {
@@ -199,7 +195,7 @@ function Empezar({ budget: b }: { budget: BudgetMonth }) {
           setAdding(false);
         }}>
           <LineField label="¿Para qué ahorras?" placeholder="Casa, viaje, estudios" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
-          <button type="submit" className={PILL_PRIMARY}>Agregar</button>
+          <Button type="submit">Agregar</Button>
         </form>
       </Sheet>
     </main>

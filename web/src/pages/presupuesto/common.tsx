@@ -38,11 +38,6 @@ export function useMoney() {
   };
 }
 
-/** Los botones del presupuesto: redondos y centrados, como en el boceto de la sección. */
-export const PILL = "flex min-h-12 items-center justify-center gap-1.5 rounded-full font-semibold disabled:opacity-50";
-export const PILL_PRIMARY = cn(PILL, "bg-primary text-primary-foreground hover:bg-primary/90");
-export const PILL_SECONDARY = cn(PILL, "bg-secondary text-secondary-foreground hover:bg-secondary/80");
-
 export function abs(v: string) {
   return v.replace(/^-/, "");
 }
