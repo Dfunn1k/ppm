@@ -495,6 +495,11 @@
   }
 }
 
+/* La hoja: en el celular sube hasta el 85 % del alto; desde 768 px es una ventana al centro */
+@utility max-h-sheet { max-height: 85dvh; }
+@utility max-h-sheet-dialog { max-height: 76dvh; }
+@utility top-sheet { top: 12dvh; }
+
 /* Una página de PDF mientras carga: ocupa el lugar de una hoja A4 */
 @utility aspect-a4 { aspect-ratio: 1 / 1.414; }
 

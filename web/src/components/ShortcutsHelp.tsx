@@ -8,8 +8,8 @@ import { Sheet } from "./Sheet";
 
 export function Kbd({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
   return (
-    <kbd className={`inline-grid min-w-6 place-items-center rounded-md border px-1.5 font-mono text-[12px] leading-[18px] font-medium ${
-      dark ? "border-transparent bg-white/20 text-current" : "border-border border-b-2 bg-card text-foreground"}`}>
+    <kbd className={`inline-grid min-w-6 place-items-center rounded-md border px-1.5 font-mono text-caption-sm leading-5 font-medium ${
+      dark ? "border-transparent bg-panel-foreground/20 text-current" : "border-border border-b-2 bg-card text-foreground"}`}>
       {children}
     </kbd>
   );
@@ -25,7 +25,7 @@ export function ShortcutTable() {
           <span className="mt-4 text-label text-muted-foreground uppercase">{g.title}</span>
           {g.rows.map((r) => (
             <div key={r.label} className="flex min-h-11 items-center gap-4 border-b border-border">
-              <span className="flex-1 text-[14px] leading-5">{r.label}</span>
+              <span className="flex-1 text-body-sm">{r.label}</span>
               <span className="flex items-center gap-1">
                 {"action" in r ? <Kbd>{keyLabel(keys[r.action])}</Kbd>
                   : r.fixed.map((k, i) => <span key={k} className="flex items-center gap-1">{i > 0 && r.fixed[0] === "Ctrl" && <span className="text-caption text-muted-foreground">+</span>}<Kbd>{k}</Kbd></span>)}
@@ -52,7 +52,7 @@ export function ShortcutsHelp() {
         <p className="mt-3 text-caption text-muted-foreground">
           Solo en la computadora. Mientras escribes en un campo no hacen nada, salvo Ctrl + Enter.
         </p>
-        <Link to="/mas/atajos" onClick={() => setOpen(false)} className="mt-2 flex min-h-11 items-center text-[14px] font-semibold underline">
+        <Link to="/mas/atajos" onClick={() => setOpen(false)} className="mt-2 flex min-h-11 items-center text-body-sm font-semibold underline">
           Cambiar teclas o apagar las pistas
         </Link>
       </div>
