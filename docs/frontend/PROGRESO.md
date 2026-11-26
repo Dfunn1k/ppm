@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 2, sistema (aprobado por Dany el 25-nov; PR #131 esperando su merge).
-- **Rama:** `frontend/fase-2`
-- **Último commit:** ver `git log -1 frontend/fase-2`
+- **Fase actual:** 3, cimientos (en curso).
+- **Rama:** `frontend/fase-3`
+- **Último commit:** ver `git log -1 frontend/fase-3`
 
 ## Checklist
 
@@ -37,13 +37,21 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] 4. Reglas de código
 - [x] ⏸ Punto de control 2: Dany aprueba el documento y S1 a S8 como se recomendaron (25-nov)
 - [x] Registrado en `design-system/` (README y los README de Button, Amount, Row, SectionHeading, PageHeader, Avatar, Chip y CategoryChip), en `docs/modelo-contable.md` (8 decisiones y la bitácora), en `CLAUDE.md` (S8) y en la skill `ppm-interfaz`
-- [ ] Merge del PR #131 (Dany)
+- [x] Merge del PR #131 (Dany, 25-nov)
 
-### Fases 3 a 5 (pendientes)
+### Fase 3 — Cimientos (en curso, un PR)
+- [x] Fotos base de toda la matriz, antes de tocar nada (`web/capturas-base/`, no se suben)
+- [ ] Tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas, colores nuevos, categorías en oscuro)
+- [ ] El inspector (`web/src/estilo.test.ts`, `estilo-tope.json`, `estilo-excepciones.ts`)
+- [ ] Moldes con `cva`: Button, IconButton, SectionHeading, PageHeader, Avatar, Row, Amount, Chip, ProgressBar, SearchField; ajustar PrimaryButton, Pill, Segmented, Icon
+- [ ] Cortes de pantalla: el riel desde 768 px, la lista de 320/400/440 px, safe-area y el foco tapado por la barra
+- [ ] Fotos después, comparadas con las base; typecheck, Vitest, Playwright y build
+
+### Fases 4 y 5 (pendientes)
 
 ## Siguiente paso
 
-Dany hace el merge del #131. Con su OK, Fase 3 (cimientos) en la rama `frontend/fase-3`: tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas de 1.2 a 1.10, arreglo de las categorías en oscuro), moldes de `SISTEMA.md` 3 con `cva`, el inspector `web/src/estilo.test.ts` con el tope por archivo y las capturas base. Un commit por pieza.
+Seguir la lista de la Fase 3 en orden, con un commit por casilla. Los moldes se escriben primero en el scratchpad y se copian a `web/src/components/` cuando terminan las fotos base (la app se sirve desde `web/` y una foto tomada a mitad de un cambio no sirve de base).
 
 ## Decisiones de Dany
 
