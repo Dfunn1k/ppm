@@ -26,9 +26,6 @@
  "components/CategorySheet.tsx": {
   "arbitrario": 9
  },
- "components/ClassifySheet.tsx": {
-  "arbitrario": 6
- },
  "components/DateSheet.tsx": {
   "arbitrario": 10
  },
@@ -196,15 +193,8 @@
  "pages/mas/TipoCambio.tsx": {
   "arbitrario": 12
  },
- "pages/movimientos/Detalle.tsx": {
-  "arbitrario": 32,
-  "aMano": 2
- },
  "pages/movimientos/Movimientos.tsx": {
   "enLinea": 1
- },
- "pages/movimientos/PorClasificar.tsx": {
-  "arbitrario": 8
  },
  "pages/personas/Persona.tsx": {
   "arbitrario": 21,

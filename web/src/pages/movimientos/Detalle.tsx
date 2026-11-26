@@ -3,6 +3,7 @@
 // pasar a por confirmar, y borrar. Una compra en cuotas muestra su calendario y no se edita; si es
 // tuya, se pueden cancelar las cuotas que faltan (y borrar esa cancelación la deshace). Lo repartido
 // en el tiempo muestra sus partes y «Cancelar lo que falta»; sus partes se arman solas.
+import { IconButton } from "@/components/Button";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -24,7 +25,7 @@ import { Pill } from "@/components/Pill";
 import { ErrorAlert, Facts, Icon } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { KIND_NAME, flow, isPersonKind, tone as toneOf } from "@/lib/kinds";
-import { add, divide, formatAmount, isNegative, subtract, symbolOf } from "@/lib/money";
+import { add, divide, formatAmount, isNegative, rateText, subtract, symbolOf } from "@/lib/money";
 import { useBack } from "@/lib/transitions";
 import { listText } from "@/lib/utils";
 import { DetailSkeleton } from "@/components/Skeleton";
@@ -113,9 +114,7 @@ export function DetalleMovimiento() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-28">
       <div className="-mx-2.5 flex items-center justify-between">
-        <button type="button" aria-label="Volver" onClick={back} className="grid size-11 place-items-center rounded-full">
-          <Icon name="arrow_back" className="text-[24px]" />
-        </button>
+        <IconButton icon="arrow_back" label="Volver" onClick={back} />
         <span className="pr-2.5 text-label text-muted-foreground">
           {deferral ? (deferral.kind === "expense" ? "Gasto repartido" : "Ingreso repartido") : exchange ? "Cambio de moneda" : plan && transfer ? "Gasto en cuotas" : plan && s.kind === "lend" ? "Préstamo en cuotas" : plan ? "Cuotas de antes de PPM" : KIND_NAME[s.kind]}
         </span>
@@ -135,8 +134,8 @@ export function DetalleMovimiento() {
           <Icon name="schedule" /><span className="flex-1"><b>Por confirmar.</b> No cuenta en tus saldos todavía.</span>
           {!locked && (
             <button type="button" disabled={state.isPending} onClick={() => state.mutate(false)}
-              className="flex h-10 flex-none items-center gap-1 rounded-full bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground">
-              <Icon name="check" className="text-[18px]" />Confirmar
+              className="flex min-h-control flex-none items-center gap-1 rounded-full bg-primary px-3.5 text-body-sm font-semibold text-primary-foreground">
+              <Icon name="check" />Confirmar
             </button>
           )}
         </div>
@@ -144,34 +143,34 @@ export function DetalleMovimiento() {
       <h1 className="mt-4 text-title-hero">{s.ref}</h1>
       {s.part != null && s.parts != null && <span className="mt-2 flex"><Pill>{s.part} de {s.parts}</Pill></span>}
       {cancels && (
-        <Link to={`/movimientos/${cancels.move_id}`} className="mt-3 flex items-center gap-2.5 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
+        <Link to={`/movimientos/${cancels.move_id}`} className="mt-3 flex items-center gap-3 rounded-lg bg-muted py-2 pr-2 pl-4 hover:bg-accent">
           <Icon name="event_busy" />
-          <span className="flex-1 text-[14px]">Cancela las cuotas que faltaban de «{cancels.ref}». Para deshacerla, bórrala.</span>
-          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+          <span className="flex-1 text-body-sm">Cancela las cuotas que faltaban de «{cancels.ref}». Para deshacerla, bórrala.</span>
+          <Icon name="chevron_right" size="md" className="text-muted-foreground" />
         </Link>
       )}
       {of && (
-        <Link to={`/movimientos/${of.move_id}`} className="mt-3 flex items-center gap-2.5 rounded-[12px] bg-muted py-2.5 pr-2.5 pl-3.5">
+        <Link to={`/movimientos/${of.move_id}`} className="mt-3 flex items-center gap-3 rounded-lg bg-muted py-2 pr-2 pl-4 hover:bg-accent">
           <Icon name={part ? "date_range" : "event_busy"} />
-          <span className="flex-1 text-[14px]">
+          <span className="flex-1 text-body-sm">
             {part ? `Parte ${of.sequence} de ${of.parts} de «${of.ref}». Se arma sola: para cambiarla, ve al original.`
               : `Cancela lo que faltaba de «${of.ref}». Para deshacerla, bórrala.`}
           </span>
-          <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+          <Icon name="chevron_right" size="md" className="text-muted-foreground" />
         </Link>
       )}
       {unclassified && (
-        <div className="mt-4 flex items-center gap-2.5 rounded-[12px] bg-attention-soft py-2.5 pr-2.5 pl-3.5 text-attention">
+        <div className="mt-4 flex items-center gap-3 rounded-lg bg-attention-soft py-2 pr-2 pl-4 text-attention">
           <Icon name="inbox" />
-          <span className="flex-1 text-[14px]">Falta decir en qué fue. Hasta entonces no cuenta como {f === "in" ? "ingreso" : "gasto"}.</span>
+          <span className="flex-1 text-body-sm">Falta decir en qué fue. Hasta entonces no cuenta como {f === "in" ? "ingreso" : "gasto"}.</span>
           <button type="button" onClick={() => setClassifying(true)}
-            className="h-10 flex-none rounded-full bg-primary px-3.5 text-[14px] font-semibold text-primary-foreground">Clasificar</button>
+            className="min-h-control flex-none rounded-full bg-primary px-3.5 text-body-sm font-semibold text-primary-foreground">Clasificar</button>
         </div>
       )}
       {opening && <p className="mt-2 text-caption text-muted-foreground">{opening}</p>}
-      <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-[32px] leading-10 font-semibold tracking-[-0.02em] tabular-nums whitespace-nowrap" : "text-amount-hero"} ${tone}`}>
+      <span className={`mt-3 flex flex-wrap items-center gap-x-1 ${exchange ? "text-amount-display-2 whitespace-nowrap" : "text-amount-display"} ${tone}`}>
         {sign}{formatAmount(s.amount, symbolOf(s.currency), lang)}
-        {exchange && <><Icon name="arrow_forward" aria-label="a" className="text-[26px] text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}
+        {exchange && <><Icon name="arrow_forward" size="md" className="text-muted-foreground" />{formatAmount(s.to_amount!, symbolOf(s.to_currency), lang)}</>}
       </span>
       {plan?.price && plan.installment_amount && (
         <Facts items={[["Cuotas", `${plan.n_installments} de ${formatAmount(plan.installment_amount, symbolOf(plan.currency), lang)}`], ["Precio", formatAmount(plan.price, symbolOf(plan.currency), lang)]]} />
@@ -183,7 +182,7 @@ export function DetalleMovimiento() {
       )}
       {s.currency !== me.currency && !transfer && (
         <span className="text-caption text-muted-foreground tabular-nums">
-          Son {formatAmount(s.base, symbolOf(me.currency), lang)}{d.rate ? ` al ${Number(d.rate).toFixed(3)}` : ""}
+          Son {formatAmount(s.base, symbolOf(me.currency), lang)}{d.rate ? ` al ${rateText(d.rate)}` : ""}
         </span>
       )}
 
@@ -195,7 +194,7 @@ export function DetalleMovimiento() {
               <span className="text-caption text-muted-foreground">{d.paid_by_partner_id ? "Pagó" : "Con"}</span>
               <span className="font-semibold">{s.partner}</span>
             </span>
-            <Icon name="chevron_right" className="text-[22px] text-muted-foreground" />
+            <Icon name="chevron_right" size="md" className="text-muted-foreground" />
           </Link>
         )}
         {deferral ? (
@@ -214,7 +213,7 @@ export function DetalleMovimiento() {
           <Field icon="handshake" label="Canceló de la deuda" value={formatAmount(debtCross, symbolOf(s.to_currency), lang)} />
         )}
         {(exchangeRate ?? debtRate) && (
-          <div className="flex min-h-[52px] items-center gap-3 border-b border-border">
+          <div className="flex min-h-row-sm items-center gap-3 border-b border-border">
             <Icon name="currency_exchange" className="w-9 text-center text-muted-foreground" />
             <span className="flex-1">Tipo de cambio</span>
             <span className="font-semibold tabular-nums">{exchangeRate ?? debtRate}</span>
@@ -237,15 +236,15 @@ export function DetalleMovimiento() {
         )}
         {s.kind === "other" && d.lines.length > 0 && (
           <div className="flex flex-col border-b border-border py-2">
-            <div className="grid grid-cols-[minmax(0,1fr)_84px_84px] gap-2 text-label text-muted-foreground">
+            <div className="grid grid-cols-entry gap-2 text-label text-muted-foreground">
               <span>Cuenta</span><span className="text-right">Entra a</span><span className="text-right">Sale de</span>
             </div>
             {d.lines.map((l, i) => (
-              <div key={i} className="grid min-h-11 grid-cols-[minmax(0,1fr)_84px_84px] items-center gap-2 tabular-nums">
+              <div key={i} className="grid min-h-11 grid-cols-entry items-center gap-2 tabular-nums">
                 {/* La persona en pastilla al lado de la cuenta (caso 9, opción C) */}
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="truncate font-semibold">{l.account}</span>
-                  {l.partner && <Pill><Icon name="person" className="mr-0.5 text-[14px]" />{l.partner}</Pill>}
+                  {l.partner && <Pill><Icon name="person" size="sm" className="mr-0.5" />{l.partner}</Pill>}
                 </span>
                 <span className="text-right">{Number(l.debit) ? l.debit : ""}</span>
                 <span className="text-right">{Number(l.credit) ? l.credit : ""}</span>
@@ -265,7 +264,7 @@ export function DetalleMovimiento() {
             ))}
           </div>
         )}
-        <div className="flex min-h-[52px] items-center gap-3 border-b border-border">
+        <div className="flex min-h-row-sm items-center gap-3 border-b border-border">
           <Icon name="event" className="w-9 text-center text-muted-foreground" />
           <span>{fullDate(s.date)}</span>
         </div>
@@ -280,7 +279,7 @@ export function DetalleMovimiento() {
             return (
               <button key={l.line_id} type="button"
                 onClick={() => setDating({ line_id: l.line_id!, date_maturity: l.date_maturity, maturity_manual: l.maturity_manual, maturity_closing: l.maturity_closing, owesMe })}
-                className="flex min-h-[52px] items-center gap-3 border-b border-border text-left">
+                className="flex min-h-row-sm items-center gap-3 border-b border-border text-left">
                 <Icon name={m?.late ? "schedule" : "event_available"} className={`w-9 text-center ${m?.late ? "text-attention" : "text-muted-foreground"}`} />
                 <span className="flex flex-1 flex-col">
                   <span className="text-caption text-muted-foreground">{debts.length > 1 ? `Parte ${k + 1} de ${debts.length}` : "Vence"}</span>
@@ -297,15 +296,15 @@ export function DetalleMovimiento() {
 
       {bank.length > 0 && (
         <>
-          <section aria-label="Lo que dice el banco" className="mt-4 flex flex-col gap-2 rounded-[12px] bg-muted px-3.5 py-3">
+          <section aria-label="Lo que dice el banco" className="mt-4 flex flex-col gap-2 rounded-lg bg-muted px-4 py-3">
             <span className="text-label text-muted-foreground">Lo que dice el banco</span>
             {bank.map((b) => (
               <div key={b.statement_id} className="flex flex-col gap-1">
-                <span className="font-mono text-[14px] leading-5">{b.payment_ref}</span>
+                <span className="text-code">{b.payment_ref}</span>
                 <span className="flex items-center justify-between gap-2 text-caption text-muted-foreground">
                   <span>{b.operation_number ? <>Operación <span className="font-mono text-foreground">{b.operation_number}</span></> : ""}</span>
                   <Link to={`/extractos/${b.statement_id}`} className="flex items-center gap-0.5 font-semibold text-foreground">
-                    <span className="max-w-[180px] truncate">{b.statement}</span><Icon name="chevron_right" className="text-[18px]" />
+                    <span className="max-w-45 truncate">{b.statement}</span><Icon name="chevron_right" />
                   </Link>
                 </span>
               </div>
@@ -326,7 +325,7 @@ export function DetalleMovimiento() {
           </div>
           {plan.lines.map((x) => (
             <div key={x.sequence} className="flex min-h-11 items-center gap-3 border-b border-border py-1.5">
-              <span className={`grid size-[26px] flex-none place-items-center rounded-full text-[12px] font-semibold ${x.billed ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+              <span className={`grid size-6.5 flex-none place-items-center rounded-full text-caption-sm font-semibold ${x.billed ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                 {x.sequence}
               </span>
               <span className={`flex flex-1 flex-col ${x.canceled ? "text-muted-foreground" : ""}`}>
@@ -366,7 +365,7 @@ export function DetalleMovimiento() {
               )}
               {undoCancel.error && <ErrorAlert>{undoCancel.error.message}</ErrorAlert>}
               <button type="button" disabled={undoCancel.isPending} onClick={() => undoCancel.mutate()}
-                className="mt-1 min-h-11 self-start text-[14px] font-semibold underline">
+                className="mt-1 min-h-control self-start text-body-sm font-semibold underline">
                 Deshacer
               </button>
             </div>
@@ -389,7 +388,7 @@ export function DetalleMovimiento() {
               {gain ? "+ " : "− "}{formatAmount(s.fx.replace("-", ""), symbolOf(me.currency), lang)}
             </span>
           </span>
-          <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-y-0.5 border-t border-border pt-2 text-caption text-muted-foreground tabular-nums">
+          <dl className="grid grid-cols-pairs gap-y-0.5 border-t border-border pt-2 text-caption text-muted-foreground tabular-nums">
             {debtBook != null ? (
               <>
                 <dt>La deuda valía</dt>
@@ -399,7 +398,7 @@ export function DetalleMovimiento() {
               </>
             ) : (
               <>
-                <dt>Te costaron (a {Number(d.cost_rate).toFixed(3)} en promedio)</dt>
+                <dt>Te costaron (a {d.cost_rate ? rateText(d.cost_rate) : ""} en promedio)</dt>
                 <dd>{formatAmount(d.cost!, symbolOf(me.currency), lang)}</dd>
                 <dt>Recibiste</dt>
                 <dd>{formatAmount(s.to_amount ?? "0", symbolOf(s.to_currency), lang)}</dd>
@@ -426,9 +425,9 @@ export function DetalleMovimiento() {
         )}
         {editable && (
           <Link to={`/movimientos/${s.id}/editar`}
-            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground">
+            className="flex min-h-button items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90">
             <span>Editar</span>
-            <span className="flex items-center gap-2">{hints && <Kbd dark>{keyLabel(keys.edit)}</Kbd>}<Icon name="edit" className="text-[22px]" /></span>
+            <span className="flex items-center gap-2">{hints && <Kbd dark>{keyLabel(keys.edit)}</Kbd>}<Icon name="edit" size="md" /></span>
           </Link>
         )}
         {s.posted && !(plan || cancels || deferral || of) && !locked && (
@@ -439,7 +438,7 @@ export function DetalleMovimiento() {
           </button>
         )}
         {!locked && !part && <button type="button" onClick={() => setConfirmDelete(true)}
-          className="flex h-11 items-center justify-center gap-1.5 text-[14px] font-semibold text-destructive">
+          className="flex min-h-control items-center justify-center gap-1.5 rounded-md text-body-sm font-semibold text-destructive hover:bg-destructive-soft">
           <Icon name={cancels || of ? "undo" : "delete"} />
           {plan ? "Borrar la compra y sus cuotas" : cancels || of ? "Deshacer la cancelación" : deferral ? "Borrar el movimiento y su reparto" : "Borrar movimiento"}
         </button>}
