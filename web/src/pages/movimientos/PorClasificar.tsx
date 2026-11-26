@@ -130,7 +130,7 @@ export function PorClasificar() {
       )}
 
       {selecting && (
-        <div className="fixed inset-x-0 bottom-0 z-[45] lg:left-[88px] border-t border-border bg-card">
+        <div className="fixed inset-x-0 bottom-0 z-panel md:left-rail border-t border-border bg-card">
           <div className="mx-auto flex max-w-md items-center gap-3 px-4 pt-3 pb-5">
             <span className="flex flex-1 flex-col">
               <b>{chosen.length === 1 ? "1 elegido" : `${chosen.length} elegidos`}</b>
@@ -141,7 +141,7 @@ export function PorClasificar() {
               </span>
             </span>
             <button type="button" disabled={chosen.length === 0} onClick={() => setSheet(chosen.map(toClassify))}
-              className="flex h-12 items-center gap-1.5 rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50">
+              className="flex h-12 items-center gap-1.5 rounded-lg bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50">
               ¿En qué fueron?<Icon name="arrow_forward" className="text-[20px]" />
             </button>
           </div>

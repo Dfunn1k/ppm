@@ -55,7 +55,7 @@ export function TipoCambio() {
 
       <div className="mt-4 flex flex-col gap-2">
         {currencies.map((c) => (
-          <section key={c.currency} aria-label={NAME[c.currency] ?? c.currency} className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3.5">
+          <section key={c.currency} aria-label={NAME[c.currency] ?? c.currency} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3.5">
             <span className="flex items-center justify-between">
               <span className="flex items-baseline gap-1.5"><span className="font-semibold">{NAME[c.currency] ?? c.currency}</span><span className="text-caption text-muted-foreground">{symbolOf(c.currency)}</span></span>
               <span className={`flex h-6 items-center gap-1 rounded-full px-2 text-[12px] leading-4 font-semibold ${c.stale ? "bg-attention-soft text-attention" : "bg-muted text-income"}`}>
@@ -78,7 +78,7 @@ export function TipoCambio() {
         <section key={code} aria-label={`Últimos días del ${(NAME[code] ?? code).toLowerCase()}`} className="mt-5 flex flex-col">
           <span className="border-b border-border pb-1 text-label text-muted-foreground">Últimos días del {(NAME[code] ?? code).toLowerCase()}</span>
           {history.filter((h) => h.currency === code).map((h) => (
-            <div key={h.date} className="grid min-h-11 grid-cols-[1fr_64px_64px_76px] items-center gap-2 border-b border-border tabular-nums">
+            <div key={h.date} className="grid min-h-11 grid-cols-[minmax(0,1fr)_64px_64px_76px] items-center gap-2 border-b border-border tabular-nums">
               <span>{dayLabel(h.date)}</span>
               <span className="text-right">{rateText(h.buy)}</span>
               <span className="text-right">{rateText(h.sell)}</span>
@@ -107,7 +107,7 @@ export function TipoCambio() {
         )}
         <PrimaryButton type="button" onClick={() => setLoading(true)}>Cargar a mano</PrimaryButton>
         <button type="button" disabled={sunat.isPending} onClick={() => sunat.mutate()}
-          className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+          className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
           <Icon name="sync" className={sunat.isPending ? "animate-spin" : ""} />Traer de SUNAT ahora
         </button>
       </div>

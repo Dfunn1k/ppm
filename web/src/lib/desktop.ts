@@ -1,24 +1,40 @@
-// Escritorio: desde 1024 px de ancho la app cambia la barra de abajo por el riel de la izquierda y
-// abre lo elegido al lado de su lista. En el celular nada cambia.
+// Cortes de pantalla (docs/frontend/SISTEMA.md 2.1): desde 768 px (tablet) la barra de abajo pasa a ser
+// el riel de la izquierda, Registrar se abre como panel y las hojas como ventana; desde 1024 px
+// (escritorio) lo elegido se abre además al lado de su lista. En el celular nada cambia.
 import { useCallback, useRef, useSyncExternalStore } from "react";
 
+export const RAIL = "(min-width: 768px)";
 export const DESKTOP = "(min-width: 1024px)";
 
-function query() {
-  return typeof window !== "undefined" && typeof window.matchMedia === "function" ? window.matchMedia(DESKTOP) : null;
+function query(q = DESKTOP) {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" ? window.matchMedia(q) : null;
+}
+
+function useQuery(q: string) {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = query(q);
+      m?.addEventListener("change", cb);
+      return () => m?.removeEventListener("change", cb);
+    },
+    () => query(q)?.matches ?? false,
+    () => false,
+  );
+}
+
+/** ¿Hay riel? Desde 768 px: tablet y computadora. */
+export function useRail() {
+  return useQuery(RAIL);
+}
+
+/** Lo mismo, fuera de React. */
+export function isRail() {
+  return query(RAIL)?.matches ?? false;
 }
 
 /** ¿La ventana es de escritorio? Se vuelve a pintar si cambia de ancho. */
 export function useDesktop() {
-  return useSyncExternalStore(
-    (cb) => {
-      const q = query();
-      q?.addEventListener("change", cb);
-      return () => q?.removeEventListener("change", cb);
-    },
-    () => query()?.matches ?? false,
-    () => false,
-  );
+  return useQuery(DESKTOP);
 }
 
 /** Lo mismo, fuera de React (al navegar, en los atajos). */

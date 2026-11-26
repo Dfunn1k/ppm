@@ -33,7 +33,7 @@ export function Cierre() {
         Cerrar protege los meses que ya revisaste: nada con fecha hasta ese día se crea, cambia ni borra. Puedes reabrir cuando quieras.
       </p>
 
-      <div className="mt-4 flex min-h-14 items-center gap-3 rounded-xl bg-muted px-3.5">
+      <div className="mt-4 flex min-h-14 items-center gap-3 rounded-lg bg-muted px-3.5">
         <Icon name={c.lock_date ? "lock" : "lock_open"} className="text-[22px]" />
         <span className="flex flex-1 flex-col">
           <span className="text-caption text-muted-foreground">Ahora</span>
@@ -73,9 +73,9 @@ export function Cierre() {
           <span className="border-b border-border pb-1 text-label text-muted-foreground">Reabrir</span>
           <p className="text-[14px] leading-5 text-muted-foreground">Si necesitas corregir algo de esos meses, reabre, corrígelo y vuelve a cerrar.</p>
           <button type="button" onClick={() => setPicking("move")} disabled={setLock.isPending}
-            className="h-12 rounded-xl border border-input-line font-semibold">Mover el cierre a otra fecha</button>
+            className="h-12 rounded-lg border border-input-line font-semibold">Mover el cierre a otra fecha</button>
           <button type="button" onClick={() => setLock.mutate(null)} disabled={setLock.isPending}
-            className="h-12 rounded-xl border border-input-line font-semibold">Reabrir todo</button>
+            className="h-12 rounded-lg border border-input-line font-semibold">Reabrir todo</button>
         </section>
       )}
 

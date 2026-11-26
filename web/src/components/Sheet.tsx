@@ -46,18 +46,18 @@ export function Sheet({ title, open, onClose, children }: {
   if (!open && !leaving) return null;
   // Fuera del árbol de la pantalla: una hoja con su propio formulario no queda dentro de otro
   return createPortal(
-    <div className={`fixed inset-0 z-50 ${leaving ? "sheet-leaving pointer-events-none" : ""}`}
+    <div className={`fixed inset-0 z-sheet ${leaving ? "sheet-leaving pointer-events-none" : ""}`}
       aria-hidden={leaving || undefined} inert={leaving || undefined}>
-      <button type="button" aria-label="Cerrar" onClick={onClose} className="sheet-backdrop absolute inset-0 bg-black/40" />
+      <button type="button" aria-label="Cerrar" onClick={onClose} className="sheet-backdrop absolute inset-0 bg-overlay" />
       <div
         ref={panel}
         role="dialog"
         aria-modal={leaving ? undefined : true}   // mientras se va ya no cuenta como abierta: Esc llega a quien queda
         tabIndex={-1}
         aria-labelledby={titleId}
-        className="sheet-panel absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-lg bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none lg:top-[12dvh] lg:bottom-auto lg:max-h-[76dvh] lg:rounded-lg"
+        className="sheet-panel absolute inset-x-0 bottom-0 mx-auto flex max-h-[85dvh] max-w-md flex-col overflow-y-auto rounded-t-xl bg-card px-4 pt-2 pb-6 shadow-lg focus:outline-none md:top-[12dvh] md:bottom-auto md:max-h-[76dvh] md:rounded-xl"
       >
-        <span aria-hidden="true" className="h-1 w-9 self-center rounded-full bg-border lg:hidden" />
+        <span aria-hidden="true" className="h-1 w-9 self-center rounded-full bg-border md:hidden" />
         <h2 id={titleId} className="mx-3 mt-4 mb-2 text-title-2">
           {title}
         </h2>
@@ -201,7 +201,7 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
       <div
         role="radiogroup"
         aria-label={label}
-        className="grid gap-1 rounded-md bg-muted p-[3px]"
+        className="grid gap-1 rounded-md bg-muted p-0.5"
         style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
       >
         {options.map((o) => (
@@ -211,7 +211,7 @@ export function Segmented({ label, options, value, onChange, size = "md" }: {
             role="radio"
             aria-checked={o.value === value}
             onClick={() => onChange(o.value)}
-            className={`rounded-[8px] font-semibold ${size === "sm" ? "h-9 text-caption" : "h-10"} ${o.value === value ? "bg-selected text-selected-foreground shadow-sm" : ""}`}
+            className={`min-h-control rounded-sm font-semibold ${size === "sm" ? "text-caption" : ""} ${o.value === value ? "bg-selected text-selected-foreground shadow-sm" : ""}`}
           >
             {o.label}
           </button>

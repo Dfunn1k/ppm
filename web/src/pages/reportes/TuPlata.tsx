@@ -99,7 +99,7 @@ export function TuPlata({ cash, period, year, today }: { cash: Cash; period: str
               {sub && <span className="col-start-2 col-end-4 -mt-0.5 text-caption text-muted-foreground">{sub}</span>}
             </>
           );
-          const cls = "-mx-2 grid min-h-[52px] grid-cols-[28px_1fr_auto_18px] items-center gap-x-2.5 rounded-lg border-b border-border px-2 py-1.5 text-left";
+          const cls = "-mx-2 grid min-h-[52px] grid-cols-[28px_1fr_auto_18px] items-center gap-x-2.5 rounded-xl border-b border-border px-2 py-1.5 text-left";
           return l.kind === "fx"
             ? <div key={`${l.kind}-${l.direction}`} className={cls}>{body}</div>
             : <button key={`${l.kind}-${l.direction}`} type="button" onClick={() => setOpen(l)} className={cn(cls, "hover:bg-muted/60")}>{body}</button>;
@@ -231,13 +231,13 @@ function Why({ cash }: { cash: Cash }) {
                 <span className={cn(r.strong && "font-bold")}>{r.label}</span>
                 <span className={cn("font-semibold tabular-nums", r.tone)}>{r.amount}</span>
               </span>
-              <span className="block h-2.5 overflow-hidden rounded bg-muted" aria-hidden="true">
-                <span className="block h-2.5 rounded" style={{ ...bar(spans[i]!), background: r.color }} />
+              <span className="block h-2.5 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
+                <span className="block h-2.5 rounded-xs" style={{ ...bar(spans[i]!), background: r.color }} />
               </span>
               {r.sub && <span className="text-caption text-muted-foreground">{r.sub}</span>}
             </>
           );
-          const cls = cn("-mx-2 flex w-[calc(100%+16px)] flex-col gap-1 rounded-lg border-b border-border px-2 py-2.5 text-left",
+          const cls = cn("-mx-2 flex w-[calc(100%+16px)] flex-col gap-1 rounded-xl border-b border-border px-2 py-2.5 text-left",
             sel !== null && sel !== i && "opacity-45", sel === i && "bg-muted");
           return (
             <li key={i}>
@@ -245,7 +245,7 @@ function Why({ cash }: { cash: Cash }) {
                 ? <button type="button" aria-expanded={opened} onClick={() => setSel(sel === i ? null : i)} className={cls}>{inner}</button>
                 : <div className={cls}>{inner}</div>}
               {opened && (
-                <ul className="my-1 mb-2 flex flex-col gap-2 rounded-xl border border-border bg-card px-3 py-2.5">
+                <ul className="my-1 mb-2 flex flex-col gap-2 rounded-lg border border-border bg-card px-3 py-2.5">
                   {r.details.map((x) => (
                     <li key={x.name} className="flex flex-col"><span className="text-[14px] font-semibold">{x.name}</span>
                       <span className="text-caption text-muted-foreground">{x.text}</span></li>

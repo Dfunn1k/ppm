@@ -74,7 +74,7 @@ export function ReporteFlujo() {
       <span className="mt-0.5 text-caption text-muted-foreground tabular-nums">
         {Number(r.income) > 0 ? `${Math.round((Number(r.saved) / Number(r.income)) * 100)} % de ${money(r.income)} que entraron; ` : "No entró nada; "}gastaste {money(r.expense)}
       </span>
-      <a href="#tu-plata" className="mt-2.5 flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5">
+      <a href="#tu-plata" className="mt-2.5 flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5">
         <Icon name="account_balance" className="text-[20px]" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-[14px] leading-5 font-semibold tabular-nums">Tu plata en cuentas {plata >= 0 ? "subió" : "bajó"} {money(Math.abs(plata).toFixed(2))}</span>

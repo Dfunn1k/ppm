@@ -58,9 +58,9 @@ export function HomeSkeleton() {
     <Loading className="pt-6">
       <div className="flex items-center justify-between"><Bone className="h-7 w-44" /><Bone className="size-9 rounded-full" /></div>
       <span className="mt-6 text-caption text-muted-foreground">Lo que realmente tengo hoy</span>
-      <Bone className="mt-1.5 h-11 w-3/4 rounded-lg" />
+      <Bone className="mt-1.5 h-11 w-3/4 rounded-xl" />
       <Bone className="mt-2.5 h-3.5 w-1/2" />
-      <div aria-hidden="true" className="mt-5 flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4">
+      <div aria-hidden="true" className="mt-5 flex flex-col gap-2.5 rounded-xl border border-border bg-card p-4">
         <Bone className="h-3 w-36" />
         <Bone className="h-2 w-full rounded-full" />
         <Bone className="h-4 w-3/5" />
@@ -77,9 +77,9 @@ export function DetailSkeleton({ back, rows = 5 }: { back?: string; rows?: numbe
     <Loading className="pt-4">
       <Back to={back} />
       <Bone className="mt-2 h-3 w-32" />
-      <Bone className="mt-2.5 h-11 w-2/3 rounded-lg" />
+      <Bone className="mt-2.5 h-11 w-2/3 rounded-xl" />
       <Bone className="mt-5 h-3.5 w-20" />
-      <Bone className="mt-2 h-9 w-1/2 rounded-lg" />
+      <Bone className="mt-2 h-9 w-1/2 rounded-xl" />
       <BoneRows count={rows} />
     </Loading>
   );
@@ -92,7 +92,7 @@ export function ListSkeleton({ back, title }: { back?: string; title?: string })
       {back && <Back to={back} />}
       {title ? <h1 className="mt-3 text-title-hero">{title}</h1> : <Bone className="h-3 w-24" />}
       <Bone className="mt-5 h-3.5 w-36" />
-      <Bone className="mt-2 h-11 w-3/4 rounded-lg" />
+      <Bone className="mt-2 h-11 w-3/4 rounded-xl" />
       <BoneRows count={5} />
     </Loading>
   );
@@ -106,10 +106,10 @@ export function ReportBones({ chart = "donut" }: { chart?: "donut" | "bars" }) {
       {chart === "donut" ? (
         <div aria-hidden="true" className="flex items-center gap-5">
           <span className="size-[148px] flex-none animate-pulse rounded-full border-[26px] border-foreground/8" />
-          <span className="flex flex-1 flex-col gap-2"><Bone className="h-3 w-1/2" /><Bone className="h-8 w-11/12 rounded-lg" /><Bone className="h-3 w-3/4" /></span>
+          <span className="flex flex-1 flex-col gap-2"><Bone className="h-3 w-1/2" /><Bone className="h-8 w-11/12 rounded-xl" /><Bone className="h-3 w-3/4" /></span>
         </div>
       ) : (
-        <div aria-hidden="true" className="flex flex-col gap-2"><Bone className="h-3 w-1/3" /><Bone className="h-9 w-2/3 rounded-lg" /><Bone className="mt-3 h-40 w-full rounded-xl" /></div>
+        <div aria-hidden="true" className="flex flex-col gap-2"><Bone className="h-3 w-1/3" /><Bone className="h-9 w-2/3 rounded-xl" /><Bone className="mt-3 h-40 w-full rounded-lg" /></div>
       )}
       <BoneRows count={3} />
     </div>

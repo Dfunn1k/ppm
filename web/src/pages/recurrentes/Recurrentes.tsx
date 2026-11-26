@@ -79,7 +79,7 @@ export function Recurrentes() {
         </div>
       ) : (
         <>
-          <section aria-label="Próximos 30 días" className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-border bg-card p-4 tabular-nums">
+          <section aria-label="Próximos 30 días" className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-4 tabular-nums">
             <span className="col-span-2 text-label text-muted-foreground">Próximos 30 días</span>
             <span className="flex flex-col">
               <span className="text-caption text-muted-foreground">Entra</span>
@@ -114,7 +114,7 @@ export function Recurrentes() {
         </>
       )}
       <Link to="/registrar?repite=1"
-        className="mt-5 flex h-12 items-center lg:hidden justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
+        className="mt-5 flex h-12 items-center lg:hidden justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
         <Icon name="add" />Nuevo recurrente
       </Link>
     </main>
@@ -272,11 +272,11 @@ export function Recurrente() {
           <p className="mt-4 text-caption text-muted-foreground">Si cambias el monto o la regla, aplica desde la próxima fecha; lo ya registrado no cambia.</p>
           <div className="mt-4 grid grid-cols-2 gap-3 lg:hidden">
             <button type="button" onClick={() => state.mutate(paused ? "resume" : "pause")}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-border font-semibold">
+              className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-border font-semibold">
               <Icon name={paused ? "play_circle" : "pause_circle"} />{paused ? "Reanudar" : "Pausar"}
             </button>
             <button type="button" onClick={() => setEnding(true)}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-border font-semibold text-destructive">
+              className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-border font-semibold text-destructive">
               <Icon name="stop_circle" />Terminar
             </button>
           </div>

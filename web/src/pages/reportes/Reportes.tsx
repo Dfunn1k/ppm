@@ -19,7 +19,7 @@ function Card({ to, label, value, children, note, empty, icon }: {
   to: string; label: string; value: string; children: React.ReactNode; note: React.ReactNode; empty?: string; icon: string;
 }) {
   return (
-    <NavLink to={to} className="flex items-center gap-3.5 rounded-lg border border-border bg-card px-4 py-3.5 lg:aria-[current=page]:border-foreground lg:aria-[current=page]:shadow-[inset_0_0_0_1px_var(--foreground)]">
+    <NavLink to={to} className="flex items-center gap-3.5 rounded-xl border border-border bg-card px-4 py-3.5 lg:aria-[current=page]:border-foreground lg:aria-[current=page]:shadow-[inset_0_0_0_1px_var(--foreground)]">
       <span aria-hidden="true" className="grid size-16 flex-none place-items-center">
         {empty ? <span className="grid size-12 place-items-center rounded-full bg-secondary text-muted-foreground"><Icon name={icon} /></span> : children}
       </span>

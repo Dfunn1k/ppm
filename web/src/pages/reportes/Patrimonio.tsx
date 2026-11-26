@@ -110,7 +110,7 @@ export function ReportePatrimonio() {
       </section>
 
       {r.foreign.map((f) => (
-        <section key={f.currency} aria-label={`Tus ${f.currency}: diferencia de cambio`} className="mt-6 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4">
+        <section key={f.currency} aria-label={`Tus ${f.currency}: diferencia de cambio`} className="mt-6 flex flex-col gap-2.5 rounded-xl border border-border bg-card p-4">
           <span className="text-label text-muted-foreground">La diferencia de cambio de tus {f.currency === "USD" ? "dólares" : f.currency}</span>
           <span className="flex justify-between tabular-nums"><span>Tienes</span><b>{formatAmount(f.amount, symbolOf(f.currency), lang)}</b></span>
           <span className="flex justify-between tabular-nums"><span>Te costaron</span><span>{money(f.book)}</span></span>

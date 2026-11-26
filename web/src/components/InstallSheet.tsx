@@ -56,7 +56,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
           </p>
         )}
         {state !== "prompt" && (
-          <button type="button" onClick={onClose} className="h-12 rounded-xl border border-input-line font-semibold">Entendido</button>
+          <button type="button" onClick={onClose} className="h-12 rounded-lg border border-input-line font-semibold">Entendido</button>
         )}
       </div>
     </Sheet>

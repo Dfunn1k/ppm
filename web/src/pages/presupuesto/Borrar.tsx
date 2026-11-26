@@ -23,7 +23,7 @@ function Confirm({ open, onClose, title, children, action, icon, danger, pending
         {children}
         {error && <ErrorAlert>{error}</ErrorAlert>}
         <button type="button" disabled={pending} onClick={onConfirm}
-          className={`mt-1 flex h-14 items-center justify-between rounded-xl px-5 font-semibold disabled:opacity-60 ${danger ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`}>
+          className={`mt-1 flex h-14 items-center justify-between rounded-lg px-5 font-semibold disabled:opacity-60 ${danger ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`}>
           <span>{action}</span><Icon name={pending ? "progress_activity" : icon} className={pending ? "animate-spin" : ""} />
         </button>
         <button type="button" onClick={onClose} className="h-11 font-semibold">Cancelar</button>
@@ -114,7 +114,7 @@ export function SavingMenu({ post, month, open, onClose, accounts }: {
           <LineField label="Nombre" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
           {rename.error && <ErrorAlert>{rename.error.message}</ErrorAlert>}
           <button type="submit" disabled={rename.isPending || !name.trim() || name.trim() === post.name}
-            className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">
+            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">
             <span>Guardar</span><Icon name={rename.isPending ? "progress_activity" : "check"} className={rename.isPending ? "animate-spin" : ""} />
           </button>
         </form>

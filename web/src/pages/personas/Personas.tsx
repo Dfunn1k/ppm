@@ -83,14 +83,14 @@ export function Personas() {
             Aquí verás a quién le prestaste, quién te prestó, con quién dividiste una cuenta y de quién guardas plata.
           </p>
           <button type="button" onClick={() => setAdding(true)}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+            className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
             <Icon name="person_add" />Agregar persona
           </button>
         </div>
       ) : (
         <>
           {/* Una sola barra con los tres: los montos no se parten; si alguno es largo, los tres bajan un punto */}
-          <div role="group" aria-label="Ver solo" className="mt-5 grid grid-cols-3 overflow-hidden rounded-lg border border-border bg-card">
+          <div role="group" aria-label="Ver solo" className="mt-5 grid grid-cols-3 overflow-hidden rounded-xl border border-border bg-card">
             {totals.map(([v, total], i) => {
               const on = view === v;
               const small = totals.some(([, t]) => money(t).length > 11);

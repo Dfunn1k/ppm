@@ -140,7 +140,7 @@ export function Persona() {
         {failure && <ErrorAlert>{failure}</ErrorAlert>}
         {options.length > 0 && (
           <button type="button" onClick={() => setHoja("pago")}
-            className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground">
+            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground">
             <span>{options.length === 1 && owes ? "Registrar que me pagó" : "Registrar un pago"}</span>
             <Icon name="arrow_forward" className="text-[22px]" />
           </button>
@@ -149,12 +149,12 @@ export function Persona() {
           <div className="grid grid-cols-2 gap-2">
             {both && (
               <button type="button" onClick={() => setHoja("compensar")}
-                className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+                className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
                 <Icon name="compare_arrows" />Compensar
               </button>
             )}
             {keep && (
-              <Link to={to("custody_out")} className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-input-line font-semibold">
+              <Link to={to("custody_out")} className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
                 <Icon name="undo" />Devolver
               </Link>
             )}
@@ -297,7 +297,7 @@ function Confirm({ open, onClose, title, text, action, icon, destructive, pendin
       <div className="flex flex-col gap-4 px-3">
         <p className="text-muted-foreground tabular-nums">{text}</p>
         <button type="button" disabled={pending} onClick={onConfirm}
-          className={`flex h-14 items-center justify-between rounded-xl px-5 font-semibold disabled:opacity-60 ${destructive ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`}>
+          className={`flex h-14 items-center justify-between rounded-lg px-5 font-semibold disabled:opacity-60 ${destructive ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`}>
           <span>{action}</span><Icon name={pending ? "progress_activity" : icon} className={pending ? "animate-spin" : ""} />
         </button>
         <button type="button" onClick={onClose} className="h-11 font-semibold">Cancelar</button>

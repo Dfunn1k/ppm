@@ -99,20 +99,20 @@ export function Tarjeta() {
       <div className="mt-4 flex flex-col gap-2">
         {noDue && (
           <button type="button" onClick={() => setMenu("due")}
-            className="flex h-14 items-center justify-between rounded-xl bg-primary px-5 font-semibold text-primary-foreground">
+            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground">
             <span>Escribir fecha de pago</span><Icon name="event" className="text-[22px]" />
           </button>
         )}
         {anyDebt && (
           <Link to={`/tarjetas/${id}/pagar`}
-            className={`flex h-14 items-center justify-between rounded-xl px-5 font-semibold ${noDue ? "border border-input-line" : "bg-primary text-primary-foreground"}`}>
+            className={`flex h-14 items-center justify-between rounded-lg px-5 font-semibold ${noDue ? "border border-input-line" : "bg-primary text-primary-foreground"}`}>
             <span>Pagar tarjeta</span><Icon name="arrow_forward" className="text-[22px]" />
           </Link>
         )}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="flex flex-col gap-0.5 rounded-lg border border-border bg-card p-3">
+        <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-card p-3">
           <span className="text-caption text-muted-foreground">Por facturar</span>
           <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(main.next_bill, main.currency)}</span>
           <span className="text-caption text-muted-foreground">Cierra el {shortDate(d.next_closing)}</span>
@@ -120,7 +120,7 @@ export function Tarjeta() {
             <span key={s.currency} className="text-caption text-muted-foreground tabular-nums">y {money(s.next_bill, s.currency)}</span>
           ))}
         </div>
-        <div className="flex flex-col gap-0.5 rounded-lg border border-border bg-card p-3">
+        <div className="flex flex-col gap-0.5 rounded-xl border border-border bg-card p-3">
           <span className="text-caption text-muted-foreground">Línea disponible</span>
           <span className="text-[18px] leading-6 font-semibold tabular-nums">{money(d.available, d.limit_currency)}</span>
           <span className="text-caption text-muted-foreground tabular-nums">de {money(d.credit_limit, d.limit_currency)}</span>
@@ -255,7 +255,7 @@ export function Tarjeta() {
           </span>
         )}
         <Link to={`/registrar?cuenta=${id}`} state={{ from: `/tarjetas/${id}` }} data-from={`/tarjetas/${id}`}
-          className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
+          className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
           <Icon name="percent" />Intereses o comisiones del banco
         </Link>
       </div>
@@ -523,7 +523,7 @@ function ArchiveSheet({ open, onClose, card }: { open: boolean; onClose: () => v
         {archive.error && <ErrorAlert>{archive.error.message}</ErrorAlert>}
         <button type="button" disabled={owes || archive.isPending}
           onClick={() => archive.mutate(undefined, { onSuccess: () => navigate("/cuentas", { replace: true }) })}
-          className="flex h-14 items-center justify-center gap-2 rounded-xl bg-destructive font-semibold text-destructive-foreground disabled:opacity-50">
+          className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-50">
           <Icon name="archive" />Archivar tarjeta
         </button>
         <button type="button" onClick={onClose} className="h-11 text-caption font-semibold text-primary-strong underline">Cancelar</button>

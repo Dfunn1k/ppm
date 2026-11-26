@@ -117,7 +117,7 @@ export function Atajos() {
 
       {changed && (
         <button type="button" disabled={save.isPending} onClick={() => save.mutate({ shortcuts: {} })}
-          className="mt-5 flex h-11 items-center justify-center gap-1.5 self-start rounded-xl border border-border px-4 font-semibold">
+          className="mt-5 flex h-11 items-center justify-center gap-1.5 self-start rounded-lg border border-border px-4 font-semibold">
           <Icon name="restart_alt" />Volver a los de fábrica ({(Object.keys(DEFAULT_KEYS) as Action[]).map((a) => keyLabel(DEFAULT_KEYS[a])).join(" ")})
         </button>
       )}

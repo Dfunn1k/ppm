@@ -19,7 +19,7 @@ import { HomeSkeleton } from "@/components/Skeleton";
 const ONE: Record<string, string> = { USD: "dólar", EUR: "euro" };
 
 /** En escritorio cada columna de abajo es una tarjeta. */
-const DESK_CARD = "lg:mt-0 lg:self-start lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-5";
+const DESK_CARD = "lg:mt-0 lg:self-start lg:rounded-xl lg:border lg:border-border lg:bg-card lg:p-5";
 
 function Heading({ label, to, link }: { label: string; to: string; link: string }) {
   return (
@@ -63,7 +63,7 @@ export function Inicio() {
       {/* En escritorio el saldo va a la izquierda y el mes con el ojo a la derecha; abajo, dos filas de tarjetas */}
       <div className="flex flex-col lg:col-span-3 lg:flex-row-reverse lg:items-end lg:gap-6">
       <div className="flex items-center gap-2 lg:flex-none">
-        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex flex-1 items-center gap-0.5 text-title-2 lg:h-11 lg:flex-none lg:rounded-xl lg:border lg:border-border lg:px-4 lg:text-body lg:font-semibold">
+        <button type="button" aria-haspopup="dialog" onClick={() => setPicking(true)} className="flex flex-1 items-center gap-0.5 text-title-2 lg:h-11 lg:flex-none lg:rounded-lg lg:border lg:border-border lg:px-4 lg:text-body lg:font-semibold">
           {monthName(month)}<Icon name="expand_more" className="text-[22px] text-muted-foreground" />
         </button>
         <button type="button" aria-pressed={hidden} aria-label={hidden ? "Mostrar los montos" : "Esconder los montos"}
@@ -104,7 +104,7 @@ export function Inicio() {
       <PendingCard lang={lang} hidden={hidden} />
       {me.home_budget && <BudgetCard month={month} money={money} />}
 
-      <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:p-5">
+      <section aria-label="Para mayo" className="mt-5 flex flex-col gap-2.5 rounded-xl border border-border bg-card p-4 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:p-5">
         <div className="flex items-baseline justify-between">
           <span className="text-label text-muted-foreground">Para mayo</span>
           <span className="text-caption text-muted-foreground tabular-nums">{h.saved_percent === null ? "" : `${hidden ? "••" : percent} % de lo que entró`}</span>
@@ -158,7 +158,7 @@ export function Inicio() {
           <Heading label="Mis cuentas" to="/mas/inicio" link="Elegir cuáles" />
           <div className="-mr-6 flex gap-2 overflow-x-auto pr-6 pb-1 lg:mr-0 lg:flex-col lg:gap-0 lg:overflow-visible lg:pr-0 lg:pb-0">
             {cards.map((a) => (
-              <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-[150px] flex-none flex-col gap-2 rounded-lg border border-border bg-card p-3 lg:min-h-[60px] lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0 lg:border-b lg:bg-transparent lg:px-0 lg:py-2">
+              <Link key={a.id} to={`/cuentas/${a.id}`} className="flex w-[150px] flex-none flex-col gap-2 rounded-xl border border-border bg-card p-3 lg:min-h-[60px] lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0 lg:border-b lg:bg-transparent lg:px-0 lg:py-2">
                 <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-secondary-foreground lg:size-9"><Icon name={a.icon ?? "payments"} className="text-[18px]" /></span>
                 <span className="truncate text-caption text-muted-foreground lg:flex-1 lg:text-body lg:font-semibold lg:text-foreground">{a.name}</span>
                 <span className="flex flex-col lg:items-end">
@@ -210,7 +210,7 @@ function BudgetCard({ month, money }: { month: string; money: (v: string) => str
   const to = month === todayISO().slice(0, 7) ? "/presupuesto" : `/presupuesto?mes=${month}`;
   return (
     <Link to={to} aria-label={`Presupuesto de ${monthName(month).toLowerCase()}`}
-      className="mt-5 flex flex-col gap-2 rounded-lg border border-border bg-card p-4 lg:col-start-1 lg:row-start-4 lg:mt-0 lg:p-5">
+      className="mt-5 flex flex-col gap-2 rounded-xl border border-border bg-card p-4 lg:col-start-1 lg:row-start-4 lg:mt-0 lg:p-5">
       <span className="text-label text-muted-foreground">Presupuesto de {monthName(month).split(" ")[0]!.toLowerCase()}</span>
       <span className="flex items-baseline justify-between">
         <span className="text-caption text-muted-foreground">{isNegative(b.to_assign) ? "Asignaste de más" : "Por asignar"}</span>
@@ -253,7 +253,7 @@ function PendingCard({ lang, hidden }: { lang: string; hidden: boolean }) {
   ].sort((x, y) => ORDER[x.section] - ORDER[y.section] || x.date.localeCompare(y.date));
   if (items.length === 0) return null;
   return (
-    <section aria-label="Pendientes" className="mt-5 flex flex-col rounded-lg border border-border bg-card px-4 pt-3 pb-1 lg:col-start-3 lg:row-start-2 lg:mt-0 lg:px-5">
+    <section aria-label="Pendientes" className="mt-5 flex flex-col rounded-xl border border-border bg-card px-4 pt-3 pb-1 lg:col-start-3 lg:row-start-2 lg:mt-0 lg:px-5">
       <span className="flex items-center gap-1.5 text-label text-muted-foreground">
         Pendientes<Pill>{items.length}</Pill>{box.late > 0 && <Pill attention>{box.late === 1 ? "1 vencido" : `${box.late} vencidos`}</Pill>}
       </span>

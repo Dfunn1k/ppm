@@ -13,7 +13,7 @@ export function EmptyState({ icon, title, children, action }: {
       <span className="font-display text-[22px] font-bold">{title}</span>
       <p className="text-muted-foreground">{children}</p>
       {action && (
-        <Link to={action.to} className="mt-1 flex h-12 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
+        <Link to={action.to} className="mt-1 flex h-12 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
           <Icon name="add" />{action.label}
         </Link>
       )}

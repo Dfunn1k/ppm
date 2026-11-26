@@ -73,7 +73,7 @@ export function AppNav() {
   const homeAccount = me?.home_account_id;
   rememberMoves(me?.id, path, search);
   return (
-    <nav aria-label="Navegación principal" className="app-nav fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card lg:hidden">
+    <nav aria-label="Navegación principal" className="app-nav fixed inset-x-0 bottom-0 z-nav border-t border-border bg-card md:hidden">
       <div className="mx-auto grid h-[76px] max-w-md grid-cols-5 items-center px-2 pb-2">
         <Tab item={ITEMS[0]!} />
         <Tab item={ITEMS[1]!} to={movesLink(me?.id)} />

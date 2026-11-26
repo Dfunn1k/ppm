@@ -4,9 +4,9 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 2, sistema (aprobado por Dany el 25-nov; PR #131 esperando su merge).
-- **Rama:** `frontend/fase-2`
-- **Último commit:** ver `git log -1 frontend/fase-2`
+- **Fase actual:** 3, cimientos (terminada; ⏸ punto de control 3, esperando a Dany).
+- **Rama:** `frontend/fase-3`
+- **Último commit:** ver `git log -1 frontend/fase-3`
 
 ## Checklist
 
@@ -37,13 +37,28 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] 4. Reglas de código
 - [x] ⏸ Punto de control 2: Dany aprueba el documento y S1 a S8 como se recomendaron (25-nov)
 - [x] Registrado en `design-system/` (README y los README de Button, Amount, Row, SectionHeading, PageHeader, Avatar, Chip y CategoryChip), en `docs/modelo-contable.md` (8 decisiones y la bitácora), en `CLAUDE.md` (S8) y en la skill `ppm-interfaz`
-- [ ] Merge del PR #131 (Dany)
+- [x] Merge del PR #131 (Dany, 25-nov)
 
-### Fases 3 a 5 (pendientes)
+### Fase 3 — Cimientos (en curso, un PR)
+- [x] Fotos base de toda la matriz, antes de tocar nada (`web/capturas-base/`, no se suben)
+- [x] Tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas, colores nuevos, categorías en oscuro)
+- [x] El inspector (`web/src/estilo.test.ts`, `estilo-tope.json`, `estilo-excepciones.ts`)
+- [x] Moldes con `cva`: Button, IconButton, SectionHeading, PageHeader, Avatar, Row, Amount, Chip, ProgressBar, SearchField; ajustar PrimaryButton, Pill, Segmented, Icon
+- [x] Cortes de pantalla: el riel desde 768 px, la lista de 320/400/440 px, safe-area y el foco tapado por la barra
+- [x] Fotos después, comparadas con las base; typecheck, Vitest (32), Playwright (94) y build pasan en Docker
+  - Scroll horizontal: 0 antes y 0 después, en toda la matriz.
+  - Lo que se toca y mide menos de 44 px (390×844, 70 pantallas): 401 → 225. Menos de 24 px: 17 → 12. En escritorio: 618 → 388.
+  - Foco tapado por la barra de abajo (390×844): 19 → 0. Foco sin anillo: 15 → 5.
+  - axe: las mismas 4 reglas (aria-hidden-focus, label-content-name-mismatch, color-contrast, nested-interactive), que se arreglan pantalla por pantalla en la Fase 4.
+  - «Texto grande» ya no es idéntica a 390×844: la letra crece, y aparecen 18 posibles cortes que la Fase 4 debe resolver.
+  - `teclado.spec.ts` ahora reconoce la vuelta por el elemento y no por su posición. La de antes contaba paradas repetidas cuando la página se movía: las 1,180 paradas de la Fase 1 eran 783 sin repetir.
+- [ ] PR de la Fase 3 (Dany)
+
+### Fases 4 y 5 (pendientes)
 
 ## Siguiente paso
 
-Dany hace el merge del #131. Con su OK, Fase 3 (cimientos) en la rama `frontend/fase-3`: tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas de 1.2 a 1.10, arreglo de las categorías en oscuro), moldes de `SISTEMA.md` 3 con `cva`, el inspector `web/src/estilo.test.ts` con el tope por archivo y las capturas base. Un commit por pieza.
+⏸ Punto de control 3: Dany revisa el PR de la Fase 3. Con su OK: Fase 4, migración por lotes de 1 a 3 pantallas (un commit por pantalla, un PR por lote). Propuesta de orden: 1) Inicio, 2) Cuentas y Detalle de cuenta, 3) Movimientos y Registrar, y después el resto, empezando por los moldes que más se repiten (Row, SectionHeading, PageHeader, Screen con su ancho de tablet). En cada lote: bajar el tope del inspector, arreglar lo de axe de esas pantallas y los cortes de «texto grande», y fotos de antes y después.
 
 ## Decisiones de Dany
 

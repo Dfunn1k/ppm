@@ -1,6 +1,6 @@
 > **Esta carpeta es el original del sistema de diseño de PPM** desde el 24-nov-2026 (antes lo era el artefacto de claude.ai, que quedó como archivo). Los tokens viven en `tokens.json` y se implementan en `web/src/styles.css`: un token nuevo o cambiado toca los dos en el mismo pull request, y la regla nueva se anota en este README.
 
-> **Escalas aprobadas el 25-nov-2026** (misión del frontend, `docs/frontend/SISTEMA.md`). Este README ya dice cómo debe quedar. `tokens.json` y `styles.css` las implementan juntos en la Fase 3; hasta entonces, el código va migrando pantalla por pantalla.
+> **Escalas aprobadas el 25-nov-2026** (misión del frontend, `docs/frontend/SISTEMA.md`). `tokens.json` y `styles.css` ya las tienen (Fase 3), y los moldes están en `web/src/components/`. Las pantallas las van adoptando de a lotes (Fase 4); un inspector automático (`web/src/estilo.test.ts`) impide que vuelvan los valores escritos a mano.
 
 PPM ayuda a una persona a saber cuánto tiene, cuánto debe y en qué se le va la plata, sin saber contabilidad. Por dentro es partida doble; por fuera habla como habla la gente. Esta guía dice cómo se ve y cómo suena.
 

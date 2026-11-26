@@ -61,7 +61,7 @@ export function Extracto() {
       ]} />
 
       {check && (
-        <div className={`mt-4 flex gap-2.5 rounded-lg p-3.5 ${check.cls}`}>
+        <div className={`mt-4 flex gap-2.5 rounded-xl p-3.5 ${check.cls}`}>
           <Icon name={check.icon} className="text-[22px]" />
           <span className="flex flex-col gap-0.5">
             <b>{check.title}</b>
@@ -97,7 +97,7 @@ export function Extracto() {
 
       <div className="min-h-6 flex-1" />
       <button type="button" onClick={() => setAsking(true)}
-        className="flex h-[52px] items-center justify-center gap-2 rounded-xl border border-border bg-card font-semibold text-destructive">
+        className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-border bg-card font-semibold text-destructive">
         <Icon name="undo" />Deshacer esta importación
       </button>
 
@@ -117,7 +117,7 @@ export function Extracto() {
           {undo.error && <ErrorAlert>{undo.error.message}</ErrorAlert>}
           <button type="button" disabled={undo.isPending}
             onClick={() => undo.mutate(undefined, { onSuccess: () => navigate(`/cuentas/${d.account_id}`, { replace: true }) })}
-            className="mt-2 flex h-[52px] items-center justify-center gap-2 rounded-xl bg-destructive font-semibold text-destructive-foreground">
+            className="mt-2 flex h-[52px] items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground">
             {d.pending === 0 ? "Deshacer" : `Borrar ${d.pending} y deshacer`}
           </button>
           <button type="button" onClick={() => setAsking(false)} className="h-11 text-caption font-semibold text-primary-strong underline">Cancelar</button>

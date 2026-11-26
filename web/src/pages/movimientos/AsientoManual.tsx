@@ -76,11 +76,11 @@ export function AsientoManual({ editing }: { editing?: MoveDetail }) {
           Para casos raros. Elige las cuentas y los montos: lo que entra tiene que ser igual a lo que sale. Va en {symbolOf(me.currency)}.
         </p>
 
-        <div className="mt-3 grid grid-cols-[1fr_84px_84px] gap-2 border-b border-border pb-1 text-label text-muted-foreground">
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_84px_84px] gap-2 border-b border-border pb-1 text-label text-muted-foreground">
           <span>Cuenta</span><span className="text-right">Entra a</span><span className="text-right">Sale de</span>
         </div>
         {rows.map((l, i) => (
-          <div key={i} className="grid min-h-[60px] grid-cols-[1fr_84px_84px] items-center gap-2 border-b border-border">
+          <div key={i} className="grid min-h-[60px] grid-cols-[minmax(0,1fr)_84px_84px] items-center gap-2 border-b border-border">
             <span className="flex min-w-0 flex-col items-start gap-0.5">
               <button type="button" onClick={() => setPickAccount(i)} className="flex max-w-full items-center gap-0.5 text-left font-semibold">
                 <span className="truncate">{l.account ? label(l.account) : "Elige la cuenta"}</span>
@@ -104,7 +104,7 @@ export function AsientoManual({ editing }: { editing?: MoveDetail }) {
             </span>
           </div>
         ))}
-        <div className="grid min-h-11 grid-cols-[1fr_84px_84px] items-center gap-2 tabular-nums">
+        <div className="grid min-h-11 grid-cols-[minmax(0,1fr)_84px_84px] items-center gap-2 tabular-nums">
           <button type="button" onClick={() => setLines([...rows, { account: null, partner: null, debit: "", credit: "" }])}
             className="flex items-center gap-1 justify-self-start text-[14px] font-semibold text-primary-strong">
             <Icon name="add" />Otra línea

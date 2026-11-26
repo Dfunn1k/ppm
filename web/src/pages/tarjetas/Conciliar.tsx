@@ -120,13 +120,13 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
         const up = (Number(bank) - Number(g.each)) * x.n_installments;
         return (
           <section key={x.id} aria-label="La cuota del banco es distinta"
-            className="mt-4 flex flex-col gap-2 rounded-xl bg-attention-soft p-3.5 text-attention">
+            className="mt-4 flex flex-col gap-2 rounded-lg bg-attention-soft p-3.5 text-attention">
             <span className="flex items-center gap-1.5 text-label"><Icon name="error" className="text-[18px]" />La cuota del banco es distinta</span>
             <p className="text-[14px] leading-5 text-foreground">
               {g.ref}: el banco cobra <b>{money(bank, x.currency)}</b> por cuota ({money(x.capital, x.currency)} de capital
               + {money(x.interest, x.currency)} de interés). En PPM cada cuota es {money(g.each, x.currency)}.
             </p>
-            <dl className="grid grid-cols-[1fr_auto] gap-y-0.5 text-[14px] leading-5 text-foreground tabular-nums">
+            <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-y-0.5 text-[14px] leading-5 text-foreground tabular-nums">
               <dt>Las {x.n_installments} cuotas pasan a</dt><dd className="text-right font-semibold">{money(bank, x.currency)}</dd>
               <dt>La tarjeta {up >= 0 ? "sube" : "baja"}</dt><dd className="text-right font-semibold">{money(Math.abs(up).toFixed(2), x.currency)}</dd>
               <dt>Esta cuota: capital + interés</dt><dd className="text-right font-semibold">{money(x.capital, x.currency)} + {money(x.interest, x.currency)}</dd>
@@ -134,22 +134,22 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
             {bankInstallment.error && <ErrorAlert>{bankInstallment.error.message}</ErrorAlert>}
             <div className="mt-1 flex gap-2">
               <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id })}
-                className="h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
+                className="h-11 flex-1 rounded-lg bg-primary font-semibold text-primary-foreground">Usar la del banco</button>
               <button type="button" disabled={bankInstallment.isPending} onClick={() => bankInstallment.mutate({ rowId: x.id, rejectPlan: g.plan_id })}
-                className="h-11 rounded-xl border border-input-line px-3.5 font-semibold text-foreground">No es esta compra</button>
+                className="h-11 rounded-lg border border-input-line px-3.5 font-semibold text-foreground">No es esta compra</button>
             </div>
           </section>
         );
       })}
 
       <section aria-label="PPM y el banco" className="mt-5 flex flex-col">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 border-b border-border pb-1 text-label text-muted-foreground">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-3 border-b border-border pb-1 text-label text-muted-foreground">
           <span /><span className="text-right">PPM</span><span className="text-right">Banco</span><span className="text-right">Diferencia</span>
         </div>
         {r.currencies.filter((c) => c.bank_subtotal !== null).map((c) => {
           const gap = subtract(c.bank_subtotal!, c.subtotal);
           return (
-            <div key={c.currency} className="grid min-h-11 grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b border-border text-[14px] tabular-nums">
+            <div key={c.currency} className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 border-b border-border text-[14px] tabular-nums">
               <span className="font-semibold">Subtotal {symbolOf(c.currency)}</span>
               <span className="text-right">{money(c.subtotal, c.currency)}</span>
               <span className="text-right">{money(c.bank_subtotal!, c.currency)}</span>

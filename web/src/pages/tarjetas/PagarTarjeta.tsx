@@ -105,7 +105,7 @@ export function PagarTarjeta() {
               <Icon name="currency_exchange" />
               <span><b>No tienes una cuenta en {name} con plata.</b> La deuda en {name} se paga con {name}: cómpralos primero y vuelve a pagar.</span>
             </span>
-            <Link to="/registrar?tipo=transfer" className="flex h-11 items-center justify-center rounded-xl border border-current font-semibold">
+            <Link to="/registrar?tipo=transfer" className="flex h-11 items-center justify-center rounded-lg border border-current font-semibold">
               Comprar {name}
             </Link>
           </div>

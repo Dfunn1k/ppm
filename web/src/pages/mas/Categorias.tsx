@@ -58,7 +58,7 @@ export function Categorias() {
           onChange={(v) => setParams(v === "income" ? { tipo: "ingreso" } : {}, { replace: true })} />
       </div>
       <Link to={`/mas/categorias/nueva${kind === "income" ? "?tipo=ingreso" : ""}`}
-        className="mt-3 flex h-12 items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
+        className="mt-3 flex h-12 items-center justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
         <Icon name="add" />
         {kind === "income" ? "Nueva categoría de ingreso" : "Nueva categoría de gasto"}
       </Link>
@@ -227,7 +227,7 @@ export function NuevaCategoria() {
             </div>
           </div>
 
-          <div role="status" className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2.5">
+          <div role="status" className="flex items-center gap-3 rounded-xl bg-muted px-3 py-2.5">
             <CategoryChip category={shown} />
             <span className="flex flex-col">
               <span className="font-semibold">{name.trim() || "Nueva categoría"}</span>

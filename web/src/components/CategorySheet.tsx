@@ -55,7 +55,7 @@ export function CategorySheet({ kind, open, onClose, onPick, selected, allowGrou
 
       {onLater && !needle && (
         <button type="button" role="radio" aria-checked={!!later} onClick={() => { setQ(""); onLater(); }}
-          className={`mx-1 mt-3 flex min-h-[60px] items-center gap-3 rounded-lg border-[1.5px] border-dashed border-input-line px-3 text-left ${later ? "bg-muted" : ""}`}>
+          className={`mx-1 mt-3 flex min-h-[60px] items-center gap-3 rounded-xl border-[1.5px] border-dashed border-input-line px-3 text-left ${later ? "bg-muted" : ""}`}>
           <span className="grid size-9 flex-none place-items-center rounded-full border-[1.5px] border-dashed border-input-line"><Icon name="inbox" /></span>
           <span className="flex flex-1 flex-col">
             <span className="font-semibold">Lo clasifico después</span>

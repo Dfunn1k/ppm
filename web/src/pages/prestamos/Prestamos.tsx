@@ -21,7 +21,7 @@ function PartField({ label, hint, value, onChange, symbol }: {
   label: string; hint?: string; value: string; onChange: (v: string) => void; symbol: string;
 }) {
   return (
-    <label className="grid grid-cols-[1fr_140px] items-end gap-3">
+    <label className="grid grid-cols-[minmax(0,1fr)_140px] items-end gap-3">
       <span className="flex flex-col">
         <span className="font-semibold">{label}</span>
         {hint && <span className="text-[12px] leading-4 text-muted-foreground">{hint}</span>}
@@ -184,7 +184,7 @@ export function Prestamo() {
       {l.next && !paidOff && (
         <section aria-label="Próxima cuota" className="mt-4 flex flex-col gap-1.5 rounded-md border border-border bg-card px-3.5 py-3 tabular-nums">
           <span className="flex items-baseline justify-between"><b>Próxima cuota el {shortDate(l.next.occurrence)}</b><b>{money(l.next.total)}</b></span>
-          <span className="grid grid-cols-[1fr_auto] gap-y-0.5 text-caption text-muted-foreground">
+          <span className="grid grid-cols-[minmax(0,1fr)_auto] gap-y-0.5 text-caption text-muted-foreground">
             {l.next.parts.map((p) => (
               <span key={p.name} className="contents">
                 <span className="flex flex-col"><span className="text-foreground">{p.name}</span><span className="text-[12px] leading-4">{p.name === "Capital" ? "Baja lo que debes" : "Es gasto"}</span></span><span>{formatNumber(p.amount, lang)}</span>
