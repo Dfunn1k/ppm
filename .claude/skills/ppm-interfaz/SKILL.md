@@ -13,6 +13,7 @@ PPM es contable por dentro e intuitivo por fuera. Esta skill dice dónde está l
 2. `design-system/tokens.json`: los tokens (color, tipografía, espaciado, radios, sombras).
 3. `docs/modelo-contable.md`: las decisiones con fecha. Busca las de la pantalla que vas a tocar (por su nombre, su código como C1, M2 o R1, o «Elegido por Dany»). Las de interfaz incluyen el escritorio, el riel, «Sin punto como conector» (casos 5 a 10), Reportes y el presupuesto.
 4. `web/src/styles.css` y `web/src/components/ui.tsx`: cómo están implementados los tokens y las piezas compartidas.
+5. `docs/frontend/SISTEMA.md`: las escalas, los cortes de pantalla, los moldes (Row, SectionHeading, PageHeader, Avatar, Amount, Button, Chip…) y las reglas de código aprobadas el 25-nov.
 
 Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: propón 2 o 3 opciones a Dany, con pros y contras y una analogía, y espera que elija.
 
@@ -24,7 +25,7 @@ Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: 
 - Solo tokens. Nada de colores hex, `rgb()` ni clases de color de Tailwind que no sean del tema (`bg-background`, `text-muted-foreground`, `bg-primary`…).
 - No agregues valores arbitrarios de Tailwind (`text-[22px]`, `min-h-[60px]`, `rounded-[12px]`). Hoy el código tiene muchos; **no sumes más**. Si falta un valor en la escala, propón un token nuevo: va en `tokens.json`, en `styles.css` y en `design-system/README.md`, en el mismo PR.
 - Nada de `style={{…}}` salvo valores realmente dinámicos (el ancho de una barra según un porcentaje), ni `!important`.
-- Antes de crear un componente, busca si ya existe en `web/src/components/` (sobre todo en `ui.tsx`: Screen, Amounts, Status, Facts, Segments, Optional, LineField, Note…). Si existe uno parecido, agrégale una variante (con `class-variance-authority`) en vez de copiarlo.
+- Antes de crear un componente, busca si ya existe en `web/src/components/` (sobre todo en `ui.tsx`: Screen, Amounts, Status, Facts, Segments, Optional, LineField, Note…). Si existe uno parecido, agrégale una variante (con `class-variance-authority`) en vez de copiarlo. Los moldes viven en `components/`, nunca dentro de una página.
 - Íconos: solo Material Symbols Rounded (`Icon` o `<span className="icon">`). Las tipografías se sirven con `@fontsource`: Bricolage Grotesque solo para títulos, IBM Plex Sans para el resto e IBM Plex Mono para códigos.
 
 **Texto**
@@ -34,7 +35,8 @@ Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: 
 
 **Tamaños de pantalla**
 - Se diseña primero para el celular y se amplía hacia arriba.
-- Desde 1024 px: el riel de 88 px, las secciones de lista y detalle en dos paneles, Registrar en panel lateral y las hojas como ventana al centro (decisión del 13-nov en el documento). En el celular eso no cambia nada.
+- Desde 768 px: el riel de 88 px en lugar de la barra de abajo, una columna de hasta 640 px, Registrar en panel lateral y las hojas como ventana al centro. Desde 1024 px: lista y detalle en dos paneles (lista de 320 px; 400 desde 1280 y 440 desde 1440). En el celular eso no cambia nada (decisiones «Escritorio», 13-nov, y «Tablet y laptop chica», 25-nov).
+- Los cortes (`md:`, `lg:`…) deciden dónde va cada panel; lo de adentro se acomoda al ancho de su panel con `@container`. Un monto nunca se parte en dos líneas.
 - Ningún tamaño puede tener scroll horizontal, y nada puede quedar tapado por la barra de abajo, el notch o el teclado.
 - Áreas táctiles de al menos 44×44 px.
 

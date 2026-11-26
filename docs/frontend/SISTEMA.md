@@ -4,7 +4,7 @@ Este documento es el plano de la remodelación. Dice qué medidas tiene la casa 
 
 - **Fuentes:** `design-system/README.md`, `tokens.json`, `docs/modelo-contable.md` y [AUDITORIA.md](AUDITORIA.md). Los números de «hoy» salen de la auditoría.
 - **Decisiones de Dany del 25-nov (A a H):** están en [PROGRESO.md](PROGRESO.md) y aquí se aplican.
-- **Lo marcado «Te toca»** es una propuesta con opciones: se decide en el ⏸ punto de control 2. Al aprobarse, todo se escribe en `design-system/` y en `docs/modelo-contable.md`.
+- **Aprobado por Dany el 25-nov** (⏸ punto de control 2), con la opción recomendada en S1 a S8. Lo marcado «Te toca» queda como registro de las opciones. Está escrito en `design-system/` y en `docs/modelo-contable.md`.
 - **Las medidas** se escriben en px para leerlas fácil. En el código van en `rem` (ver 1.1), así que a tamaño normal miden exactamente eso.
 
 ## 1. Tokens

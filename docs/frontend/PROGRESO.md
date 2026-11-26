@@ -4,7 +4,7 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 
 ## Dónde estamos
 
-- **Fase actual:** 2, sistema (escrito; ⏸ punto de control 2, esperando a Dany).
+- **Fase actual:** 2, sistema (aprobado por Dany el 25-nov; PR #131 esperando su merge).
 - **Rama:** `frontend/fase-2`
 - **Último commit:** ver `git log -1 frontend/fase-2`
 
@@ -35,13 +35,15 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 - [x] 2. Estrategia responsive
 - [x] 3. Componentes compartidos, con variantes y estados
 - [x] 4. Reglas de código
-- [ ] ⏸ Punto de control 2; con el OK, registrar en `design-system/` y en `docs/modelo-contable.md`
+- [x] ⏸ Punto de control 2: Dany aprueba el documento y S1 a S8 como se recomendaron (25-nov)
+- [x] Registrado en `design-system/` (README y los README de Button, Amount, Row, SectionHeading, PageHeader, Avatar, Chip y CategoryChip), en `docs/modelo-contable.md` (8 decisiones y la bitácora), en `CLAUDE.md` (S8) y en la skill `ppm-interfaz`
+- [ ] Merge del PR #131 (Dany)
 
 ### Fases 3 a 5 (pendientes)
 
 ## Siguiente paso
 
-⏸ Punto de control 2: Dany decide S1 a S8 (resumen al final de `SISTEMA.md`) y aprueba el documento. Con su OK, en esta misma rama: escribir lo aprobado en `design-system/` (README y los README de los moldes; `tokens.json` y `styles.css` cambian juntos en la Fase 3) y en `docs/modelo-contable.md`, subir la versión y pedir el merge. Después, Fase 3.
+Dany hace el merge del #131. Con su OK, Fase 3 (cimientos) en la rama `frontend/fase-3`: tokens en `tokens.json` y `styles.css` (base en 16 px y letra en `rem`, escalas de 1.2 a 1.10, arreglo de las categorías en oscuro), moldes de `SISTEMA.md` 3 con `cva`, el inspector `web/src/estilo.test.ts` con el tope por archivo y las capturas base. Un commit por pieza.
 
 ## Decisiones de Dany
 
@@ -56,8 +58,9 @@ Tomadas el 25-nov (todas las recomendadas). Se escriben en `design-system/` y en
 - **G2. Laptop chica (1024–1279 px):** lista de 320 px y detalle que se adapta a su ancho; desde 1280 px, 400 px.
 - **H. Por asignar:** «Siempre cuadra: cada sol está en un solo lugar.» (Fase 4).
 
+Del punto de control 2 (25-nov, todas las recomendadas): S1 base en 16 px y letra en `rem`; S2 el monto principal de los detalles también en Bricolage; S3 2 y 6 px solo dentro de piezas chicas; S4 filas de 52, 60 y 56 px; S5 radios 4, 6, 10, 14 y 16 con nombres en orden; S6 con «reducir movimiento» solo gira el círculo; S7 margen de 24 px en el celular; S8 moldes propios con `cva`.
+
 Pendientes:
-- Las que salgan de `SISTEMA.md` (punto de control 2).
 - Revisar en un iPhone, con PPM instalada, si la barra de abajo queda bajo la barra de gestos.
 
 ## Fuera de alcance (errores funcionales encontrados, sin arreglar)
