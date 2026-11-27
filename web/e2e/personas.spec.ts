@@ -100,6 +100,7 @@ test("un gasto compartido con alguien y uno que pagó otra persona se compensan"
   await page.getByRole("link", { name: /Restaurantes y delivery/ }).first().click();
   await expect(page.getByRole("region", { name: "Te debe" })).toContainText(/Luis Pérez.*Sin fecha de vencimiento.*S\/ 50\.00.*Poner/);
   await expect(page.getByText(/Parte de Luis|Parte 1 de/)).toHaveCount(0);
+  await expect(page.getByText("Con quién")).toHaveCount(0);           // ya dice con quién arriba
 
   // Pagó Luis S/ 60, mitad y mitad: le debes S/ 30
   await page.goto("/registrar");

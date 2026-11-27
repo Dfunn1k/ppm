@@ -263,7 +263,8 @@ export function DetalleMovimiento() {
             })}
           </section>
         )}
-        {(s.kind === "expense" || s.kind === "income" || s.kind === "refund" || d.with_partner_id) && (
+        {/* En un gasto compartido, las personas ya salen arriba: «Con quién: Nadie» se contradiría */}
+        {((s.kind === "expense" && !shared) || s.kind === "income" || s.kind === "refund" || d.with_partner_id) && (
           <WithPartnerRow moveId={s.id} partnerId={d.with_partner_id ?? null} partner={d.with_partner ?? null} locked={locked} />
         )}
         {s.kind === "other" && d.lines.length > 0 && (
