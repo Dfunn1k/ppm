@@ -13,6 +13,7 @@ import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Facts, Icon, PasswordField, PrimaryButton } from "@/components/ui";
 import { capitalize } from "@/lib/utils";
 import { CURRENCY_NAME } from "@/lib/money";
+import { Button } from "@/components/Button";
 
 const next = z.string().min(8, { error: "Usa al menos 8 caracteres" }).max(128, { error: "Usa 128 caracteres o menos" });
 const schema = z.object({ current: z.string().min(1, { error: "Escribe tu contraseña actual" }), next });
@@ -141,11 +142,10 @@ export function MiCuenta() {
 
       <div className="min-h-8 flex-1" />
       {logout.error && <ErrorAlert>{logout.error.message}</ErrorAlert>}
-      <button type="button" disabled={logout.isPending}
-        onClick={() => logout.mutate(undefined, { onSuccess: () => navigate("/entrar", { replace: true }) })}
-        className="flex h-14 items-center justify-center gap-2 rounded-lg border border-input-line font-semibold lg:w-72 lg:self-start">
-        <Icon name="logout" size="md" />Cerrar sesión
-      </button>
+      <Button variant="secondary" start="logout" pending={logout.isPending} className="lg:w-72 lg:self-start"
+        onClick={() => logout.mutate(undefined, { onSuccess: () => navigate("/entrar", { replace: true }) })}>
+        Cerrar sesión
+      </Button>
 
       <PasswordSheet open={sheet === "password"} create={!me.has_password} onClose={() => setSheet(null)}
         onDone={() => { setDone(me.has_password ? "Contraseña cambiada. Tus otras sesiones se cerraron." : "Contraseña creada. Ya puedes entrar también con tu correo."); setSheet(null); }} />
@@ -157,7 +157,7 @@ export function MiCuenta() {
             onClick={() => logoutAll.mutate(undefined, { onSuccess: () => navigate("/entrar", { replace: true }) })}>
             Cerrar en todos lados
           </PrimaryButton>
-          <button type="button" onClick={() => setSheet(null)} className="h-11 text-caption font-semibold text-primary-strong underline">Cancelar</button>
+<Button variant="ghost" size="sm" onClick={() => setSheet(null)}>Cancelar</Button>
         </div>
       </Sheet>
     </main>

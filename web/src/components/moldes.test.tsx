@@ -80,6 +80,20 @@ test("FilterChip dice si está elegido; Chip no se toca", () => {
   expect(screen.queryByRole("button", { name: /Por confirmar/ })).toBeNull();
 });
 
+test("FilterChip: lo elegido lleva el check; con radio es una opción de su grupo", () => {
+  render(<><FilterChip radio pressed>Cada mes</FilterChip><FilterChip radio pressed={false}>Cada semana</FilterChip></>);
+  expect(screen.getByRole("radio", { name: /Cada mes/ })).toHaveAttribute("aria-checked", "true");
+  expect(screen.getByRole("radio", { name: /Cada mes/ })).toHaveTextContent("check");
+  expect(screen.getByRole("radio", { name: /Cada semana/ })).not.toHaveTextContent("check");
+});
+
+test("Button: con start, el ícono va a la izquierda y gira mientras guarda", () => {
+  render(<Button variant="secondary" start="logout" pending>Cerrar sesión</Button>);
+  const b = screen.getByRole("button", { name: /Cerrar sesión/ });
+  expect(b.firstElementChild).toHaveClass("animate-spin");
+  expect(b).not.toHaveTextContent("arrow_forward");
+});
+
 test("ProgressBar: con label es un medidor con su valor en palabras; sin label, decorativa", () => {
   const { container } = render(<><ProgressBar value={57} max={100} label="57 % de lo que entró" tone="trigo" /><ProgressBar value={1} /></>);
   const m = screen.getByRole("meter");

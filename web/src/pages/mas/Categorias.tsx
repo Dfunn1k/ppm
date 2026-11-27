@@ -9,6 +9,7 @@ import { CategoryChip } from "@/components/CategorySheet";
 import { Segmented, SheetSelect } from "@/components/Sheet";
 import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, LineField, PrimaryButton, Screen } from "@/components/ui";
+import { Button } from "@/components/Button";
 
 type Kind = "expense" | "income";
 const KINDS = [{ value: "expense", label: "De gasto" }, { value: "income", label: "De ingreso" }];
@@ -202,10 +203,7 @@ export function NuevaCategoria() {
                 <AllIcons value={icon} onPick={setIcon} tint={shown.color} />
               </Suspense>
             ) : (
-              <button type="button" onClick={() => setAll(true)}
-                className="flex h-control items-center justify-center gap-1.5 rounded-md border border-border text-caption font-semibold">
-                <Icon name="apps" size="sm" />Ver todos los íconos
-              </button>
+              <Button variant="secondary" size="sm" start="apps" onClick={() => setAll(true)}>Ver todos los íconos</Button>
             )}
           </div>
 

@@ -9,6 +9,7 @@ import { longDate, shortDate, todayISO } from "@/lib/dates";
 
 import { Sheet } from "./Sheet";
 import { Icon, Optional } from "./ui";
+import { FilterChip } from "./Chip";
 
 const DayGrid = lazy(() => import("./DayGrid"));   // el calendario, solo al abrir una fecha
 
@@ -86,10 +87,7 @@ export function DateSheet({ open, onClose, title, value, onChange, min: asked, m
             const on = s.value === value;
             const out = (!!min && s.value < min) || (!!max && s.value > max);   // «Ayer» en un día cerrado
             return (
-              <button key={s.label} type="button" aria-pressed={on} disabled={out} onClick={() => pick(s.value)}
-                className={`h-9 rounded-full border px-3.5 text-caption font-semibold disabled:opacity-35 ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-                {s.label}
-              </button>
+              <FilterChip key={s.label} pressed={on} disabled={out} onClick={() => pick(s.value)} className="disabled:opacity-35">{s.label}</FilterChip>
             );
           })}
         </div>

@@ -25,7 +25,7 @@ function Confirm({ open, onClose, title, children, action, icon, danger, pending
         {children}
         {error && <ErrorAlert>{error}</ErrorAlert>}
         <Button variant={danger ? "destructive" : "primary"} pending={pending} icon={icon} onClick={onConfirm} className="mt-1">{action}</Button>
-        <button type="button" onClick={onClose} className="min-h-control rounded-md font-semibold hover:bg-muted">Cancelar</button>
+<Button variant="ghost" size="sm" onClick={onClose}>Cancelar</Button>
       </div>
     </Sheet>
   );
@@ -113,10 +113,7 @@ export function SavingMenu({ post, month, open, onClose, accounts }: {
         <form onSubmit={save} className="flex flex-col gap-4 px-1">
           <LineField label="Nombre" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
           {rename.error && <ErrorAlert>{rename.error.message}</ErrorAlert>}
-          <button type="submit" disabled={rename.isPending || !name.trim() || name.trim() === post.name}
-            className="flex h-14 items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-60">
-            <span>Guardar</span><Icon name={rename.isPending ? "progress_activity" : "check"} className={rename.isPending ? "animate-spin" : ""} />
-          </button>
+          <Button type="submit" icon="check" pending={rename.isPending} disabled={!name.trim() || name.trim() === post.name}>Guardar</Button>
         </form>
       </Sheet>
       <Confirm open={open && step === "delete"} onClose={close} title={`Eliminar ${post.name}`} icon="delete" danger

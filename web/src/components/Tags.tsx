@@ -9,6 +9,7 @@ import { catBg } from "./Avatar";
 
 import { Sheet } from "./Sheet";
 import { ErrorAlert, Icon, Optional } from "./ui";
+import { Button } from "@/components/Button";
 
 const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
 
@@ -108,10 +109,7 @@ function TagSheetBody({ value, onDone, pending, error }: { value: number[]; onDo
         )}
       </div>
       {(create.error || error) && <ErrorAlert>{create.error?.message ?? error}</ErrorAlert>}
-      <button type="button" disabled={pending || create.isPending} onClick={() => onDone(picked)}
-        className="mx-1 mt-1 flex h-13 items-center justify-center rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-        Listo
-      </button>
+      <Button disabled={pending || create.isPending} onClick={() => onDone(picked)} className="mx-1 mt-1 w-auto">Listo</Button>
     </div>
   );
 }

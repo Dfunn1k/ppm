@@ -11,6 +11,7 @@ import { ErrorAlert, Icon, LineField, PrimaryButton, Spinner } from "@/component
 import { DateField } from "@/components/DateSheet";
 import { shortDate, todayISO } from "@/lib/dates";
 import { rateText, symbolOf } from "@/lib/money";
+import { Button } from "@/components/Button";
 
 const NAME: Record<string, string> = { USD: "Dólar", EUR: "Euro" };
 const WEEKDAY = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -108,10 +109,7 @@ export function TipoCambio() {
           </div>
         )}
         <PrimaryButton type="button" onClick={() => setLoading(true)}>Cargar a mano</PrimaryButton>
-        <button type="button" disabled={sunat.isPending} onClick={() => sunat.mutate()}
-          className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
-          <Icon name="sync" className={sunat.isPending ? "animate-spin" : ""} />Traer de SUNAT ahora
-        </button>
+        <Button variant="secondary" start="sync" pending={sunat.isPending} onClick={() => sunat.mutate()}>Traer de SUNAT ahora</Button>
       </div>
 
       <ManualSheet open={loading} onClose={() => setLoading(false)} codes={codes} />

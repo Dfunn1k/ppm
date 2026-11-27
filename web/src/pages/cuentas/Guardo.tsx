@@ -13,6 +13,7 @@ import { currencyOption, parseAmount, symbolOf } from "@/lib/money";
 
 import { AmountField } from "./CuentaForm";
 import { FormHeader } from "./Nueva";
+import { FilterChip } from "@/components/Chip";
 
 export function NuevaGuardo() {
   const navigate = useNavigate();
@@ -58,7 +59,6 @@ export function NuevaGuardo() {
     }
   };
 
-  const pill = "hit-area flex h-10 items-center gap-2 rounded-full border text-body font-semibold";
   return (
     <Screen className="pt-4">
       <FormHeader back="/cuentas/nueva" label="Guardo de otros" />
@@ -76,16 +76,12 @@ export function NuevaGuardo() {
         ) : (
         <div role="radiogroup" aria-label="Persona" className="mt-6 flex flex-wrap gap-2">
           {partners.map((p) => (
-            <button key={p.id} type="button" role="radio" aria-checked={chosen === p.id} onClick={() => setWho(p.id)}
-              className={`${pill} px-4 ${chosen === p.id ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-              {p.name}
-            </button>
+            <FilterChip key={p.id} radio pressed={chosen === p.id} onClick={() => setWho(p.id)}>{p.name}</FilterChip>
           ))}
-          <button type="button" role="radio" aria-checked={chosen === "new"} onClick={() => setWho("new")}
-            className={`${pill} border-dashed px-3.5 ${chosen === "new" ? "border-primary" : "border-input-line"}`}>
-            <Icon name="person_add" />
+          <FilterChip radio pressed={chosen === "new"} icon="person_add" onClick={() => setWho("new")}
+            className={chosen === "new" ? undefined : "border-dashed border-input-line"}>
             Nueva persona
-          </button>
+          </FilterChip>
         </div>
         )}
         {chosen === "new" && (

@@ -6,7 +6,7 @@
 import { ProgressBar } from "@/components/ProgressBar";
 import { PageHeader } from "@/components/PageHeader";
 import { Chip } from "@/components/Chip";
-import { buttonVariants, IconButton } from "@/components/Button";
+import { Button, buttonVariants, IconButton } from "@/components/Button";
 import { Avatar } from "@/components/Avatar";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -510,12 +510,11 @@ function ArchiveSheet({ open, onClose, card }: { open: boolean; onClose: () => v
             : "Deja de aparecer en tus cuentas. Sus movimientos se quedan en tu historial."}
         </p>
         {archive.error && <ErrorAlert>{archive.error.message}</ErrorAlert>}
-        <button type="button" disabled={owes || archive.isPending}
-          onClick={() => archive.mutate(undefined, { onSuccess: () => navigate("/cuentas", { replace: true }) })}
-          className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground disabled:opacity-50">
-          <Icon name="archive" />Archivar tarjeta
-        </button>
-        <button type="button" onClick={onClose} className="h-11 text-caption font-semibold text-primary-strong underline">Cancelar</button>
+        <Button variant="destructive" icon="archive" disabled={owes} pending={archive.isPending}
+          onClick={() => archive.mutate(undefined, { onSuccess: () => navigate("/cuentas", { replace: true }) })}>
+          Archivar tarjeta
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>Cancelar</Button>
       </div>
     </Sheet>
   );

@@ -31,9 +31,9 @@ export function PrimaryButton({ children, pending, ...props }: ComponentProps<"b
   );
 }
 
-export function PrimaryLink({ children, ...props }: LinkProps) {
+export function PrimaryLink({ children, className, ...props }: LinkProps) {
   return (
-    <Link className={primary} {...props}>
+    <Link className={cn(primary, className)} {...props}>
       <span>{children}</span>
       <Icon name="arrow_forward" size="md" />
     </Link>

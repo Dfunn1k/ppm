@@ -3,7 +3,7 @@
 // pasar a por confirmar, y borrar. Una compra en cuotas muestra su calendario y no se edita; si es
 // tuya, se pueden cancelar las cuotas que faltan (y borrar esa cancelación la deshace). Lo repartido
 // en el tiempo muestra sus partes y «Cancelar lo que falta»; sus partes se arman solas.
-import { IconButton } from "@/components/Button";
+import { Button, IconButton } from "@/components/Button";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -416,10 +416,7 @@ export function DetalleMovimiento() {
         {(state.error || remove.error) && <ErrorAlert>{(state.error ?? remove.error)?.message}</ErrorAlert>}
         {cancelable && (
           <>
-            <button type="button" onClick={() => setCanceling(true)}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
-              <Icon name="event_busy" />Cancelar las cuotas que faltan
-            </button>
+            <Button variant="secondary" start="event_busy" onClick={() => setCanceling(true)}>Cancelar las cuotas que faltan</Button>
             <p className="text-caption text-muted-foreground">Si lo devolviste o pagaste lo que faltaba. Las cuotas ya facturadas se quedan donde están.</p>
           </>
         )}
@@ -431,11 +428,9 @@ export function DetalleMovimiento() {
           </Link>
         )}
         {s.posted && !(plan || cancels || deferral || of) && !locked && (
-          <button type="button" disabled={state.isPending} onClick={() => state.mutate(s.posted)}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-input-line font-semibold">
-            <Icon name={s.posted ? "schedule" : "check"} />
+          <Button variant="secondary" start={s.posted ? "schedule" : "check"} pending={state.isPending} onClick={() => state.mutate(s.posted)}>
             {s.posted ? "Pasar a por confirmar" : "Confirmar"}
-          </button>
+          </Button>
         )}
         {!locked && !part && <button type="button" onClick={() => setConfirmDelete(true)}
           className="flex min-h-control items-center justify-center gap-1.5 rounded-md text-body-sm font-semibold text-destructive hover:bg-destructive-soft">
@@ -476,14 +471,11 @@ export function DetalleMovimiento() {
               : `«${s.ref}» desaparece de tus movimientos${plan ? ", con sus cuotas," : deferral ? ", con las partes que ya contaron," : ""} y sus montos vuelven a las cuentas. No se puede deshacer.`}
             {bank.length > 0 && " Si vuelves a importar el extracto, regresa: el banco dice que pasó."}
           </p>
-          <button type="button" disabled={remove.isPending}
-            onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : cancels ? `/movimientos/${cancels.move_id}` : of ? `/movimientos/${of.move_id}` : "/movimientos", { replace: true }) })}
-            className="flex h-14 items-center justify-center gap-2 rounded-lg bg-destructive font-semibold text-destructive-foreground">
-            <Icon name={cancels || of ? "undo" : "delete"} />{cancels || of ? "Deshacer la cancelación" : "Borrar movimiento"}
-          </button>
-          <button type="button" onClick={() => setConfirmDelete(false)} className="h-11 text-caption font-semibold text-primary-strong underline">
-            Cancelar
-          </button>
+          <Button variant="destructive" icon={cancels || of ? "undo" : "delete"} pending={remove.isPending}
+            onClick={() => remove.mutate(undefined, { onSuccess: () => navigate(plan ? `/tarjetas/${plan.card_id}` : cancels ? `/movimientos/${cancels.move_id}` : of ? `/movimientos/${of.move_id}` : "/movimientos", { replace: true }) })}>
+            {cancels || of ? "Deshacer la cancelación" : "Borrar movimiento"}
+          </Button>
+<Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>Cancelar</Button>
         </div>
       </Sheet>
     </main>

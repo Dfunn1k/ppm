@@ -10,6 +10,8 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, PrimaryButton, Spinner } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
+import { FilterChip } from "@/components/Chip";
+import { Button } from "@/components/Button";
 
 export function Cierre() {
   const [date, setDate] = useState<string | null>(null);
@@ -46,14 +48,12 @@ export function Cierre() {
       {showClose && <>
       <SectionHeading className="mt-5">Cerrar hasta</SectionHeading>
       <div role="radiogroup" aria-label="Cerrar hasta" className="mt-2.5 flex flex-wrap gap-2">
-        <button type="button" role="radio" aria-checked={!custom} onClick={() => setDate(null)}
-          className={`hit-area flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${!custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+        <FilterChip radio pressed={!custom} onClick={() => setDate(null)}>
           Fin del mes pasado, {shortDate(c.suggested)}
-        </button>
-        <button type="button" role="radio" aria-checked={custom} onClick={() => setPicking("close")}
-          className={`hit-area flex h-9 items-center rounded-full border px-3 text-caption font-semibold ${custom ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+        </FilterChip>
+        <FilterChip radio pressed={custom} onClick={() => setPicking("close")}>
           {custom ? shortDate(when) : "Otra fecha"}
-        </button>
+        </FilterChip>
       </div>
 
       <section aria-label="Antes de cerrar" className="mt-5 flex flex-col">
@@ -74,10 +74,8 @@ export function Cierre() {
         <section aria-label="Reabrir" className="mt-6 flex flex-col gap-2">
           <SectionHeading>Reabrir</SectionHeading>
           <p className="text-body-sm text-muted-foreground">Si necesitas corregir algo de esos meses, reabre, corrígelo y vuelve a cerrar.</p>
-          <button type="button" onClick={() => setPicking("move")} disabled={setLock.isPending}
-            className="h-12 rounded-lg border border-input-line font-semibold">Mover el cierre a otra fecha</button>
-          <button type="button" onClick={() => setLock.mutate(null)} disabled={setLock.isPending}
-            className="h-12 rounded-lg border border-input-line font-semibold">Reabrir todo</button>
+          <Button variant="secondary" onClick={() => setPicking("move")} disabled={setLock.isPending}>Mover el cierre a otra fecha</Button>
+          <Button variant="secondary" onClick={() => setLock.mutate(null)} disabled={setLock.isPending}>Reabrir todo</Button>
         </section>
       )}
 

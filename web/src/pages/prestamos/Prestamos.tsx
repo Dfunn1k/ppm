@@ -9,7 +9,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { type AccountRow, useAccounts, useCatalog, useCreateLoan, useLoan, useMe, usePayLoan } from "@/api/hooks";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { Segmented, SheetSelect } from "@/components/Sheet";
-import { ErrorAlert, Icon, LineField, PrimaryButton, Screen, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, LineField, PrimaryButton, PrimaryLink, Screen, Spinner } from "@/components/ui";
 import { shortDate, todayISO } from "@/lib/dates";
 import { add, formatAmount, formatNumber, parseAmount, symbolOf } from "@/lib/money";
 import { FormHeader } from "@/pages/cuentas/Nueva";
@@ -193,9 +193,7 @@ export function Prestamo() {
             <Icon name="schedule" size="sm" />
             {l.next.move_id ? "Ya está por confirmar: corrígela con la boleta" : `Se crea por confirmar el ${Number(l.next.occurrence.slice(8))}; corrígela con la boleta`}
           </span>
-          <Link to={`/prestamos/${id}/pagar`} className="mt-1 flex min-h-12 items-center justify-between rounded-md bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90">
-            <span>Pagar cuota</span><Icon name="arrow_forward" size="md" />
-          </Link>
+          <PrimaryLink to={`/prestamos/${id}/pagar`} className="mt-1">Pagar cuota</PrimaryLink>
         </section>
       )}
       {paidOff && (

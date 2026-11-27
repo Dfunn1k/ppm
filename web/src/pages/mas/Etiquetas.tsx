@@ -10,6 +10,7 @@ import { catBg } from "@/components/Avatar";
 import { BackLink } from "@/components/PageHeader";
 import { ErrorAlert, Icon, LineField, Spinner, Status } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 const COLORS = ["gris", "rojo", "naranja", "mostaza", "turquesa", "morado", "marrón", "verde azulado", "azul", "frambuesa", "verde", "índigo"];
 
@@ -99,20 +100,14 @@ function TagForm({ tag, onDone }: { tag: Tag | null; onDone: () => void }) {
         </div>
       </div>
       {error && <ErrorAlert>{error.message}</ErrorAlert>}
-      <button type="submit" disabled={busy || !name.trim()}
-        className="flex h-13 items-center justify-center rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-        {tag ? "Guardar" : "Crear etiqueta"}
-      </button>
+      <Button type="submit" disabled={busy || !name.trim()}>{tag ? "Guardar" : "Crear etiqueta"}</Button>
       {tag && !confirming && (
         <div className="flex gap-2">
-          <button type="button" disabled={busy} onClick={() => update.mutate({ id: tag.id, active: !tag.active }, { onSuccess: onDone })}
-            className="flex h-11 flex-1 items-center justify-center rounded-lg border border-border font-semibold">
+          <Button variant="secondary" size="sm" disabled={busy} onClick={() => update.mutate({ id: tag.id, active: !tag.active }, { onSuccess: onDone })}
+            className="flex-1">
             {tag.active ? "Archivar" : "Desarchivar"}
-          </button>
-          <button type="button" disabled={busy} onClick={() => setConfirming(true)}
-            className="flex h-11 flex-1 items-center justify-center rounded-lg border border-border font-semibold text-expense">
-            Eliminar
-          </button>
+          </Button>
+          <Button variant="secondary" size="sm" disabled={busy} onClick={() => setConfirming(true)} className="flex-1 text-destructive">Eliminar</Button>
         </div>
       )}
       {tag && confirming && (
@@ -121,9 +116,9 @@ function TagForm({ tag, onDone }: { tag: Tag | null; onDone: () => void }) {
             {tag.moves ? `Sale de ${count(tag.moves).toLowerCase()}; los movimientos no se tocan.` : "No la lleva ningún movimiento."}
           </span>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setConfirming(false)} className="flex h-11 flex-1 items-center justify-center rounded-lg border border-border bg-card font-semibold">No</button>
-            <button type="button" disabled={busy} onClick={() => remove.mutate(tag.id, { onSuccess: onDone })}
-              className="flex h-11 flex-1 items-center justify-center rounded-lg bg-expense font-semibold text-background">Sí, eliminarla</button>
+            <Button variant="secondary" size="sm" onClick={() => setConfirming(false)} className="flex-1">No</Button>
+            <Button variant="destructive" size="sm" icon="delete" disabled={busy} onClick={() => remove.mutate(tag.id, { onSuccess: onDone })}
+              className="flex-1 px-4">Sí, eliminarla</Button>
           </div>
         </div>
       )}

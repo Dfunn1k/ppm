@@ -292,7 +292,7 @@ function Confirm({ open, onClose, title, text, action, icon, destructive, pendin
       <div className="flex flex-col gap-4 px-3">
         <p className="text-muted-foreground tabular-nums">{text}</p>
         <Button variant={destructive ? "destructive" : "primary"} pending={pending} icon={icon} onClick={onConfirm}>{action}</Button>
-        <button type="button" onClick={onClose} className="min-h-control rounded-md font-semibold hover:bg-muted">Cancelar</button>
+<Button variant="ghost" size="sm" onClick={onClose}>Cancelar</Button>
       </div>
     </Sheet>
   );

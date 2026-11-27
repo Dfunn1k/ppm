@@ -9,6 +9,7 @@ import { Avatar } from "./MoveBits";
 import { PersonPicker } from "./PersonPicker";
 import { Sheet } from "./Sheet";
 import { ErrorAlert, Icon, Optional } from "./ui";
+import { Button } from "@/components/Button";
 
 /** En Registrar: una fila «Con quién», opcional, que se abre en el buscador de personas. */
 export function WithPartnerField({ value, onChange }: { value: number | null; onChange: (id: number | null) => void }) {
@@ -73,16 +74,14 @@ export function WithPartnerRow({ moveId, partnerId, partner, locked }: {
             </Link>
           )}
           {save.error && <ErrorAlert>{save.error.message}</ErrorAlert>}
-          <button type="button" disabled={save.isPending || chosen === null || chosen === partnerId}
-            onClick={() => save.mutate(chosen, { onSuccess: () => setOpen(false) })}
-            className="flex h-13 items-center justify-center rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-60">
+          <Button disabled={save.isPending || chosen === null || chosen === partnerId}
+            onClick={() => save.mutate(chosen, { onSuccess: () => setOpen(false) })}>
             Guardar
-          </button>
+          </Button>
           {partnerId && (
-            <button type="button" disabled={save.isPending} onClick={() => save.mutate(null, { onSuccess: () => setOpen(false) })}
-              className="flex h-11 items-center justify-center rounded-lg border border-border font-semibold">
+            <Button variant="secondary" disabled={save.isPending} onClick={() => save.mutate(null, { onSuccess: () => setOpen(false) })}>
               Quitar: no fue con nadie
-            </button>
+            </Button>
           )}
         </div>
       </Sheet>

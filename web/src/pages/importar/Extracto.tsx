@@ -121,7 +121,7 @@ export function Extracto() {
             onClick={() => undo.mutate(undefined, { onSuccess: () => navigate(`/cuentas/${d.account_id}`, { replace: true }) })}>
             {d.pending === 0 ? "Deshacer" : `Borrar ${d.pending} y deshacer`}
           </Button>
-          <button type="button" onClick={() => setAsking(false)} className="min-h-control text-caption font-semibold text-primary-strong underline">Cancelar</button>
+<Button variant="ghost" size="sm" onClick={() => setAsking(false)}>Cancelar</Button>
         </div>
       </Sheet>
     </main>
