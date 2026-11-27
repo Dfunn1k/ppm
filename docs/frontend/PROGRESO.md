@@ -5,8 +5,8 @@ La misión completa está en [MISION.md](MISION.md). Este archivo es el punto de
 ## Dónde estamos
 
 - **Fase actual:** 5, QA final (en curso).
-- **Rama:** `frontend/fase-5-botones`
-- **Último commit:** ver `git log -1 frontend/fase-5-botones`
+- **Rama:** `frontend/fase-5-informe`
+- **Último commit:** ver `git log -1 frontend/fase-5-informe`
 
 ## Checklist
 
@@ -117,9 +117,9 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
 - [x] Toda la matriz, claro y oscuro (26-nov): scroll horizontal 0; lo que se toca < 44 px 0; cortes 0; axe 0; foco tapado o sin verse 0.
   - Con los datos nuevos aparecieron 4 y se arreglaron sin cambiar cómo se ve: el nombre en las filas de Por clasificar (22 px de alto, ahora con `hit-area`), los dos botones de «La cuota del banco es distinta» a 280 px (ahora bajan de línea), «Por clasificar» cortado sin «…» en Inicio a 1024 px, y en Por clasificar de escritorio el botón fijo tapaba la categoría con el foco (`scroll-pb-32`).
 - [x] PR #150 (limpieza y QA con datos), aprobado por Dany (26-nov).
-- [ ] Piezas hechas a mano en vez del molde (recuento del 26-nov): 10 botones principales, 18 de contorno, 6 de borrar y 8 «Cancelar»; 13 pastillas para elegir; ~33 títulos de sección; 15 cabeceras con «Volver»; 7 buscadores; ~45 filas. Dany eligió (26-nov) la opción 1: botones y pastillas ahora, con boceto (Caso18Botones en el lienzo); títulos, cabeceras, buscadores y filas quedan para el informe final.
+- [x] Piezas hechas a mano en vez del molde (recuento del 26-nov): 10 botones principales, 18 de contorno, 6 de borrar y 8 «Cancelar»; 13 pastillas para elegir; ~33 títulos de sección; 15 cabeceras con «Volver»; 7 buscadores; ~45 filas. Dany eligió (26-nov) la opción 1: botones y pastillas ahora, con boceto (Caso18Botones en el lienzo); títulos, cabeceras, buscadores y filas quedan para el informe final.
 - [x] Lighthouse: PR #151, aprobado por Dany (26-nov).
-- [x] Botones y pastillas (boceto Caso18Botones aprobado, pastilla A, 26-nov):
+- [x] Botones y pastillas (boceto Caso18Botones aprobado, pastilla A, 26-nov). PR #152, aprobado por Dany (26-nov):
   - Button: el de contorno pasa al borde `input-line` y a letra `body`, con `start` para el ícono de la izquierda (que gira mientras guarda). FilterChip: 36 px, área de 44, el relleno del acento con check al elegir y `radio` para los grupos de una opción. PrimaryLink acepta `className`.
   - Pasan al molde: 7 principales, 12 de contorno, 4 de borrar, 8 «Cancelar» y «Volver», y las pastillas de 8 lugares (Registrar, Cierre, Guardo, repartir, compartido, repartido, íconos y fechas). Hechos a mano quedan: «Editar» del movimiento (ya igual, con su tecla), las acciones chicas en pastilla de Movimiento y Pendientes, y los filtros de Movimientos (abren una lista).
   - De paso, en el detalle de la cuenta (que ahora tiene un extracto en la muestra): «Último extracto» medía 40 px y a 280 px quedaba de 19 px de ancho; «Por clasificar» se cortaba sin «…». Arreglados.
@@ -130,11 +130,12 @@ Cada lote: tokens y moldes, borrar el estilo viejo, tope del inspector a 0 en su
   - Encontró saltos de la página al cargar (CLS 0.41 en Inicio y 0.54 en Por clasificar de escritorio; lo bueno es < 0.1). Arreglados sin cambiar cómo se ve: Inicio espera Pendientes y el presupuesto junto con lo demás; el panel de Por clasificar tiene su ancho desde el principio (`w-full`); y cada ícono tiene su cuadrado reservado mientras llega la fuente (`.icon` en la capa base). Después: CLS 0 a 0.04 en todas.
   - Cómo se corre: ver «Lighthouse» abajo.
 - [ ] La prueba en un iPhone (Dany).
-- [ ] `docs/frontend/INFORME-FINAL.md` y la skill `ppm-interfaz` con lo aprendido.
+- [x] `docs/frontend/INFORME-FINAL.md` (lo hecho, lo que queda y las reglas) y la skill `ppm-interfaz` con lo aprendido: el inspector en cero, qué molde usar para cada cosa, las trampas de la fase 5 y cómo revisar con las capturas y Lighthouse.
+- [ ] Un lector de pantalla de verdad (VoiceOver en el mismo iPhone, o NVDA): Inicio, Registrar y Movimientos.
 
 ## Siguiente paso
 
-Dany revisa el PR de botones y pastillas. Después, el informe final (`docs/frontend/INFORME-FINAL.md`) y la skill `ppm-interfaz` con lo aprendido, y la prueba en un iPhone.
+Dany revisa el PR del informe final. Con su merge, la misión queda terminada salvo lo que solo se puede hacer con un teléfono en la mano: la prueba en un iPhone (la barra de abajo y la barra de gestos) y un recorrido con VoiceOver. Lo que queda para después, por orden, está en «Lo que queda» de `INFORME-FINAL.md`.
 
 ## Decisiones de Dany
 

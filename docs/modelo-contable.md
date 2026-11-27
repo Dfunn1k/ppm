@@ -2997,6 +2997,7 @@ Preguntas para las siguientes sesiones:
 
 | Fecha | Cambio |
 | --- | --- |
+| 2026-11-26 | Misión del frontend terminada: informe final (`docs/frontend/INFORME-FINAL.md`) y la skill `ppm-interfaz` con lo aprendido; quedan la prueba en un iPhone y un recorrido con VoiceOver |
 | 2026-11-26 | Misión del frontend, fase 5: botones y pastillas, uno solo de cada uno (boceto Caso18Botones, pastilla A: el relleno del acento con check) |
 | 2026-11-26 | Por clasificar en escritorio: lista y panel (opción A del boceto), con ↑ ↓ y Enter |
 | 2026-11-26 | Misión del frontend, fase 4: el visor de adjuntos usa la paleta `panel-*`, con `panel-border` y `panel-danger` nuevos |

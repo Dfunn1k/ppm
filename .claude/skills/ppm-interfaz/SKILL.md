@@ -14,6 +14,7 @@ PPM es contable por dentro e intuitivo por fuera. Esta skill dice dónde está l
 3. `docs/modelo-contable.md`: las decisiones con fecha. Busca las de la pantalla que vas a tocar (por su nombre, su código como C1, M2 o R1, o «Elegido por Dany»). Las de interfaz incluyen el escritorio, el riel, «Sin punto como conector» (casos 5 a 10), Reportes y el presupuesto.
 4. `web/src/styles.css` y `web/src/components/ui.tsx`: cómo están implementados los tokens y las piezas compartidas.
 5. `docs/frontend/SISTEMA.md`: las escalas, los cortes de pantalla, los moldes (Row, SectionHeading, PageHeader, Avatar, Amount, Button, Chip…) y las reglas de código aprobadas el 25-nov.
+6. `docs/frontend/INFORME-FINAL.md`: cómo quedó el frontend al terminar la misión (26-nov), qué piezas siguen hechas a mano y qué queda pendiente.
 
 Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: propón 2 o 3 opciones a Dany, con pros y contras y una analogía, y espera que elija.
 
@@ -23,10 +24,17 @@ Si lo que vas a hacer no está decidido en esas fuentes, **no lo decidas tú**: 
 
 **Estilos**
 - Solo tokens. Nada de colores hex, `rgb()` ni clases de color de Tailwind que no sean del tema (`bg-background`, `text-muted-foreground`, `bg-primary`…).
-- No agregues valores arbitrarios de Tailwind (`text-[22px]`, `min-h-[60px]`, `rounded-[12px]`). Hoy el código tiene muchos; **no sumes más**. Si falta un valor en la escala, propón un token nuevo: va en `tokens.json`, en `styles.css` y en `design-system/README.md`, en el mismo PR.
+- Nada de valores arbitrarios de Tailwind (`text-[22px]`, `min-h-[60px]`, `rounded-[12px]`). `web/src` está en cero desde el 26-nov y el inspector (`web/src/estilo.test.ts`) hace fallar el PR si aparece uno. Las excepciones viven en `estilo-excepciones.ts`, cada una con su motivo; la lista solo se achica, y sumar una pide el OK de Dany. Si falta un valor en la escala, propón un token nuevo: va en `tokens.json`, en `styles.css` y en `design-system/README.md`, en el mismo PR.
 - Nada de `style={{…}}` salvo valores realmente dinámicos (el ancho de una barra según un porcentaje), ni `!important`.
-- Antes de crear un componente, busca si ya existe en `web/src/components/` (sobre todo en `ui.tsx`: Screen, Amounts, Status, Facts, Segments, Optional, LineField, Note…). Si existe uno parecido, agrégale una variante (con `class-variance-authority`) en vez de copiarlo. Los moldes viven en `components/`, nunca dentro de una página.
-- Íconos: solo Material Symbols Rounded (`Icon` o `<span className="icon">`). Las tipografías se sirven con `@fontsource`: Bricolage Grotesque solo para títulos, IBM Plex Sans para el resto e IBM Plex Mono para códigos.
+- **Moldes antes que copias.** Un botón es `Button` (`primary`, `secondary` con `start` para el ícono de la izquierda, `ghost` para «Cancelar» y «Volver», `destructive`; `size` `md` o `sm`; `pending`), o `PrimaryLink` y `buttonVariants` si es un enlace. Una pastilla para elegir es `FilterChip` (`radio` en los grupos de una opción). Una fila es `Row`, un título de sección `SectionHeading`, una cabecera con «Volver» `PageHeader`, un buscador `SearchField`, un círculo `Avatar`, un monto `Amount`, un botón de solo ícono `IconButton`. Antes de crear otro, busca en `web/src/components/` (y en `ui.tsx`: Screen, Amounts, Status, Facts, Segments, Optional, LineField, Note…). Si uno parecido no alcanza, agrégale una variante con `cva` y su prueba en `components/moldes.test.tsx`; no lo copies. Los moldes viven en `components/`, nunca dentro de una página. Las piezas que todavía están hechas a mano están en `INFORME-FINAL.md`: si tocas una, pásala al molde.
+- Íconos: solo Material Symbols Rounded, con `Icon` y su `size` (no con clases de tamaño). Las tipografías se sirven con `@fontsource`: Bricolage Grotesque solo para títulos, IBM Plex Sans para el resto e IBM Plex Mono para códigos.
+
+**Trampas que ya costaron (fase 5)**
+- Una regla de CSS fuera de capa le gana a cualquier utilidad. Lo que da la base de una pieza va en `@layer base`; así los íconos dejaron de medir todos 20 px.
+- Lo chico que se toca lleva `hit-area` (44 px de área sin cambiar cómo se ve), no un padding que lo agranda.
+- Un texto que puede cortarse dentro de una fila flexible necesita `min-w-0` o `shrink` y `truncate`, para que termine en «…» y no se salga.
+- Mientras carga, la silueta espera **todo** lo que la pantalla muestra; si una parte llega después, empuja lo demás y Lighthouse lo marca como salto (CLS).
+- Una fila de botones que puede quedar angosta lleva `flex-wrap`, o a 280 px se aplastan.
 
 **Texto**
 - La voz del README del sistema de diseño: de tú, frases cortas, palabras de la gente (nunca «Debe/Haber», «asiento» ni «pasivo»), mayúscula solo en la primera letra, sin exclamaciones ni emoji.
@@ -57,9 +65,19 @@ docker compose exec web corepack pnpm test
 docker compose run --rm e2e        # Playwright: proyecto «celular» (Pixel 7) y «escritorio» (1440×900)
 ```
 
-Además:
-- Mira la pantalla que cambiaste en al menos 360 px, 390 px, 768 px, 1024 px y 1440 px de ancho, en claro y en oscuro, y deja capturas de antes y después en el PR.
-- No subiste la cantidad de valores arbitrarios, colores hex ni `style={{…}}` en `web/src`.
+Además, con las capturas (ver «Cómo se toman las capturas» en `docs/frontend/PROGRESO.md`):
+
+```bash
+docker compose run --rm -e PPM_PANTALLAS=inicio,movimientos e2e corepack pnpm capturas   # o toda la matriz, sin filtro (~20 min)
+docker compose run --rm e2e node capturas/resumen.mjs                                    # capturas-salida/RESUMEN.md
+```
+
+- El resumen tiene que dar 0 en scroll horizontal, lo que se toca con menos de 44 px, textos cortados, axe y foco tapado o sin anillo, en claro y en oscuro.
+- Mira las fotos de la pantalla que cambiaste en al menos 280, 360, 390, 768, 1024 y 1440 px, y deja las de antes y después en el PR.
+- Una pantalla nueva entra a `web/capturas/pantallas.ts`. Si necesita datos que la persona de muestra no tiene, agrégalos en `capturas/datos.ts` o `capturas/archivos.ts`: sin datos, los problemas no aparecen.
+- Cada `docker compose run e2e` borra la persona de muestra. Para medir algo aparte (una foto suelta, Lighthouse), vuelve a crearla con `-g preparar`.
+- Si cambiaste cómo carga una pantalla, pásale Lighthouse (ver «Lighthouse» en `PROGRESO.md`): accesibilidad 100 y CLS menor que 0.1.
+- El inspector pasa (va dentro de `pnpm test`) y no sumaste `style={{…}}` que no sea dinámico.
 - Si decidiste algo nuevo con Dany, quedó escrito en `docs/modelo-contable.md` con su fecha (y, si es un token o una regla visual, en `design-system/`), en este mismo PR.
 - La versión sube según `CLAUDE.md`.
 
