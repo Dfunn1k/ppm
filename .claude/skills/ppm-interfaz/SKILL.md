@@ -72,8 +72,9 @@ docker compose run --rm -e PPM_PANTALLAS=inicio,movimientos e2e corepack pnpm ca
 docker compose run --rm e2e node capturas/resumen.mjs                                    # capturas-salida/RESUMEN.md
 ```
 
-- El resumen tiene que dar 0 en scroll horizontal, lo que se toca con menos de 44 px, textos cortados, axe y foco tapado o sin anillo, en claro y en oscuro.
+- El resumen tiene que dar 0 en scroll horizontal (cuenta también la caja de adentro que se pasa, como la columna de la lista en la computadora), lo que se toca con menos de 44 px, textos cortados, axe y foco tapado o sin anillo, en claro y en oscuro.
 - Mira las fotos de la pantalla que cambiaste en al menos 280, 360, 390, 768, 1024 y 1440 px, y deja las de antes y después en el PR.
+- Las fotos no dicen a dónde lleva cada botón. Si tocaste un enlace a `/registrar` (o a editar un movimiento), lleva `state={usePanel()}` (`components/AppNav.tsx`), para que en la computadora se abra en el panel y no en la vista del celular. Pruébalo con un clic en el proyecto «escritorio».
 - Una pantalla nueva entra a `web/capturas/pantallas.ts`. Si necesita datos que la persona de muestra no tiene, agrégalos en `capturas/datos.ts` o `capturas/archivos.ts`: sin datos, los problemas no aparecen.
 - Cada `docker compose run e2e` borra la persona de muestra. Para medir algo aparte (una foto suelta, Lighthouse), vuelve a crearla con `-g preparar`.
 - Si cambiaste cómo carga una pantalla, pásale Lighthouse (ver «Lighthouse» en `PROGRESO.md`): accesibilidad 100 y CLS menor que 0.1.

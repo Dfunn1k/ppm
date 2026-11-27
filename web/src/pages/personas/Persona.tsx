@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { type OpenItem, type PartnerRow, useMe, usePartner, usePartnerAction, useRecurringList } from "@/api/hooks";
+import { usePanel } from "@/components/AppNav";
 import { DebtCard, DueChip } from "@/components/DebtCard";
 import { MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Activities } from "@/components/Pending";
@@ -43,6 +44,7 @@ function offsetOf(p: PartnerRow) {
 
 export function Persona() {
   const id = Number(useParams().id);
+  const panel = usePanel();
   const back = useBack();
   const me = useMe().data;
   const detail = usePartner(id);
@@ -153,7 +155,7 @@ export function Persona() {
               </button>
             )}
             {keep && (
-              <Link to={to("custody_out")} className={SECONDARY}>
+              <Link to={to("custody_out")} state={panel} className={SECONDARY}>
                 <Icon name="undo" />Devolver
               </Link>
             )}
@@ -166,7 +168,7 @@ export function Persona() {
           </button>
         )}
         <div className="flex items-center justify-center gap-6">
-          <Link to={to("lend")} className="flex min-h-control items-center gap-1.5 text-caption font-semibold text-primary-strong">
+          <Link to={to("lend")} state={panel} className="flex min-h-control items-center gap-1.5 text-caption font-semibold text-primary-strong">
             <Icon name="volunteer_activism" />Prestarle
           </Link>
           <Link to={`/personas/${p.id}/ya-debia`} className="flex min-h-control items-center gap-1.5 text-caption font-semibold text-primary-strong">
@@ -181,7 +183,7 @@ export function Persona() {
       <Sheet title="¿Qué pasó?" open={hoja === "pago"} onClose={() => setHoja(null)}>
         <div className="flex flex-col gap-2 px-1">
           {options.map((o) => (
-            <Link key={o.kind} to={to(o.kind)} className="flex min-h-row-option items-center gap-3 rounded-md bg-muted px-3 py-2 hover:bg-border">
+            <Link key={o.kind} to={to(o.kind)} state={panel} className="flex min-h-row-option items-center gap-3 rounded-md bg-muted px-3 py-2 hover:bg-border">
               <Icon name={o.icon} size="md" />
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">{o.name}</span>

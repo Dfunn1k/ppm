@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type CardDetail, useAddBankCharge, useArchiveAccount, useCard, useCardDueDate, useCardRate, useMe, useUpdateCard } from "@/api/hooks";
+import { usePanel } from "@/components/AppNav";
 import { type Bit, MoveLine, clipBit, pendingBit } from "@/components/MoveBits";
 import { Activities, ActivitySheet } from "@/components/Pending";
 import { Segmented, Sheet } from "@/components/Sheet";
@@ -30,6 +31,7 @@ type Item = CardDetail["cycles"][number]["items"][number];
 
 export function Tarjeta() {
   const id = Number(useParams().id);
+  const panel = usePanel();
   const me = useMe().data;
   const card = useCard(id);
   const [menu, setMenu] = useState<Menu>(null);
@@ -247,7 +249,7 @@ export function Tarjeta() {
             Lo que compres con la tarjeta aparece aquí, agrupado por ciclo como en tu estado de cuenta.
           </span>
         )}
-        <Link to={`/registrar?cuenta=${id}`} state={{ from: `/tarjetas/${id}` }} data-from={`/tarjetas/${id}`}
+        <Link to={`/registrar?cuenta=${id}`} state={{ ...panel, from: `/tarjetas/${id}` }} data-from={`/tarjetas/${id}`}
           className="flex h-12 items-center justify-center gap-1.5 rounded-lg border border-dashed border-input-line font-semibold">
           <Icon name="percent" />Intereses o comisiones del banco
         </Link>

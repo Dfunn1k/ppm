@@ -6,6 +6,9 @@ export type Medidas = {
   overflowX: number;                 // cuántos px se pasa de ancho (0 = sin scroll horizontal)
   small: { what: string; w: number; h: number; inline: boolean }[];
   clipped: { what: string; w: number; scroll: number; h: number; scrollH: number }[];
+  // Cajas con su propio scroll que se pasan de ancho: un panel (la lista de 440 px) con barra horizontal.
+  // overflowX de la página no lo ve, porque la página no se pasa: se pasa la caja de adentro.
+  scrollX: { what: string; w: number; scroll: number; carousel: boolean }[];
 };
 
 export function medir(page: Page): Promise<Medidas> {
@@ -48,7 +51,17 @@ export function medir(page: Page): Promise<Medidas> {
         clipped.push({ what: label(el), w: h.clientWidth, scroll: h.scrollWidth, h: h.clientHeight, scrollH: h.scrollHeight });
       }
     }
-    return { overflowX: Math.max(0, document.documentElement.scrollWidth - window.innerWidth), small, clipped };
+    const scrollX: Medidas["scrollX"] = [];
+    for (const el of document.querySelectorAll("body *")) {
+      const h = el as HTMLElement;
+      if (!visible(el)) continue;
+      const st = getComputedStyle(el);
+      if (!["auto", "scroll"].includes(st.overflowX) || h.scrollWidth <= h.clientWidth + 2) continue;
+      // Una fila que se desliza a propósito (las pastillas de filtro, los adjuntos): no crece hacia abajo
+      const carousel = h.scrollHeight <= h.clientHeight + 2 && h.clientHeight < 200;
+      scrollX.push({ what: `${label(el).slice(0, 60)} .${(h.className || "").toString().split(" ").slice(0, 4).join(".")}`, w: h.clientWidth, scroll: h.scrollWidth, carousel });
+    }
+    return { scrollX, overflowX: Math.max(0, document.documentElement.scrollWidth - window.innerWidth), small, clipped };
   });
 }
 

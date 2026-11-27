@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, NavLink, useNavigate, useParams } from "react-router";
 
 import { type RecurringNext, type RecurringRow, useMe, useOccurrence, useRecurring, useRecurringList, useRecurringState } from "@/api/hooks";
+import { usePanel } from "@/components/AppNav";
 import { CategoryChip } from "@/components/CategorySheet";
 import { Avatar } from "@/components/MoveBits";
 import { TagChips } from "@/components/Tags";
@@ -58,6 +59,7 @@ function caption(row: RecurringRow) {
 export function Recurrentes() {
   const me = useMe().data;
   const list = useRecurringList();
+  const panel = usePanel();
   if (!me?.currency || list.isPending) return <Spinner />;
   if (list.isError) return <main className="mx-auto max-w-md px-6 pt-8"><ErrorAlert>{list.error.message}</ErrorAlert></main>;
   const lang = me.lang ?? "es-PE";
@@ -68,13 +70,14 @@ export function Recurrentes() {
       <div className="-mx-2.5 flex min-h-control items-center justify-between lg:hidden">
         <BackLink to="/mas" label="Volver a Más" />
       </div>
-      <div className="flex items-center justify-between gap-3 lg:pt-4">
-        <h1 className="mt-2 text-title-hero lg:mt-0">Recurrentes</h1>
-        <Link to="/registrar?repite=1"
-          className={cn(DESK_BTN, "hidden flex-none lg:inline-flex")}>
-          <Icon name="add" />Nuevo recurrente
+      {/* En la computadora, el + va en su propia fila: al lado del título no entra a 1024 px (boceto Caso21, 27-nov) */}
+      <div className="-mr-2.5 hidden min-h-control items-center justify-end lg:flex">
+        <Link to="/registrar?repite=1" state={panel} aria-label="Nuevo recurrente"
+          className="grid size-control place-items-center rounded-full bg-secondary text-secondary-foreground">
+          <Icon name="add" size="md" />
         </Link>
       </div>
+      <h1 className="mt-2 text-title-hero lg:mt-0">Recurrentes</h1>
       {rows.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <span className="grid size-16 place-items-center rounded-full bg-muted"><Icon name="repeat" size="lg" /></span>
@@ -117,7 +120,7 @@ export function Recurrentes() {
           </ul>
         </>
       )}
-      <Link to="/registrar?repite=1"
+      <Link to="/registrar?repite=1" state={panel}
         className="mt-5 flex h-12 items-center lg:hidden justify-center gap-1.5 rounded-xl border border-dashed border-input-line font-semibold">
         <Icon name="add" />Nuevo recurrente
       </Link>

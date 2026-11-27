@@ -1,5 +1,5 @@
 // Junta lo que dejaron las capturas y axe en capturas-salida/RESUMEN.md: por tamaño y tema, el
-// scroll horizontal, lo que se toca y mide menos de 44×44 px y los posibles cortes; y las
+// scroll horizontal (de la página o de una caja de adentro), lo que se toca y mide menos de 44×44 px y los posibles cortes; y las
 // violaciones de axe por regla y pantalla.
 //   docker compose run --rm e2e node capturas/resumen.mjs
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -14,8 +14,14 @@ const tiny = new Map();
 for (const f of medidas.sort()) {
   const d = JSON.parse(readFileSync(`${OUT}/medidas/${f}`, "utf8"));
   const rows = d.rows ?? [];
-  const ox = rows.filter((r) => r.m?.overflowX > 0);
-  for (const r of ox) overflow.push(`${f.replace(".json", "")} ${r.screen} (+${r.m.overflowX} px)`);
+  // Cuenta la página que se pasa de ancho y también la caja con su propio scroll que se pasa (un panel),
+  // menos las filas que se deslizan a propósito (las pastillas de filtro)
+  const boxes = (r) => (r.m?.scrollX ?? []).filter((x) => !x.carousel);
+  const ox = rows.filter((r) => r.m?.overflowX > 0 || boxes(r).length > 0);
+  for (const r of ox) {
+    if (r.m.overflowX > 0) overflow.push(`${f.replace(".json", "")} ${r.screen}: la página (+${r.m.overflowX} px)`);
+    for (const x of boxes(r)) overflow.push(`${f.replace(".json", "")} ${r.screen}: ${x.what} (+${x.scroll - x.w} px)`);
+  }
   let small = 0, below24 = 0, clipped = 0;
   for (const r of rows) {
     const s = (r.m?.small ?? []).filter((x) => !x.inline);

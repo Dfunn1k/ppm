@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { useAccounts, useCard, useMe, useSaveMove } from "@/api/hooks";
+import { usePanel } from "@/components/AppNav";
 import { SheetSelect, SEGMENTS, segment } from "@/components/Sheet";
 import { ErrorAlert, Facts, Icon, PrimaryButton, Screen, Spinner } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
@@ -15,6 +16,7 @@ import { useBack } from "@/lib/transitions";
 
 export function PagarTarjeta() {
   const id = Number(useParams().id);
+  const panel = usePanel();
   const navigate = useNavigate();
   const back = useBack();
   const me = useMe().data;
@@ -104,7 +106,7 @@ export function PagarTarjeta() {
               <Icon name="currency_exchange" />
               <span><b>No tienes una cuenta en {name} con plata.</b> La deuda en {name} se paga con {name}: cómpralos primero y vuelve a pagar.</span>
             </span>
-            <Link to="/registrar?tipo=transfer" className="flex min-h-control items-center justify-center rounded-lg border border-current font-semibold">
+            <Link to="/registrar?tipo=transfer" state={panel} className="flex min-h-control items-center justify-center rounded-lg border border-current font-semibold">
               Comprar {name}
             </Link>
           </div>
