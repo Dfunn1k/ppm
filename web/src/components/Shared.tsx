@@ -12,8 +12,9 @@ import { PersonaSheet } from "@/pages/personas/PersonaForm";
 import { Avatar } from "./MoveBits";
 import { PersonPicker } from "./PersonPicker";
 import { Segmented, Sheet } from "./Sheet";
-import { Icon } from "./ui";
+import { IconButton } from "./Button";
 import { FilterChip } from "./Chip";
+import { Icon, Note } from "./ui";
 
 export type SharedPerson = { id: number; amount: string };
 export type SharedState = { on: boolean; payer: number | "me"; people: SharedPerson[]; mode: "equal" | "amounts"; mine: string };
@@ -58,18 +59,26 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
   const { mine, theirs } = shares(s, total, parse);
   const mePaid = s.payer === "me";
   const where = category ? `en ${category}` : "de tu categoría";
+  const to = category ?? "tu categoría";
   const what = income ? "ingreso" : "gasto";
   const each = repeating ? "Cada vez" : "";
 
+  // Lo que las filas no dicen: de dónde sale (o adónde entra) la plata y adónde va tu parte. Lo de cada
+  // persona ya está en su fila (boceto Caso19, opción A, 27-nov).
+  // Un monto nunca se parte en dos líneas: «S/» y la cifra van unidos por un espacio que no corta
+  const amt = (c: number) => format(money2(c)).replace(/ /g, "\u00a0");
   let result = "Agrega a con quién lo compartiste.";
-  if (s.people.length > 0 && cents(total) > 0) {
+  let over: number | null = null;   // cuánto pasan las partes del total
+  const t = cents(total);
+  if (s.people.length > 0 && t > 0) {
     if (mePaid) {
-      const owe = s.people.map((p, i) => income ? `le debes ${format(money2(theirs[i]!))} a ${first(p.id)}` : `${first(p.id)} te debe ${format(money2(theirs[i]!))}`);
-      const flow = income ? `entra ${format(money2(cents(total)))}${account ? ` a ${account}` : ""}` : `sale ${format(money2(cents(total)))}${account ? ` de ${account}` : ""}`;
-      result = `${each ? `${each} ${flow}` : flow.replace(/^./, (c) => c.toUpperCase())}. ${format(money2(mine))} son ${what} tuyo ${where}; ${owe.join(", ")}.`;
+      const flow = income ? `entra ${amt(t)}${account ? ` a ${account}` : ""}` : `sale ${amt(t)}${account ? ` de ${account}` : ""}`;
+      result = `${each ? `${each} ${flow}` : flow.replace(/^./, (c) => c.toUpperCase())}. Tu parte, ${amt(mine)}, va a ${to}.`;
+      if (mine < 0) over = -mine;
     } else {
       const none = income ? "no entra nada a tus cuentas" : "no sale nada de tus cuentas";
-      result = `${each ? `${each} ${none}` : none.replace(/^./, (c) => c.toUpperCase())}. Tu parte, ${format(money2(mine))}, es ${what} ${where} y ${income ? `${first(s.payer as number)} te la debe` : `se la debes a ${first(s.payer as number)}`}.`;
+      result = `${each ? `${each} ${none}` : none.replace(/^./, (c) => c.toUpperCase())}. Tu parte, ${amt(mine)}, va a ${to} y ${income ? `${first(s.payer as number)} te la debe` : `se la debes a ${first(s.payer as number)}`}.`;
+      if (mine > t) over = mine - t;
     }
   }
 
@@ -91,9 +100,9 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
               {[{ id: "me" as const, label: "Yo" }, ...s.people.map((p) => ({ id: p.id, label: first(p.id) }))].map((o) => (
                 <FilterChip key={String(o.id)} radio pressed={s.payer === o.id} onClick={() => set({ payer: o.id })}>{o.label}</FilterChip>
               ))}
-              <button type="button" onClick={() => setPicking("payer")} className="h-8 rounded-full border border-dashed border-input-line px-3 text-caption font-semibold">
-                Otra persona…
-              </button>
+              <FilterChip icon="person_add" onClick={() => setPicking("payer")} className="border-dashed border-input-line">
+                Otra persona
+              </FilterChip>
             </div>
           </div>
 
@@ -107,29 +116,31 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
               </span>
               {s.mode === "amounts" && !mePaid ? (
                 <input inputMode="decimal" aria-label="Tu parte" placeholder="0.00" value={s.mine} onChange={(e) => set({ mine: e.target.value })}
-                  className="h-9 w-24 border-0 border-b-2 border-input-line bg-transparent p-0 text-right font-semibold tabular-nums" />
-              ) : <span className="font-semibold tabular-nums">{format(money2(mine))}</span>}
+                  className="h-control w-24 border-0 border-b-2 border-input-line bg-transparent p-0 text-right font-semibold tabular-nums" />
+              ) : <span className={`font-semibold tabular-nums ${over !== null ? "text-attention" : ""}`}>{format(money2(mine))}</span>}
             </div>
             {s.people.map((p, i) => {
               const isPayer = s.payer === p.id;
               return (
-                <div key={p.id} className="flex min-h-12 items-center gap-2.5 border-b border-border">
+                // En lo muy angosto, el monto y la ✕ bajan a otra línea antes que esconder el nombre
+                <div key={p.id} className="flex min-h-12 flex-wrap items-center gap-x-2.5 border-b border-border">
                   <Avatar name={name(p.id)} size={32} />
-                  <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="flex min-w-24 flex-1 flex-col">
                     <span className="truncate font-semibold">{name(p.id)}</span>
                     <span className={`text-caption ${mePaid ? (income ? "text-expense" : "text-income") : "text-muted-foreground"}`}>
                       {mePaid ? (income ? "Le debes" : "Te debe") : isPayer ? (income ? "Cobró todo" : "Pagó todo")
                         : income ? `${first(s.payer as number)} le debe` : `Le debe a ${first(s.payer as number)}`}
                     </span>
                   </span>
+                  <span className="ml-auto flex items-center gap-1">
                   {mePaid && s.mode === "amounts" ? (
                     <input inputMode="decimal" aria-label={`Parte de ${name(p.id)}`} placeholder="0.00" value={p.amount}
                       onChange={(e) => set({ people: s.people.map((x) => (x.id === p.id ? { ...x, amount: e.target.value } : x)) })}
-                      className="h-9 w-24 border-0 border-b-2 border-input-line bg-transparent p-0 text-right font-semibold tabular-nums" />
+                      className="h-control w-20 border-0 border-b-2 border-input-line bg-transparent p-0 text-right font-semibold tabular-nums" />
                   ) : mePaid || s.mode === "equal" ? <span className="font-semibold tabular-nums">{format(money2(theirs[i]!))}</span> : null}
-                  <button type="button" aria-label={`Quitar a ${name(p.id)}`}
-                    onClick={() => onChange({ ...s, payer: isPayer ? "me" : s.payer, people: s.people.filter((x) => x.id !== p.id) })}
-                    className="grid size-8 place-items-center text-muted-foreground"><Icon name="close" size="sm" /></button>
+                  <IconButton icon="close" label={`Quitar a ${name(p.id)}`} className="-mr-2.5 text-muted-foreground"
+                    onClick={() => onChange({ ...s, payer: isPayer ? "me" : s.payer, people: s.people.filter((x) => x.id !== p.id) })} />
+                  </span>
                 </div>
               );
             })}
@@ -140,7 +151,11 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
 
           <Segmented label="Cómo se reparte" size="sm" value={s.mode} onChange={(v) => set({ mode: v as SharedState["mode"] })}
             options={[{ value: "equal", label: "Partes iguales" }, { value: "amounts", label: "Por montos" }]} />
-          <p role="status" className="rounded-md bg-muted px-3 py-2.5 text-body-sm">{result}</p>
+          <div role="status">
+            {over !== null
+              ? <Note icon="error" tone="attention">{mePaid ? "Las partes pasan" : "Tu parte pasa"} el total por {amt(over)}. Baja {mePaid ? "alguna" : "tu parte"} para que cuadre.</Note>
+              : <Note icon="info">{result}</Note>}
+          </div>
         </>
       )}
 

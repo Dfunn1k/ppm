@@ -523,7 +523,7 @@ export function Registrar({ editing, recurring, reminder }: {
               </button>
             )}
             <span className="flex min-w-0 flex-1 items-center gap-2"><input aria-label="Nota" placeholder="Nota" value={note} maxLength={120} onChange={(e) => setNote(e.target.value)}
-              className="h-control min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
+              className="h-control min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional className="narrow:hidden" /></span>
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title={repeating ? "¿Desde cuándo?" : "¿Cuándo fue?"} value={date}
             onChange={setDate} booked />

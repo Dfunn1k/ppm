@@ -125,7 +125,7 @@ test("un gasto que se repite, compartido con Luis: cada vez te debe su parte", a
   await page.getByRole("dialog").getByRole("combobox").fill("luis");
   await page.getByRole("option", { name: /Luis Pérez/ }).click();
   const bloque = page.getByRole("region", { name: "Compartido" });
-  await expect(bloque.getByRole("status")).toContainText("Cada vez sale S/ 120.00 de BCP. S/ 60.00 son gasto tuyo en Internet; Luis te debe S/ 60.00");
+  await expect(bloque.getByRole("status")).toContainText("Cada vez sale S/ 120.00 de BCP. Tu parte, S/ 60.00, va a Internet.");
   await expect(page.getByRole("switch", { name: /Se repite/ })).toBeChecked();
   await page.getByRole("button", { name: "Guardar recurrente" }).click();
 

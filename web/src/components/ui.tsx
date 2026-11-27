@@ -48,8 +48,8 @@ export function TextLink({ className, ...props }: LinkProps) {
 type FieldProps = ComponentProps<"input"> & { label: string; error?: string; hint?: ReactNode; action?: ReactNode; optional?: boolean };
 
 /** «Opcional», tenue, a la derecha del rótulo de un campo que se puede dejar vacío (caso 3 de «Sin punto como conector»). */
-export function Optional() {
-  return <span className="flex-none text-caption font-normal text-muted-foreground">Opcional</span>;
+export function Optional({ className }: { className?: string } = {}) {
+  return <span className={cn("flex-none text-caption font-normal text-muted-foreground", className)}>Opcional</span>;
 }
 
 /** Montos en varias monedas, uno por línea y alineados a la derecha, como una columna de montos (caso 6
@@ -197,10 +197,11 @@ export function ErrorAlert({ children }: { children: ReactNode }) {
   );
 }
 
-/** Nota tranquila en gris, con su ícono. */
-export function Note({ icon, children }: { icon: string; children: ReactNode }) {
+/** Nota con su ícono: tranquila en gris (información) o en `attention` cuando algo no cuadra todavía. */
+export function Note({ icon, tone = "muted", children }: { icon: string; tone?: "muted" | "attention"; children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-caption text-muted-foreground">
+    <div className={cn("flex items-start gap-2 rounded-md p-3 text-caption",
+      tone === "attention" ? "bg-attention-soft text-attention" : "bg-muted text-muted-foreground")}>
       <Icon name={icon} />
       <span>{children}</span>
     </div>

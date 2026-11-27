@@ -3,6 +3,7 @@ Un chip que se elige o una pastilla que informa. En el código, `Chip` (hoy `Pil
 | `kind` | Qué es | Cómo se comporta |
 | --- | --- | --- |
 | `filter` | Un filtro o una opción rápida («Hoy», «Cada mes», una persona) | Se toca; dice si está elegido con `aria-pressed` o, si es una opción de un grupo, como radio (`aria-checked`). Sin elegir: borde `border`. Elegido: el relleno del acento (`primary`) y un check (decisión del 26-nov, opción A). Mide 36px y se toca en 44px; letra `caption` 600 |
+| `filter` sin `pressed` | Una acción con forma de pastilla al final de un grupo («Nueva persona», «Otra persona»): abre algo, no se elige | No dice estado. Lleva su ícono (`person_add`) y el borde punteado `input-line` (27-nov) |
 | `info` | Un dato corto («Por confirmar», «Disponible S/ 120») | No se toca |
 
 - **Tono** (los que informan): neutro (`muted`), `attention` (con ícono), `income` (sobre `income-soft`) o `selected`.

@@ -13,6 +13,7 @@ export type Ids = {
   card: number;
   loan: number | null;
   partner: number;
+  shared: number;
   move: number;
   recurring: number | null;
   post: number | null;
@@ -85,6 +86,13 @@ export async function seed(api: APIRequestContext, tag: string, browser?: Browse
   const partner = (await json(await api.post("/api/partners", { data: { name: "Luis Pérez" } }), "partner")).id;
   await move({ kind: "lend", account_id: bcp, amount: "250", partner_id: partner, date: day(40), ref: "Préstamo para el viaje" });
   await move({ kind: "lend", account_id: bcp, amount: "60", partner_id: partner, date: day(5), ref: "Entradas del concierto" });
+  // Un gasto compartido entre cuatro: pagaste tú y cada persona te debe su parte (para medir el detalle
+  // con una fila por persona y, al editarlo, el bloque Compartido abierto)
+  const sandra = (await json(await api.post("/api/partners", { data: { name: "Sandra Machado" } }), "partner")).id;
+  const carla = (await json(await api.post("/api/partners", { data: { name: "Carla Ríos" } }), "partner")).id;
+  const shared = (await move({ kind: "expense", account_id: bcp, amount: "120", date: day(7), ref: "Cena de cumpleaños", splits: [
+    { category_id: cat("Restaurantes y delivery"), amount: "40" }, { partner_id: partner, amount: "40" },
+    { partner_id: sandra, amount: "25" }, { partner_id: carla, amount: "15" }] })).summary.id as number;
 
   let recurringId: number | null = null;
   const rec = await api.post("/api/recurring", { data: {
@@ -110,5 +118,5 @@ export async function seed(api: APIRequestContext, tag: string, browser?: Browse
   }
 
   const files = browser ? await seedFiles(api, browser, bcp, cat) : null;
-  return { email, cash, bank: bcp, usd, card, loan, partner, move: first, recurring: recurringId, post, files };
+  return { email, cash, bank: bcp, usd, card, loan, partner, move: first, shared, recurring: recurringId, post, files };
 }

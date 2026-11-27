@@ -31,8 +31,9 @@ export function Chip({ tone, size, icon, children, className }: VariantProps<typ
   );
 }
 
-export function FilterChip({ pressed, radio, icon, children, className, type = "button", ...props }: ComponentProps<"button"> & { pressed: boolean; radio?: boolean; icon?: string }) {
-  const state = radio ? { role: "radio", "aria-checked": pressed } : { "aria-pressed": pressed };
+/** Sin `pressed`, es una acción con forma de pastilla (abre algo, como «Otra persona»): no dice estado. */
+export function FilterChip({ pressed, radio, icon, children, className, type = "button", ...props }: ComponentProps<"button"> & { pressed?: boolean; radio?: boolean; icon?: string }) {
+  const state = radio ? { role: "radio", "aria-checked": !!pressed } : pressed === undefined ? {} : { "aria-pressed": pressed };
   return (
     <button type={type} {...state}
       className={cn("hit-area inline-flex h-9 flex-none items-center gap-1 rounded-full border px-3.5 text-caption font-semibold disabled:pointer-events-none disabled:opacity-50",

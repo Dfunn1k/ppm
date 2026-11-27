@@ -20,6 +20,7 @@ import { WithPartnerRow } from "@/components/WithPartner";
 import { Activities } from "@/components/Pending";
 import { type Maturity, MaturitySheet, maturityText } from "@/components/MaturitySheet";
 import { Avatar } from "@/components/MoveBits";
+import { Row } from "@/components/Row";
 import { Sheet } from "@/components/Sheet";
 import { Pill } from "@/components/Pill";
 import { ErrorAlert, Facts, Icon } from "@/components/ui";
@@ -52,7 +53,7 @@ export function DetalleMovimiento() {
   const [canceling, setCanceling] = useState(false);
   const undoCancel = useDeleteMove(move.data?.plan?.canceled?.move_id ?? 0);
   const [classifying, setClassifying] = useState(false);
-  const [dating, setDating] = useState<(Maturity & { owesMe: boolean }) | null>(null);
+  const [dating, setDating] = useState<(Maturity & { owesMe: boolean; who?: string | null }) | null>(null);
   const { keys, hints } = useShortcuts();
   if (move.isPending || !me) return <DetailSkeleton back="/movimientos" rows={3} />;
   if (move.isError) {
@@ -73,6 +74,12 @@ export function DetalleMovimiento() {
   // Las deudas que nacen con este movimiento (no los pagos): cada una puede tener su vencimiento
   const debts = ["lend", "borrow", "opening", "expense"].includes(s.kind)
     ? d.lines.filter((l) => l.partner_id && l.line_id) : [];
+  // Un gasto compartido (o que pagó otra persona): cada persona en una sola fila, con su monto y su
+  // vencimiento, en lugar de «Parte de…» arriba y «Parte 1 de 3» abajo (boceto Caso19, opción B, 27-nov)
+  const shared = s.kind === "expense" && debts.length > 0 && (d.splits.some((x) => !x.category) || !!d.paid_by_partner_id);
+  const splits = shared ? d.splits.filter((x) => x.category) : d.splits;
+  const owedToMe = debts.every((l) => Number(l.debit) > 0);
+  const owedLabel = owedToMe ? (debts.length > 1 ? "Te deben" : "Te debe") : "Le debes";
   const sign = d.deferral ? (d.deferral.kind === "income" ? "+ " : "− ") : f === "in" ? "+ " : f === "out" ? "− " : "";
   const tone = d.deferral ? toneOf(d.deferral.kind) : f === "none" ? "" : toneOf(s.kind);
   const person = isPersonKind(s.kind) || s.kind === "offset" || s.kind === "write_off" || s.kind === "opening" || d.paid_by_partner_id;
@@ -219,17 +226,42 @@ export function DetalleMovimiento() {
             <span className="font-semibold tabular-nums">{exchangeRate ?? debtRate}</span>
           </div>
         )}
-        {d.splits.length > 0 && (
+        {splits.length > 0 && (
           <div className="flex flex-col border-b border-border py-2">
             <span className="text-caption text-muted-foreground">{s.kind === "income" ? "De qué" : "En qué"}</span>
-            {d.splits.map((x) => (
+            {splits.map((x) => (
               <div key={x.category?.id ?? `p${x.partner_id}`} className="flex min-h-12 items-center gap-3">
                 {x.category && <CategoryChip category={x.category} size={32} />}
-                <span className="flex-1 font-semibold">{x.category?.name ?? `Parte de ${x.partner}`}</span>
-                {d.splits.length > 1 && <span className="tabular-nums">{formatAmount(x.amount, symbolOf(s.currency), lang)}</span>}
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-semibold">{x.category?.name ?? `Parte de ${x.partner}`}</span>
+                  {shared && <span className="text-caption text-muted-foreground">Tu parte</span>}
+                </span>
+                {(splits.length > 1 || shared) && <span className="tabular-nums">{formatAmount(x.amount, symbolOf(s.currency), lang)}</span>}
               </div>
             ))}
           </div>
+        )}
+        {shared && (
+          <section aria-label={owedLabel} className="flex flex-col border-b border-border py-2">
+            <span className="text-caption text-muted-foreground">{owedLabel}</span>
+            {debts.map((l) => {
+              const m = maturityText(l);
+              const owesMe = Number(l.debit) > 0;
+              return (
+                <Row key={l.line_id}
+                  onClick={() => setDating({ line_id: l.line_id!, date_maturity: l.date_maturity, maturity_manual: l.maturity_manual, maturity_closing: l.maturity_closing, owesMe, who: l.partner })}
+                  leading={<Avatar name={l.partner} size={32} />}
+                  title={l.partner}
+                  subtitle={<span className={m?.late ? "text-attention" : undefined}>{m?.text ?? "Sin fecha de vencimiento"}</span>}
+                  trailing={
+                    <span className="flex flex-col items-end">
+                      <span className="tabular-nums">{formatAmount(l.amount.replace("-", ""), symbolOf(l.currency), lang)}</span>
+                      <span className="text-caption font-semibold text-primary-strong">{m ? "Cambiar" : "Poner"}</span>
+                    </span>
+                  } />
+              );
+            })}
+          </section>
         )}
         {(s.kind === "expense" || s.kind === "income" || s.kind === "refund" || d.with_partner_id) && (
           <WithPartnerRow moveId={s.id} partnerId={d.with_partner_id ?? null} partner={d.with_partner ?? null} locked={locked} />
@@ -271,7 +303,7 @@ export function DetalleMovimiento() {
         {s.kind !== "opening" && <MoveTagsRow moveId={s.id} tags={d.tags} inherited={d.tags_inherited} />}
       </div>
 
-      {debts.length > 0 && (
+      {debts.length > 0 && !shared && (
         <section aria-label="Vencimiento" className="mt-1 flex flex-col">
           {debts.map((l, k) => {
             const m = maturityText(l);
@@ -458,7 +490,7 @@ export function DetalleMovimiento() {
 
       {dating && (
         <MaturitySheet key={dating.line_id} open onClose={() => setDating(null)} item={dating}
-          title={dating.owesMe ? `¿Hasta cuándo te paga${s.partner ? ` ${s.partner.split(" ")[0]}` : ""}?` : `¿Hasta cuándo le pagas${s.partner ? ` a ${s.partner.split(" ")[0]}` : ""}?`} />
+          title={(() => { const who = dating.who ?? s.partner; return dating.owesMe ? `¿Hasta cuándo te paga${who ? ` ${who.split(" ")[0]}` : ""}?` : `¿Hasta cuándo le pagas${who ? ` a ${who.split(" ")[0]}` : ""}?`; })()} />
       )}
 
       <Sheet title={cancels || of ? "¿Deshacer la cancelación?" : "¿Borrar este movimiento?"} open={confirmDelete} onClose={() => setConfirmDelete(false)}>
