@@ -116,7 +116,7 @@ export function MoveAttachments({ moveId, caption }: { moveId: number; caption?:
   return (
     <section aria-label="Adjuntos" className="mt-6 flex flex-col">
       <div className="flex items-baseline justify-between border-b border-border pb-1">
-        <span className="flex items-center gap-1.5 text-label text-muted-foreground">Adjuntos{list.length > 0 && <Pill>{list.length}</Pill>}</span>
+        <h2 className="flex items-center gap-1.5 text-label text-muted-foreground">Adjuntos{list.length > 0 && <Pill>{list.length}</Pill>}</h2>
         {list.length > 1 && <span className="text-caption text-muted-foreground">del más reciente al más antiguo</span>}
       </div>
       <div className="-mx-6 mt-3 flex gap-3 overflow-x-auto px-6 pb-1">

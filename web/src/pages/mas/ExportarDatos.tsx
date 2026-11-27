@@ -7,7 +7,7 @@ import { Link } from "react-router";
 
 import { useExportSummary, useExportZip } from "@/api/hooks";
 import { BackLink } from "@/components/PageHeader";
-import { ErrorAlert, Facts, Icon } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, SwitchRow } from "@/components/ui";
 import { Button, buttonVariants } from "@/components/Button";
 import { cn } from "@/lib/utils";
 
@@ -60,14 +60,8 @@ export function ExportarDatos() {
         ))}
       </ul>
 
-      <label className="mt-3 flex min-h-14 cursor-pointer items-center gap-3.5">
-        <span className="flex flex-1 flex-col">
-          <span className="font-semibold">Incluir adjuntos</span>
-          <span className="text-caption text-muted-foreground">Si pesan mucho, déjalos fuera</span>
-        </span>
-        <input type="checkbox" role="switch" checked={withFiles} className="size-6 accent-primary"
-          onChange={() => { setWithFiles(!withFiles); zip.reset(); }} />
-      </label>
+      <SwitchRow strong className="mt-3 min-h-14 gap-3.5" title="Incluir adjuntos" hint="Si pesan mucho, déjalos fuera"
+        checked={withFiles} onChange={() => { setWithFiles(!withFiles); zip.reset(); }} />
 
       <h2 className="mt-5 text-label text-muted-foreground">LO QUE VA ADENTRO</h2>
       <dl aria-label="Lo que va adentro" className="mt-2 grid grid-cols-2 gap-2">

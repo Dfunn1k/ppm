@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useMe, useUpdateMe } from "@/api/hooks";
 import { Kbd } from "@/components/ShortcutsHelp";
 import { BackLink } from "@/components/PageHeader";
-import { ErrorAlert, Icon } from "@/components/ui";
+import { ErrorAlert, Icon, SwitchRow } from "@/components/ui";
 import { type Action, DEFAULT_KEYS, keyLabel, SHORTCUT_GROUPS, useShortcuts } from "@/lib/shortcuts";
 import { Button } from "@/components/Button";
 
@@ -56,16 +56,9 @@ export function Atajos() {
         En la computadora, para no soltar el teclado. Mientras escribes en un campo no hacen nada, salvo Ctrl + Enter.
       </p>
 
-      <label className="mt-4 flex min-h-14 cursor-pointer items-center gap-3 border-y border-border">
-        <Icon name="tooltip" className="text-muted-foreground" />
-        <span className="flex flex-1 flex-col">
-          <span>Mostrar las pistas</span>
-          <span className="text-caption text-muted-foreground">Las teclas junto al +, el buscador, Editar y abajo del detalle</span>
-        </span>
-        <input type="checkbox" role="switch" checked={showHints}
-          onChange={(e) => { setHintsOn(e.target.checked); save.mutate({ shortcut_hints: e.target.checked }); }}
-          className="size-6 accent-primary" />
-      </label>
+      <SwitchRow className="mt-4 min-h-14 border-y border-border" leading={<Icon name="tooltip" className="text-muted-foreground" />}
+        title="Mostrar las pistas" hint="Las teclas junto al +, el buscador, Editar y abajo del detalle"
+        checked={showHints} onChange={(on) => { setHintsOn(on); save.mutate({ shortcut_hints: on }); }} />
 
       <section aria-label="Los que puedes cambiar" className="mt-5 flex flex-col">
         <span className="text-label text-muted-foreground uppercase">Toca una tecla para cambiarla</span>

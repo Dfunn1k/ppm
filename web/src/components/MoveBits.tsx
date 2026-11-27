@@ -17,7 +17,7 @@ export function Avatar({ name, size }: { name: string | null | undefined; size?:
   const initial = (name ?? "?").trim()[0]?.toUpperCase() ?? "?";
   if (size === undefined) return <Circle kind="person" initials={initial} />;
   return (
-    <span className={cn("grid flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground",
+    <span aria-hidden="true" className={cn("grid flex-none place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground",
       size <= 28 ? "size-7 text-caption" : size <= 32 ? "size-8 text-caption" : "size-10 text-body")}>
       {initial}
     </span>
@@ -106,10 +106,15 @@ export const clipBit = clip;
 export function MoveAmount({ move: x, base, lang }: { move: MoveSummary; base: string; lang: string }) {
   const f = flow(x.kind, x.incoming);
   const value = x.currency === base && f !== "none" ? formatNumber(x.amount, lang) : formatAmount(x.amount, symbolOf(x.currency), lang);
+  // En la fila se ve «− 412.30» (la moneda de siempre no se repite); el lector dice «Salió S/ 412.30»
+  const full = formatAmount(x.amount.replace("-", ""), symbolOf(x.currency), lang);
   return (
     <span className={`flex items-center gap-0.5 text-amount whitespace-nowrap ${tone(x.kind)}`}>
-      {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} size="sm" />}
-      {f === "in" ? "+ " : f === "out" ? "− " : ""}{value}
+      <span aria-hidden="true" className="flex items-center gap-0.5">
+        {f !== "none" && <Icon name={f === "in" ? "south_west" : "north_east"} size="sm" />}
+        {f === "in" ? "+ " : f === "out" ? "− " : ""}{value}
+      </span>
+      <span className="sr-only">{f === "in" ? `Entró ${full}` : f === "out" ? `Salió ${full}` : full}</span>
     </span>
   );
 }

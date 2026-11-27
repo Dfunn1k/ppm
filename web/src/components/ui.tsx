@@ -52,6 +52,28 @@ export function Optional({ className }: { className?: string } = {}) {
   return <span className={cn("flex-none text-caption font-normal text-muted-foreground", className)}>Opcional</span>;
 }
 
+/** Una fila con interruptor: el texto se ve al lado y el interruptor lo lleva como nombre y descripción, así
+ *  el lector de pantalla dice todo en una sola parada («Se repite, interruptor, apagado…») en vez de leer
+ *  el texto y después el interruptor con el mismo texto. `className` va en la fila (alto, bordes, margen). */
+export function SwitchRow({ leading, title, hint, strong, small, checked, disabled, onChange, className }: {
+  leading?: ReactNode; title: ReactNode; hint?: ReactNode; strong?: boolean; small?: boolean;
+  checked: boolean; disabled?: boolean; onChange: (on: boolean) => void; className?: string;
+}) {
+  const id = useId();
+  return (
+    <label className={cn("flex cursor-pointer items-center gap-3", className)}>
+      {leading}
+      <span aria-hidden="true" className="flex flex-1 flex-col">
+        <span id={`${id}-t`} className={strong ? "font-semibold" : undefined}>{title}</span>
+        {hint && <span id={`${id}-h`} className="text-caption text-muted-foreground">{hint}</span>}
+      </span>
+      <input type="checkbox" role="switch" aria-labelledby={`${id}-t`} aria-describedby={hint ? `${id}-h` : undefined}
+        checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)}
+        className={cn("accent-primary", small ? "size-5.5" : "size-6")} />
+    </label>
+  );
+}
+
 /** Montos en varias monedas, uno por línea y alineados a la derecha, como una columna de montos (caso 6
  * de «Sin punto como conector»): «S/ 1,284.90» y debajo «US$ 45.00», sin signo que los una. */
 export function Amounts({ values, className }: { values: string[]; className?: string }) {

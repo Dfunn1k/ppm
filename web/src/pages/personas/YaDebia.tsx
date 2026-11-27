@@ -74,7 +74,7 @@ export function YaDebia({ editing }: { editing?: MoveDetail }) {
     <Screen className="pt-4">
       <div className="-mx-2.5 flex min-h-control items-center justify-between">
         <IconButton icon="arrow_back" label="Volver" onClick={back} />
-        <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Saldo inicial"}</span>
+        <h1 className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Saldo inicial"}</h1>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
         <h1 className="mt-4 text-title-hero">De antes de PPM</h1>
