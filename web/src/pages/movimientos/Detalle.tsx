@@ -5,7 +5,7 @@
 // en el tiempo muestra sus partes y «Cancelar lo que falta»; sus partes se arman solas.
 import { Button, IconButton } from "@/components/Button";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 
 import { useAccounts, useDeleteMove, useMe, useMove, useSetMoveState } from "@/api/hooks";
 import { MoveAttachments } from "@/components/Attachments";
@@ -43,6 +43,7 @@ function fullDate(iso: string) {
 export function DetalleMovimiento() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
+  const location = useLocation();
   const back = useBack();
   const me = useMe().data;
   const move = useMove(id);
@@ -454,7 +455,8 @@ export function DetalleMovimiento() {
           </>
         )}
         {editable && (
-          <Link to={`/movimientos/${s.id}/editar`}
+          // Desde la tablet, Editar se abre en el panel de Registrar sobre este movimiento (App.tsx)
+          <Link to={`/movimientos/${s.id}/editar`} state={{ background: location }}
             className="flex min-h-button items-center justify-between rounded-lg bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90">
             <span>Editar</span>
             <span className="flex items-center gap-2">{hints && <Kbd dark>{keyLabel(keys.edit)}</Kbd>}<Icon name="edit" size="md" /></span>

@@ -125,6 +125,37 @@ test("en Movimientos el detalle se abre al lado y las flechas pasan al siguiente
   await expect(page.getByRole("textbox", { name: "Buscar movimientos" })).toBeFocused();
 });
 
+test("Editar se abre en el panel de Registrar, sobre el movimiento, y al guardar sigues en él", async ({ page }) => {
+  await readyUser(page);
+  await page.goto("/registrar");
+  await spend(page, "25", "Almuerzo");
+  await page.getByRole("button", { name: "Registrar gasto" }).click();
+  await expect(page).toHaveURL("/movimientos");
+  await page.getByRole("link", { name: /Almuerzo/ }).click();
+  await expect(page).toHaveURL(/\/movimientos\/\d+$/);
+  const movimiento = page.url();
+
+  // Con el botón: el panel a la derecha, y el movimiento y la lista siguen detrás
+  await page.getByRole("link", { name: /^Editar/ }).click();
+  const panel = page.getByRole("dialog", { name: "Editar movimiento" });
+  await expect(panel).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Almuerzo" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Almuerzo/ }).first()).toBeVisible();
+  await expect(panel.getByRole("textbox", { name: "¿Cuánto gastaste?" })).toHaveValue("25.00");
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(movimiento);
+
+  // Con la tecla, y al guardar queda el movimiento con lo nuevo
+  await page.keyboard.press("e");
+  await expect(panel).toBeVisible();
+  await panel.getByRole("textbox", { name: "¿Cuánto gastaste?" }).fill("30");
+  await panel.getByRole("button", { name: /^Guardar cambios/ }).click();
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(movimiento);
+  await expect(page.getByText("− S/ 30.00").first()).toBeVisible();
+});
+
 test("etiquetas en escritorio: el reporte se abre al lado y Más › Etiquetas tiene su pantalla", async ({ page }) => {
   await readyUser(page);
   const tag = (await (await page.request.post("/api/tags", { data: { name: "Mudanza" } })).json()).id as number;

@@ -76,7 +76,7 @@ export function Shortcuts() {
         next.scrollIntoView({ block: "nearest" });
       } else if (matches(e, k.edit)) {
         const id = /^\/movimientos\/(\d+)$/.exec(path)?.[1];
-        if (id) { e.preventDefault(); navigate(`/movimientos/${id}/editar`); }
+        if (id) { e.preventDefault(); navigate(`/movimientos/${id}/editar`, { state: { background: loc } }); }
       } else if (e.key === "Escape") {
         // Cierra lo abierto a la derecha y deja la lista
         const list = DETAIL.test(path) ? LIST[groupOf(path) ?? ""] ?? LIST[path.split("/")[1] ?? ""] : undefined;
