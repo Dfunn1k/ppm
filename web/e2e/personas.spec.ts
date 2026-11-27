@@ -87,10 +87,20 @@ test("un gasto compartido con alguien y uno que pagó otra persona se compensan"
   await page.getByRole("dialog").getByLabel("¿Cómo se llama?").fill("Luis Pérez");
   await page.getByRole("button", { name: "Guardar persona" }).click();
   const bloque = page.getByRole("region", { name: "Compartido" });
-  await expect(bloque.getByRole("status")).toContainText("S/ 50.00 son gasto tuyo en Restaurantes y delivery; Luis te debe S/ 50.00");
+  await expect(bloque.getByRole("status")).toContainText("Sale S/ 100.00 de BCP. Tu parte, S/ 50.00, va a Restaurantes y delivery.");
+  // Si las partes pasan el total, se avisa ahí mismo y no recién al guardar
+  await bloque.getByRole("radio", { name: "Por montos" }).click();
+  await bloque.getByRole("textbox", { name: "Parte de Luis Pérez" }).fill("150");
+  await expect(bloque.getByRole("status")).toContainText("Las partes pasan el total por S/ 50.00. Baja alguna para que cuadre.");
+  await bloque.getByRole("radio", { name: "Partes iguales" }).click();
   await page.getByRole("button", { name: "Registrar gasto compartido" }).click();
   await expect(page).toHaveURL("/movimientos");
   await expect(page.getByText("Salió − S/ 50.00")).toBeVisible();      // tu gasto es tu parte
+  // En el detalle, Luis sale una sola vez: con su parte y su vencimiento (boceto Caso19, opción B)
+  await page.getByRole("link", { name: /Restaurantes y delivery/ }).first().click();
+  await expect(page.getByRole("region", { name: "Te debe" })).toContainText(/Luis Pérez.*Sin fecha de vencimiento.*S\/ 50\.00.*Poner/);
+  await expect(page.getByText(/Parte de Luis|Parte 1 de/)).toHaveCount(0);
+  await expect(page.getByText("Con quién")).toHaveCount(0);           // ya dice con quién arriba
 
   // Pagó Luis S/ 60, mitad y mitad: le debes S/ 30
   await page.goto("/registrar");
@@ -103,7 +113,7 @@ test("un gasto compartido con alguien y uno que pagó otra persona se compensan"
   await page.getByRole("option", { name: /Luis Pérez/ }).click();
   await bloque.getByRole("radio", { name: "Luis" }).click();
   await expect(page.getByRole("button", { name: /^Sale de/ })).toHaveCount(0);   // de tus cuentas no sale nada
-  await expect(bloque.getByRole("status")).toContainText("Tu parte, S/ 30.00, es gasto en Cafés y bares y se la debes a Luis");
+  await expect(bloque.getByRole("status")).toContainText("No sale nada de tus cuentas. Tu parte, S/ 30.00, va a Cafés y bares y se la debes a Luis.");
   await page.getByRole("button", { name: "Registrar lo que le debo" }).click();
   await expect(page).toHaveURL("/movimientos");
 

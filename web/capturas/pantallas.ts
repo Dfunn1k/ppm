@@ -19,6 +19,8 @@ export function screens(ids: Ids): Screen[] {
     s("movimientos", "/movimientos"),
     s("movimiento", `/movimientos/${ids.move}`),
     s("movimiento-editar", `/movimientos/${ids.move}/editar`, true),
+    s("movimiento-compartido", `/movimientos/${ids.shared}`),
+    s("movimiento-compartido-editar", `/movimientos/${ids.shared}/editar`, true),
     s("cuentas", "/cuentas"),
     s("cuenta-banco", `/cuentas/${ids.bank}`),
     s("cuenta-dolares", `/cuentas/${ids.usd}`),
