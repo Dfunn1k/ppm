@@ -67,7 +67,7 @@ export function AsientoManual({ editing }: { editing?: MoveDetail }) {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
         <IconButton icon="close" label="Cerrar sin guardar" onClick={back} />
-        <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
+        <h1 className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</h1>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
         <MasHeader kind="manual" locked={!!editing} />

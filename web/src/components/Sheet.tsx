@@ -151,7 +151,7 @@ export function SheetSelect({ label, sheetTitle, options, value, onChange, error
   const current = options.find((o) => o.value === value);
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={`${id}-label`} className="text-caption font-semibold">
+      <span id={`${id}-label`} aria-hidden="true" className="text-caption font-semibold">
         {label}
       </span>
       <button

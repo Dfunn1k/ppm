@@ -19,7 +19,7 @@ import { PersonPicker } from "@/components/PersonPicker";
 import { RateField, useRateInput, useSuggestedRate } from "@/components/RateField";
 import { IconButton } from "@/components/Button";
 import { CurrencyChoice, SEGMENTS, Segmented, SheetSelect, segment } from "@/components/Sheet";
-import { ErrorAlert, Facts, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Facts, Icon, Optional, PrimaryButton, Spinner, SwitchRow } from "@/components/ui";
 import { DateField, DateSheet, dateLabel } from "@/components/DateSheet";
 import { Installments } from "@/components/Installments";
 import { DeferralFields, NO_DEFERRAL, type DeferralState, deferralBody, deferralValues } from "@/components/DeferralFields";
@@ -343,11 +343,14 @@ export function Registrar({ editing, recurring, reminder }: {
     setShared(NO_SHARED);
   };
 
+  const amountLabel = repeating ? (mode === "draft" ? "¿Cuánto es, más o menos?" : "¿Cuánto es?")
+    : kind === "expense" ? (sharing ? "¿Cuánto costó en total?" : "¿Cuánto gastaste?") : kind === "income" ? (sharing ? "¿Cuánto entró en total?" : "¿Cuánto entró?") : "¿Cuánto pasas?";
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
         <IconButton icon="close" label="Cerrar sin guardar" onClick={back} />
-        <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : recurring ? "Editar recurrente" : "Nuevo movimiento"}</span>
+        <h1 className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : recurring ? "Editar recurrente" : "Nuevo movimiento"}</h1>
       </div>
 
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
@@ -364,12 +367,11 @@ export function Registrar({ editing, recurring, reminder }: {
         </div>
 
         <label className="mt-5 flex flex-col gap-0.5 text-caption font-semibold">
-          {repeating ? (mode === "draft" ? "¿Cuánto es, más o menos?" : "¿Cuánto es?")
-            : kind === "expense" ? (sharing ? "¿Cuánto costó en total?" : "¿Cuánto gastaste?") : kind === "income" ? (sharing ? "¿Cuánto entró en total?" : "¿Cuánto entró?") : "¿Cuánto pasas?"}
+          <span aria-hidden="true">{amountLabel}</span>
           <span className="flex items-baseline gap-2 border-b-2 border-input-line">
             <span aria-hidden="true" className="text-amount-input-symbol font-semibold text-muted-foreground">{symbolOf(currency)}</span>
             <input ref={focusAmount} inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
-              aria-description={`En ${symbolOf(currency)}`}
+              aria-label={amountLabel} aria-description={`En ${symbolOf(currency)}`}
               className="h-16 min-w-0 flex-1 border-0 bg-transparent p-0 text-amount-input" />
           </span>
         </label>
@@ -530,41 +532,24 @@ export function Registrar({ editing, recurring, reminder }: {
           {!editing && !repeating && <PendingFiles files={files} onChange={setFiles} />}
 
           {kind !== "transfer" && (
-            <label className="flex min-h-row-sm cursor-pointer items-center gap-3 border-b border-border">
-              <Icon name="call_split" className="w-9 text-center text-muted-foreground" />
-              <span className="flex-1">Dividir en varias categorías</span>
-              <input type="checkbox" role="switch" checked={split} className="size-5.5 accent-primary"
-                onChange={() => {
-                  setSplit(!split);
-                  setParts((ps) => (split ? [ps[0]!] : [{ ...ps[0]!, amount: amount }, { category: null, amount: "" }]));
-                }} />
-            </label>
+            <SwitchRow small className="min-h-row-sm border-b border-border" leading={<Icon name="call_split" className="w-9 text-center text-muted-foreground" />}
+              title="Dividir en varias categorías" checked={split}
+              onChange={() => {
+                setSplit(!split);
+                setParts((ps) => (split ? [ps[0]!] : [{ ...ps[0]!, amount: amount }, { category: null, amount: "" }]));
+              }} />
           )}
           {card && kind === "expense" && !editing && !repeating && !sharing && (
             <>
-              <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
-                <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
-                <span className="flex flex-1 flex-col">
-                  <span>En cuotas</span>
-                  <span className="text-caption text-muted-foreground">El banco te lo cobra en varios cortes</span>
-                </span>
-                <input type="checkbox" role="switch" checked={inInstallments} onChange={() => setInInstallments(!inInstallments)}
-                  className="size-5.5 accent-primary" />
-              </label>
+              <SwitchRow small className={`min-h-row-sm ${inInstallments ? "" : "border-b border-border"}`} leading={<Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />}
+                title="En cuotas" hint="El banco te lo cobra en varios cortes" checked={inInstallments} onChange={setInInstallments} />
               {inInstallments && (
                 <>
                   <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={total} currency={currency} date={date}
                     closingDay={account!.card?.closing_day ?? null} category={ofOther ? null : parts[0]?.category?.name ?? null} lang={lang}
                     who={ofOther ? partners.find((p) => p.id === owner)?.name.split(" ")[0] ?? "La persona" : undefined} />
-                  <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${ofOther ? "" : "border-b border-border"}`}>
-                    <Icon name="person" className="w-9 text-center text-muted-foreground" />
-                    <span className="flex flex-1 flex-col">
-                      <span>Es de otra persona</span>
-                      <span className="text-caption text-muted-foreground">Le prestaste la tarjeta: no es tu gasto, te lo debe</span>
-                    </span>
-                    <input type="checkbox" role="switch" checked={ofOther} onChange={() => setOfOther(!ofOther)}
-                      className="size-5.5 accent-primary" />
-                  </label>
+                  <SwitchRow small className={`min-h-row-sm ${ofOther ? "" : "border-b border-border"}`} leading={<Icon name="person" className="w-9 text-center text-muted-foreground" />}
+                    title="Es de otra persona" hint="Le prestaste la tarjeta: no es tu gasto, te lo debe" checked={ofOther} onChange={setOfOther} />
                   {ofOther && (
                     <div className="border-b border-border pb-3">
                       <PersonPicker label="¿De quién es?" value={owner} onChange={setOwner} />
@@ -583,15 +568,9 @@ export function Registrar({ editing, recurring, reminder }: {
             <WithPartnerField value={withPartner} onChange={setWithPartner} />
           )}
           {!editing && !recurring && (
-            <label className="flex min-h-row-sm cursor-pointer items-center gap-3 border-b border-border">
-              <Icon name="repeat" className="w-9 text-center text-muted-foreground" />
-              <span className="flex flex-1 flex-col">
-                <span>Se repite</span>
-                <span className="text-caption text-muted-foreground">El sueldo, el alquiler, Netflix: PPM lo registra cada vez</span>
-              </span>
-              <input type="checkbox" role="switch" checked={repeat} onChange={() => { setRepeat(!repeat); setInInstallments(false); }}
-                className="size-5.5 accent-primary" />
-            </label>
+            <SwitchRow small className="min-h-row-sm border-b border-border" leading={<Icon name="repeat" className="w-9 text-center text-muted-foreground" />}
+              title="Se repite" hint="El sueldo, el alquiler, Netflix: PPM lo registra cada vez" checked={repeat}
+              onChange={() => { setRepeat(!repeat); setInInstallments(false); }} />
           )}
           {repeating && (
             <div className="flex flex-col gap-4 pt-3">
@@ -648,17 +627,9 @@ export function Registrar({ editing, recurring, reminder }: {
             </div>
           )}
           {!repeating && (
-          <label className="flex min-h-row-sm cursor-pointer items-center gap-3">
-            <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
-            <span className="flex flex-1 flex-col">
-              <span>Por confirmar</span>
-              <span className="text-caption text-muted-foreground">
-                {future ? "Con fecha futura queda por confirmar hasta su día" : "No cuenta en tus saldos hasta que lo confirmes"}
-              </span>
-            </span>
-            <input type="checkbox" role="switch" checked={pending || future} disabled={future} onChange={() => setPending(!pending)}
-              className="size-5.5 accent-primary" />
-          </label>
+          <SwitchRow small className="min-h-row-sm" leading={<Icon name="schedule" className="w-9 text-center text-muted-foreground" />} title="Por confirmar"
+            hint={future ? "Con fecha futura queda por confirmar hasta su día" : "No cuenta en tus saldos hasta que lo confirmes"}
+            checked={pending || future} disabled={future} onChange={() => setPending(!pending)} />
           )}
           <TagField value={tagIds} onChange={setTagIds} />
         </div>

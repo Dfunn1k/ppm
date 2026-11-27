@@ -15,6 +15,7 @@ import { shortDate, todayISO } from "@/lib/dates";
 import { formatAmount, isNegative, symbolOf } from "@/lib/money";
 
 import { Button } from "./Button";
+import { SectionHeading } from "./SectionHeading";
 import { DateField, DateSheet, addDays } from "./DateSheet";
 import { Sheet } from "./Sheet";
 import { Pill } from "./Pill";
@@ -250,7 +251,7 @@ export function Activities({ target, hideEmpty }: { target: ActivityTarget; hide
   if (hideEmpty && list.length === 0) return null;
   return (
     <section aria-label="Recordatorios" className="mt-6 flex flex-col">
-      <span className="border-b border-border pb-1 text-label text-muted-foreground">Recordatorios</span>
+      <SectionHeading>Recordatorios</SectionHeading>
       {list.map((a) => <ActivityItem key={a.id} a={a} today={today} withTarget={false} />)}
       <button type="button" aria-haspopup="dialog" onClick={() => setAdding(true)} className="flex min-h-12 items-center gap-1.5 font-semibold">
         <Icon name="add" />Agregar recordatorio

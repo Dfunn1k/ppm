@@ -2,7 +2,7 @@
 // por adelantado. Por días (cada mes según los días que cubre) o por meses (partes iguales). Debajo,
 // cómo se reparte, con el mismo cálculo que hace la API.
 import { DateField } from "@/components/DateSheet";
-import { Facts, Icon } from "@/components/ui";
+import { Facts, Icon, SwitchRow } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
 import { addMonths, dayBefore, type DeferralMethod, deferralSchedule } from "@/lib/deferral";
 import { formatAmount } from "@/lib/money";
@@ -40,16 +40,9 @@ export function DeferralFields({ value: v, onChange, kind, date, total, symbol, 
 
   return (
     <>
-      <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${v.on ? "" : "border-b border-border"}`}>
-        <Icon name="date_range" className="w-9 text-center text-muted-foreground" />
-        <span className="flex flex-1 flex-col">
-          <span>Repartir en el tiempo</span>
-          <span className="text-caption text-muted-foreground">
-            {kind === "expense" ? "Lo pagas hoy; cuenta como gasto mes a mes" : "Entra hoy; cuenta como ingreso mes a mes"}
-          </span>
-        </span>
-        <input type="checkbox" role="switch" checked={v.on} onChange={() => set({ on: !v.on })} className="size-6 accent-primary" />
-      </label>
+      <SwitchRow className={`min-h-row-sm ${v.on ? "" : "border-b border-border"}`} leading={<Icon name="date_range" className="w-9 text-center text-muted-foreground" />} title="Repartir en el tiempo"
+        hint={kind === "expense" ? "Lo pagas hoy; cuenta como gasto mes a mes" : "Entra hoy; cuenta como ingreso mes a mes"}
+        checked={v.on} onChange={() => set({ on: !v.on })} />
       {v.on && (
         <div className="flex flex-col gap-3 border-b border-border pb-3">
           <div role="radiogroup" aria-label="Repartir por" className="flex gap-2">

@@ -14,7 +14,7 @@ import { PersonPicker } from "./PersonPicker";
 import { Segmented, Sheet } from "./Sheet";
 import { IconButton } from "./Button";
 import { FilterChip } from "./Chip";
-import { Icon, Note } from "./ui";
+import { Icon, Note, SwitchRow } from "./ui";
 
 export type SharedPerson = { id: number; amount: string };
 export type SharedState = { on: boolean; payer: number | "me"; people: SharedPerson[]; mode: "equal" | "amounts"; mine: string };
@@ -84,14 +84,9 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
 
   return (
     <section aria-label="Compartido" className={`my-2 flex flex-col gap-3 rounded-lg border bg-card p-3.5 ${s.on ? "border-foreground" : "border-border"}`}>
-      <label className="flex cursor-pointer items-center gap-3">
-        <Icon name="group" size="md" />
-        <span className="flex flex-1 flex-col">
-          <span className="font-semibold">Compartido</span>
-          <span className="text-caption text-muted-foreground">{income ? "Con una o varias personas: quién cobró y cuánto es de cada uno" : "Con una o varias personas: quién pagó y cuánto pone cada uno"}</span>
-        </span>
-        <input type="checkbox" role="switch" checked={s.on} onChange={() => set({ on: !s.on })} className="size-6 accent-primary" />
-      </label>
+      <SwitchRow strong leading={<Icon name="group" size="md" />} title="Compartido"
+        hint={income ? "Con una o varias personas: quién cobró y cuánto es de cada uno" : "Con una o varias personas: quién pagó y cuánto pone cada uno"}
+        checked={s.on} onChange={() => set({ on: !s.on })} />
       {s.on && (
         <>
           <div role="radiogroup" aria-label={income ? "¿Quién cobró?" : "¿Quién pagó?"} className="flex flex-col gap-1.5">
@@ -109,7 +104,7 @@ export function SharedBlock({ value: s, onChange, total, category, account, form
           <div className="flex flex-col">
             <span className="text-caption font-semibold">¿Entre quiénes?</span>
             <div className="flex min-h-12 items-center gap-2.5 border-b border-border">
-              <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-caption-sm font-semibold">Tú</span>
+              <span aria-hidden="true" className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-caption-sm font-semibold">Tú</span>
               <span className="flex flex-1 flex-col">
                 <span className="font-semibold">Tú</span>
                 <span className="text-caption text-muted-foreground">Tu parte es {what} {where}</span>

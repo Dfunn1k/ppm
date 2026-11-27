@@ -55,7 +55,7 @@ Antes, cada pantalla era un cuarto que alguien amobló con lo que tenía a mano:
 En orden de importancia:
 
 1. **La prueba en un iPhone (Dany).** Hay que ver, con PPM instalada, si la barra de abajo queda bien sobre la barra de gestos. Docker simula el tamaño, pero no el `safe-area` real de un iPhone.
-2. **Un lector de pantalla de verdad.** axe y la vuelta con el teclado revisan nombres, roles, orden y foco, pero no cómo suena la app. Falta recorrer Inicio, Registrar y Movimientos con VoiceOver (en el mismo iPhone) o NVDA. Es lo único de la misión que no se pudo medir en Docker.
+2. **Un lector de pantalla de verdad.** axe y la vuelta con el teclado revisan nombres, roles, orden y foco, pero no cómo suena la app. El 27-nov se recorrió lo que el lector recibe (el árbol de accesibilidad) en Inicio, Registrar, Movimientos y el detalle, y se arreglaron 5 cosas (#157). Falta escucharlo con VoiceOver (en el mismo iPhone) o NVDA: es lo único de la misión que no se pudo medir en Docker.
 3. **Piezas que se ven bien pero siguen hechas a mano** (recuento del 26-nov). Cumplen los tokens y el inspector, pero no usan el molde. Si mañana cambia el molde, estas no cambian solas:
    - ~33 títulos de sección (`SectionHeading`);
    - 15 cabeceras con «Volver» (`PageHeader`);

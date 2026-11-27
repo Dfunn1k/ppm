@@ -12,6 +12,7 @@ import { ProgressBar } from "./ProgressBar";
 import { Row } from "./Row";
 import { SearchField } from "./SearchField";
 import { SectionAction, SectionHeading } from "./SectionHeading";
+import { SwitchRow } from "./ui";
 
 const inRouter = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
@@ -113,4 +114,14 @@ test("Avatar de categoría toma su color como clase, no como estilo", () => {
   const el = container.firstElementChild!;
   expect(el).toHaveClass("bg-cat-1", "size-avatar");
   expect(el).not.toHaveAttribute("style");
+});
+
+test("SwitchRow: el interruptor lleva el texto como nombre y descripción, y el texto visible no se lee dos veces", () => {
+  const onChange = vi.fn();
+  render(<SwitchRow title="Se repite" hint="PPM lo registra cada vez" checked={false} onChange={onChange} />);
+  const sw = screen.getByRole("switch", { name: "Se repite" });
+  expect(sw).toHaveAccessibleDescription("PPM lo registra cada vez");
+  expect(screen.getByText("Se repite").closest("[aria-hidden]")).toHaveAttribute("aria-hidden", "true");
+  fireEvent.click(screen.getByText("Se repite"));   // tocar el texto también lo cambia
+  expect(onChange).toHaveBeenCalledWith(true);
 });

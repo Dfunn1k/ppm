@@ -244,7 +244,7 @@ export function DetalleMovimiento() {
         )}
         {shared && (
           <section aria-label={owedLabel} className="flex flex-col border-b border-border py-2">
-            <span className="text-caption text-muted-foreground">{owedLabel}</span>
+            <h2 className="text-caption text-muted-foreground">{owedLabel}</h2>
             {debts.map((l) => {
               const m = maturityText(l);
               const owesMe = Number(l.debit) > 0;
@@ -331,7 +331,7 @@ export function DetalleMovimiento() {
       {bank.length > 0 && (
         <>
           <section aria-label="Lo que dice el banco" className="mt-4 flex flex-col gap-2 rounded-lg bg-muted px-4 py-3">
-            <span className="text-label text-muted-foreground">Lo que dice el banco</span>
+            <h2 className="text-label text-muted-foreground">Lo que dice el banco</h2>
             {bank.map((b) => (
               <div key={b.statement_id} className="flex flex-col gap-1">
                 <span className="text-code">{b.payment_ref}</span>

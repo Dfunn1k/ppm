@@ -15,7 +15,7 @@ import { CurrencyChoice, Sheet, SheetSelect } from "@/components/Sheet";
 import { DebtCard } from "@/components/DebtCard";
 import { IconButton } from "@/components/Button";
 import { ProgressBar } from "@/components/ProgressBar";
-import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner } from "@/components/ui";
+import { ErrorAlert, Icon, Optional, PrimaryButton, Spinner, SwitchRow } from "@/components/ui";
 import { DateSheet, dateLabel } from "@/components/DateSheet";
 import { todayISO } from "@/lib/dates";
 import { type PersonKind, isPersonKind } from "@/lib/kinds";
@@ -177,7 +177,7 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-4 pb-6">
       <div className="-mx-2.5 flex items-center justify-between">
         <IconButton icon="close" label="Cerrar sin guardar" onClick={back} />
-        <span className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</span>
+        <h1 className="pr-2.5 text-label text-muted-foreground">{editing ? "Editar movimiento" : "Nuevo movimiento"}</h1>
       </div>
       <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
         <MasHeader kind={kind} locked={!!editing} account={account?.id} />
@@ -231,15 +231,8 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
           {foreign && !cross && <div className="mt-3 border-b border-border pb-3"><RateField input={rate} currency={currency} side={isCard ? "sell" : undefined} /></div>}
           {isCard && !editing && (
             <>
-              <label className={`flex min-h-row-sm cursor-pointer items-center gap-3 ${inInstallments ? "" : "border-b border-border"}`}>
-                <Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />
-                <span className="flex flex-1 flex-col">
-                  <span>En cuotas</span>
-                  <span className="text-caption text-muted-foreground">El banco te lo cobra en varios cortes</span>
-                </span>
-                <input type="checkbox" role="switch" checked={inInstallments} onChange={() => setInInstallments(!inInstallments)}
-                  className="size-5.5 accent-primary" />
-              </label>
+              <SwitchRow small className={`min-h-row-sm ${inInstallments ? "" : "border-b border-border"}`} leading={<Icon name="calendar_month" className="w-9 text-center text-muted-foreground" />}
+                title="En cuotas" hint="El banco te lo cobra en varios cortes" checked={inInstallments} onChange={setInInstallments} />
               {inInstallments && (
                 <>
                   <Installments n={installments} setN={setInstallments} cuota={cuota} setCuota={setCuota} total={value} currency={currency}
@@ -258,16 +251,9 @@ function Form({ kind, editing, initialPerson }: { kind: PersonKind; editing?: Mo
               className="h-control min-w-0 flex-1 border-0 bg-transparent p-0" /><Optional /></span>
           </div>
           <DateSheet open={dateOpen} onClose={() => setDateOpen(false)} title="¿Cuándo fue?" value={date} onChange={setDate} booked />
-          <label className="flex min-h-row-sm cursor-pointer items-center gap-3">
-            <Icon name="schedule" className="w-9 text-center text-muted-foreground" />
-            <span className="flex flex-1 flex-col">
-              <span>Por confirmar</span>
-              <span className="text-caption text-muted-foreground">
-                {future ? "Con fecha futura queda por confirmar hasta su día" : "No cuenta en tus saldos hasta que lo confirmes"}
-              </span>
-            </span>
-            <input type="checkbox" role="switch" checked={pending || future} disabled={future} onChange={() => setPending(!pending)} className="size-5.5 accent-primary" />
-          </label>
+          <SwitchRow small className="min-h-row-sm" leading={<Icon name="schedule" className="w-9 text-center text-muted-foreground" />} title="Por confirmar"
+            hint={future ? "Con fecha futura queda por confirmar hasta su día" : "No cuenta en tus saldos hasta que lo confirmes"}
+            checked={pending || future} disabled={future} onChange={() => setPending(!pending)} />
         </div>
 
         {over ? (
