@@ -21,7 +21,7 @@ async def lifespan(_app: FastAPI):
     close_pool()
 
 
-app = FastAPI(title="PPM API", version="0.42.8", lifespan=lifespan)
+app = FastAPI(title="PPM API", version="0.42.9", lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(me.router)
 app.include_router(accounts.router)

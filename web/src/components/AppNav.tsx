@@ -65,6 +65,13 @@ export function registerLink(path: string, homeAccount: number | null | undefine
   return id ? `/registrar?cuenta=${id}` : "/registrar";
 }
 
+/** El estado que abre Registrar en el panel, sobre la pantalla en la que estás (desde la tablet; en el
+ *  celular no cambia nada). Todo enlace a /registrar lo lleva (decisiones «Escritorio» y «Editar en la computadora»). */
+export function usePanel() {
+  const location = useLocation();
+  return { background: location };
+}
+
 export function AppNav() {
   const { pathname: path, search } = useLocation();
   const here = tabOf(path);

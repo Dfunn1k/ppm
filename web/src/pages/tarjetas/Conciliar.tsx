@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { type Reconciliation, useBankInstallment, useCard, useImportCardStatement, useMe, useReconciliation } from "@/api/hooks";
+import { usePanel } from "@/components/AppNav";
 import { Pill } from "@/components/Pill";
 import { ErrorAlert, Facts, Icon, Screen, Segments, Spinner, Status } from "@/components/ui";
 import { shortDate } from "@/lib/dates";
@@ -47,6 +48,7 @@ export function Conciliar() {
 }
 
 function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliation; lang: string }) {
+  const panel = usePanel();
   const bankInstallment = useBankInstallment(id, r.closing_date);
   const money = (v: string, cur = r.limit_currency) => formatAmount(v, symbolOf(cur), lang);
   const missing = r.lines.filter((l) => l.move_id === null);
@@ -204,7 +206,7 @@ function View({ id, name, r, lang }: { id: number; name: string; r: Reconciliati
               <span className="text-amount">{money(l.amount, l.currency)}</span>
             </div>
           ))}
-          <Link to={`/registrar?cuenta=${id}`} className="flex min-h-12 items-center gap-1.5 font-semibold">
+          <Link to={`/registrar?cuenta=${id}`} state={panel} className="flex min-h-12 items-center gap-1.5 font-semibold">
             <Icon name="add" />Registrarlo
           </Link>
         </section>

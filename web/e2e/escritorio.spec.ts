@@ -156,6 +156,26 @@ test("Editar se abre en el panel de Registrar, sobre el movimiento, y al guardar
   await expect(page.getByText("− S/ 30.00").first()).toBeVisible();
 });
 
+test("Nuevo recurrente: el + arriba de la lista, sin barra de lado, y abre Registrar en el panel", async ({ page }) => {
+  await readyUser(page);
+  for (const width of [1024, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/mas/recurrentes");
+    await expect(page.getByRole("heading", { name: "Recurrentes" })).toBeVisible();
+    // La columna de la lista no se pasa de ancho (boceto Caso21, 27-nov)
+    const lista = page.locator(".pane-list");
+    expect(await lista.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+    await page.getByRole("link", { name: "Nuevo recurrente" }).click();
+    const panel = page.getByRole("dialog", { name: "Registrar" });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("switch", { name: /Se repite/ })).toBeChecked();
+    await expect(page.getByRole("heading", { name: "Recurrentes" })).toBeVisible();   // la lista sigue detrás
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    await expect(page).toHaveURL("/mas/recurrentes");
+  }
+});
+
 test("etiquetas en escritorio: el reporte se abre al lado y Más › Etiquetas tiene su pantalla", async ({ page }) => {
   await readyUser(page);
   const tag = (await (await page.request.post("/api/tags", { data: { name: "Mudanza" } })).json()).id as number;
