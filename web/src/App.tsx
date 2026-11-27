@@ -139,7 +139,7 @@ export function App() {
   if (me.data?.formats) setCurrencyFormats(me.data.formats);
   const location = useLocation();
   const rail = useRail();
-  // Desde la tablet el + abre Registrar en un panel sobre la pantalla de la que viniste
+  // Desde la tablet el + abre Registrar (y «Editar», el de un movimiento) en un panel sobre la pantalla de la que viniste
   const background = rail ? (location.state as { background?: Location } | null)?.background : undefined;
   useTheme(me.data);
   useEffect(() => applyIconsOf(me.data?.icons), [me.data]);
@@ -278,6 +278,8 @@ export function App() {
         <Route path="/registrar/reembolso" element={<RegisterPanel><Reembolso /></RegisterPanel>} />
         <Route path="/registrar/manual" element={<RegisterPanel><AsientoManual /></RegisterPanel>} />
         <Route path="/registrar/saldo-inicial" element={<RegisterPanel><YaDebia /></RegisterPanel>} />
+        {/* Editar se abre en el mismo panel que Registrar, sobre el movimiento (boceto Caso20, 27-nov) */}
+        <Route path="/movimientos/:id/editar" element={<RegisterPanel label="Editar movimiento"><EditarMovimiento /></RegisterPanel>} />
         <Route path="*" element={null} />
       </Routes>
     )}
